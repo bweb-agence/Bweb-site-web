@@ -92,19 +92,37 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 }
 
 /* ---------- 2. Typographie ---------- */
-h1,.h1{font-size:clamp(2.4rem,1.6rem + 3.4vw,4.6rem);}
-h2,.h2{font-size:clamp(2rem,1.5rem + 2.2vw,3.2rem);}
+h1,.h1{font-size:clamp(2.8rem,1.7rem + 5vw,6rem);letter-spacing:-.03em;line-height:1.02}
+h2,.h2{font-size:clamp(2.1rem,1.5rem + 2.6vw,3.6rem);letter-spacing:-.025em}
 h3,.h3{font-size:clamp(1.4rem,1.2rem + 1vw,1.9rem);}
 h4,.h4{font-size:clamp(1.15rem,1.05rem + .4vw,1.35rem);}
 p{color:var(--c-gray-700)}
-.lead{font-size:clamp(1.05rem,1rem + .4vw,1.25rem);color:var(--c-gray-700);line-height:1.65}
+.lead{font-size:clamp(1.05rem,1rem + .4vw,1.3rem);color:var(--c-gray-700);line-height:1.65}
 .eyebrow{
   display:inline-flex;align-items:center;gap:8px;
-  font-family:var(--f-body);font-weight:700;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;
+  font-family:var(--f-body);font-weight:800;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;
   color:var(--c-blue);margin-bottom:16px;
 }
 .eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c-orange)}
 .eyebrow.on-dark{color:var(--c-yellow)}
+.eyebrow-pill{
+  display:inline-flex;align-items:center;gap:10px;padding:8px 8px 8px 18px;border-radius:var(--radius-pill);
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff;
+  font-size:.82rem;font-weight:600;margin-bottom:28px;
+}
+.eyebrow-pill b{background:#fff;color:var(--c-navy);padding:5px 12px;border-radius:var(--radius-pill);font-weight:800;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em}
+
+/* Titres "statement" ultra condenses/impactants */
+.display-huge{
+  font-family:var(--f-display);font-weight:800;letter-spacing:-.03em;line-height:.96;
+  font-size:clamp(3rem,1.4rem + 8vw,8.5rem);text-transform:uppercase;
+}
+.stack-text{position:relative;display:inline-block}
+.stack-text .ghost{
+  position:absolute;left:0;top:100%;margin-top:-.28em;width:100%;
+  -webkit-text-stroke:1px currentColor;color:transparent;opacity:.18;z-index:0;
+}
+.stack-text .solid{position:relative;z-index:1;display:block}
 .text-center{text-align:center}
 .text-white{color:#fff}
 .text-white h1,.text-white h2,.text-white h3,.text-white h4{color:#fff}
@@ -373,6 +391,49 @@ mark{background:none;color:var(--c-blue);position:relative}
 .marquee-item{font-family:var(--f-display);font-weight:700;font-size:1.3rem;color:var(--c-gray-300);white-space:nowrap;letter-spacing:.02em}
 @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
+/* Bande ticker impactante (service keywords defilants) */
+.ticker-band{
+  position:relative;overflow:hidden;background:var(--g-warm);
+  padding:18px 0;transform:rotate(-1.1deg) scale(1.04);margin:-14px 0;z-index:3;
+  box-shadow:0 10px 30px -10px rgba(255,131,95,.35);
+}
+.ticker-band.alt{background:var(--c-navy)}
+.ticker-band .marquee-track{animation-duration:22s;gap:0}
+.ticker-item{
+  display:flex;align-items:center;gap:22px;padding:0 22px;flex:none;
+  font-family:var(--f-display);font-weight:800;font-size:clamp(1rem,.85rem + .6vw,1.5rem);
+  text-transform:uppercase;letter-spacing:.01em;color:var(--c-navy);white-space:nowrap;
+}
+.ticker-band.alt .ticker-item{color:#fff}
+.ticker-item svg{width:20px;height:20px;flex:none}
+
+/* Bento grid (mix cartes tailles variees, inspiration Scalient) */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:20px}
+.bento > *{border-radius:var(--radius-lg)}
+.bento-photo{grid-column:span 2;grid-row:span 2;position:relative;overflow:hidden;min-height:280px;background:var(--g-navy);display:flex;align-items:flex-end;padding:0}
+.bento-stat{grid-column:span 2;background:#fff;border:1px solid var(--c-border-soft);box-shadow:var(--shadow-sm);padding:26px;display:flex;flex-direction:column;justify-content:center}
+.bento-dark{grid-column:span 2;background:var(--g-navy);color:#fff;padding:26px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.bento-tag{
+  position:absolute;bottom:18px;left:18px;background:#fff;color:var(--c-navy);padding:9px 16px 9px 12px;
+  border-radius:var(--radius-pill);display:flex;align-items:center;gap:8px;font-weight:700;font-size:.82rem;
+  box-shadow:var(--shadow-md);
+}
+.bento-tag .sq{width:9px;height:9px;background:var(--c-blue);border-radius:2px;flex:none}
+.bento .bignum{font-family:var(--f-display);font-weight:800;font-size:clamp(2.2rem,1.8rem + 1.6vw,3rem);line-height:1}
+.bento .caption{margin-top:8px;font-size:.88rem;color:var(--c-gray-500);font-weight:600}
+.bento-dark .caption{color:rgba(255,255,255,.6)}
+.bento-pattern{position:absolute;inset:0;opacity:.5;background-image:radial-gradient(circle,rgba(255,255,255,.14) 1.5px,transparent 1.5px);background-size:14px 14px}
+
+/* Effet de revelation de texte au scroll (mots gris -> couleur).
+   Etat "non revele" applique uniquement en JS (voir initTextReveal) :
+   si GSAP ne charge pas, le texte reste dans sa couleur normale, lisible. */
+.text-reveal .word{color:inherit}
+
+/* Accents decoratifs (sparkles) */
+.sparkle{position:absolute;color:var(--c-yellow);opacity:.8;pointer-events:none;z-index:1}
+.sparkle svg{width:100%;height:100%}
+.dot-accent{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--c-orange);pointer-events:none;z-index:1}
+
 /* Methodologie / etapes */
 .steps-list{display:flex;flex-direction:column}
 .step-row{display:grid;grid-template-columns:80px 1fr;gap:28px;padding:32px 0;border-top:1px solid var(--c-border-soft);position:relative}
@@ -598,6 +659,9 @@ mark{background:none;color:var(--c-blue);position:relative}
   .grid-3{grid-template-columns:repeat(2,1fr)}
   .grid-5{grid-template-columns:repeat(3,1fr)}
   .footer-grid{grid-template-columns:1fr 1fr;gap:36px 24px}
+  .bento{grid-template-columns:repeat(4,1fr)}
+  .bento-photo{grid-column:span 4;min-height:220px}
+  .bento-stat,.bento-dark{grid-column:span 2}
 }
 @media (max-width:720px){
   .grid-2,.grid-3,.grid-4,.grid-5{grid-template-columns:1fr}
@@ -611,4 +675,9 @@ mark{background:none;color:var(--c-blue);position:relative}
   .visual-badge-card{left:12px;bottom:-18px;padding:14px 16px}
   .btn{padding:14px 24px;font-size:.88rem}
   .site-header .container{padding:8px 8px 8px 16px}
+  .bento{grid-template-columns:repeat(2,1fr)}
+  .bento-photo{grid-column:span 2}
+  .bento-stat,.bento-dark{grid-column:span 2}
+  .ticker-band{transform:rotate(0);margin:0}
+  .display-huge{font-size:clamp(2.4rem,1.2rem + 10vw,5rem)}
 }

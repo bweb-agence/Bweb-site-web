@@ -173,86 +173,142 @@
   /* ---------- GSAP : reveals, compteurs, hero ---------- */
   function initGsap() {
     if (!window.gsap) return;
-    gsap.registerPlugin(ScrollTrigger);
 
-    /* Reveal generique au scroll.
-       L'etat initial est fixe ici (gsap.set), pas en CSS statique : si ce
-       script ne s'execute pas (CDN indisponible), le contenu reste visible. */
-    var reveals = gsap.utils.toArray(".reveal");
-    reveals.forEach(function (el, i) {
-      gsap.set(el, { opacity: 0, y: 36 });
-      gsap.to(el, {
-        opacity: 1,
-        y: 0,
-        duration: .9,
-        ease: "power3.out",
-        delay: (parseFloat(el.dataset.delay) || 0),
-        scrollTrigger: { trigger: el, start: "top 88%" }
-      });
-    });
-
-    gsap.utils.toArray(".reveal-fade").forEach(function (el) {
-      gsap.set(el, { opacity: 0 });
-      gsap.to(el, { opacity: 1, duration: 1, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 90%" } });
-    });
-
-    gsap.utils.toArray(".reveal-scale").forEach(function (el) {
-      gsap.set(el, { opacity: 0, scale: .92 });
-      gsap.to(el, { opacity: 1, scale: 1, duration: .8, ease: "power3.out", scrollTrigger: { trigger: el, start: "top 88%" } });
-    });
-
-    /* Stagger sur groupes de cartes */
-    document.querySelectorAll("[data-stagger]").forEach(function (group) {
-      var items = group.children;
-      gsap.fromTo(items, { opacity: 0, y: 32 }, {
-        opacity: 1, y: 0, duration: .7, stagger: .12, ease: "power3.out",
-        scrollTrigger: { trigger: group, start: "top 85%" }
-      });
-    });
-
-    /* Hero : intro au chargement */
+    /* Hero : intro au chargement (ne depend pas de ScrollTrigger) */
     var heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
     var heroEls = document.querySelectorAll("[data-hero-in]");
     if (heroEls.length) {
       heroTl.fromTo(heroEls, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: .9, stagger: .12 });
     }
 
-    /* Compteurs animes */
-    document.querySelectorAll(".js-counter").forEach(function (el) {
-      var target = parseFloat(el.getAttribute("data-count") || "0");
-      var decimals = (el.getAttribute("data-count") || "").includes(".") ? 1 : 0;
-      var counter = { val: 0 };
-      ScrollTrigger.create({
-        trigger: el,
-        start: "top 90%",
-        once: true,
-        onEnter: function () {
-          gsap.to(counter, {
-            val: target,
-            duration: 1.8,
-            ease: "power2.out",
-            onUpdate: function () {
-              el.textContent = counter.val.toFixed(decimals).replace(".", ",");
-            }
-          });
-        }
-      });
-    });
+    /* Tout ce qui suit necessite le plugin ScrollTrigger : certaines pages
+       (ex. 404) ne le chargent pas, donc on se degrade proprement plutot
+       que de lever une erreur JS (qui casserait le reste du script). */
+    if (window.ScrollTrigger) {
+      gsap.registerPlugin(ScrollTrigger);
 
-    /* Parallax douce sur les blobs decoratifs */
-    document.querySelectorAll(".blob").forEach(function (blob, i) {
-      gsap.to(blob, {
-        y: i % 2 === 0 ? 40 : -40,
-        ease: "none",
-        scrollTrigger: { trigger: blob.closest("section") || blob.parentElement, start: "top bottom", end: "bottom top", scrub: 1.2 }
+      /* Reveal generique au scroll.
+         L'etat initial est fixe ici (gsap.set), pas en CSS statique : si ce
+         script ne s'execute pas (CDN indisponible), le contenu reste visible. */
+      var reveals = gsap.utils.toArray(".reveal");
+      reveals.forEach(function (el, i) {
+        gsap.set(el, { opacity: 0, y: 36 });
+        gsap.to(el, {
+          opacity: 1,
+          y: 0,
+          duration: .9,
+          ease: "power3.out",
+          delay: (parseFloat(el.dataset.delay) || 0),
+          scrollTrigger: { trigger: el, start: "top 88%" }
+        });
       });
-    });
+
+      gsap.utils.toArray(".reveal-fade").forEach(function (el) {
+        gsap.set(el, { opacity: 0 });
+        gsap.to(el, { opacity: 1, duration: 1, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 90%" } });
+      });
+
+      gsap.utils.toArray(".reveal-scale").forEach(function (el) {
+        gsap.set(el, { opacity: 0, scale: .92 });
+        gsap.to(el, { opacity: 1, scale: 1, duration: .8, ease: "power3.out", scrollTrigger: { trigger: el, start: "top 88%" } });
+      });
+
+      /* Stagger sur groupes de cartes */
+      document.querySelectorAll("[data-stagger]").forEach(function (group) {
+        var items = group.children;
+        gsap.fromTo(items, { opacity: 0, y: 32 }, {
+          opacity: 1, y: 0, duration: .7, stagger: .12, ease: "power3.out",
+          scrollTrigger: { trigger: group, start: "top 85%" }
+        });
+      });
+
+      /* Compteurs animes */
+      document.querySelectorAll(".js-counter").forEach(function (el) {
+        var target = parseFloat(el.getAttribute("data-count") || "0");
+        var decimals = (el.getAttribute("data-count") || "").includes(".") ? 1 : 0;
+        var counter = { val: 0 };
+        ScrollTrigger.create({
+          trigger: el,
+          start: "top 90%",
+          once: true,
+          onEnter: function () {
+            gsap.to(counter, {
+              val: target,
+              duration: 1.8,
+              ease: "power2.out",
+              onUpdate: function () {
+                el.textContent = counter.val.toFixed(decimals).replace(".", ",");
+              }
+            });
+          }
+        });
+      });
+
+      /* Parallax douce sur les blobs decoratifs */
+      document.querySelectorAll(".blob").forEach(function (blob, i) {
+        gsap.to(blob, {
+          y: i % 2 === 0 ? 40 : -40,
+          ease: "none",
+          scrollTrigger: { trigger: blob.closest("section") || blob.parentElement, start: "top bottom", end: "bottom top", scrub: 1.2 }
+        });
+      });
+
+      initTextReveal();
+    }
 
     /* Marquee : dupliquer le contenu pour boucle infinie */
     document.querySelectorAll(".marquee-track").forEach(function (track) {
       if (track.dataset.duplicated) return;
       track.innerHTML += track.innerHTML;
       track.dataset.duplicated = "true";
+    });
+
+    /* Sparkles decoratifs : leger flottement continu */
+    document.querySelectorAll(".sparkle").forEach(function (el, i) {
+      gsap.to(el, {
+        y: i % 2 === 0 ? -14 : 14,
+        rotation: i % 2 === 0 ? 12 : -12,
+        duration: 2.4 + (i % 3) * .4,
+        ease: "sine.inOut",
+        repeat: -1,
+        yoyo: true
+      });
+    });
+  }
+
+  /* ---------- Revelation de texte au scroll (mots gris -> couleur) ---------- */
+  function initTextReveal() {
+    if (!window.gsap || !window.ScrollTrigger) return;
+    var root = getComputedStyle(document.documentElement);
+    var darkColor = root.getPropertyValue("--c-navy").trim() || "#020B50";
+
+    document.querySelectorAll(".text-reveal").forEach(function (el) {
+      if (el.dataset.revealed) return;
+      el.dataset.revealed = "true";
+      var isDark = el.classList.contains("on-dark");
+      var targetColor = isDark ? "#ffffff" : darkColor;
+      var startColor = isDark ? "rgba(255,255,255,.22)" : "#C7CBDB";
+
+      var text = el.textContent;
+      var words = text.split(/(\s+)/).map(function (chunk) {
+        if (!chunk.trim()) return chunk;
+        return '<span class="word">' + chunk + '</span>';
+      }).join("");
+      el.innerHTML = words;
+
+      var spans = el.querySelectorAll(".word");
+      gsap.set(spans, { color: startColor });
+      gsap.to(spans, {
+        color: targetColor,
+        stagger: { each: 0.02, from: "start" },
+        ease: "none",
+        scrollTrigger: {
+          trigger: el,
+          start: "top 80%",
+          end: "bottom 55%",
+          scrub: true
+        }
+      });
     });
   }
 })();
