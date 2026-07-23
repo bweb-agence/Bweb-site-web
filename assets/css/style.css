@@ -13,6 +13,7 @@
    10. Sections utilitaires (hero, cta, decor)
    11. Animations / helpers GSAP
    12. Responsive
+   13. Utilitaires inspires de Flowkit (Webflow)
    ========================================================= */
 
 /* ---------- 1. Variables & reset ---------- */
@@ -63,6 +64,14 @@
   --shadow-md:0 12px 30px -8px rgba(2,11,80,.16);
   --shadow-lg:0 24px 60px -16px rgba(2,11,80,.28);
   --ease:cubic-bezier(.16,.84,.44,1);
+
+  /* Echelle d'espacement nommee (convention Flowkit) */
+  --space-xsmall:8px;
+  --space-small:16px;
+  --space-medium:24px;
+  --space-large:40px;
+  --space-xlarge:64px;
+  --space-xxlarge:96px;
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -236,7 +245,7 @@ mark{background:none;color:var(--c-blue);position:relative}
   font-weight:600;font-size:.94rem;color:var(--c-gray-700);transition:color .25s,background-color .25s;
 }
 .main-nav a:hover{color:var(--c-navy);background:var(--c-gray-100)}
-.main-nav a.active{color:var(--c-blue)}
+.main-nav a.is-active{color:var(--c-blue)}
 .nav-cta{display:flex;align-items:center;gap:10px;flex:none}
 .nav-cta .btn{padding:12px 22px;font-size:.86rem}
 .nav-toggle{
@@ -358,7 +367,7 @@ mark{background:none;color:var(--c-blue);position:relative}
   font-weight:600;font-size:.86rem;color:var(--c-gray-700);transition:all .3s;
 }
 .filter-btn:hover{border-color:var(--c-blue);color:var(--c-blue)}
-.filter-btn.active{background:var(--c-navy);border-color:var(--c-navy);color:#fff}
+.filter-btn.is-active{background:var(--c-navy);border-color:var(--c-navy);color:#fff}
 
 /* Temoignages */
 .testimonial-track{overflow:hidden}
@@ -680,4 +689,96 @@ mark{background:none;color:var(--c-blue);position:relative}
   .bento-stat,.bento-dark{grid-column:span 2}
   .ticker-band{transform:rotate(0);margin:0}
   .display-huge{font-size:clamp(2.4rem,1.2rem + 10vw,5rem)}
+}
+
+/* =========================================================
+   13. Utilitaires inspires de Flowkit (Webflow)
+   ---------------------------------------------------------
+   Flowkit est le framework CSS interne de Webflow : il n'existe pas
+   sous forme de package installable (npm/CDN/CSS a telecharger), il
+   est reserve a l'editeur visuel Webflow / aux sites generes par leur
+   IA (cf. developers.webflow.com/flowkit). Cette section adopte ses
+   conventions dans notre propre design system :
+     - classes utilitaires nommees par echelle de taille (xsmall a
+       xlarge) plutot que par valeur numerique
+     - classes "combo" prefixees is- / on- qui modifient un composant
+       existant sans le redefinir (deja utilise ailleurs : is-open,
+       is-scrolled, is-active)
+     - un systeme de grille grid-1-col a grid-12-col
+     - des variantes responsives suffixees _mobile / _tablet
+   Rien dans cette section ne remplace les classes existantes plus
+   haut (.grid-3, .section, etc.) : c'est une couche utilitaire
+   additionnelle, a piocher au besoin.
+   ========================================================= */
+
+/* --- Espacement (margin / padding / gap) --- */
+.margin-top_xsmall{margin-top:var(--space-xsmall)}
+.margin-top_small{margin-top:var(--space-small)}
+.margin-top_medium{margin-top:var(--space-medium)}
+.margin-top_large{margin-top:var(--space-large)}
+.margin-top_xlarge{margin-top:var(--space-xlarge)}
+.margin-top_xxlarge{margin-top:var(--space-xxlarge)}
+
+.margin-bottom_xsmall{margin-bottom:var(--space-xsmall)}
+.margin-bottom_small{margin-bottom:var(--space-small)}
+.margin-bottom_medium{margin-bottom:var(--space-medium)}
+.margin-bottom_large{margin-bottom:var(--space-large)}
+.margin-bottom_xlarge{margin-bottom:var(--space-xlarge)}
+.margin-bottom_xxlarge{margin-bottom:var(--space-xxlarge)}
+
+.padding_xsmall{padding:var(--space-xsmall)}
+.padding_small{padding:var(--space-small)}
+.padding_medium{padding:var(--space-medium)}
+.padding_large{padding:var(--space-large)}
+.padding_xlarge{padding:var(--space-xlarge)}
+.padding_xxlarge{padding:var(--space-xxlarge)}
+
+.gap_xsmall{gap:var(--space-xsmall)}
+.gap_small{gap:var(--space-small)}
+.gap_medium{gap:var(--space-medium)}
+.gap_large{gap:var(--space-large)}
+.gap_xlarge{gap:var(--space-xlarge)}
+.gap_xxlarge{gap:var(--space-xxlarge)}
+
+/* --- Alignement de texte --- */
+.text-align_left{text-align:left}
+.text-align_center{text-align:center}
+.text-align_right{text-align:right}
+
+/* --- Systeme de grille (grid-1-col a grid-12-col) --- */
+.grid-1-col,.grid-2-col,.grid-3-col,.grid-4-col,.grid-5-col,.grid-6-col,
+.grid-7-col,.grid-8-col,.grid-9-col,.grid-10-col,.grid-11-col,.grid-12-col{
+  display:grid;gap:var(--space-medium);
+}
+.grid-1-col{grid-template-columns:repeat(1,1fr)}
+.grid-2-col{grid-template-columns:repeat(2,1fr)}
+.grid-3-col{grid-template-columns:repeat(3,1fr)}
+.grid-4-col{grid-template-columns:repeat(4,1fr)}
+.grid-5-col{grid-template-columns:repeat(5,1fr)}
+.grid-6-col{grid-template-columns:repeat(6,1fr)}
+.grid-7-col{grid-template-columns:repeat(7,1fr)}
+.grid-8-col{grid-template-columns:repeat(8,1fr)}
+.grid-9-col{grid-template-columns:repeat(9,1fr)}
+.grid-10-col{grid-template-columns:repeat(10,1fr)}
+.grid-11-col{grid-template-columns:repeat(11,1fr)}
+.grid-12-col{grid-template-columns:repeat(12,1fr)}
+
+/* --- Classes combo (prefixes is- / on-) --- */
+.is-disabled{opacity:.5;pointer-events:none}
+.is-hidden{display:none !important}
+.on-light{color:var(--c-navy)}
+/* is-active, is-open, is-scrolled : voir composants Navigation / Cartes plus haut */
+
+/* --- Variantes responsives (suffixes _mobile / _tablet) --- */
+.hide_mobile,.hide_tablet{}
+.show_mobile,.show_tablet{display:none}
+@media (max-width:1080px){
+  .hide_tablet{display:none !important}
+  .show_tablet{display:block}
+  [class*="grid-"][class*="-col"].collapse_tablet{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:720px){
+  .hide_mobile{display:none !important}
+  .show_mobile{display:block}
+  [class*="grid-"][class*="-col"]{grid-template-columns:1fr}
 }

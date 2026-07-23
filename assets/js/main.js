@@ -72,7 +72,7 @@
       var href = a.getAttribute("href");
       if (!href) return;
       if (href === current || (current === "" && href === "index.html")) {
-        a.classList.add("active");
+        a.classList.add("is-active");
       }
     });
   }
@@ -122,8 +122,8 @@
     var cards = document.querySelectorAll("[data-category]");
     buttons.forEach(function (btn) {
       btn.addEventListener("click", function () {
-        buttons.forEach(function (b) { b.classList.remove("active"); });
-        btn.classList.add("active");
+        buttons.forEach(function (b) { b.classList.remove("is-active"); });
+        btn.classList.add("is-active");
         var filter = btn.getAttribute("data-filter");
         cards.forEach(function (card) {
           var cats = (card.getAttribute("data-category") || "").split(",");
