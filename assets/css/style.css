@@ -599,6 +599,7 @@ mark{background:none;color:var(--c-blue);position:relative}
 .hero .container{position:relative;z-index:2}
 .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
 .hero h1{margin-bottom:22px}
+.hero-home h1{font-size:clamp(2.2rem,1.3rem + 4vw,4.5rem)}
 .hero .lead{margin-bottom:36px;max-width:52ch}
 .hero-actions{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:44px}
 .hero-trust{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
