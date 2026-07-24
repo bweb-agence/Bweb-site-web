@@ -101,8 +101,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 }
 
 /* ---------- 2. Typographie ---------- */
-h1,.h1{font-size:clamp(2.8rem,1.7rem + 5vw,6rem);letter-spacing:-.03em;line-height:1.02}
-h2,.h2{font-size:clamp(2.1rem,1.5rem + 2.6vw,3.6rem);letter-spacing:-.025em}
+h1,.h1{font-size:clamp(2.2rem,1.3rem + 4vw,4.5rem);letter-spacing:-.03em;line-height:1.02}
+h2,.h2{font-size:clamp(1.6rem,1.2rem + 2vw,2.7rem);letter-spacing:-.025em}
 h3,.h3{font-size:clamp(1.4rem,1.2rem + 1vw,1.9rem);}
 h4,.h4{font-size:clamp(1.15rem,1.05rem + .4vw,1.35rem);}
 p{color:var(--c-gray-700)}
@@ -230,7 +230,7 @@ mark{background:none;color:var(--c-blue);position:relative}
   padding:18px 0;transition:padding .35s var(--ease),background-color .35s var(--ease),box-shadow .35s var(--ease);
 }
 .site-header .container{
-  display:flex;align-items:center;justify-content:space-between;gap:24px;
+  display:flex;align-items:center;justify-content:flex-start;gap:24px;
   background:rgba(255,255,255,.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
   border:1px solid rgba(2,11,80,.06);border-radius:var(--radius-pill);
   padding:10px 12px 10px 22px;box-shadow:0 8px 30px -12px rgba(2,11,80,.12);
@@ -239,14 +239,14 @@ mark{background:none;color:var(--c-blue);position:relative}
 .site-header.is-scrolled .container{background:rgba(255,255,255,.92);box-shadow:0 10px 30px -10px rgba(2,11,80,.18)}
 .brand{display:flex;align-items:center;gap:10px;flex:none}
 .brand img{height:28px;width:auto}
-.main-nav{display:flex;align-items:center;gap:4px}
+.main-nav{display:flex;align-items:center;gap:4px;margin-left:8px}
 .main-nav a{
   position:relative;padding:10px 16px;border-radius:var(--radius-pill);
   font-weight:600;font-size:.94rem;color:var(--c-gray-700);transition:color .25s,background-color .25s;
 }
 .main-nav a:hover{color:var(--c-navy);background:var(--c-gray-100)}
 .main-nav a.is-active{color:var(--c-blue)}
-.nav-cta{display:flex;align-items:center;gap:10px;flex:none}
+.nav-cta{display:flex;align-items:center;gap:10px;flex:none;margin-left:auto}
 .nav-cta .btn{padding:12px 22px;font-size:.86rem}
 .nav-toggle{
   display:none;width:44px;height:44px;border-radius:50%;background:var(--c-gray-100);
@@ -599,7 +599,6 @@ mark{background:none;color:var(--c-blue);position:relative}
 .hero .container{position:relative;z-index:2}
 .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
 .hero h1{margin-bottom:22px}
-.hero-home h1{font-size:clamp(2.2rem,1.3rem + 4vw,4.5rem)}
 .hero .lead{margin-bottom:36px;max-width:52ch}
 .hero-actions{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:44px}
 .hero-trust{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
