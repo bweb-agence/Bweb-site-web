@@ -18,6 +18,7 @@
     initHeaderScroll();
     initMobileNav();
     initActiveNavLink();
+    initSectionNav();
     initWhatsappLinks();
     initAccordion();
     initFilters();
@@ -75,6 +76,57 @@
         a.classList.add("is-active");
       }
     });
+  }
+
+  /* ---------- Navigation laterale par sections (au survol / scroll-spy) ---------- */
+  function initSectionNav() {
+    var sections = Array.prototype.slice.call(document.querySelectorAll("[data-nav-section]"));
+    if (sections.length < 2) return;
+
+    var nav = document.createElement("nav");
+    nav.className = "section-nav";
+    nav.setAttribute("aria-label", "Navigation dans la page");
+
+    var entries = sections.map(function (section) {
+      var label = section.getAttribute("data-nav-section");
+      if (!section.id) {
+        section.id = label
+          .toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "");
+      }
+      var item = document.createElement("button");
+      item.type = "button";
+      item.className = "section-nav__item";
+      item.setAttribute("aria-label", "Aller à la section " + label);
+      item.innerHTML = '<span class="section-nav__label">' + label + '</span><span class="section-nav__dash"></span>';
+      item.addEventListener("click", function () {
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      nav.appendChild(item);
+      return { section: section, item: item };
+    });
+
+    document.body.appendChild(nav);
+
+    if ("IntersectionObserver" in window) {
+      var observer = new IntersectionObserver(
+        function (observed) {
+          observed.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            var match = entries.filter(function (e) { return e.section === entry.target; })[0];
+            if (!match) return;
+            entries.forEach(function (e) { e.item.classList.remove("is-active"); });
+            match.item.classList.add("is-active");
+          });
+        },
+        { rootMargin: "-45% 0px -45% 0px", threshold: 0 }
+      );
+      entries.forEach(function (e) { observer.observe(e.section); });
+    } else {
+      entries[0].item.classList.add("is-active");
+    }
   }
 
   /* ---------- Liens WhatsApp dynamiques ---------- */

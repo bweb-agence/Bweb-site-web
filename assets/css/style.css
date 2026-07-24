@@ -594,6 +594,32 @@ mark{background:none;color:var(--c-blue);position:relative}
 }
 @keyframes wa-pulse{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.9);opacity:0}}
 
+/* ---------- 9b. Navigation laterale par sections ---------- */
+.section-nav{
+  position:fixed;top:50%;right:26px;transform:translateY(-50%);z-index:800;
+  display:flex;flex-direction:column;align-items:flex-end;gap:5px;
+}
+.section-nav__item{
+  display:flex;align-items:center;gap:10px;background:none;border:none;padding:3px 0;cursor:pointer;
+}
+.section-nav__label{
+  font-family:var(--f-body);font-size:.78rem;font-weight:600;color:var(--c-navy);white-space:nowrap;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  padding:6px 14px;border-radius:var(--radius-pill);box-shadow:0 8px 20px -10px rgba(2,11,80,.25);
+  opacity:0;transform:translateX(8px);
+  transition:opacity .25s var(--ease),transform .25s var(--ease);
+}
+.section-nav__dash{
+  width:22px;height:3px;border-radius:2px;background:var(--c-navy);
+  box-shadow:0 0 0 3px rgba(255,255,255,.6);
+  transition:width .3s var(--ease),background-color .3s var(--ease);
+}
+.section-nav__item:hover .section-nav__label,
+.section-nav__item.is-active .section-nav__label{opacity:1;transform:translateX(0)}
+.section-nav__item:hover .section-nav__dash,
+.section-nav__item.is-active .section-nav__dash{width:36px;background:var(--c-blue)}
+@media (max-width:1080px){.section-nav{display:none}}
+
 /* ---------- 10. Hero / CTA ---------- */
 .hero{position:relative;padding-top:clamp(150px,14vw,190px);padding-bottom:clamp(70px,7vw,110px);overflow:hidden;background:var(--g-navy)}
 .hero .container{position:relative;z-index:2}
