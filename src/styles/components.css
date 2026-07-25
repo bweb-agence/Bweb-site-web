@@ -326,7 +326,9 @@ mark { background: none; color: var(--c-blue); position: relative; }
 .lottie svg { display: block; }
 
 /* ---------- Scène cosmique plein cadre (DA : magie de l'IA) ---------- */
-.hero--cosmic { position: relative; min-height: min(88vh, 860px); display: flex; align-items: center; }
+/* `safe center` : centré verticalement, mais si le contenu dépasse (écran
+   court), on retombe sur le haut au lieu de passer sous le header fixe. */
+.hero--cosmic { position: relative; min-height: min(88vh, 860px); display: flex; align-items: center; align-items: safe center; }
 .hero--cosmic > .container { width: 100%; }
 .cosmic-bg {
   position: absolute; inset: 0; z-index: 0; overflow: hidden; isolation: isolate;
@@ -540,10 +542,18 @@ mark { background: none; color: var(--c-blue); position: relative; }
   .case-feature { padding: 28px; }
   .visual-badge-card { left: 12px; bottom: -18px; padding: 14px 16px; }
   .btn { padding: 14px 24px; font-size: .88rem; }
-  .site-header .container { padding: 8px 8px 8px 16px; }
+  .site-header .container { padding: 8px 8px 8px 16px; gap: 12px; }
   .bento { grid-template-columns: repeat(2, 1fr); }
   .bento-photo { grid-column: span 2; }
   .bento-stat, .bento-dark { grid-column: span 2; }
   .ticker-band { transform: rotate(0); margin: 0; }
   .display-huge { font-size: clamp(2.4rem, 1.2rem + 10vw, 5rem); }
+}
+
+/* Petits mobiles : le CTA du header déborderait (logo + bouton + burger).
+   Les deux CTA restent accessibles dans le menu mobile. */
+@media (max-width: 620px) {
+  .nav-cta { display: none; }
+  /* le bloc CTA portait le margin-left:auto — on le transfère au burger */
+  .nav-toggle { margin-left: auto; }
 }
