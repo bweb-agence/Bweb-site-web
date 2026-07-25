@@ -1,4 +1,5 @@
 ---
+import { contact, whatsappLink } from "../config/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import EcosystemViz from "../components/EcosystemViz.astro";
 ---
@@ -19,7 +20,7 @@ import EcosystemViz from "../components/EcosystemViz.astro";
         <p class="lead">Bweb forme entreprises, associations et institutions aux compétences en IA et en digital qui font vraiment la différence au quotidien.</p>
         <div class="hero-actions" style="margin-top:32px;margin-bottom:0">
           <a href="/devis" class="btn btn-warm">Demander le catalogue des formations</a>
-          <a href="#" class="btn btn-outline-light" data-whatsapp-link>Discuter sur WhatsApp</a>
+          <a href={whatsappLink()} class="btn btn-outline-light" data-whatsapp-link target="_blank" rel="noopener">Discuter sur WhatsApp</a>
         </div>
       </div>
       <div class="visual" data-hero-in>

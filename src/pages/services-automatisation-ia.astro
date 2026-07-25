@@ -1,4 +1,5 @@
 ---
+import { contact, whatsappLink } from "../config/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
@@ -84,7 +85,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <p class="lead text-white">Identifions ensemble les tâches à automatiser en priorité.</p>
         <div class="hero-actions">
           <a href="/devis" class="btn btn-warm">Automatiser mon activité</a>
-          <a href="#" class="btn btn-outline-light" data-whatsapp-link>Discuter sur WhatsApp</a>
+          <a href={whatsappLink()} class="btn btn-outline-light" data-whatsapp-link target="_blank" rel="noopener">Discuter sur WhatsApp</a>
         </div>
       </div>
     </div>

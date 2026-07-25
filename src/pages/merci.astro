@@ -1,4 +1,5 @@
 ---
+import { contact, whatsappLink } from "../config/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
@@ -17,7 +18,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <div class="hero-actions" style="justify-content:center;margin-bottom:0">
         <a href="/" class="btn btn-warm">Retourner à l'accueil</a>
         <a href="/realisations" class="btn btn-outline-light">Découvrir nos réalisations</a>
-        <a href="#" class="btn btn-whatsapp" data-whatsapp-link>
+        <a href={whatsappLink()} class="btn btn-whatsapp" data-whatsapp-link target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z"/></svg>
           Nous écrire sur WhatsApp
         </a>

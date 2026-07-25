@@ -1,4 +1,5 @@
 ---
+import { contact, whatsappLink } from "../config/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
@@ -47,7 +48,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p>Vos données sont destinées à l'équipe de Bweb Agence et, le cas échéant, aux prestataires techniques (hébergement, outil d'envoi de formulaire) nécessaires au fonctionnement du site.</p>
 
       <h2>6. Vos droits</h2>
-      <p>Conformément à la réglementation applicable en Côte d'Ivoire relative à la protection des données à caractère personnel, vous disposez d'un droit d'accès, de rectification, d'opposition et de suppression de vos données. Pour exercer ces droits, contactez-nous à l'adresse <a href="#" data-email-display style="color:var(--c-blue)">contact@bwebagence.com</a>.</p>
+      <p>Conformément à la réglementation applicable en Côte d'Ivoire relative à la protection des données à caractère personnel, vous disposez d'un droit d'accès, de rectification, d'opposition et de suppression de vos données. Pour exercer ces droits, contactez-nous à l'adresse <a href={`mailto:${contact.email}`} data-email-display style="color:var(--c-blue)">{contact.email}</a>.</p>
 
       <h2>7. Cookies</h2>
       <p>Ce site peut utiliser des cookies strictement nécessaires à son fonctionnement. Aucun cookie publicitaire n'est utilisé à ce jour.</p>
