@@ -1,0 +1,23 @@
+{
+  "name": "bweb-site",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Site vitrine Bweb Agence — Astro + GSAP/ScrollTrigger + Lenis + Lottie",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "3.2.1",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@fontsource-variable/sora": "^5.3.0",
+    "astro": "^4.16.18",
+    "gsap": "^3.12.5",
+    "lenis": "^1.1.18",
+    "lottie-web": "^5.12.2",
+    "ogl": "^1.0.11"
+  }
+}

@@ -1,0 +1,37 @@
+---
+/* Fond cosmique plein cadre du hero — DA « magie de l'IA ».
+   Champ d'étoiles + astres en orbite + constellation couvrent la section,
+   avec une étoile-IA 3D à 4 branches (facettée, façon logo) au centre.
+   Animé + interactif à la souris via src/scripts/cosmos.ts.
+   Figé sous prefers-reduced-motion. */
+---
+<div class="cosmic-bg" data-cosmos aria-hidden="true">
+  <canvas class="cosmic-webgl" data-webgl aria-hidden="true"></canvas>
+  <svg class="cosmic-sky" data-sky viewBox="0 0 1440 800" aria-hidden="true"></svg>
+  <div class="cosmic-star-wrap" data-star-wrap>
+    <div class="cosmic-star">
+      <span class="star-corona"></span>
+      <span class="star-3d">
+        <svg class="star-svg" viewBox="0 0 120 120" aria-hidden="true">
+          <!-- rayons discrets -->
+          <g class="star-rays">
+            <path d="M60 2 L63 60 L60 118 L57 60 Z" fill="#FFE7A0" opacity=".28"/>
+            <path d="M2 60 L60 57 L118 60 L60 63 Z" fill="#FFE7A0" opacity=".2"/>
+          </g>
+          <!-- 8 facettes de l'étoile 4 branches (ombrage lumière haut-gauche) -->
+          <path d="M60 60 L60 6 L75 45 Z" fill="#FFE7A0"/>
+          <path d="M60 60 L75 45 L114 60 Z" fill="#FFC94D"/>
+          <path d="M60 60 L114 60 L75 75 Z" fill="#F59A2E"/>
+          <path d="M60 60 L75 75 L60 114 Z" fill="#D8631A"/>
+          <path d="M60 60 L60 114 L45 75 Z" fill="#EC7E22"/>
+          <path d="M60 60 L45 75 L6 60 Z" fill="#FBB13C"/>
+          <path d="M60 60 L6 60 L45 45 Z" fill="#FFD86E"/>
+          <path d="M60 60 L45 45 L60 6 Z" fill="#FFF3C4"/>
+          <!-- éclat central -->
+          <circle cx="54" cy="52" r="6" fill="#fff" opacity=".9"/>
+        </svg>
+      </span>
+    </div>
+  </div>
+  <div class="cosmic-cursor" data-cursor></div>
+</div>

@@ -1,0 +1,194 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import EcosystemViz from "../components/EcosystemViz.astro";
+---
+
+<BaseLayout title="Réalisations — Projets IA & digital | Bweb" description="Conseil, formation, digitalisation et automatisation : un aperçu des accompagnements menés par Bweb auprès des entreprises.">
+<section class="page-hero" data-nav-section="Réalisations">
+  <div class="mesh-bg"></div>
+  <div class="grid-lines"></div>
+  <div class="container">
+    <div class="breadcrumb"><a href="/">Accueil</a>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      <span>Réalisations</span>
+    </div>
+    <div class="page-hero-grid">
+      <div class="text-white" data-hero-in>
+        <div class="eyebrow on-dark">Réalisations</div>
+        <h1>Des projets tournés vers les résultats.</h1>
+        <p class="lead">Conseil, formation, digitalisation, IA : un aperçu des accompagnements menés par Bweb auprès des entreprises.</p>
+      </div>
+      <div class="visual" data-hero-in>
+        <EcosystemViz />
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="ticker-band alt">
+  <div class="marquee-track">
+    <span class="ticker-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.4L20 10l-6.2 1.6L12 18l-1.8-6.4L4 10l6.2-1.6z"/></svg>Stratégie IA</span>
+    <span class="ticker-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.4L20 10l-6.2 1.6L12 18l-1.8-6.4L4 10l6.2-1.6z"/></svg>Diagnostic digital</span>
+    <span class="ticker-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.4L20 10l-6.2 1.6L12 18l-1.8-6.4L4 10l6.2-1.6z"/></svg>Formation IA</span>
+    <span class="ticker-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.4L20 10l-6.2 1.6L12 18l-1.8-6.4L4 10l6.2-1.6z"/></svg>Automatisation</span>
+    <span class="ticker-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.4L20 10l-6.2 1.6L12 18l-1.8-6.4L4 10l6.2-1.6z"/></svg>Décision &amp; data</span>
+    <span class="ticker-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.4L20 10l-6.2 1.6L12 18l-1.8-6.4L4 10l6.2-1.6z"/></svg>Accompagnement</span>
+  </div>
+</div>
+
+
+<section class="section" data-nav-section="Portfolio">
+  <div class="container">
+    <p class="placeholder-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/></svg>
+      Les fiches détaillées (chiffres, visuels et témoignages complets) seront enrichies au fur et à mesure de la validation des contenus avec chaque client. Les projets ACOPCI et Ivoire 2C sont des références confirmées ; les autres cartes illustrent des types de projets réalisés.
+    </p>
+
+    <div class="filter-bar reveal">
+      <button class="filter-btn is-active" data-filter="all">Tous</button>
+      <button class="filter-btn" data-filter="sites-web">Sites web</button>
+      <button class="filter-btn" data-filter="formations">Formations</button>
+      <button class="filter-btn" data-filter="marketing">Marketing digital</button>
+      <button class="filter-btn" data-filter="automatisation">Automatisation</button>
+      <button class="filter-btn" data-filter="conseil">Conseil</button>
+      <button class="filter-btn" data-filter="digitalisation">Digitalisation</button>
+    </div>
+
+    <div class="grid grid-3" data-stagger>
+      <div class="case-card" data-category="formations,conseil">
+        <div class="case-media"><div class="grid-lines"></div>
+          <div class="mockup" style="width:80%"><div class="mockup-frame" style="padding:10px"><div class="mockup-screen" style="padding:12px;gap:8px"><div class="bar w-60"></div><div class="graph" style="height:40px"></div></div></div></div>
+        </div>
+        <div class="case-body">
+          <div class="client">ACOPCI</div>
+          <p>Accompagnement en formation et structuration digitale d'une organisation professionnelle.</p>
+          <div class="case-tags"><span class="badge">Formation</span><span class="badge">Conseil</span></div>
+        </div>
+      </div>
+
+      <div class="case-card" data-category="digitalisation,conseil">
+        <div class="case-media"><div class="grid-lines"></div>
+          <div class="mockup" style="width:80%"><div class="mockup-frame" style="padding:10px;background:var(--g-blue)"><div class="mockup-screen" style="padding:12px;gap:8px"><div class="chip-row"><div class="chip"></div><div class="chip b"></div></div><div class="bar w-80"></div></div></div></div>
+        </div>
+        <div class="case-body">
+          <div class="client">Ivoire 2C</div>
+          <p>Accompagnement digital pour renforcer la présence en ligne et les outils de gestion.</p>
+          <div class="case-tags"><span class="badge">Digitalisation</span><span class="badge">Conseil</span></div>
+        </div>
+      </div>
+
+      <div class="case-card" data-category="automatisation">
+        <div class="case-media"><div class="grid-lines"></div>
+          <div class="mockup" style="width:65%"><div class="phone-frame" style="width:100%"><div class="phone-screen" style="min-height:200px;padding:12px"><div class="chat-bubble in">Bonjour 👋</div><div class="chat-bubble out">Votre commande est confirmée.</div></div></div></div>
+        </div>
+        <div class="case-body">
+          <div class="client">PME — Secteur commerce</div>
+          <p>Mise en place d'une automatisation WhatsApp pour le suivi et la relance des prospects.</p>
+          <div class="case-tags"><span class="badge">Automatisation</span><span class="badge badge-placeholder">Exemple</span></div>
+        </div>
+      </div>
+
+      <div class="case-card" data-category="sites-web,digitalisation">
+        <div class="case-media"><div class="grid-lines"></div>
+          <div class="mockup" style="width:80%"><div class="mockup-frame" style="padding:10px;background:var(--g-navy)"><div class="mockup-screen" style="padding:12px;gap:8px"><div class="bar w-40"></div><div class="chip-row"><div class="chip c"></div><div class="chip"></div></div></div></div></div>
+        </div>
+        <div class="case-body">
+          <div class="client">Boutique en ligne</div>
+          <p>Création d'une boutique en ligne complète avec paiement et gestion des commandes.</p>
+          <div class="case-tags"><span class="badge">Sites web</span><span class="badge badge-placeholder">Exemple</span></div>
+        </div>
+      </div>
+
+      <div class="case-card" data-category="formations">
+        <div class="case-media"><div class="grid-lines"></div>
+          <div class="mockup" style="width:80%"><div class="mockup-frame" style="padding:10px"><div class="mockup-screen" style="padding:12px;gap:8px"><div class="bar w-60"></div><div class="chip-row"><div class="chip b"></div><div class="chip c"></div></div></div></div></div>
+        </div>
+        <div class="case-body">
+          <div class="client">Organisme de formation</div>
+          <p>Déploiement d'un parcours de formation en marketing digital pour les équipes internes.</p>
+          <div class="case-tags"><span class="badge">Formation</span><span class="badge badge-placeholder">Exemple</span></div>
+        </div>
+      </div>
+
+      <div class="case-card" data-category="marketing,conseil">
+        <div class="case-media"><div class="grid-lines"></div>
+          <div class="mockup" style="width:80%"><div class="mockup-frame" style="padding:10px;background:var(--g-blue)"><div class="mockup-screen" style="padding:12px;gap:8px"><div class="graph" style="height:50px"></div><div class="bar w-60"></div></div></div></div>
+        </div>
+        <div class="case-body">
+          <div class="client">Cabinet de conseil</div>
+          <p>Refonte de la stratégie de communication et lancement de campagnes publicitaires ciblées.</p>
+          <div class="case-tags"><span class="badge">Marketing</span><span class="badge badge-placeholder">Exemple</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Etudes de cas detaillees ===== -->
+<section class="section section-gray" data-nav-section="ACOPCI">
+  <div class="container">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center">Zoom sur un projet</div>
+      <h2>ACOPCI</h2>
+    </div>
+    <div class="case-feature reveal">
+      <div class="visual">
+        <div class="mockup-frame" style="width:70%"><div class="dots"><span></span><span></span><span></span></div><div class="mockup-screen"><div class="bar w-60"></div><div class="graph"></div><div class="bar w-40"></div></div></div>
+      </div>
+      <div>
+        <span class="badge badge-placeholder" style="margin-bottom:16px">Fiche en cours de complétion</span>
+        <div class="case-feature-grid">
+          <div class="row"><div class="k">Client</div><div class="v">ACOPCI</div></div>
+          <div class="row"><div class="k">Problème</div><div class="v">Difficulté à structurer la présence digitale et à outiller les équipes sur les usages numériques.</div></div>
+          <div class="row"><div class="k">Objectif</div><div class="v">Monter en compétence sur le digital et poser les bases d'une organisation plus structurée.</div></div>
+          <div class="row"><div class="k">Solution Bweb</div><div class="v">Accompagnement en formation et conseil, adapté au fonctionnement de l'organisation.</div></div>
+          <div class="row"><div class="k">Résultats</div><div class="v">Détails et chiffres précis à confirmer avec le client avant publication.</div></div>
+        </div>
+        <a href="/devis" class="result-chip">Un projet similaire ? Parlons-en</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" data-nav-section="Ivoire 2C">
+  <div class="container">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center">Zoom sur un projet</div>
+      <h2>Ivoire 2C</h2>
+    </div>
+    <div class="case-feature reveal">
+      <div>
+        <span class="badge badge-placeholder" style="margin-bottom:16px">Fiche en cours de complétion</span>
+        <div class="case-feature-grid">
+          <div class="row"><div class="k">Client</div><div class="v">Ivoire 2C</div></div>
+          <div class="row"><div class="k">Problème</div><div class="v">Besoin de renforcer la présence en ligne et de mieux organiser le suivi de l'activité.</div></div>
+          <div class="row"><div class="k">Objectif</div><div class="v">Gagner en visibilité et en efficacité opérationnelle grâce au digital.</div></div>
+          <div class="row"><div class="k">Solution Bweb</div><div class="v">Accompagnement en digitalisation et conseil stratégique.</div></div>
+          <div class="row"><div class="k">Résultats</div><div class="v">Détails et chiffres précis à confirmer avec le client avant publication.</div></div>
+        </div>
+        <a href="/devis" class="result-chip">Un projet similaire ? Parlons-en</a>
+      </div>
+      <div class="visual">
+        <div class="mockup-frame" style="width:70%;background:var(--g-blue)"><div class="dots"><span></span><span></span><span></span></div><div class="mockup-screen"><div class="chip-row"><div class="chip"></div><div class="chip c"></div></div><div class="bar w-80"></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" data-nav-section="Contact">
+  <div class="container">
+    <div class="cta-band reveal-scale">
+      <div class="mesh-bg"></div>
+      <div class="grid-lines"></div>
+      <div style="position:relative;z-index:2">
+        <h2 class="text-white">Votre projet pourrait être le prochain.</h2>
+        <p class="lead text-white">Confiez votre projet à Bweb Agence et construisons ensemble une solution qui vous ressemble.</p>
+        <div class="hero-actions">
+          <a href="/devis" class="btn btn-warm">Confier un projet à Bweb Agence</a>
+          <a href="/contact" class="btn btn-outline-light">Nous contacter</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</BaseLayout>

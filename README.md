@@ -1,66 +1,71 @@
 # Site web — Bweb Agence
 
-Site vitrine de Bweb Agence (conseil, formation, digitalisation, automatisation & IA), en **HTML / CSS / JavaScript vanilla + GSAP**, sans framework ni étape de build côté navigateur.
+Site vitrine de Bweb Agence (conseil, formation, digitalisation, automatisation & IA), construit avec **Astro** + **GSAP/ScrollTrigger** + **Lenis** + **Lottie**. Sortie 100 % statique (HTML/CSS/JS), hébergeable partout (Netlify, Vercel, GitHub Pages, mutualisé).
+
+## Démarrage
+
+```bash
+npm install
+npm run dev      # serveur de dev sur http://localhost:4321
+npm run build    # génère le site statique dans dist/
+npm run preview  # prévisualise le build de production
+```
+
+## Stack
+
+| Rôle | Outil |
+|---|---|
+| Framework / build | [Astro](https://astro.build) (sortie statique, composants, sitemap) |
+| Animations scroll | [GSAP](https://gsap.com) + ScrollTrigger (bundlés, pas de CDN) |
+| Smooth scroll | [Lenis](https://lenis.studio) |
+| Animations vectorielles | [lottie-web](https://airbnb.io/lottie/) |
+| Polices | Sora + Plus Jakarta Sans, **auto-hébergées** via Fontsource |
+
+Le motion respecte `prefers-reduced-motion` (aucune animation si l'utilisateur la désactive) et le contenu reste visible même si le JS échoue (le hero n'est jamais masqué par JS).
 
 ## Structure
 
 ```
-bweb-agence-site/
-├── index.html                     Accueil
-├── a-propos.html
-├── services.html                  Vue d'ensemble des services
-├── services-*.html                6 pages détaillées par service
-├── realisations.html              Portfolio + études de cas
-├── formations.html
-├── methodologie.html
-├── contact.html
-├── devis.html                     Demande de devis détaillée
-├── merci.html                     Page de remerciement (redirection formulaires)
-├── mentions-legales.html
-├── politique-confidentialite.html
-├── conditions-generales.html
-├── 404.html
-├── assets/
-│   ├── css/style.css              Design system (variables, composants, responsive)
-│   ├── js/main.js                 Nav, GSAP, formulaires, compteurs, filtres
-│   └── images/                    Logo + favicon (SVG)
-└── _build/                        Outil de génération (voir plus bas) — n'est pas servi au public
+bweb-site/
+├── astro.config.mjs            Config Astro (site, sitemap)
+├── src/
+│   ├── config/site.ts          ⭐ Source unique : coordonnées, nav, contact, WhatsApp
+│   ├── layouts/BaseLayout.astro Head (SEO, OG, JSON-LD), header/footer, scripts
+│   ├── components/             Header, Footer, WhatsAppFloat
+│   ├── pages/                  Une page .astro par URL (éditables)
+│   ├── scripts/                main, ui, motion (GSAP+Lenis), lottie, forms
+│   └── styles/                 Design system : tokens, base, components, utilities
+├── public/
+│   ├── images/                 Logos, favicon, image de partage (og-cover.jpg)
+│   ├── lottie/                 Animations .json (à déposer ici)
+│   └── robots.txt
+├── _build/  _legacy/           Anciennes sources (référence, non servies) — supprimables
 ```
 
-Toutes les pages sont des fichiers HTML statiques autonomes : aucun serveur ni build n'est nécessaire, il suffit de les héberger tel quel (GitHub Pages, Netlify, hébergement mutualisé…).
+## Configuration à compléter avant / après mise en ligne
 
-## Outil d'assemblage (`_build/`)
+Tout est centralisé dans **`src/config/site.ts`** :
 
-Pour éviter de dupliquer le header/footer dans chaque page à la main, les pages (hors `index.html` et `a-propos.html`, écrites directement) sont générées à partir de :
+- ✅ **WhatsApp** (`2250701926028` principal, `2250576792525` secondaire) et **e-mail** `info@bwebagence.com` : déjà renseignés.
+- ✅ **Domaine de production** : `https://www.bwebagence.com` (sitemap, URLs canoniques, Open Graph).
+- ⚠️ **Envoi e-mail des formulaires** : les demandes partent sur **WhatsApp** (récapitulatif pré-rempli, sans backend) **et** par e-mail via [FormSubmit](https://formsubmit.co) — aucun compte ni clé API.
+  **Action unique requise :** au tout premier envoi après mise en ligne, FormSubmit envoie un e-mail de confirmation à `info@bwebagence.com` → cliquer le lien **une seule fois** pour activer la réception.
+  *(Alternative : renseigner `forms.formspreeId` pour passer par Formspree.)*
+- ⏳ **Réseaux sociaux** : URLs Facebook / Instagram / LinkedIn dans `contact.social` — **vides = icônes masquées** (comptes pas encore créés).
 
-- `_build/partials/head.html`, `header.html`, `footer.html`
-- `_build/content/*.content.html` (contenu propre à chaque page)
-- `_build/manifest.json` (titre + meta description par page)
+Contenu restant à fournir par l'agence (recherche `badge-placeholder` / « Exemple » / « à confirmer ») :
+- Adresse physique + carte de localisation (page Contact), fiches équipe.
+- Études de cas ACOPCI / Ivoire 2C (détails à confirmer avec les clients).
+- Mentions légales / CGV à faire relire par un professionnel.
 
-Pour régénérer les pages après une modification d'un partial ou d'un contenu :
+> **Note contenu** — La section « Notre engagement » (accueil) présente des promesses assumées par l'agence, **pas** des témoignages clients. Ne pas la transformer en faux avis : publier des témoignages fictifs présentés comme réels est illégal dans de nombreuses juridictions et détruit la crédibilité. Dès que de vrais retours clients sont disponibles, ils peuvent être ajoutés en tant que tels.
 
-```bash
-node _build/build.js
+## Ajouter une animation Lottie
+
+Déposer un fichier `.json` dans `public/lottie/`, puis dans une page :
+
+```html
+<div class="lottie" data-lottie="/lottie/mon-anim.json" style="--lottie-ratio: 16 / 9"></div>
 ```
 
-Le script écrit les fichiers `.html` finaux à la racine du projet (ce sont ces fichiers, statiques, qui sont réellement servis).
-
-## À compléter avant mise en ligne
-
-Le contenu réel de l'agence n'était pas toutes disponible à la création du site. Chercher `badge-placeholder` et `placeholder-note` dans le code, ou les points suivants :
-
-- **Coordonnées réelles** dans `assets/js/main.js` (`window.BWEB_CONFIG` : numéro WhatsApp, téléphone, e-mail) — actuellement des valeurs d'exemple.
-- **Adresse physique et carte de localisation** (page Contact + footer).
-- **Témoignages clients réels** (page d'accueil) — actuellement des exemples génériques.
-- **Fiches équipe** (page À propos) — seul le fondateur, Godwin Soola, est confirmé.
-- **Études de cas ACOPCI / Ivoire 2C** (page Réalisations) — références confirmées mais détails/chiffres à valider avec les clients avant publication.
-- **Mentions légales / CGV** — trame juridique standard à faire relire et compléter (forme juridique, n° RCCM, hébergeur…) par un professionnel.
-- **Formulaires (Contact / Devis)** : aucun backend n'est branché. Il faut connecter un service d'envoi (Formspree, EmailJS, Make/Zapier, fonction serverless…) pour que les demandes arrivent réellement par e-mail — voir le commentaire dans `assets/js/main.js` (`initForms`).
-- **Génération d'images IA** : demandée dans le brief, mais indisponible au moment de la création (crédits épuisés côté outil de génération). Le site utilise à la place des visuels CSS/SVG (mockups d'écran, dégradés de marque, icônes). Ils peuvent être remplacés par de vraies photos/visuels générés ultérieurement, dans `assets/images/`.
-
-## Stack
-
-- HTML5 / CSS3 (variables custom, Grid, Flexbox, `clamp()`)
-- JavaScript vanilla (pas de dépendance npm côté site)
-- [GSAP](https://gsap.com/) + ScrollTrigger via CDN pour les animations
-- Police : Plus Jakarta Sans (texte) + Sora (titres), via Google Fonts
+Chargement paresseux automatique (au scroll) et rendu figé si l'utilisateur réduit les animations.

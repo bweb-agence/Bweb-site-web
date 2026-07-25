@@ -1,0 +1,88 @@
+---
+import { contact, whatsappLink } from "../config/site";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import EcosystemViz from "../components/EcosystemViz.astro";
+---
+
+<BaseLayout title="Digitalisation & outils métiers | Bweb" description="CRM, outils métiers et données : Bweb structure les processus des entreprises pour gagner en productivité et piloter par les résultats.">
+<section class="page-hero" data-nav-section="Digitalisation">
+  <div class="mesh-bg"></div>
+  <div class="grid-lines"></div>
+  <div class="container">
+    <div class="breadcrumb"><a href="/">Accueil</a>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      <a href="/services">Services</a>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      <span>Digitalisation des entreprises</span>
+    </div>
+    <div class="page-hero-grid">
+      <div class="text-white" data-hero-in>
+        <div class="eyebrow on-dark">Digitalisation & données</div>
+        <h1>Des processus clairs, pilotés par la donnée.</h1>
+        <p class="lead">CRM, outils métiers et reporting : nous organisons vos processus pour rendre vos équipes plus autonomes et plus productives au quotidien.</p>
+        <div class="hero-actions" style="margin-top:32px;margin-bottom:0">
+          <a href="/devis" class="btn btn-warm">Digitaliser mon entreprise</a>
+          <a href="/services" class="btn btn-outline-light">Tous nos services</a>
+        </div>
+      </div>
+      <div class="visual" data-hero-in>
+        <EcosystemViz />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" data-nav-section="Notre approche">
+  <div class="container">
+    <div class="split-block">
+      <div class="reveal">
+        <div class="eyebrow">Ce que comprend ce service</div>
+        <h2>Des outils qui simplifient, pas qui compliquent.</h2>
+        <p class="lead" style="margin:20px 0">Nous analysons vos processus actuels puis mettons en place des outils numériques réellement utilisés par vos équipes : gestion des clients, des ventes et du suivi d'activité.</p>
+      </div>
+      <div class="card reveal" data-delay=".1">
+        <ul class="tick-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Analyse des processus</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Mise en place d'outils numériques</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>CRM</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Gestion des clients</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Gestion des équipes</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Solutions de vente en ligne</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Outils de suivi &amp; de reporting</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-gray" data-nav-section="Autres services">
+  <div class="container">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center">Explorez aussi</div>
+      <h2>Nos autres services</h2>
+    </div>
+    <div class="grid grid-3" data-stagger>
+      <a class="card service-card" href="/services-conseil-strategie"><h4>Conseil &amp; stratégie digitale</h4><p style="margin-top:8px">Diagnostic et plan d'action personnalisé.</p></a>
+      <a class="card service-card" href="/services-automatisation-ia"><h4>Automatisation &amp; IA</h4><p style="margin-top:8px">WhatsApp, chatbots et agents conversationnels.</p></a>
+      <a class="card service-card" href="/services-creation-sites-web"><h4>Création de sites web</h4><p style="margin-top:8px">Vitrine, boutique en ligne, plateforme.</p></a>
+    </div>
+  </div>
+</section>
+
+<section class="section" data-nav-section="Contact">
+  <div class="container">
+    <div class="cta-band reveal-scale">
+      <div class="mesh-bg"></div>
+      <div class="grid-lines"></div>
+      <div style="position:relative;z-index:2">
+        <h2 class="text-white">Vos outils actuels vous freinent ?</h2>
+        <p class="lead text-white">Faisons le point sur vos processus et identifions les bons outils à mettre en place.</p>
+        <div class="hero-actions">
+          <a href="/devis" class="btn btn-warm">Digitaliser mon entreprise</a>
+          <a href={whatsappLink()} class="btn btn-outline-light" data-whatsapp-link target="_blank" rel="noopener">Discuter sur WhatsApp</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</BaseLayout>

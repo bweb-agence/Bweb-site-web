@@ -1,0 +1,186 @@
+/* =========================================================
+   BWEB AGENCE — Refinements (UX/UI pro)
+   Couche additionnelle chargée EN DERNIER : rythme d'espacement,
+   cohérence des heros, cards, responsive, menu mobile.
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   1. Rythme d'espacement (système cohérent)
+   --------------------------------------------------------- */
+:root {
+  --section-pad: clamp(56px, 4vw + 32px, 112px); /* espacement vertical de section */
+  --section-gap: clamp(36px, 3vw + 12px, 56px);  /* titre de section -> contenu */
+  --card-pad: clamp(24px, 2vw + 12px, 34px);     /* padding interne des cartes */
+  --stack-gap: clamp(20px, 1.5vw + 8px, 28px);   /* espace entre cartes d'une grille */
+}
+
+/* Sections : padding vertical homogène partout */
+.section { padding-block: var(--section-pad); }
+.section-sm { padding-block: clamp(40px, 3vw + 20px, 72px); }
+
+/* Titre de section -> contenu : distance constante */
+.section-head { margin-bottom: var(--section-gap); }
+.section-head-row { margin-bottom: var(--section-gap); }
+
+/* Grilles de cartes : gouttière homogène */
+.grid { gap: var(--stack-gap); }
+.grid-2, .grid-3, .grid-4, .grid-5 { gap: var(--stack-gap); }
+
+/* Cartes : padding interne homogène */
+.card { padding: var(--card-pad); }
+.service-card { padding: var(--card-pad); }
+
+/* ---------------------------------------------------------
+   2. Cohérence des heros (toutes les pages)
+   --------------------------------------------------------- */
+/* Rythme interne identique eyebrow -> h1 -> lead sur les page-heros */
+.page-hero .eyebrow,
+.page-hero .eyebrow-pill { margin-bottom: 18px; }
+.page-hero h1 { margin-bottom: 20px; }
+.page-hero .lead { max-width: 54ch; margin-bottom: 0; }
+.page-hero-grid { gap: clamp(32px, 4vw, 56px); align-items: center; }
+.page-hero .breadcrumb { margin-bottom: 22px; }
+
+/* Le hero home et les page-heros partagent le même bas d'air */
+.hero-content .lead { max-width: 54ch; }
+
+/* ---------------------------------------------------------
+   3. Logos (footer plus grand, navbar un peu plus grand)
+   --------------------------------------------------------- */
+.brand img { height: 40px; }
+.footer-brand img { height: 46px; margin-bottom: 22px; }
+@media (max-width: 720px) {
+  .brand img { height: 34px; }
+  .footer-brand img { height: 40px; }
+}
+
+/* ---------------------------------------------------------
+   4. Cartes « expertises » : bleu au survol + liste lisible
+   --------------------------------------------------------- */
+.service-card { transition: transform .4s var(--ease), box-shadow .4s var(--ease), background-color .4s var(--ease), border-color .4s var(--ease); }
+.service-card:not(.dark):hover {
+  background: var(--g-navy);
+  border-color: transparent;
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+}
+/* Tout le contenu passe en clair au survol */
+.service-card:not(.dark):hover h3,
+.service-card:not(.dark):hover .card-link { color: #fff; }
+.service-card:not(.dark):hover p { color: rgba(255,255,255,.72); }
+.service-card:not(.dark):hover ul li { color: rgba(255,255,255,.82); }
+.service-card:not(.dark):hover .icon-tile { background: rgba(255,255,255,.12); color: var(--c-yellow); }
+.service-card:not(.dark):hover ul li svg { color: var(--c-green); }
+.service-card:not(.dark):hover .card-link svg { color: #fff; }
+/* La carte "Automatisation & IA" est déjà dark en permanence : on garde,
+   mais on s'assure que sa liste est bien lisible */
+.service-card.dark ul li { color: rgba(255,255,255,.85); }
+.service-card.dark ul li svg { color: var(--c-green); }
+
+/* ---------------------------------------------------------
+   5. Menu mobile : croix de fermeture + contenu scrollable
+   --------------------------------------------------------- */
+.mobile-nav {
+  justify-content: flex-start;
+  padding: 88px 28px calc(40px + env(safe-area-inset-bottom));
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+.mobile-nav__close {
+  position: absolute; top: 20px; right: 20px; width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; z-index: 2;
+  background: rgba(255, 255, 255, 0.1); color: #fff;
+  transition: background-color .25s;
+}
+.mobile-nav__close:hover { background: rgba(255, 255, 255, 0.2); }
+.mobile-nav__close svg { width: 22px; height: 22px; }
+.mobile-nav nav a { font-size: clamp(1.5rem, 1.2rem + 2vw, 2rem); }
+.mobile-nav .mobile-nav-cta { margin-top: 28px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.12); }
+/* Écrans courts : on resserre pour que les 2 CTA restent visibles/atteignables */
+@media (max-height: 660px) {
+  .mobile-nav { padding-top: 72px; }
+  .mobile-nav nav a { font-size: 1.35rem; padding: 8px 0; }
+  .mobile-nav .mobile-nav-cta { margin-top: 20px; padding-top: 18px; }
+}
+
+/* ---------------------------------------------------------
+   6. Section « Pour qui » : nuage d'audiences fluide (responsive natif)
+   --------------------------------------------------------- */
+.audience-cloud {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+  gap: 14px; max-width: 940px; margin: 0 auto; padding: 0; list-style: none;
+}
+.audience-cloud .aud {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 22px; border-radius: var(--radius-pill);
+  background: #fff; border: 1px solid var(--c-border-soft); box-shadow: var(--shadow-sm);
+  font-weight: 700; color: var(--c-navy); line-height: 1;
+  font-size: clamp(0.9rem, 0.84rem + 0.3vw, 1.05rem);
+  transition: transform 0.3s var(--ease), background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+  cursor: default;
+}
+.audience-cloud .aud svg { width: 20px; height: 20px; flex: none; color: var(--c-blue); transition: color 0.3s; }
+.audience-cloud .aud:hover { transform: translateY(-4px); background: var(--c-blue); color: #fff; border-color: transparent; box-shadow: var(--shadow-md); }
+.audience-cloud .aud:hover svg { color: #fff; }
+/* quelques accents pour le rythme visuel */
+.audience-cloud .aud.is-accent { background: var(--c-navy); color: #fff; border-color: transparent; }
+.audience-cloud .aud.is-accent svg { color: var(--c-yellow); }
+.audience-cloud .aud.is-accent:hover { background: var(--c-blue); }
+.audience-cloud .aud.is-green { background: var(--c-green); color: #04231c; border-color: transparent; }
+.audience-cloud .aud.is-green svg { color: #04231c; }
+.audience-cloud .aud.is-green:hover { background: var(--c-blue); color: #fff; }
+.audience-cloud .aud.is-green:hover svg { color: #fff; }
+@media (max-width: 480px) {
+  .audience-cloud { gap: 10px; }
+  .audience-cloud .aud { padding: 11px 16px; }
+}
+
+/* ---------------------------------------------------------
+   7. Responsive — bonnes pratiques (petits écrans)
+   --------------------------------------------------------- */
+/* Jamais de débordement horizontal */
+html, body { max-width: 100%; overflow-x: hidden; }
+:where(img, svg, video) { max-width: 100%; }
+
+/* Gouttières de conteneur qui rétrécissent proprement */
+@media (max-width: 600px) {
+  .container, .container-narrow { padding-inline: 18px; }
+}
+@media (max-width: 380px) {
+  .container, .container-narrow { padding-inline: 14px; }
+}
+
+/* Cibles tactiles confortables (>=44px) pour les liens de nav latérale et icônes */
+@media (hover: none) {
+  .btn { min-height: 44px; }
+}
+
+/* Boutons : sur très petit écran, ils passent pleine largeur pour ne pas déborder */
+@media (max-width: 400px) {
+  .hero-actions, .cta-band .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-actions .btn { width: 100%; }
+}
+
+/* Bandeaux CTA : padding resserré sur mobile */
+@media (max-width: 600px) {
+  .cta-band { padding: clamp(32px, 8vw, 48px) 20px; }
+  .case-feature { padding: 22px; }
+  .form-card { padding: 22px; }
+}
+
+/* Tableaux d'info : 1 colonne sur mobile */
+@media (max-width: 560px) {
+  .info-table { grid-template-columns: 1fr; }
+}
+
+/* Titres de section : jamais collés aux bords */
+@media (max-width: 600px) {
+  .section-head, .section-head-row { margin-bottom: clamp(28px, 8vw, 40px); }
+}
+
+/* ---------------------------------------------------------
+   8. Fond WebGL du hero (OGL) — derrière la scène SVG
+   --------------------------------------------------------- */
+.cosmic-webgl {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 0; display: block; pointer-events: none;
+}

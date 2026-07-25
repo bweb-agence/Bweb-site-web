@@ -1,0 +1,54 @@
+# =========================================================
+# Bweb — configuration de déploiement Netlify
+# Le site est un build statique Astro : Netlify installe les
+# dépendances, lance `npm run build` et publie `dist/`.
+# =========================================================
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# ---------- Redirections des anciennes URLs (.html -> URLs propres) ----------
+# L'ancien site servait /services.html, /contact.html, etc. On préserve le
+# référencement et les liens partagés en redirigeant en 301.
+[[redirects]]
+  from = "/index.html"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/:slug.html"
+  to = "/:slug"
+  status = 301
+  force = true
+
+# ---------- En-têtes de sécurité (toutes les pages) ----------
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# ---------- Cache long pour les assets versionnés ----------
+# Astro génère des noms de fichiers avec empreinte (hash) dans /_astro :
+# ils peuvent être mis en cache indéfiniment.
+[[headers]]
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/lottie/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

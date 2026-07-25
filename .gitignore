@@ -1,3 +1,17 @@
-.DS_Store
+# build output
+dist/
+# generated types
+.astro/
+# dependencies
 node_modules/
+# logs
 *.log
+npm-debug.log*
+# environment variables
+.env
+.env.production
+# macOS
+.DS_Store
+# editors
+.idea/
+.vscode/

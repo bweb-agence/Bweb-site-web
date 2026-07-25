@@ -1,0 +1,127 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Demande de devis — Projet IA & digital | Bweb" description="Décrivez votre projet IA, digital ou de formation : Bweb vous répond avec une proposition claire et personnalisée.">
+<section class="page-hero" style="padding-bottom:0" data-nav-section="Devis">
+  <div class="mesh-bg"></div>
+  <div class="grid-lines"></div>
+  <div class="container">
+    <div class="breadcrumb"><a href="/">Accueil</a>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      <span>Demande de devis</span>
+    </div>
+    <div class="text-white" data-hero-in style="max-width:760px">
+      <div class="eyebrow on-dark">Demande de devis</div>
+      <h1>Décrivez votre projet, on vous répond.</h1>
+      <p class="lead">Plus votre demande est précise, plus notre proposition le sera. Comptez 5 minutes pour la compléter.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" data-nav-section="Le formulaire">
+  <div class="container">
+    <div class="container-narrow">
+      <div class="form-card reveal">
+        <form data-form data-form-title="Nouvelle demande de devis">
+
+          <div style="margin-bottom:28px">
+            <span class="badge">1. Vous &amp; votre entreprise</span>
+          </div>
+          <div class="form-grid">
+            <div class="field"><label>Nom et prénom *</label><input type="text" name="fullname" required></div>
+            <div class="field"><label>Entreprise <span class="opt">(optionnel)</span></label><input type="text" name="company"></div>
+            <div class="field"><label>Secteur d'activité *</label><input type="text" name="sector" required placeholder="Ex : Commerce, Formation, Santé…"></div>
+            <div class="field"><label>Numéro de téléphone / WhatsApp *</label><input type="tel" name="phone" required></div>
+            <div class="field full"><label>Adresse e-mail *</label><input type="email" name="email" required></div>
+          </div>
+
+          <div style="margin:32px 0 28px">
+            <span class="badge badge-orange">2. Votre projet</span>
+          </div>
+          <div class="form-grid">
+            <div class="field full">
+              <label>Type de projet *</label>
+              <div class="field-radio-group">
+                <label><input type="radio" name="project_type" value="site" required><span>Site web</span></label>
+                <label><input type="radio" name="project_type" value="boutique"><span>Boutique en ligne</span></label>
+                <label><input type="radio" name="project_type" value="marketing"><span>Marketing digital</span></label>
+                <label><input type="radio" name="project_type" value="automatisation"><span>Automatisation / IA</span></label>
+                <label><input type="radio" name="project_type" value="formation"><span>Formation</span></label>
+                <label><input type="radio" name="project_type" value="conseil"><span>Conseil / diagnostic</span></label>
+                <label><input type="radio" name="project_type" value="autre"><span>Autre</span></label>
+              </div>
+            </div>
+            <div class="field full"><label>Objectif principal *</label><input type="text" name="objective" required placeholder="Ex : vendre en ligne, gagner en visibilité, automatiser le suivi client…"></div>
+            <div class="field full">
+              <label>Services recherchés <span class="opt">(plusieurs choix possibles)</span></label>
+              <div class="field-radio-group">
+                <label><input type="checkbox" name="services" value="conseil"><span>Conseil &amp; stratégie</span></label>
+                <label><input type="checkbox" name="services" value="site"><span>Création de site web</span></label>
+                <label><input type="checkbox" name="services" value="marketing"><span>Marketing digital</span></label>
+                <label><input type="checkbox" name="services" value="digitalisation"><span>Digitalisation</span></label>
+                <label><input type="checkbox" name="services" value="automatisation"><span>Automatisation &amp; IA</span></label>
+                <label><input type="checkbox" name="services" value="formation"><span>Formation</span></label>
+              </div>
+            </div>
+            <div class="field"><label>Public ciblé *</label><input type="text" name="audience" required placeholder="Ex : particuliers, entreprises, les deux…"></div>
+            <div class="field full"><label>Fonctionnalités nécessaires <span class="opt">(optionnel)</span></label><textarea name="features" placeholder="Ex : paiement en ligne, prise de rendez-vous, espace membre…"></textarea></div>
+          </div>
+
+          <div style="margin:32px 0 28px">
+            <span class="badge badge-green">3. Budget &amp; délai</span>
+          </div>
+          <div class="form-grid">
+            <div class="field"><label>Budget disponible *</label>
+              <select name="budget" required>
+                <option value="">Sélectionner une fourchette</option>
+                <option>Moins de 300 000 FCFA</option>
+                <option>300 000 – 800 000 FCFA</option>
+                <option>800 000 – 2 000 000 FCFA</option>
+                <option>Plus de 2 000 000 FCFA</option>
+                <option>À définir ensemble</option>
+              </select>
+            </div>
+            <div class="field"><label>Délai souhaité *</label>
+              <select name="timeline" required>
+                <option value="">Sélectionner un délai</option>
+                <option>Le plus tôt possible</option>
+                <option>Sous 1 mois</option>
+                <option>1 à 3 mois</option>
+                <option>Plus de 3 mois</option>
+              </select>
+            </div>
+            <div class="field full"><label>Exemples ou références <span class="opt">(optionnel)</span></label><input type="text" name="references" placeholder="Sites, marques ou styles qui vous inspirent"></div>
+          </div>
+
+          <div style="margin:32px 0 28px">
+            <span class="badge badge-yellow">4. Documents</span>
+          </div>
+          <div class="field full" style="margin-bottom:8px">
+            <label>Documents à joindre <span class="opt">(cahier des charges, logo, exemples… — optionnel)</span></label>
+            <label class="file-drop" style="display:block">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+              Cliquez pour ajouter un ou plusieurs fichiers
+              <input type="file" name="documents" multiple style="display:none">
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top:16px">Envoyer ma demande de devis
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
+          </button>
+          <p class="form-status" role="status" aria-live="polite"></p>
+          <p class="form-note">Votre demande s'ouvre dans WhatsApp (numéro Bweb Agence) avec un récapitulatif pré-rempli. Vos informations servent uniquement à traiter votre demande — voir notre <a href="/politique-confidentialite" style="color:var(--c-blue)">politique de confidentialité</a>.</p>
+        </form>
+        <div class="form-success" role="status">
+          <div style="width:64px;height:64px;border-radius:50%;background:#D6F7EF;color:#0B8E70;display:flex;align-items:center;justify-content:center;margin:0 auto 18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:30px;height:30px" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <h3 style="margin-bottom:8px">Votre demande de devis est prête !</h3>
+          <p style="margin-bottom:22px;font-size:.95rem">Elle s'ouvre dans WhatsApp. Si rien ne s'est ouvert, cliquez ci-dessous. Vous pourrez y joindre vos documents directement.</p>
+          <a class="btn btn-whatsapp" href="#" data-wa-fallback target="_blank" rel="noopener">Continuer sur WhatsApp
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:18px;height:18px" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</BaseLayout>

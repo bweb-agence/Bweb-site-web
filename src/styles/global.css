@@ -1,0 +1,10 @@
+/* =========================================================
+   BWEB AGENCE — Point d'entrée du design system
+   Ordre du cascade : tokens -> base -> composants -> utilitaires.
+   Les polices sont chargées dans le <head> du layout (self-host).
+   ========================================================= */
+@import "./tokens.css";
+@import "./base.css";
+@import "./components.css";
+@import "./utilities.css";
+@import "./refinements.css";
