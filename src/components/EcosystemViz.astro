@@ -1,0 +1,102 @@
+---
+/* Visuel « Qui sommes-nous » — le partenaire IA des entreprises.
+   Un hub IA (Bweb) relié aux fonctions clés de l'entreprise. Panneau clair,
+   couleurs de marque, non cosmique. Interactif : au survol d'une fonction,
+   le nœud s'anime, son lien s'allume, un flux de données circule (CSS pur).
+   Figé sous prefers-reduced-motion. */
+const HUB = { x: 240, y: 200 };
+const COLORS: Record<string, string> = {
+  green: "#00C89E", blue: "#3B82F6", teal: "#12A5C0", orange: "#FF835F", yellow: "#E0A400",
+};
+const nodes = [
+  { x: 240, y: 52, label: "Équipes", c: "green", icon: "team" },
+  { x: 402, y: 130, label: "Décisions", c: "blue", icon: "target" },
+  { x: 356, y: 332, label: "Croissance", c: "yellow", icon: "growth" },
+  { x: 124, y: 332, label: "Process", c: "orange", icon: "gear" },
+  { x: 78, y: 130, label: "Données", c: "teal", icon: "data" },
+];
+---
+<div class="ecosystem" aria-hidden="true">
+  <svg viewBox="0 0 480 400">
+    <!-- liens -->
+    {nodes.map((n) => (
+      <g class={`spoke c-${n.c}`}>
+        <line class="wire" x1={HUB.x} y1={HUB.y} x2={n.x} y2={n.y} />
+        <circle class="pulse" r="3.4" style={`offset-path:path('M${HUB.x} ${HUB.y} L${n.x} ${n.y}');`} />
+        <g class="node" transform={`translate(${n.x},${n.y})`}>
+          <g class="node-in">
+            <rect class="chip" x="-62" y="-21" width="124" height="42" rx="13" />
+            <g class="ic" transform="translate(-42,0)">
+              {n.icon === "team" && (<g><circle cx="-4" cy="-3" r="3.4" /><circle cx="5" cy="-2" r="2.8" /><path d="M-11 7c0-4 3.5-6 7-6s7 2 7 6" /><path d="M2 6c.3-2.6 2.4-4 5-4s4.6 1.6 4.8 4" /></g>)}
+              {n.icon === "target" && (<g><circle cx="0" cy="0" r="8" /><circle cx="0" cy="0" r="3.4" /><line x1="0" y1="-11" x2="0" y2="-8" /><line x1="8" y1="0" x2="11" y2="0" /></g>)}
+              {n.icon === "growth" && (<g><polyline points="-9 6 -2 -2 3 3 10 -6" /><polyline points="5 -6 10 -6 10 -1" /></g>)}
+              {n.icon === "gear" && (<g><circle cx="0" cy="0" r="4" /><path d="M0 -9v3 M0 6v3 M-9 0h3 M6 0h3 M-6.4 -6.4l2.1 2.1 M4.3 4.3l2.1 2.1 M6.4 -6.4l-2.1 2.1 M-4.3 4.3l-2.1 2.1" /></g>)}
+              {n.icon === "data" && (<g><ellipse cx="0" cy="-6" rx="8" ry="3" /><path d="M-8 -6v12c0 1.7 3.6 3 8 3s8-1.3 8-3v-12" /><path d="M-8 0c0 1.7 3.6 3 8 3s8-1.3 8-3" /></g>)}
+            </g>
+            <text class="lbl" x="-24" y="5">{n.label}</text>
+          </g>
+        </g>
+      </g>
+    ))}
+
+    <!-- hub central IA -->
+    <g class="hub" transform={`translate(${HUB.x},${HUB.y})`}>
+      <rect class="hub-glow" x="-46" y="-46" width="92" height="92" rx="26" />
+      <rect class="hub-card" x="-38" y="-38" width="76" height="76" rx="22" />
+      <g class="hub-ic">
+        <rect x="-13" y="-13" width="26" height="26" rx="6" />
+        <rect x="-6" y="-6" width="12" height="12" rx="3" />
+        <path d="M0 -19v6 M0 13v6 M-19 0h6 M13 0h6 M-13 -13l4 4 M9 9l4 4 M13 -13l-4 4 M-9 9l-4 4" />
+      </g>
+      <text class="hub-lbl" x="0" y="34">IA</text>
+    </g>
+  </svg>
+</div>
+
+<style>
+  .ecosystem {
+    position: relative; width: 100%; max-width: 480px; margin: 0 auto; aspect-ratio: 480 / 400;
+    border-radius: var(--radius-xl); padding: 8px; box-shadow: var(--shadow-lg);
+    background: radial-gradient(70% 60% at 50% 42%, #ffffff 0%, #eef3ff 70%, #e6edfc 100%);
+    border: 1px solid var(--c-border-soft);
+  }
+  .ecosystem svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+  .wire { stroke: #ccd6ee; stroke-width: 1.6; transition: stroke 0.3s, stroke-width 0.3s; }
+  .pulse { opacity: 0; animation: eco-flow 3s linear infinite; }
+  .spoke:hover .pulse { opacity: 1; animation-duration: 1.4s; }
+  .node { cursor: default; }
+  .node-in { transition: transform 0.3s var(--ease); transform-box: fill-box; }
+  .chip { fill: #fff; stroke: var(--c-border); stroke-width: 1.5; transition: stroke 0.3s, filter 0.3s; }
+  .ic { fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .lbl { font-family: var(--f-display); font-weight: 700; font-size: 14px; fill: var(--c-navy); dominant-baseline: middle; }
+
+  /* couleurs par fonction */
+  .c-green { --k: #00C89E; } .c-blue { --k: #3B82F6; } .c-teal { --k: #12A5C0; }
+  .c-orange { --k: #FF835F; } .c-yellow { --k: #E0A400; }
+  .ic { stroke: var(--k); }
+  .pulse { fill: var(--k); }
+
+  .spoke:hover .wire { stroke: var(--k); stroke-width: 2.4; }
+  .spoke:hover .node-in { transform: scale(1.09); }
+  .spoke:hover .chip { stroke: var(--k); filter: drop-shadow(0 8px 16px rgba(2, 11, 80, 0.16)); }
+
+  /* hub */
+  .hub-glow { fill: rgba(31, 108, 237, 0.25); filter: blur(10px); animation: eco-breathe 5s ease-in-out infinite; }
+  .hub-card { fill: url(#hubgrad); }
+  .hub-ic { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .hub-lbl { font-family: var(--f-display); font-weight: 800; font-size: 13px; fill: #fff; text-anchor: middle; letter-spacing: .08em; }
+
+  @keyframes eco-flow { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+  @keyframes eco-breathe { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.9; } }
+  @media (prefers-reduced-motion: reduce) {
+    .pulse { animation: none; } .hub-glow { animation: none; }
+    .node-in, .wire, .chip { transition: none; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <linearGradient id="hubgrad" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#2E7CF6" /><stop offset="100%" stop-color="#118B9C" />
+  </linearGradient>
+</defs></svg>

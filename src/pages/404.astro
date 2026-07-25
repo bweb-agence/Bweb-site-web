@@ -1,0 +1,19 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Page introuvable — Bweb Agence" description="La page que vous recherchez n'existe pas ou plus." noindex={true}>
+<section class="error-page">
+  <div class="mesh-bg"></div>
+  <div class="grid-lines"></div>
+  <div style="position:relative;z-index:2;max-width:560px">
+    <div class="error-code" data-hero-in>404</div>
+    <h1 class="text-white" style="margin-top:12px" data-hero-in>Cette page n'existe pas (ou plus).</h1>
+    <p class="lead text-white" style="margin:18px auto 36px" data-hero-in>Le lien suivi est peut-être incorrect ou la page a été déplacée. Revenons à l'essentiel.</p>
+    <div class="hero-actions" style="justify-content:center;margin-bottom:0" data-hero-in>
+      <a href="/" class="btn btn-warm">Retourner à l'accueil</a>
+      <a href="/contact" class="btn btn-outline-light">Nous contacter</a>
+    </div>
+  </div>
+</section>
+</BaseLayout>

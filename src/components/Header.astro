@@ -1,0 +1,35 @@
+---
+import { mainNav, navCta } from "../config/site";
+const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
+const isActive = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(href + "/"));
+---
+
+<header class="site-header">
+  <div class="container">
+    <a href="/" class="brand" aria-label="Bweb Agence — accueil"><img src="/images/logo.svg" alt="Bweb Agence" width="154" height="36" /></a>
+    <nav class="main-nav" aria-label="Navigation principale">
+      {mainNav.map((item) => (
+        <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined} class={isActive(item.href) ? "is-active" : undefined}>{item.label}</a>
+      ))}
+    </nav>
+    <div class="nav-cta">
+      {navCta.map((cta) => (
+        <a href={cta.href} class={`btn ${cta.variant} btn-sm`}>{cta.label}</a>
+      ))}
+    </div>
+    <button class="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobile-nav"><span></span></button>
+  </div>
+</header>
+
+<div class="mobile-nav" id="mobile-nav">
+  <nav aria-label="Navigation mobile">
+    {mainNav.map((item) => (
+      <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>{item.label}</a>
+    ))}
+  </nav>
+  <div class="mobile-nav-cta">
+    {navCta.map((cta) => (
+      <a href={cta.href} class={`btn ${cta.variant === "btn-primary" ? "btn-primary" : "btn-outline"} btn-block`}>{cta.label}</a>
+    ))}
+  </div>
+</div>

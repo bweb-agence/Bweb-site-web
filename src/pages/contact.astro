@@ -1,0 +1,123 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { contact, whatsappLink } from "../config/site";
+---
+
+<BaseLayout title="Contact — Parlons de votre projet | Bweb" description="Une question, un projet, un besoin de diagnostic IA ou digital ? Contactez Bweb par téléphone, WhatsApp, e-mail ou via notre formulaire.">
+<section class="page-hero" style="padding-bottom:0" data-nav-section="Contact">
+  <div class="mesh-bg"></div>
+  <div class="grid-lines"></div>
+  <div class="container">
+    <div class="breadcrumb"><a href="/">Accueil</a>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      <span>Contact</span>
+    </div>
+    <div class="text-white" data-hero-in style="max-width:700px">
+      <div class="eyebrow on-dark">Contact</div>
+      <h1>Parlons de votre projet.</h1>
+      <p class="lead">Une question, un projet, un besoin de diagnostic IA ou digital ? Écrivez-nous ou choisissez le canal qui vous convient le mieux.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" data-nav-section="Nous joindre">
+  <div class="container">
+    <div class="split-block" style="align-items:flex-start">
+      <div class="reveal">
+        <div class="eyebrow">Nos coordonnées</div>
+        <h2 style="margin-bottom:28px">Plusieurs façons de nous joindre.</h2>
+
+        <div class="stack gap-16" style="margin-bottom:32px">
+          <div class="audience-pill" style="justify-content:flex-start">
+            <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6.5 3h3l1.5 4-2 1.5a11 11 0 0 0 5.5 5.5l1.5-2 4 1.5v3c0 1-.8 1.8-1.8 1.7C10.5 17.5 6.5 13.5 4.8 6.8 4.7 5.8 5.5 5 6.5 5z"/></svg></div>
+            <a href={`tel:+${contact.whatsapp.primary}`} data-phone-display>{contact.phoneDisplay}</a>
+          </div>
+          <div class="audience-pill" style="justify-content:flex-start">
+            <div class="dot" style="background:#D6F7EF;color:#0B8E70"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z"/></svg></div>
+            <a href={whatsappLink()} data-whatsapp-link target="_blank" rel="noopener">Discuter sur WhatsApp</a>
+          </div>
+          <div class="audience-pill" style="justify-content:flex-start">
+            <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg></div>
+            <a href={`mailto:${contact.email}`} data-email-display>{contact.email}</a>
+          </div>
+          <div class="audience-pill" style="justify-content:flex-start">
+            <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg></div>
+            <span>Abidjan, Côte d'Ivoire <em style="color:var(--c-gray-500);font-style:normal;font-size:.8rem">(adresse à confirmer)</em></span>
+          </div>
+          <div class="audience-pill" style="justify-content:flex-start">
+            <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg></div>
+            <span>Lundi – Vendredi, 8h30 – 18h00</span>
+          </div>
+        </div>
+
+        <div class="footer-social" style="margin-bottom:32px">
+          <a href="#" aria-label="Facebook" style="background:var(--c-gray-100);color:var(--c-navy)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 21v-8h2.7l.4-3.3H14V7.6c0-.9.3-1.6 1.7-1.6H17V3.1C16.6 3 15.6 3 14.5 3 12.1 3 10.4 4.5 10.4 7.2v2.5H8V13h2.4v8"/></svg></a>
+          <a href="#" aria-label="Instagram" style="background:var(--c-gray-100);color:var(--c-navy)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/></svg></a>
+          <a href="#" aria-label="LinkedIn" style="background:var(--c-gray-100);color:var(--c-navy)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="7.5" y1="10" x2="7.5" y2="17"/><path d="M11.5 17v-4.2c0-1.5.9-2.6 2.3-2.6 1.4 0 2.2 1 2.2 2.6V17"/><line x1="11.5" y1="10" x2="11.5" y2="17"/></svg></a>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="aspect-ratio:16/10;background:var(--g-navy);display:flex;align-items:center;justify-content:center;position:relative">
+            <div class="grid-lines"></div>
+            <div style="position:relative;z-index:2;text-align:center;color:#fff">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:34px;height:34px;margin:0 auto 10px;opacity:.8"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg>
+              <span class="badge badge-placeholder">Carte de localisation à intégrer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal" data-delay=".1">
+        <div class="form-card">
+          <h3 style="margin-bottom:6px">Envoyez-nous votre demande</h3>
+          <p style="margin-bottom:26px;font-size:.92rem">Nous revenons vers vous sous peu.</p>
+          <form data-form data-form-title="Nouveau message — Contact">
+            <div class="form-grid">
+              <div class="field"><label for="c-fullname">Nom et prénom *</label><input id="c-fullname" type="text" name="fullname" autocomplete="name" required></div>
+              <div class="field"><label for="c-company">Nom de l'entreprise <span class="opt">(optionnel)</span></label><input id="c-company" type="text" name="company" autocomplete="organization"></div>
+              <div class="field"><label for="c-phone">Numéro de téléphone *</label><input id="c-phone" type="tel" name="phone" autocomplete="tel" required></div>
+              <div class="field"><label for="c-email">Adresse e-mail *</label><input id="c-email" type="email" name="email" autocomplete="email" required></div>
+              <div class="field full"><label for="c-service">Service recherché *</label>
+                <select id="c-service" name="service" required>
+                  <option value="">Sélectionner un service</option>
+                  <option>Conseil &amp; stratégie digitale</option>
+                  <option>Création de site web</option>
+                  <option>Marketing digital</option>
+                  <option>Digitalisation de l'entreprise</option>
+                  <option>Automatisation &amp; IA</option>
+                  <option>Formation professionnelle</option>
+                  <option>Autre / je ne sais pas encore</option>
+                </select>
+              </div>
+              <div class="field"><label for="c-budget">Budget estimatif <span class="opt">(optionnel)</span></label><input id="c-budget" type="text" name="budget" placeholder="Ex : 500 000 FCFA"></div>
+              <div class="field"><label for="c-date">Date souhaitée <span class="opt">(optionnel)</span></label><input id="c-date" type="date" name="date"></div>
+              <div class="field full"><label for="c-message">Description du projet *</label><textarea id="c-message" name="message" required placeholder="Décrivez votre besoin en quelques lignes"></textarea></div>
+              <fieldset class="field full" style="border:0;padding:0;margin:0">
+                <legend class="field" style="font-weight:700;font-size:.86rem;color:var(--c-navy);margin-bottom:8px;padding:0">Moyen de contact préféré</legend>
+                <div class="field-radio-group">
+                  <label><input type="radio" name="prefer" value="WhatsApp" checked><span>WhatsApp</span></label>
+                  <label><input type="radio" name="prefer" value="Téléphone"><span>Téléphone</span></label>
+                  <label><input type="radio" name="prefer" value="E-mail"><span>E-mail</span></label>
+                </div>
+              </fieldset>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Envoyer ma demande
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
+            </button>
+            <p class="form-status" role="status" aria-live="polite"></p>
+            <p class="form-note">Votre demande s'ouvre dans WhatsApp (numéro Bweb Agence) avec un récapitulatif pré-rempli. En envoyant, vous acceptez notre <a href="/politique-confidentialite" style="color:var(--c-blue)">politique de confidentialité</a>.</p>
+          </form>
+          <div class="form-success" role="status">
+            <div style="width:64px;height:64px;border-radius:50%;background:#D6F7EF;color:#0B8E70;display:flex;align-items:center;justify-content:center;margin:0 auto 18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:30px;height:30px" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <h3 style="margin-bottom:8px">Merci, votre demande est prête !</h3>
+            <p style="margin-bottom:22px;font-size:.95rem">Elle s'ouvre dans WhatsApp. Si rien ne s'est ouvert, cliquez ci-dessous.</p>
+            <a class="btn btn-whatsapp" href="#" data-wa-fallback target="_blank" rel="noopener">Continuer sur WhatsApp
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:18px;height:18px" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</BaseLayout>

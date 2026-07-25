@@ -1,0 +1,132 @@
+/* =========================================================
+   BWEB AGENCE — Design Tokens
+   Fondation du design system : couleurs, typo, espace, motion,
+   élévation, rayons, z-index. Toute décision visuelle part d'ici.
+   ========================================================= */
+:root {
+  color-scheme: light;
+
+  /* ---------- Couleurs de marque ---------- */
+  --c-blue: #1f6ced;
+  --c-blue-dark: #154fb3;
+  --c-blue-darker: #0f3d8c;
+  --c-navy: #020b50;
+  --c-navy-soft: #0b1866;
+  --c-cream: #f9efe3;
+  --c-orange: #ff835f;
+  --c-yellow: #ffc72a;
+  --c-green: #00c89e;
+  --c-teal: #118b9c;
+  --c-skyblue: #d4f0f6;
+  --c-white: #ffffff;
+  --c-ink: #0a0e27;
+
+  /* ---------- Neutres (biais navy assumé, contrastes AA vérifiés) ---------- */
+  --c-gray-900: #12163a;
+  --c-gray-800: #232a52;
+  --c-gray-700: #3f4568; /* texte secondaire fort — AA sur blanc */
+  --c-gray-600: #565d80;
+  --c-gray-500: #5c6488; /* corrigé (ancien #6B7190 échouait AA) */
+  --c-gray-400: #8b91ae; /* décoratif / gros texte uniquement */
+  --c-gray-300: #c7cbdb;
+  --c-gray-100: #eef1f8;
+  --c-border: rgba(2, 11, 80, 0.1);
+  --c-border-soft: rgba(2, 11, 80, 0.06);
+
+  /* ---------- Couleurs sémantiques (état) ---------- */
+  --c-success: #0a9c77;
+  --c-success-bg: #dcf5ec;
+  --c-warning: #b98600;
+  --c-warning-bg: #fbf1d6;
+  --c-danger: #d22d2d;
+  --c-danger-bg: #fbe7e7;
+  --c-info: var(--c-blue);
+
+  /* ---------- Alias sémantiques (surface / texte) ---------- */
+  --bg: var(--c-white);
+  --surface: var(--c-white);
+  --surface-2: #f8faff;
+  --text: var(--c-ink);
+  --text-muted: var(--c-gray-600);
+  --border: var(--c-border);
+  --primary: var(--c-blue);
+  --on-primary: #ffffff;
+
+  /* ---------- Gradients ---------- */
+  --g-blue: linear-gradient(135deg, #1f6ced 0%, #118b9c 100%);
+  --g-navy: linear-gradient(160deg, #020b50 0%, #0b1866 55%, #154fb3 130%);
+  --g-warm: linear-gradient(135deg, #ff835f 0%, #ffc72a 100%);
+  --g-mesh: radial-gradient(60% 60% at 20% 20%, rgba(31, 108, 237, 0.35) 0%, rgba(31, 108, 237, 0) 60%),
+    radial-gradient(50% 50% at 85% 15%, rgba(0, 200, 158, 0.3) 0%, rgba(0, 200, 158, 0) 60%),
+    radial-gradient(60% 60% at 75% 90%, rgba(255, 131, 95, 0.25) 0%, rgba(255, 131, 95, 0) 60%);
+
+  /* ---------- Typographie (polices auto-hébergées via Fontsource) ---------- */
+  --f-body: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --f-display: "Sora Variable", "Sora", "Plus Jakarta Sans Variable", system-ui, sans-serif;
+
+  /* Échelle typographique fluide (ratio ~1.2, bornée) */
+  --fs-xs: clamp(0.75rem, 0.73rem + 0.1vw, 0.8rem);
+  --fs-sm: clamp(0.86rem, 0.83rem + 0.15vw, 0.94rem);
+  --fs-base: clamp(1rem, 0.97rem + 0.15vw, 1.06rem);
+  --fs-lg: clamp(1.05rem, 1rem + 0.4vw, 1.3rem);
+  --fs-h4: clamp(1.15rem, 1.05rem + 0.4vw, 1.35rem);
+  --fs-h3: clamp(1.4rem, 1.2rem + 1vw, 1.9rem);
+  --fs-h2: clamp(1.55rem, 1.2rem + 1.7vw, 2.5rem);
+  --fs-h1: clamp(2.05rem, 1.4rem + 2.6vw, 3.6rem);
+
+  /* ---------- Échelle d'espacement ---------- */
+  --space-3xs: 4px;
+  --space-2xs: 8px;
+  --space-xs: 12px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 40px;
+  --space-xl: 64px;
+  --space-2xl: 96px;
+  --space-3xl: 128px;
+  /* Alias conservés (compat Flowkit) */
+  --space-xsmall: 8px;
+  --space-small: 16px;
+  --space-medium: 24px;
+  --space-large: 40px;
+  --space-xlarge: 64px;
+  --space-xxlarge: 96px;
+
+  /* ---------- Rythme & layout ---------- */
+  --container: 1280px;
+  --container-narrow: 860px;
+  --gutter: clamp(20px, 5vw, 40px);
+  --header-h: 84px; /* pour scroll-margin des ancres */
+
+  /* ---------- Rayons ---------- */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-pill: 999px;
+
+  /* ---------- Élévation (système à 4 niveaux) ---------- */
+  --shadow-sm: 0 2px 10px rgba(2, 11, 80, 0.06);
+  --shadow-md: 0 12px 30px -8px rgba(2, 11, 80, 0.16);
+  --shadow-lg: 0 24px 60px -16px rgba(2, 11, 80, 0.28);
+  --shadow-xl: 0 40px 80px -20px rgba(2, 11, 80, 0.34);
+
+  /* ---------- Motion (durées & courbes centralisées) ---------- */
+  --dur-fast: 0.2s;
+  --dur: 0.35s;
+  --dur-slow: 0.6s;
+  --dur-slower: 0.9s;
+  --ease: cubic-bezier(0.16, 0.84, 0.44, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ---------- Z-index (échelle nommée) ---------- */
+  --z-decor: 0;
+  --z-base: 1;
+  --z-nav-side: 800;
+  --z-float: 900;
+  --z-header: 1000;
+  --z-mobile-nav: 1050;
+  --z-skip: 1100;
+}

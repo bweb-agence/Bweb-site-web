@@ -1,0 +1,88 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import EcosystemViz from "../components/EcosystemViz.astro";
+---
+
+<BaseLayout title="Création de sites web pour entreprises | Bweb" description="Sites vitrines, boutiques et plateformes de formation : Bweb crée des sites rapides, optimisés mobile et pensés pour vos résultats.">
+<section class="page-hero" data-nav-section="Création de sites">
+  <div class="mesh-bg"></div>
+  <div class="grid-lines"></div>
+  <div class="container">
+    <div class="breadcrumb"><a href="/">Accueil</a>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      <a href="/services">Services</a>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      <span>Création de sites web</span>
+    </div>
+    <div class="page-hero-grid">
+      <div class="text-white" data-hero-in>
+        <div class="eyebrow on-dark">Sites web & plateformes</div>
+        <h1>Des sites qui servent vos résultats.</h1>
+        <p class="lead">Vitrines, boutiques en ligne ou plateformes de formation : nous concevons des sites rapides, optimisés mobile et pensés pour convertir vos visiteurs en clients.</p>
+        <div class="hero-actions" style="margin-top:32px;margin-bottom:0">
+          <a href="/devis" class="btn btn-warm">Demander un devis pour mon site</a>
+          <a href="/services" class="btn btn-outline-light">Tous nos services</a>
+        </div>
+      </div>
+      <div class="visual" data-hero-in>
+        <EcosystemViz />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" data-nav-section="Notre approche">
+  <div class="container">
+    <div class="split-block">
+      <div class="reveal">
+        <div class="eyebrow">Ce que comprend ce service</div>
+        <h2>Un site pensé pour votre activité, pas un simple gabarit.</h2>
+        <p class="lead" style="margin:20px 0">Vitrine professionnelle, boutique en ligne ou plateforme de formation : chaque site est conçu autour de vos objectifs, optimisé pour le mobile et prêt pour le référencement naturel.</p>
+      </div>
+      <div class="card reveal" data-delay=".1">
+        <ul class="tick-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Site vitrine</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Site institutionnel</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Landing page</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Boutique en ligne</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Plateforme de formation</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Maintenance &amp; hébergement</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Optimisation mobile</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Référencement naturel (SEO)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-gray" data-nav-section="Autres services">
+  <div class="container">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center">Explorez aussi</div>
+      <h2>Nos autres services</h2>
+    </div>
+    <div class="grid grid-3" data-stagger>
+      <a class="card service-card" href="/services-conseil-strategie"><h4>Conseil &amp; stratégie digitale</h4><p style="margin-top:8px">Diagnostic et plan d'action personnalisé.</p></a>
+      <a class="card service-card" href="/services-marketing-digital"><h4>Marketing digital</h4><p style="margin-top:8px">Réseaux sociaux, contenu et publicité.</p></a>
+      <a class="card service-card" href="/services-digitalisation"><h4>Digitalisation des entreprises</h4><p style="margin-top:8px">CRM, outils métiers et process numériques.</p></a>
+    </div>
+  </div>
+</section>
+
+<section class="section" data-nav-section="Contact">
+  <div class="container">
+    <div class="cta-band reveal-scale">
+      <div class="mesh-bg"></div>
+      <div class="grid-lines"></div>
+      <div style="position:relative;z-index:2">
+        <h2 class="text-white">Un projet de site web en tête ?</h2>
+        <p class="lead text-white">Décrivez-nous votre projet, nous revenons vers vous avec une proposition claire.</p>
+        <div class="hero-actions">
+          <a href="/devis" class="btn btn-warm">Demander un devis pour mon site</a>
+          <a href="#" class="btn btn-outline-light" data-whatsapp-link>Discuter sur WhatsApp</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</BaseLayout>
