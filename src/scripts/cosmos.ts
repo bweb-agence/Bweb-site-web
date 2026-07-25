@@ -159,4 +159,14 @@ function setup(root: HTMLElement): void {
   build();
   let tid: ReturnType<typeof setTimeout>;
   window.addEventListener("resize", () => { clearTimeout(tid); tid = setTimeout(build, 250); });
+
+  // Fond WebGL « waouh » (OGL) — chargé dynamiquement, une seule fois,
+  // et uniquement si l'utilisateur ne réduit pas les animations.
+  const canvas = root.querySelector<HTMLCanvasElement>("[data-webgl]");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (canvas && !reduce) {
+    import("./webgl-cosmos")
+      .then((m) => { try { m.initWebGLCosmos(canvas); } catch { /* repli : la scène SVG suffit */ } })
+      .catch(() => { /* OGL indisponible -> repli SVG */ });
+  }
 }

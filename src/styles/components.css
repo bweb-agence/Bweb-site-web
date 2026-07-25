@@ -557,3 +557,68 @@ mark { background: none; color: var(--c-blue); position: relative; }
   /* le bloc CTA portait le margin-left:auto — on le transfère au burger */
   .nav-toggle { margin-left: auto; }
 }
+
+/* =========================================================
+   Assistant multi-étapes — page Contact (voir src/scripts/wizard.ts)
+   -----------------------------------------------------------
+   Progressive enhancement : sans JS, .wizard-step reste visible
+   et toutes les questions s'affichent à la suite. La segmentation
+   ne s'applique que lorsque le JS ajoute .wizard-on sur le <form>.
+   Uniquement des tokens du design system (couleurs, rayons, motion).
+   ========================================================= */
+.wizard-q { font-family: var(--f-display); font-weight: 700; font-size: var(--fs-h3); line-height: 1.15; color: var(--c-navy); margin: 0 0 8px; }
+.wizard-help { font-size: var(--fs-sm); color: var(--c-gray-600); margin: 0 0 24px; max-width: 46ch; }
+
+/* Segmentation : active uniquement quand le JS a démarré */
+.wizard-on .wizard-step { display: none; }
+.wizard-on .wizard-step.is-active { display: block; }
+
+/* En-tête : barre de progression + compteur d'étape */
+.wizard-head { margin-bottom: 28px; }
+.wizard-progress { height: 8px; border-radius: var(--radius-pill); background: var(--c-gray-100); overflow: hidden; }
+.wizard-progress__bar { display: block; height: 100%; width: 20%; border-radius: inherit; background: var(--g-blue); transition: width var(--dur) var(--ease); }
+.wizard-count { margin: 12px 0 0; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--c-gray-600); }
+
+/* Barre de navigation Précédent / Suivant / Envoyer */
+.wizard-nav { display: flex; align-items: center; gap: 12px; margin-top: 28px; }
+.wizard-nav .wizard-prev { margin-right: auto; }
+.wizard-nav .wizard-next,
+.wizard-nav .wizard-submit { width: auto; }
+.wizard-nav .btn[hidden] { display: none; }
+.wizard-nav .btn span { display: inline; }
+
+/* Message d'erreur par étape (annoncé via role="alert") */
+.wizard-error { margin: 16px 0 0; font-size: var(--fs-sm); font-weight: 600; color: var(--c-danger); display: none; }
+.wizard-error.is-visible { display: block; }
+
+/* Grandes options cliquables (choix du service) */
+.wizard-fieldset { border: 0; padding: 0; margin: 0; }
+.wizard-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; counter-reset: wc; }
+.wizard-card { position: relative; display: flex; align-items: center; gap: 14px; padding: 18px 52px 18px 18px; border: 1.5px solid var(--c-border); border-radius: var(--radius-md); background: #fff; cursor: pointer; counter-increment: wc; transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease); }
+.wizard-card input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.wizard-card__text { font-weight: 600; font-size: .95rem; color: var(--c-navy); line-height: 1.25; }
+/* Badge lettre (A, B, C…) — généré en CSS pour ne pas polluer le récap WhatsApp */
+.wizard-card::before { content: counter(wc, upper-alpha); flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--c-gray-100); color: var(--c-gray-700); font-weight: 800; font-size: .8rem; transition: background-color var(--dur-fast), color var(--dur-fast); }
+/* Puce de sélection (cercle -> coché) */
+.wizard-card::after { content: ""; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--c-gray-300); background-position: center; background-repeat: no-repeat; background-size: 13px; transition: border-color var(--dur-fast), background-color var(--dur-fast); }
+.wizard-card:hover { border-color: var(--c-blue); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.wizard-card:has(input:focus-visible) { outline: 3px solid rgba(31, 108, 237, .4); outline-offset: 2px; }
+.wizard-card:has(input:checked) { border-color: var(--c-blue); background: var(--c-skyblue); box-shadow: 0 0 0 1px var(--c-blue) inset; }
+.wizard-card:has(input:checked)::before { background: var(--c-blue); color: #fff; }
+.wizard-card:has(input:checked)::after { border-color: var(--c-blue); background-color: var(--c-blue); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E"); }
+.wizard-card:has(input:checked) .wizard-card__text { color: var(--c-blue-darker); }
+/* État invalide du groupe (aucune option choisie) */
+.wizard-fieldset.is-invalid .wizard-card { border-color: var(--c-danger); }
+
+/* Transition d'entrée entre étapes (désactivée si mouvement réduit) */
+@keyframes wizIn { from { opacity: 0; transform: translateX(var(--wiz-from, 24px)); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .wizard-on .wizard-step.is-active.is-anim { animation: wizIn var(--dur) var(--ease-out) both; }
+}
+
+@media (max-width: 600px) {
+  .wizard-cards { grid-template-columns: 1fr; }
+  .wizard-nav { flex-wrap: wrap; gap: 10px; }
+  .wizard-nav .btn { flex: 1 1 auto; justify-content: center; }
+  .wizard-nav .wizard-prev { margin-right: 0; }
+}

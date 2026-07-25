@@ -82,27 +82,63 @@ const socials = [
         <div class="form-card">
           <h3 style="margin-bottom:6px">Envoyez-nous votre demande</h3>
           <p style="margin-bottom:26px;font-size:.92rem">Nous revenons vers vous sous peu.</p>
-          <form data-form data-form-title="Nouveau message — Contact">
-            <div class="form-grid">
-              <div class="field"><label for="c-fullname">Nom et prénom *</label><input id="c-fullname" type="text" name="fullname" autocomplete="name" required></div>
-              <div class="field"><label for="c-company">Nom de l'entreprise <span class="opt">(optionnel)</span></label><input id="c-company" type="text" name="company" autocomplete="organization"></div>
-              <div class="field"><label for="c-phone">Numéro de téléphone *</label><input id="c-phone" type="tel" name="phone" autocomplete="tel" required></div>
-              <div class="field"><label for="c-email">Adresse e-mail *</label><input id="c-email" type="email" name="email" autocomplete="email" required></div>
-              <div class="field full"><label for="c-service">Service recherché *</label>
-                <select id="c-service" name="service" required>
-                  <option value="">Sélectionner un service</option>
-                  <option>Conseil &amp; stratégie digitale</option>
-                  <option>Création de site web</option>
-                  <option>Marketing digital</option>
-                  <option>Digitalisation de l'entreprise</option>
-                  <option>Automatisation &amp; IA</option>
-                  <option>Formation professionnelle</option>
-                  <option>Autre / je ne sais pas encore</option>
-                </select>
+          <!-- Formulaire : segmenté en assistant multi-étapes par src/scripts/wizard.ts.
+               Sans JS, toutes les étapes restent visibles et le formulaire fonctionne
+               normalement (la soumission est prise en charge par src/scripts/forms.ts). -->
+          <form data-form data-wizard data-form-title="Nouveau message — Contact">
+            <!-- Étape 1 — Identité -->
+            <div class="wizard-step" data-wizard-step data-step-title="Identité">
+              <p class="wizard-q">Comment vous appelez-vous&nbsp;?</p>
+              <p class="wizard-help">Faisons connaissance — ces informations nous aident à personnaliser notre réponse.</p>
+              <div class="form-grid">
+                <div class="field full"><label for="c-fullname">Nom et prénom *</label><input id="c-fullname" type="text" name="fullname" autocomplete="name" required></div>
+                <div class="field full"><label for="c-company">Nom de l'entreprise <span class="opt">(optionnel)</span></label><input id="c-company" type="text" name="company" autocomplete="organization"></div>
               </div>
-              <div class="field"><label for="c-budget">Budget estimatif <span class="opt">(optionnel)</span></label><input id="c-budget" type="text" name="budget" placeholder="Ex : 500 000 FCFA"></div>
-              <div class="field"><label for="c-date">Date souhaitée <span class="opt">(optionnel)</span></label><input id="c-date" type="date" name="date"></div>
-              <div class="field full"><label for="c-message">Description du projet *</label><textarea id="c-message" name="message" required placeholder="Décrivez votre besoin en quelques lignes"></textarea></div>
+            </div>
+
+            <!-- Étape 2 — Coordonnées -->
+            <div class="wizard-step" data-wizard-step data-step-title="Coordonnées">
+              <p class="wizard-q">Comment pouvons-nous vous joindre&nbsp;?</p>
+              <p class="wizard-help">Nous vous répondrons sur le canal qui vous convient.</p>
+              <div class="form-grid">
+                <div class="field"><label for="c-phone">Numéro de téléphone *</label><input id="c-phone" type="tel" name="phone" autocomplete="tel" required></div>
+                <div class="field"><label for="c-email">Adresse e-mail *</label><input id="c-email" type="email" name="email" autocomplete="email" required></div>
+              </div>
+            </div>
+
+            <!-- Étape 3 — Service (grandes options cliquables) -->
+            <div class="wizard-step" data-wizard-step data-step-title="Service" data-wizard-auto>
+              <p class="wizard-q">Quel service vous intéresse&nbsp;?</p>
+              <p class="wizard-help">Choisissez l'option la plus proche de votre besoin.</p>
+              <fieldset class="field full wizard-fieldset">
+                <legend class="sr-only">Service recherché</legend>
+                <div class="wizard-cards">
+                  <label class="wizard-card"><input type="radio" name="service" value="Conseil &amp; stratégie digitale" required><span class="wizard-card__text">Conseil &amp; stratégie digitale</span></label>
+                  <label class="wizard-card"><input type="radio" name="service" value="Création de site web"><span class="wizard-card__text">Création de site web</span></label>
+                  <label class="wizard-card"><input type="radio" name="service" value="Marketing digital"><span class="wizard-card__text">Marketing digital</span></label>
+                  <label class="wizard-card"><input type="radio" name="service" value="Digitalisation de l'entreprise"><span class="wizard-card__text">Digitalisation de l'entreprise</span></label>
+                  <label class="wizard-card"><input type="radio" name="service" value="Automatisation &amp; IA"><span class="wizard-card__text">Automatisation &amp; IA</span></label>
+                  <label class="wizard-card"><input type="radio" name="service" value="Formation professionnelle"><span class="wizard-card__text">Formation professionnelle</span></label>
+                  <label class="wizard-card"><input type="radio" name="service" value="Autre / je ne sais pas encore"><span class="wizard-card__text">Autre / je ne sais pas encore</span></label>
+                </div>
+              </fieldset>
+            </div>
+
+            <!-- Étape 4 — Projet -->
+            <div class="wizard-step" data-wizard-step data-step-title="Projet">
+              <p class="wizard-q">Parlez-nous de votre projet.</p>
+              <p class="wizard-help">Quelques lignes suffisent pour bien démarrer l'échange.</p>
+              <div class="form-grid">
+                <div class="field full"><label for="c-message">Description du projet *</label><textarea id="c-message" name="message" required placeholder="Décrivez votre besoin en quelques lignes"></textarea></div>
+                <div class="field"><label for="c-budget">Budget estimatif <span class="opt">(optionnel)</span></label><input id="c-budget" type="text" name="budget" placeholder="Ex : 500 000 FCFA"></div>
+                <div class="field"><label for="c-date">Date souhaitée <span class="opt">(optionnel)</span></label><input id="c-date" type="date" name="date"></div>
+              </div>
+            </div>
+
+            <!-- Étape 5 — Contact préféré + envoi -->
+            <div class="wizard-step" data-wizard-step data-step-title="Contact préféré">
+              <p class="wizard-q">Comment préférez-vous être recontacté&nbsp;?</p>
+              <p class="wizard-help">Dernière étape — choisissez votre canal, puis envoyez votre demande.</p>
               <fieldset class="field full" style="border:0;padding:0;margin:0">
                 <legend class="field" style="font-weight:700;font-size:.86rem;color:var(--c-navy);margin-bottom:8px;padding:0">Moyen de contact préféré</legend>
                 <div class="field-radio-group">
@@ -112,7 +148,8 @@ const socials = [
                 </div>
               </fieldset>
             </div>
-            <button type="submit" class="btn btn-primary btn-block">Envoyer ma demande
+
+            <button type="submit" class="btn btn-primary btn-block wizard-submit">Envoyer ma demande
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
             </button>
             <p class="form-status" role="status" aria-live="polite"></p>

@@ -5,6 +5,7 @@
 import { contact, whatsappLink } from "../config/site";
 import { setYear, initHeaderScroll, initMobileNav, initSectionNav, initAccordion, initFilters } from "./ui";
 import { initForms } from "./forms";
+import { initWizard } from "./wizard";
 import { initLottie } from "./lottie";
 import { initCosmos } from "./cosmos";
 import { initMotion } from "./motion";
@@ -49,6 +50,7 @@ function boot(): void {
   initAccordion();
   initFilters();
   initForms();
+  initWizard();
   initLottie();
   initCosmos();
   initMotion();

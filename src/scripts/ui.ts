@@ -38,6 +38,7 @@ export function initMobileNav(): void {
     toggle.setAttribute("aria-expanded", String(isOpen));
   });
   mobileNav.querySelectorAll("a").forEach((a) => a.addEventListener("click", close));
+  mobileNav.querySelector(".mobile-nav__close")?.addEventListener("click", close);
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && mobileNav.classList.contains("is-open")) close();
   });
