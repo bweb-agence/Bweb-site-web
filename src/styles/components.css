@@ -169,10 +169,6 @@ mark { background: none; color: var(--c-blue); position: relative; }
 .service-card .card-link { font-weight: 700; font-size: .9rem; color: var(--c-blue); display: inline-flex; align-items: center; gap: 6px; }
 .service-card .card-link svg { width: 15px; height: 15px; transition: transform var(--dur-fast) var(--ease); }
 .service-card:hover .card-link svg { transform: translateX(4px); }
-.service-card.dark { background: var(--g-navy); border-color: transparent; }
-.service-card.dark h3, .service-card.dark p { color: #fff; }
-.service-card.dark p { color: rgba(255,255,255,.7); }
-.service-card.dark .icon-tile { background: rgba(255,255,255,.1); color: var(--c-yellow); }
 
 .value-card { padding: 28px 24px; text-align: left; }
 .value-card .num { font-family: var(--f-display); font-size: .85rem; color: var(--c-blue); font-weight: 700; margin-bottom: 10px; }
