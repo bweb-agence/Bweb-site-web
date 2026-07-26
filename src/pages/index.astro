@@ -2,6 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import CosmicHero from "../components/CosmicHero.astro";
 import EcosystemViz from "../components/EcosystemViz.astro";
+import IllusDifference from "../components/illus/IllusDifference.astro";
 ---
 
 <BaseLayout title="Bweb — Conseil, formation & accompagnement en IA et nouvelles technologies" description="Cabinet de conseil et de formation, Bweb aide dirigeants et équipes en Afrique à comprendre, maîtriser et exploiter l'intelligence artificielle et les outils numériques.">
@@ -195,15 +196,7 @@ import EcosystemViz from "../components/EcosystemViz.astro";
   <div class="container">
     <div class="split-block">
       <div class="visual reveal">
-        <div class="mockup-frame">
-          <div class="dots"><span></span><span></span><span></span></div>
-          <div class="mockup-screen">
-            <div class="bar w-40"></div>
-            <div class="graph"></div>
-            <div class="bar w-60"></div>
-            <div class="bar w-80"></div>
-          </div>
-        </div>
+        <IllusDifference />
       </div>
       <div class="reveal" data-delay=".1">
         <div class="eyebrow">Notre différence</div>
