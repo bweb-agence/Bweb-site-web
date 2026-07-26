@@ -339,6 +339,14 @@ html.wiz-lock .wa-float { opacity: 0; pointer-events: none; }
 .wiz-foot .form-status { max-width: 620px; margin-inline: auto; }
 .wiz-foot .form-note { max-width: 620px; margin: 12px auto 0; }
 
+/* Desktop : la navigation suit directement les champs (bloc centré),
+   au lieu d'être épinglée loin en bas. Sur mobile on garde l'épinglage. */
+@media (min-width: 769px) {
+  .wiz-modal form[data-wizard] { justify-content: safe center; overflow-y: auto; }
+  .wiz-scroll { flex: 0 0 auto; overflow: visible; padding-bottom: 8px; }
+  .wiz-foot { border-top: none; background: transparent; backdrop-filter: none; padding-top: 6px; }
+}
+
 /* Succès affiché dans la modale */
 .wiz-modal__panel .form-success { margin: auto; max-width: 480px; padding: clamp(24px, 5vw, 48px); text-align: center; }
 .wiz-modal:has(.form-success.is-visible) .wiz-progress,
