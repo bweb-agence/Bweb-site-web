@@ -68,6 +68,7 @@
 }
 /* Tout le contenu passe en clair au survol */
 .service-card:hover h3,
+.service-card:hover h4,
 .service-card:hover .card-link { color: #fff; }
 .service-card:hover p { color: rgba(255,255,255,.72); }
 .service-card:hover ul li { color: rgba(255,255,255,.82); }
