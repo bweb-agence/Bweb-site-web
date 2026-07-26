@@ -171,6 +171,14 @@ function attachToolbar(editor: Editor, toolbar: HTMLElement, pickImage: () => vo
     btn.addEventListener("click", (e) => { e.preventDefault(); run[btn.dataset.cmd!]?.(); });
   });
 
+  // Sélecteur de style de bloc (Paragraphe / Titre 2 / Titre 3)
+  const styleSel = toolbar.querySelector<HTMLSelectElement>("[data-style]");
+  styleSel?.addEventListener("change", () => {
+    const v = styleSel.value;
+    if (v === "paragraph") editor.chain().focus().setNode("paragraph").run();
+    else editor.chain().focus().setNode("heading", { level: Number(v) }).run();
+  });
+
   const marks = ["bold", "italic", "underline", "strike", "code", "blockquote", "callout",
     "bulletList", "orderedList", "codeBlock", "link"];
   const sync = () => {
@@ -178,10 +186,13 @@ function attachToolbar(editor: Editor, toolbar: HTMLElement, pickImage: () => vo
       const b = toolbar.querySelector<HTMLElement>(`[data-cmd="${name}"]`);
       if (b) b.classList.toggle("on", editor.isActive(name));
     });
+    const h2on = editor.isActive("heading", { level: 2 });
+    const h3on = editor.isActive("heading", { level: 3 });
     const h2 = toolbar.querySelector<HTMLElement>('[data-cmd="h2"]');
     const h3 = toolbar.querySelector<HTMLElement>('[data-cmd="h3"]');
-    if (h2) h2.classList.toggle("on", editor.isActive("heading", { level: 2 }));
-    if (h3) h3.classList.toggle("on", editor.isActive("heading", { level: 3 }));
+    if (h2) h2.classList.toggle("on", h2on);
+    if (h3) h3.classList.toggle("on", h3on);
+    if (styleSel) styleSel.value = h2on ? "2" : h3on ? "3" : "paragraph";
     // Contrôles de tableau : visibles seulement quand le curseur est dans un tableau.
     const inTable = editor.isActive("table");
     toolbar.querySelectorAll<HTMLElement>("[data-table-only]").forEach((el) => { el.hidden = !inTable; });

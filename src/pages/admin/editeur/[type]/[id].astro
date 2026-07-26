@@ -7,9 +7,9 @@ const TYPES = ["article", "formation", "session"] as const;
 if (!TYPES.includes(type as any)) return Astro.redirect("/admin");
 
 const cfg = {
-  article:   { label: "Article",   plural: "Articles",   back: "/admin/articles",   base: "/blog/" },
-  formation: { label: "Formation", plural: "Formations", back: "/admin/formations", base: "/formations/" },
-  session:   { label: "Session",   plural: "Sessions",   back: "/admin/sessions",   base: "/formations/session/" },
+  article:   { label: "Article",   plural: "Articles",   back: "/admin/articles",   base: "/blog/",                 titleLabel: "Titre de l'article" },
+  formation: { label: "Formation", plural: "Formations", back: "/admin/formations", base: "/formations/",           titleLabel: "Titre de la formation" },
+  session:   { label: "Session",   plural: "Sessions",   back: "/admin/sessions",   base: "/formations/session/",   titleLabel: "Titre de la session" },
 }[type as "article" | "formation" | "session"];
 
 const isNew = id === "nouveau";
@@ -34,6 +34,12 @@ const isNew = id === "nouveau";
       <!-- ============ Zone d'édition ============ -->
       <main class="ed-main">
         <div class="ed-toolbar" id="ed-toolbar" role="toolbar" aria-label="Mise en forme">
+          <select class="ed-style" data-style aria-label="Style de bloc" title="Style de bloc">
+            <option value="paragraph">Paragraphe</option>
+            <option value="2">Titre 2</option>
+            <option value="3">Titre 3</option>
+          </select>
+          <span class="ed-sep"></span>
           <button class="ed-tb" data-cmd="bold" title="Gras (Ctrl+B)"><b>B</b></button>
           <button class="ed-tb" data-cmd="italic" title="Italique (Ctrl+I)"><i>I</i></button>
           <button class="ed-tb" data-cmd="underline" title="Souligné (Ctrl+U)"><u>U</u></button>
@@ -66,9 +72,11 @@ const isNew = id === "nouveau";
 
         <div class="ed-canvas-wrap">
           <div class="ed-canvas">
+            <label class="ed-title-eyebrow" for="ed-title">{cfg.titleLabel}</label>
             <textarea class="ed-doc-title" id="ed-title" rows="1"
-              placeholder={type === "article" ? "Titre de l'article…" : type === "formation" ? "Nom de la formation…" : "Titre de la session…"}></textarea>
+              placeholder={type === "article" ? "Écrivez ici le titre de l'article…" : type === "formation" ? "Écrivez ici le nom de la formation…" : "Écrivez ici le titre de la session…"}></textarea>
             <div class="ed-doc-meta" id="ed-doc-meta"></div>
+            <div class="ed-body-label">Contenu</div>
             <div id="ed-editor" class="ed-mount"></div>
           </div>
         </div>
