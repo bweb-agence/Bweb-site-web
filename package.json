@@ -3,6 +3,9 @@
   "type": "module",
   "version": "1.0.0",
   "description": "Site vitrine Bweb Agence — Astro + GSAP/ScrollTrigger + Lenis + Lottie",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
