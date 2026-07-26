@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import PhoneField from "../components/PhoneField.astro";
 ---
 
 <BaseLayout title="Demande de devis — Projet IA & digital | Bweb" description="Décrivez votre projet IA, digital ou de formation : Bweb vous répond avec une proposition claire et personnalisée.">
@@ -28,111 +29,110 @@ import BaseLayout from "../layouts/BaseLayout.astro";
              normalement (soumission gérée par src/scripts/forms.ts). -->
         <form data-form data-wizard data-wizard-cta="Démarrer ma demande" data-form-title="Nouvelle demande de devis">
 
-          <!-- Étape 1 — Vous & votre entreprise -->
-          <div class="wizard-step" data-wizard-step data-step-title="Vous &amp; votre entreprise">
-            <p class="wizard-q">Parlez-nous de vous.</p>
-            <p class="wizard-help">Ces informations nous permettent de revenir vers vous avec une proposition personnalisée.</p>
-            <div class="form-grid">
-              <div class="field"><label for="d-fullname">Nom et prénom *</label><input id="d-fullname" type="text" name="fullname" autocomplete="name" required></div>
-              <div class="field"><label for="d-company">Entreprise <span class="opt">(optionnel)</span></label><input id="d-company" type="text" name="company" autocomplete="organization"></div>
-              <div class="field"><label for="d-sector">Secteur d'activité *</label><input id="d-sector" type="text" name="sector" required placeholder="Ex : Commerce, Formation, Santé…"></div>
-              <div class="field"><label for="d-phone">Téléphone / WhatsApp *</label><input id="d-phone" type="tel" name="phone" autocomplete="tel" required></div>
-              <div class="field full"><label for="d-email">Adresse e-mail *</label><input id="d-email" type="email" name="email" autocomplete="email" required></div>
-            </div>
-          </div>
-
-          <!-- Étape 2 — Type de projet (cartes cliquables, auto-avance) -->
-          <div class="wizard-step" data-wizard-step data-step-title="Type de projet" data-wizard-auto>
-            <p class="wizard-q">Quel type de projet&nbsp;?</p>
-            <p class="wizard-help">Choisissez l'option la plus proche — on affinera ensemble.</p>
+          <!-- Étape 1 — Le besoin (une question simple pour démarrer) -->
+          <div class="wizard-step" data-wizard-step data-step-title="Votre besoin" data-wizard-auto>
+            <p class="wizard-q">Bonjour&nbsp;! Sur quoi peut-on vous aider&nbsp;?</p>
+            <p class="wizard-help">Choisissez ce qui se rapproche le plus — on affinera ensemble.</p>
             <fieldset class="field full wizard-fieldset">
-              <legend class="sr-only">Type de projet</legend>
+              <legend class="sr-only">Votre besoin</legend>
               <div class="wizard-cards">
-                <label class="wizard-card"><input type="radio" name="project_type" value="Site web" required><span class="wizard-card__text">Site web</span></label>
-                <label class="wizard-card"><input type="radio" name="project_type" value="Boutique en ligne"><span class="wizard-card__text">Boutique en ligne</span></label>
-                <label class="wizard-card"><input type="radio" name="project_type" value="Marketing digital"><span class="wizard-card__text">Marketing digital</span></label>
-                <label class="wizard-card"><input type="radio" name="project_type" value="Automatisation / IA"><span class="wizard-card__text">Automatisation / IA</span></label>
-                <label class="wizard-card"><input type="radio" name="project_type" value="Formation"><span class="wizard-card__text">Formation</span></label>
-                <label class="wizard-card"><input type="radio" name="project_type" value="Conseil / diagnostic"><span class="wizard-card__text">Conseil / diagnostic</span></label>
-                <label class="wizard-card"><input type="radio" name="project_type" value="Autre"><span class="wizard-card__text">Autre</span></label>
+                <label class="wizard-card"><input type="radio" name="project_type" value="Site web" required><span class="wizard-card__text">Créer un site web</span></label>
+                <label class="wizard-card"><input type="radio" name="project_type" value="Boutique en ligne"><span class="wizard-card__text">Vendre en ligne (boutique)</span></label>
+                <label class="wizard-card"><input type="radio" name="project_type" value="Marketing digital"><span class="wizard-card__text">Gagner en visibilité</span></label>
+                <label class="wizard-card"><input type="radio" name="project_type" value="Automatisation / IA"><span class="wizard-card__text">Automatiser avec l'IA</span></label>
+                <label class="wizard-card"><input type="radio" name="project_type" value="Formation"><span class="wizard-card__text">Former mon équipe</span></label>
+                <label class="wizard-card"><input type="radio" name="project_type" value="Conseil / diagnostic"><span class="wizard-card__text">Être conseillé·e</span></label>
+                <label class="wizard-card"><input type="radio" name="project_type" value="Autre"><span class="wizard-card__text">Autre chose</span></label>
               </div>
             </fieldset>
           </div>
 
-          <!-- Étape 3 — Votre projet -->
-          <div class="wizard-step" data-wizard-step data-step-title="Votre projet">
-            <p class="wizard-q">Décrivez votre projet.</p>
-            <p class="wizard-help">L'essentiel de votre besoin — quelques mots suffisent.</p>
+          <!-- Étape 2 — L'objectif -->
+          <div class="wizard-step" data-wizard-step data-step-title="Votre objectif">
+            <p class="wizard-q">Super&nbsp;! Quel résultat aimeriez-vous obtenir&nbsp;?</p>
+            <p class="wizard-help">Dites-le avec vos mots — pas besoin de jargon.</p>
             <div class="form-grid">
-              <div class="field full"><label for="d-objective">Objectif principal *</label><input id="d-objective" type="text" name="objective" required placeholder="Ex : vendre en ligne, gagner en visibilité, automatiser le suivi client…"></div>
-              <div class="field full">
-                <label>Services recherchés <span class="opt">(plusieurs choix possibles)</span></label>
-                <div class="field-radio-group">
-                  <label><input type="checkbox" name="services" value="conseil"><span>Conseil &amp; stratégie</span></label>
-                  <label><input type="checkbox" name="services" value="site"><span>Création de site web</span></label>
-                  <label><input type="checkbox" name="services" value="marketing"><span>Marketing digital</span></label>
-                  <label><input type="checkbox" name="services" value="digitalisation"><span>Digitalisation</span></label>
-                  <label><input type="checkbox" name="services" value="automatisation"><span>Automatisation &amp; IA</span></label>
-                  <label><input type="checkbox" name="services" value="formation"><span>Formation</span></label>
-                </div>
-              </div>
-              <div class="field"><label for="d-audience">Public ciblé *</label><input id="d-audience" type="text" name="audience" required placeholder="Ex : particuliers, entreprises, les deux…"></div>
-              <div class="field full"><label for="d-features">Fonctionnalités nécessaires <span class="opt">(optionnel)</span></label><textarea id="d-features" name="features" placeholder="Ex : paiement en ligne, prise de rendez-vous, espace membre…"></textarea></div>
+              <div class="field full"><label for="d-objective">Votre objectif principal *</label><input id="d-objective" type="text" name="objective" required placeholder="Ex : vendre en ligne, gagner du temps, être plus visible…"></div>
+              <div class="field full"><label for="d-audience">À qui s'adresse ce projet&nbsp;? <span class="opt">(optionnel)</span></label><input id="d-audience" type="text" name="audience" placeholder="Ex : particuliers, entreprises, les deux…"></div>
             </div>
           </div>
 
-          <!-- Étape 4 — Budget & délai -->
+          <!-- Étape 3 — Les besoins concrets -->
+          <div class="wizard-step" data-wizard-step data-step-title="Vos besoins">
+            <p class="wizard-q">De quoi avez-vous besoin concrètement&nbsp;?</p>
+            <p class="wizard-help">Cochez ce qui vous parle — on complétera ensemble si besoin.</p>
+            <fieldset class="field full wizard-fieldset">
+              <legend class="sr-only">Services recherchés</legend>
+              <div class="field-radio-group">
+                <label><input type="checkbox" name="services" value="conseil"><span>Conseil &amp; stratégie</span></label>
+                <label><input type="checkbox" name="services" value="site"><span>Création de site web</span></label>
+                <label><input type="checkbox" name="services" value="marketing"><span>Marketing digital</span></label>
+                <label><input type="checkbox" name="services" value="digitalisation"><span>Digitalisation</span></label>
+                <label><input type="checkbox" name="services" value="automatisation"><span>Automatisation &amp; IA</span></label>
+                <label><input type="checkbox" name="services" value="formation"><span>Formation</span></label>
+              </div>
+            </fieldset>
+            <div class="field full" style="margin-top:18px"><label for="d-features">Des fonctionnalités précises en tête&nbsp;? <span class="opt">(optionnel)</span></label><textarea id="d-features" name="features" placeholder="Ex : paiement en ligne, prise de rendez-vous, espace membre…"></textarea></div>
+          </div>
+
+          <!-- Étape 4 — Le cadre (choix rapides) -->
           <div class="wizard-step" data-wizard-step data-step-title="Budget &amp; délai">
-            <p class="wizard-q">Budget &amp; délai&nbsp;?</p>
-            <p class="wizard-help">Une fourchette suffit — elle nous aide à calibrer la proposition.</p>
+            <p class="wizard-q">Parlons cadre&nbsp;: budget et délai&nbsp;?</p>
+            <p class="wizard-help">Une fourchette suffit — ça nous aide à bien calibrer la proposition.</p>
+            <fieldset class="field full wizard-fieldset" style="margin-bottom:22px">
+              <legend class="field-legend">Votre budget *</legend>
+              <div class="field-radio-group">
+                <label><input type="radio" name="budget" value="Moins de 300 000 FCFA" required><span>&lt; 300 000 FCFA</span></label>
+                <label><input type="radio" name="budget" value="300 000 – 800 000 FCFA"><span>300 000 – 800 000</span></label>
+                <label><input type="radio" name="budget" value="800 000 – 2 000 000 FCFA"><span>800 000 – 2 000 000</span></label>
+                <label><input type="radio" name="budget" value="Plus de 2 000 000 FCFA"><span>&gt; 2 000 000 FCFA</span></label>
+                <label><input type="radio" name="budget" value="À définir ensemble"><span>À définir ensemble</span></label>
+              </div>
+            </fieldset>
+            <fieldset class="field full wizard-fieldset">
+              <legend class="field-legend">Pour quand&nbsp;? *</legend>
+              <div class="field-radio-group">
+                <label><input type="radio" name="timeline" value="Le plus tôt possible" required><span>Dès que possible</span></label>
+                <label><input type="radio" name="timeline" value="Sous 1 mois"><span>Sous 1 mois</span></label>
+                <label><input type="radio" name="timeline" value="1 à 3 mois"><span>1 à 3 mois</span></label>
+                <label><input type="radio" name="timeline" value="Plus de 3 mois"><span>Plus de 3 mois</span></label>
+              </div>
+            </fieldset>
+          </div>
+
+          <!-- Étape 5 — Vos coordonnées (dernière étape) -->
+          <div class="wizard-step" data-wizard-step data-step-title="Vos coordonnées">
+            <p class="wizard-q">On y est presque&nbsp;! Où peut-on vous répondre&nbsp;?</p>
+            <p class="wizard-help">Vos coordonnées servent uniquement à traiter votre demande.</p>
             <div class="form-grid">
-              <div class="field"><label for="d-budget">Budget disponible *</label>
-                <select id="d-budget" name="budget" required>
-                  <option value="">Sélectionner une fourchette</option>
-                  <option>Moins de 300 000 FCFA</option>
-                  <option>300 000 – 800 000 FCFA</option>
-                  <option>800 000 – 2 000 000 FCFA</option>
-                  <option>Plus de 2 000 000 FCFA</option>
-                  <option>À définir ensemble</option>
-                </select>
+              <div class="field"><label for="d-fullname">Votre nom *</label><input id="d-fullname" type="text" name="fullname" autocomplete="name" required></div>
+              <div class="field"><label for="d-company">Entreprise <span class="opt">(optionnel)</span></label><input id="d-company" type="text" name="company" autocomplete="organization"></div>
+              <div class="field"><label for="d-sector">Votre secteur *</label><input id="d-sector" type="text" name="sector" required placeholder="Ex : Commerce, Santé…"></div>
+              <div class="field"><label for="d-phone">Téléphone / WhatsApp *</label><PhoneField id="d-phone" /></div>
+              <div class="field full"><label for="d-email">Adresse e-mail *</label><input id="d-email" type="email" name="email" autocomplete="email" inputmode="email" required></div>
+              <div class="field full">
+                <label>Documents à joindre <span class="opt">(optionnel)</span></label>
+                <label class="file-drop" style="display:block">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+                  Cahier des charges, logo, exemples…
+                  <input type="file" name="documents" multiple style="display:none">
+                </label>
               </div>
-              <div class="field"><label for="d-timeline">Délai souhaité *</label>
-                <select id="d-timeline" name="timeline" required>
-                  <option value="">Sélectionner un délai</option>
-                  <option>Le plus tôt possible</option>
-                  <option>Sous 1 mois</option>
-                  <option>1 à 3 mois</option>
-                  <option>Plus de 3 mois</option>
-                </select>
-              </div>
-              <div class="field full"><label for="d-references">Exemples ou références <span class="opt">(optionnel)</span></label><input id="d-references" type="text" name="references" placeholder="Sites, marques ou styles qui vous inspirent"></div>
             </div>
           </div>
 
-          <!-- Étape 5 — Documents -->
-          <div class="wizard-step" data-wizard-step data-step-title="Documents">
-            <p class="wizard-q">Des documents à joindre&nbsp;?</p>
-            <p class="wizard-help">Cahier des charges, logo, exemples… (optionnel). Dernière étape avant l'envoi.</p>
-            <div class="field full" style="margin-bottom:8px">
-              <label class="file-drop" style="display:block">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
-                Cliquez pour ajouter un ou plusieurs fichiers
-                <input type="file" name="documents" multiple style="display:none">
-              </label>
-            </div>
-          </div>
-
-          <button type="submit" class="btn btn-primary btn-block wizard-submit" style="margin-top:16px">Envoyer ma demande de devis
+          <button type="submit" class="btn btn-primary btn-block wizard-submit" style="margin-top:16px">Envoyer ma demande
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
           </button>
           <p class="form-status" role="status" aria-live="polite"></p>
-          <p class="form-note">Votre demande s'ouvre dans WhatsApp (numéro Bweb Agence) avec un récapitulatif pré-rempli. Vos informations servent uniquement à traiter votre demande — voir notre <a href="/politique-confidentialite" style="color:var(--c-blue)">politique de confidentialité</a>.</p>
+          <p class="form-note">Votre demande nous est envoyée par e-mail. Vos informations servent uniquement à traiter votre demande — voir notre <a href="/politique-confidentialite" style="color:var(--c-blue)">politique de confidentialité</a>.</p>
         </form>
         <div class="form-success" role="status">
-          <div style="width:64px;height:64px;border-radius:50%;background:#D6F7EF;color:#0B8E70;display:flex;align-items:center;justify-content:center;margin:0 auto 18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:30px;height:30px" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <h3 style="margin-bottom:8px">Votre demande de devis est prête !</h3>
-          <p style="margin-bottom:22px;font-size:.95rem">Elle s'ouvre dans WhatsApp. Si rien ne s'est ouvert, cliquez ci-dessous. Vous pourrez y joindre vos documents directement.</p>
-          <a class="btn btn-whatsapp" href="#" data-wa-fallback target="_blank" rel="noopener">Continuer sur WhatsApp
+          <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <h3 data-success-title>Votre demande est bien envoyée&nbsp;!</h3>
+          <p data-success-msg>Nous l'avons reçue par e-mail et revenons vers vous très vite.</p>
+          <p class="success-optional" data-success-optional>Envie de nous prévenir tout de suite&nbsp;? <span class="opt">(optionnel)</span></p>
+          <a class="btn btn-whatsapp" href="#" data-wa-fallback target="_blank" rel="noopener">Prévenir sur WhatsApp
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:18px;height:18px" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z"/></svg>
           </a>
         </div>

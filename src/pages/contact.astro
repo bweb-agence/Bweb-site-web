@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import PhoneField from "../components/PhoneField.astro";
 import { contact, whatsappLink } from "../config/site";
 const socials = [
   { key: "facebook", label: "Facebook", href: contact.social.facebook },
@@ -101,7 +102,7 @@ const socials = [
               <p class="wizard-q">Comment pouvons-nous vous joindre&nbsp;?</p>
               <p class="wizard-help">Nous vous répondrons sur le canal qui vous convient.</p>
               <div class="form-grid">
-                <div class="field"><label for="c-phone">Numéro de téléphone *</label><input id="c-phone" type="tel" name="phone" autocomplete="tel" required></div>
+                <div class="field"><label for="c-phone">Numéro de téléphone *</label><PhoneField id="c-phone" /></div>
                 <div class="field"><label for="c-email">Adresse e-mail *</label><input id="c-email" type="email" name="email" autocomplete="email" required></div>
               </div>
             </div>
@@ -156,10 +157,11 @@ const socials = [
             <p class="form-note">Votre demande s'ouvre dans WhatsApp (numéro Bweb Agence) avec un récapitulatif pré-rempli. En envoyant, vous acceptez notre <a href="/politique-confidentialite" style="color:var(--c-blue)">politique de confidentialité</a>.</p>
           </form>
           <div class="form-success" role="status">
-            <div style="width:64px;height:64px;border-radius:50%;background:#D6F7EF;color:#0B8E70;display:flex;align-items:center;justify-content:center;margin:0 auto 18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:30px;height:30px" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <h3 style="margin-bottom:8px">Merci, votre demande est prête !</h3>
-            <p style="margin-bottom:22px;font-size:.95rem">Elle s'ouvre dans WhatsApp. Si rien ne s'est ouvert, cliquez ci-dessous.</p>
-            <a class="btn btn-whatsapp" href="#" data-wa-fallback target="_blank" rel="noopener">Continuer sur WhatsApp
+            <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <h3 data-success-title>Merci, votre message est envoyé&nbsp;!</h3>
+            <p data-success-msg>Nous l'avons reçu par e-mail et revenons vers vous très vite.</p>
+            <p class="success-optional" data-success-optional>Envie de nous prévenir tout de suite&nbsp;? <span class="opt">(optionnel)</span></p>
+            <a class="btn btn-whatsapp" href="#" data-wa-fallback target="_blank" rel="noopener">Prévenir sur WhatsApp
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:18px;height:18px" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z"/></svg>
             </a>
           </div>

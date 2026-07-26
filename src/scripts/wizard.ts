@@ -191,6 +191,7 @@ export function initWizard(): void {
     const last = index === total - 1;
     nextBtn.hidden = last;
     if (submitBtn) submitBtn.hidden = !last;
+    if (note) note.hidden = !last; // la note d'info n'apparaît qu'à la dernière étape
 
     setError("");
     scroll.scrollTop = 0;

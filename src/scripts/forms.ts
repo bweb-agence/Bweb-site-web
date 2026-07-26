@@ -52,11 +52,14 @@ function composeMessage(form: HTMLFormElement): string {
   const lines: string[] = [`*${title}*`, ""];
   const doneCheckboxGroups = new Set<string>();
   const doneRadioGroups = new Set<string>();
+  // Indicatif pays (fusionné au numéro, pas affiché seul).
+  const cc = form.querySelector<HTMLSelectElement>('[name="phone_cc"]')?.value || "";
 
   form.querySelectorAll<FieldEl>("input, select, textarea").forEach((control) => {
     const name = (control as HTMLInputElement).name;
     const type = (control as HTMLInputElement).type;
     if (!name || type === "submit" || type === "button" || type === "file") return;
+    if (name === "phone_cc") return; // fusionné au champ téléphone
 
     if (type === "radio") {
       if (doneRadioGroups.has(name)) return;
@@ -77,7 +80,8 @@ function composeMessage(form: HTMLFormElement): string {
     const value = control.value.trim();
     if (!value) return;
     const label = clean(control.closest(".field")?.querySelector("label")?.textContent || name);
-    lines.push(`• ${label} : ${value}`);
+    const out = name === "phone" && cc ? `${cc} ${value}` : value;
+    lines.push(`• ${label} : ${out}`);
   });
 
   return lines.join("\n");
@@ -129,16 +133,32 @@ async function sendEmail(form: HTMLFormElement): Promise<boolean> {
   }
 }
 
-function showSuccess(form: HTMLFormElement, waUrl: string) {
+function showSuccess(form: HTMLFormElement, waUrl: string, emailOk: boolean) {
   const success = form.parentElement?.querySelector<HTMLElement>(".form-success");
-  if (success) {
-    const link = success.querySelector<HTMLAnchorElement>("[data-wa-fallback]");
-    if (link) link.href = waUrl;
-    success.classList.add("is-visible");
-    form.style.display = "none";
-  } else {
-    setStatus(form, "Merci ! Votre demande s'ouvre sur WhatsApp.", "success");
+  if (!success) {
+    setStatus(
+      form,
+      emailOk
+        ? "Merci ! Votre demande a bien été envoyée par e-mail."
+        : "Cliquez sur « Prévenir sur WhatsApp » pour nous transmettre votre demande.",
+      "success",
+    );
+    return;
   }
+  const link = success.querySelector<HTMLAnchorElement>("[data-wa-fallback]");
+  if (link) link.href = waUrl;
+  // Si l'e-mail n'a pas pu partir, WhatsApp devient le canal d'envoi (mis en avant).
+  if (!emailOk) {
+    const t = success.querySelector<HTMLElement>("[data-success-title]");
+    if (t) t.textContent = "Dernière étape pour nous l'envoyer";
+    const m = success.querySelector<HTMLElement>("[data-success-msg]");
+    if (m) m.textContent = "Cliquez ci-dessous pour nous transmettre votre récapitulatif sur WhatsApp.";
+    success.querySelector<HTMLElement>("[data-success-optional]")?.setAttribute("hidden", "");
+    link?.classList.remove("btn-whatsapp");
+    link?.classList.add("btn-primary");
+  }
+  success.classList.add("is-visible");
+  form.style.display = "none";
 }
 
 export function initForms(): void {
@@ -158,16 +178,13 @@ export function initForms(): void {
       const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
       submitBtn?.classList.add("is-loading");
 
+      // Canal principal = e-mail. WhatsApp devient une option (bouton dans
+      // l'écran de succès) pour prévenir/transmettre — plus d'ouverture auto.
       const waUrl = wa(composeMessage(form));
-      const emailPromise = sendEmail(form); // e-mail (si configuré)
-      const waWindow = window.open(waUrl, "_blank", "noopener"); // geste utilisateur
-
-      await emailPromise;
+      const emailOk = await sendEmail(form);
       submitBtn?.classList.remove("is-loading");
-      showSuccess(form, waUrl);
-      if (!waWindow) {
-        setStatus(form, "Cliquez sur « Continuer sur WhatsApp » pour envoyer votre demande.", "success");
-      }
+      setStatus(form, "", "");
+      showSuccess(form, waUrl, emailOk);
     });
 
     form.querySelectorAll<HTMLInputElement>("[required]").forEach((field) => {

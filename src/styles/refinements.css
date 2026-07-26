@@ -348,3 +348,18 @@ html.wiz-lock .wa-float { opacity: 0; pointer-events: none; }
   .wiz-modal, .wiz-modal__panel { transition: none; }
   .wiz-modal__panel { transform: none; }
 }
+
+/* ---------------------------------------------------------
+   12. Champ téléphone international + légendes + écran succès
+   --------------------------------------------------------- */
+.phone-field { display: flex; gap: 8px; align-items: stretch; }
+.phone-field .phone-cc { flex: 0 0 auto; width: auto; min-width: 98px; padding-inline: 10px 8px; }
+.phone-field input[type="tel"] { flex: 1 1 auto; min-width: 0; }
+
+.field-legend { display: block; font-weight: 700; font-size: .86rem; color: var(--c-navy); margin: 0 0 10px; padding: 0; }
+
+.form-success .success-icon { width: 64px; height: 64px; border-radius: 50%; background: #d6f7ef; color: #0b8e70; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
+.form-success .success-icon svg { width: 30px; height: 30px; }
+.form-success [data-success-msg] { font-size: .95rem; margin-bottom: 18px; }
+.form-success .success-optional { font-size: .85rem; color: var(--c-gray-600); margin-bottom: 14px; }
+.form-success .success-optional[hidden] { display: none; }
