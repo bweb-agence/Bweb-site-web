@@ -1,0 +1,94 @@
+---
+/* HERO-AUTOMATISATION — « Workflow autonome »
+   Des jetons de tâches circulent en boucle : déclencheur → nœud IA →
+   actions (réponse, relance, suivi). Une horloge au centre compte le
+   temps gagné. Métaphore : au-delà de WhatsApp, l'IA travaille pour vous. */
+const LOOP = "M180 80 H340 A90 90 0 0 1 430 170 V250 A90 90 0 0 1 340 340 H180 A90 90 0 0 1 90 250 V170 A90 90 0 0 1 180 80 Z";
+const nodes = [
+  { x: 180, y: 80,  d: "0",   icon: '<path d="M3 -11 L-5 1 L0 1 L-3 11 L6 -2 L1 -2 Z"/>' },                                   // déclencheur (éclair) — haut-gauche
+  { x: 340, y: 80,  d: "1.4", icon: '<ellipse cx="0" cy="-6" rx="8" ry="3"/><path d="M-8 -6v12c0 1.7 3.6 3 8 3s8-1.3 8-3v-12"/><path d="M-8 0c0 1.7 3.6 3 8 3s8-1.3 8-3"/>' }, // collecte de données — haut-droite (opposé au chat)
+  { x: 340, y: 340, d: "4.0", icon: '<path d="M-8 -6h16a1.6 1.6 0 0 1 1.6 1.6v6A1.6 1.6 0 0 1 8 3H-1l-4 3V3h-3A1.6 1.6 0 0 1-9.6 1.6v-6A1.6 1.6 0 0 1-8 -6z"/>' }, // réponse (chat) — bas-droite
+  { x: 180, y: 340, d: "5.3", icon: '<rect x="-9" y="-6" width="18" height="13" rx="2"/><path d="M-9 -5 L0 2 L9 -5"/>' },      // relance (enveloppe) — bas-gauche
+  { x: 90,  y: 210, d: "6.6", icon: '<polyline points="-9 6 -3 -1 2 3 9 -6"/><circle cx="9" cy="-6" r="1.7"/>' },             // suivi (courbe) — gauche
+];
+---
+<div class="hero-illus" data-parallax style="--hi-accent:#8B7CF6;--hi-accent2:#1F6CED" aria-hidden="true">
+  <span class="hi-glow"></span>
+  <svg class="hi-scene auto" viewBox="0 0 520 420" role="img">
+    <title>Un workflow où l'IA automatise les tâches en continu</title>
+    <defs>
+      <linearGradient id="auto-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop class="auto-a" offset="0%" /><stop class="auto-b" offset="100%" />
+      </linearGradient>
+    </defs>
+
+    <!-- rail -->
+    <path class="auto-rail" d={LOOP} />
+
+    <!-- jetons de tâches -->
+    {["0", "2", "4", "6"].map((delay) => (
+      <circle class="auto-token" r="4" style={`offset-path:path('${LOOP}');animation-delay:-${delay}s`} />
+    ))}
+
+    <!-- horloge centrale : temps gagné (aiguilles en coords absolues) -->
+    <g class="auto-clock" transform="translate(260,210)">
+      <circle class="auto-clock-face" r="30" />
+      <line class="auto-tick" x1="0" y1="-30" x2="0" y2="-25" />
+      <text class="auto-clock-lbl" x="0" y="52">temps gagné</text>
+    </g>
+    <line class="auto-hh" x1="260" y1="210" x2="260" y2="197" />
+    <line class="auto-mh" x1="260" y1="210" x2="271" y2="210" />
+    <circle class="auto-pin" cx="260" cy="210" r="2.4" />
+
+    <!-- nœuds d'action -->
+    {nodes.map((n) => (
+      <g class="auto-node" style={`--d:${n.d}s`} transform={`translate(${n.x},${n.y})`}>
+        <circle class="auto-chip" r="23" />
+        <g class="auto-ic" set:html={n.icon} />
+      </g>
+    ))}
+
+    <!-- nœud IA -->
+    <g class="auto-ai" transform="translate(430,210)">
+      <circle class="auto-ai-aura" r="46" />
+      <rect class="auto-ai-box" x="-36" y="-36" width="72" height="72" rx="20" />
+      <g class="auto-ai-ic">
+        <rect x="-12" y="-12" width="24" height="24" rx="6" /><rect x="-5.5" y="-5.5" width="11" height="11" rx="3" />
+        <path d="M0 -17v5 M0 12v5 M-17 0h5 M12 0h5 M-12 -12l4 4 M8 8l4 4 M12 -12l-4 4 M-8 8l-4 4" />
+      </g>
+      <text class="auto-ai-lbl" x="0" y="54">IA</text>
+    </g>
+  </svg>
+</div>
+
+<style>
+  .auto-a { stop-color: var(--hi-accent); } .auto-b { stop-color: var(--hi-accent2); }
+  .auto-rail { fill: none; stroke: rgba(255,255,255,.14); stroke-width: 1.6; stroke-dasharray: 3 7; }
+  .auto-token { fill: var(--hi-accent); filter: drop-shadow(0 0 5px var(--hi-accent)); animation: auto-run 8s linear infinite; }
+
+  .auto-chip { fill: rgba(255,255,255,.05); stroke: rgba(255,255,255,.18); stroke-width: 1.2; }
+  .auto-node { animation: auto-ping 8s ease-in-out infinite; animation-delay: var(--d); transform-box: view-box; }
+  .auto-ic { fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+
+  .auto-ai-aura { fill: var(--hi-accent); opacity: .28; filter: blur(9px); transform-box: fill-box; transform-origin: center; animation: auto-pulse 4.5s ease-in-out infinite; }
+  .auto-ai-box { fill: url(#auto-grad); stroke: rgba(255,255,255,.3); stroke-width: 1; filter: drop-shadow(0 10px 26px color-mix(in srgb, var(--hi-accent) 48%, transparent)); }
+  .auto-ai-ic { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .auto-ai-lbl { font-family: var(--f-display); font-weight: 800; font-size: 12px; fill: #fff; text-anchor: middle; letter-spacing: .14em; }
+
+  .auto-clock-face { fill: rgba(255,255,255,.04); stroke: rgba(255,255,255,.22); stroke-width: 1.4; }
+  .auto-tick, .auto-hh, .auto-mh { stroke: rgba(255,255,255,.8); stroke-width: 2; stroke-linecap: round; }
+  .auto-pin { fill: #fff; }
+  .auto-hh, .auto-mh { transform-box: view-box; transform-origin: 260px 210px; }
+  .auto-hh { animation: auto-spin 12s linear infinite; }
+  .auto-mh { animation: auto-spin 3s linear infinite; }
+  .auto-clock-lbl { font-family: var(--f-display); font-weight: 600; font-size: 12px; fill: rgba(255,255,255,.62); text-anchor: middle; letter-spacing: .04em; }
+
+  @keyframes auto-run { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+  @keyframes auto-ping { 0%, 100% { opacity: .72; } 46% { opacity: 1; } }
+  @keyframes auto-pulse { 0%, 100% { opacity: .22; transform: scale(1); } 50% { opacity: .42; transform: scale(1.09); } }
+  @keyframes auto-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .auto-token, .auto-node, .auto-ai-aura, .auto-hh, .auto-mh { animation: none; }
+    .auto-token { display: none; }
+  }
+</style>

@@ -1,0 +1,81 @@
+---
+/* HERO-SITES-WEB — « Un site qui se construit et convertit »
+   Des blocs s'assemblent dans une fenêtre navigateur (+ écho mobile
+   responsive), un clic sur le CTA, puis une conversion visiteur -> client.
+   Métaphore : pas un gabarit, un site orienté résultat. */
+const blocks = [
+  { x: 82,  y: 126, w: 214, h: 14, d: "0s"   },  // header
+  { x: 82,  y: 150, w: 104, h: 74, d: ".25s" },  // image
+  { x: 198, y: 152, w: 98,  h: 10, d: ".5s"  },  // texte 1
+  { x: 198, y: 170, w: 84,  h: 10, d: ".7s"  },  // texte 2
+  { x: 198, y: 188, w: 66,  h: 10, d: ".9s"  },  // texte 3
+];
+---
+<div class="hero-illus" data-parallax style="--hi-accent:#1F6CED;--hi-accent2:#00C89E" aria-hidden="true">
+  <span class="hi-glow"></span>
+  <svg class="hi-scene web" viewBox="0 0 520 420" role="img">
+    <title>Un site web qui se construit et transforme les visiteurs en clients</title>
+
+    <!-- fenêtre navigateur -->
+    <g class="web-browser">
+      <rect class="web-win" x="64" y="92" width="248" height="210" rx="14" />
+      <line class="web-bar" x1="64" y1="114" x2="312" y2="114" />
+      <circle class="web-dot" cx="80" cy="103" r="3" /><circle class="web-dot" cx="92" cy="103" r="3" /><circle class="web-dot" cx="104" cy="103" r="3" />
+      {blocks.map((b) => (
+        <rect class="web-block" x={b.x} y={b.y} width={b.w} height={b.h} rx="4" style={`--d:${b.d}`} />
+      ))}
+      <!-- CTA + clic -->
+      <rect class="web-cta" x="198" y="212" width="72" height="24" rx="7" />
+      <circle class="web-click" cx="234" cy="224" r="6" />
+    </g>
+
+    <!-- écho mobile (responsive) -->
+    <g class="web-mobile">
+      <rect class="web-win" x="338" y="150" width="66" height="150" rx="12" />
+      <rect class="web-block" x="348" y="164" width="46" height="10" rx="3" style="--d:.4s" />
+      <rect class="web-block" x="348" y="182" width="46" height="40" rx="4" style="--d:.65s" />
+      <rect class="web-cta" x="348" y="230" width="46" height="16" rx="6" />
+    </g>
+
+    <!-- conversion visiteur -> client -->
+    <g class="web-conv" transform="translate(0,342)">
+      <g class="web-person" transform="translate(120,0)">
+        <circle cx="0" cy="-6" r="5" /><path d="M-9 9c0-6 4.5-9 9-9s9 3 9 9" />
+      </g>
+      <path class="web-arrow" d="M150 0 H236" />
+      <polyline class="web-arrowhead" points="230 -5 238 0 230 5" />
+      <circle class="web-pulse" r="3.5" style="offset-path:path('M150 0 H236')" />
+      <g class="web-person web-client" transform="translate(266,0)">
+        <circle cx="0" cy="-6" r="5" /><path d="M-9 9c0-6 4.5-9 9-9s9 3 9 9" />
+        <g class="web-cli-badge" transform="translate(9,-9)"><circle r="6" /><polyline points="-2.6 0 -0.6 2 2.6 -2.6" /></g>
+      </g>
+    </g>
+  </svg>
+</div>
+
+<style>
+  .web-win { fill: rgba(255,255,255,.05); stroke: rgba(255,255,255,.18); stroke-width: 1.3; }
+  .web-bar { stroke: rgba(255,255,255,.16); stroke-width: 1.2; }
+  .web-dot { fill: rgba(255,255,255,.4); }
+  .web-block { fill: rgba(255,255,255,.1); opacity: 0; animation: web-assemble 5s ease-in-out infinite; animation-delay: var(--d); }
+  .web-cta { fill: var(--hi-accent); filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--hi-accent) 55%, transparent)); }
+  .web-click { fill: none; stroke: #fff; stroke-width: 1.6; opacity: 0; transform-box: fill-box; transform-origin: center; animation: web-click 5s ease-in-out infinite; }
+
+  .web-mobile .web-win { animation: web-float 6s ease-in-out infinite; transform-box: view-box; }
+  .web-person { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+  .web-arrow, .web-arrowhead { fill: none; stroke: rgba(255,255,255,.3); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .web-pulse { fill: var(--hi-accent2); filter: drop-shadow(0 0 5px var(--hi-accent2)); animation: web-conv 5s ease-in-out infinite; }
+  .web-client { opacity: 0; animation: web-arrive 5s ease-in-out infinite; }
+  .web-cli-badge circle { fill: var(--hi-accent2); }
+  .web-cli-badge polyline { fill: none; stroke: #06231c; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  @keyframes web-assemble { 0% { opacity: 0; } 20%, 100% { opacity: 1; } }
+  @keyframes web-click { 0%, 42% { opacity: 0; transform: scale(.5); } 50% { opacity: .9; transform: scale(1); } 62% { opacity: 0; transform: scale(2.2); } 100% { opacity: 0; } }
+  @keyframes web-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes web-conv { 0%, 55% { offset-distance: 0%; opacity: 0; } 60% { opacity: 1; } 82% { offset-distance: 100%; opacity: 1; } 88%, 100% { offset-distance: 100%; opacity: 0; } }
+  @keyframes web-arrive { 0%, 82% { opacity: 0; } 90%, 100% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .web-block, .web-click, .web-mobile .web-win, .web-pulse, .web-client { animation: none; }
+    .web-block { opacity: 1; } .web-client { opacity: 1; } .web-pulse { display: none; }
+  }
+</style>

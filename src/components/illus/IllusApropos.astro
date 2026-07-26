@@ -1,0 +1,98 @@
+---
+/* HERO-APROPOS — « Le partenaire humain qui fait grandir »
+   Une équipe (humain) au premier plan, un globe discret (portée / ancrage
+   régional et au-delà), une trajectoire de croissance qui monte vers le
+   cœur Bweb IA. Chaleureux, non cosmique. Remplit le cadre. */
+const people = [
+  { x: 96,  y: 330, d: "0s"   },
+  { x: 138, y: 342, d: ".5s"  },
+  { x: 182, y: 332, d: "1s"   },
+];
+const milestones = [{ x: 214, y: 300, d: ".4s" }, { x: 300, y: 232, d: "1s" }, { x: 372, y: 168, d: "1.6s" }];
+const TRAJ = "M120 332 C 210 316 288 250 430 118";
+---
+<div class="hero-illus" data-parallax style="--hi-accent:#1F6CED;--hi-accent2:#00C89E" aria-hidden="true">
+  <span class="hi-glow"></span>
+  <svg class="hi-scene apr" viewBox="0 0 520 420" role="img">
+    <title>Bweb, partenaire humain qui fait grandir les entreprises</title>
+    <defs>
+      <linearGradient id="apr-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop class="apr-a" offset="0%" /><stop class="apr-b" offset="100%" />
+      </linearGradient>
+    </defs>
+
+    <!-- globe (portée) -->
+    <g class="apr-globe">
+      <circle class="apr-globe-o" cx="298" cy="216" r="96" />
+      <ellipse class="apr-globe-l" cx="298" cy="216" rx="96" ry="34" />
+      <ellipse class="apr-globe-l" cx="298" cy="216" rx="96" ry="70" />
+      <ellipse class="apr-globe-l" cx="298" cy="216" rx="38" ry="96" />
+      <ellipse class="apr-globe-l" cx="298" cy="216" rx="74" ry="96" />
+      <line class="apr-globe-l" x1="202" y1="216" x2="394" y2="216" />
+      <circle class="apr-geo" cx="262" cy="176" r="3" style="--d:0s" />
+      <circle class="apr-geo" cx="332" cy="196" r="3" style="--d:.7s" />
+      <circle class="apr-geo" cx="286" cy="252" r="3" style="--d:1.4s" />
+    </g>
+
+    <!-- trajectoire de croissance -->
+    <path class="apr-traj-ghost" d={TRAJ} />
+    <path class="apr-traj" d={TRAJ} />
+    <polyline class="apr-traj-head" points="416 116 432 112 430 130" />
+    <circle class="apr-travel" r="4" style={`offset-path:path('${TRAJ}')`} />
+    {milestones.map((m) => (
+      <circle class="apr-ms" cx={m.x} cy={m.y} r="5.5" style={`--d:${m.d}`} />
+    ))}
+
+    <!-- cœur Bweb IA -->
+    <g class="apr-core" transform="translate(430,112)">
+      <circle class="apr-core-aura" r="40" />
+      <rect class="apr-core-box" x="-30" y="-30" width="60" height="60" rx="18" />
+      <g class="apr-core-ic">
+        <rect x="-10" y="-10" width="20" height="20" rx="5" /><rect x="-4.5" y="-4.5" width="9" height="9" rx="2.5" />
+        <path d="M0 -15v5 M0 10v5 M-15 0h5 M10 0h5" />
+      </g>
+      <text class="apr-core-lbl" x="0" y="44">Bweb</text>
+    </g>
+
+    <!-- équipe (humain) -->
+    {people.map((p) => (
+      <g class="apr-person" style={`--d:${p.d}`} transform={`translate(${p.x},${p.y})`}>
+        <circle class="apr-h" cx="0" cy="-8" r="8" />
+        <path class="apr-b" d="M-14 14c0-8 6-13 14-13s14 5 14 13" />
+      </g>
+    ))}
+  </svg>
+</div>
+
+<style>
+  .apr-a { stop-color: var(--hi-accent); } .apr-b { stop-color: var(--hi-accent2); }
+  .apr-globe-o { fill: rgba(255,255,255,.02); stroke: rgba(255,255,255,.16); stroke-width: 1.3; }
+  .apr-globe-l { fill: none; stroke: rgba(255,255,255,.12); stroke-width: 1.1; }
+  .apr-geo { fill: var(--hi-accent2); filter: drop-shadow(0 0 5px var(--hi-accent2)); animation: apr-geo 3.5s ease-in-out infinite; animation-delay: var(--d); }
+
+  .apr-traj-ghost { fill: none; stroke: rgba(255,255,255,.1); stroke-width: 2.6; }
+  .apr-traj { fill: none; stroke: url(#apr-grad); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--hi-accent) 55%, transparent)); stroke-dasharray: 460; stroke-dashoffset: 460; animation: apr-draw 5.5s ease-in-out infinite; }
+  .apr-traj-head { fill: none; stroke: var(--hi-accent2); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; animation: apr-head 5.5s ease-in-out infinite; }
+  .apr-travel { fill: #fff; filter: drop-shadow(0 0 6px var(--hi-accent)); animation: apr-travel 5.5s ease-in-out infinite; }
+  .apr-ms { fill: var(--hi-accent); stroke: rgba(255,255,255,.5); stroke-width: 1; transform-box: fill-box; transform-origin: center; animation: apr-ms 5.5s ease-in-out infinite; animation-delay: var(--d); }
+
+  .apr-core-aura { fill: var(--hi-accent); opacity: .28; filter: blur(9px); transform-box: fill-box; transform-origin: center; animation: apr-pulse 4.5s ease-in-out infinite; }
+  .apr-core-box { fill: url(#apr-grad); stroke: rgba(255,255,255,.3); stroke-width: 1; filter: drop-shadow(0 10px 26px color-mix(in srgb, var(--hi-accent) 48%, transparent)); }
+  .apr-core-ic { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .apr-core-lbl { font-family: var(--f-display); font-weight: 800; font-size: 12px; fill: #fff; text-anchor: middle; letter-spacing: .08em; }
+
+  .apr-h, .apr-b { fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+  .apr-person { animation: apr-glow 4.5s ease-in-out infinite; animation-delay: var(--d); }
+
+  @keyframes apr-geo { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+  @keyframes apr-draw { 0% { stroke-dashoffset: 460; } 60%, 100% { stroke-dashoffset: 0; } }
+  @keyframes apr-head { 0%, 55% { opacity: 0; } 65%, 100% { opacity: 1; } }
+  @keyframes apr-travel { 0% { offset-distance: 0%; opacity: 0; } 8% { opacity: 1; } 60% { offset-distance: 100%; opacity: 1; } 66%, 100% { offset-distance: 100%; opacity: 0; } }
+  @keyframes apr-ms { 0%, 100% { opacity: .4; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+  @keyframes apr-pulse { 0%, 100% { opacity: .22; transform: scale(1); } 50% { opacity: .42; transform: scale(1.08); } }
+  @keyframes apr-glow { 0%, 100% { opacity: .78; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .apr-geo, .apr-traj, .apr-traj-head, .apr-travel, .apr-ms, .apr-core-aura, .apr-person { animation: none; }
+    .apr-traj { stroke-dashoffset: 0; } .apr-traj-head { opacity: 1; } .apr-travel { display: none; }
+  }
+</style>

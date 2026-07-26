@@ -8,6 +8,7 @@ import { initForms } from "./forms";
 import { initWizard } from "./wizard";
 import { initLottie } from "./lottie";
 import { initCosmos } from "./cosmos";
+import { initHeroIllus } from "./heroIllus";
 import { initMotion } from "./motion";
 
 /* Remplit les liens/affichages de contact depuis la config centrale.
@@ -53,6 +54,7 @@ function boot(): void {
   initWizard();
   initLottie();
   initCosmos();
+  initHeroIllus();
   initMotion();
 }
 

@@ -1,0 +1,92 @@
+---
+/* HERO-MARKETING — « De la portée à la conversion »
+   Un mégaphone émet des ondes -> une audience s'illumine en cascade ->
+   un entonnoir transforme les vues en clients (pastilles avec coche) qui
+   font monter des barres de résultats. Palette chaude. Remplit le cadre. */
+const audience = [
+  { x: 170, y: 150, d: ".2s" },  { x: 230, y: 120, d: ".5s" },  { x: 296, y: 132, d: ".8s" },  { x: 344, y: 176, d: "1.05s" },
+  { x: 190, y: 206, d: ".35s" }, { x: 254, y: 188, d: ".65s" }, { x: 320, y: 200, d: ".95s" },
+  { x: 178, y: 264, d: ".5s" },  { x: 242, y: 260, d: ".78s" }, { x: 308, y: 260, d: "1.08s" },
+];
+const bars = [{ x: 384, h: 36, d: "0s" }, { x: 410, h: 60, d: ".3s" }, { x: 436, h: 82, d: ".6s" }];
+---
+<div class="hero-illus" data-parallax style="--hi-accent:#FF835F;--hi-accent2:#E0A400" aria-hidden="true">
+  <span class="hi-glow"></span>
+  <svg class="hi-scene mkt" viewBox="0 0 520 420" role="img">
+    <title>La visibilité qui transforme l'audience en clients</title>
+    <defs>
+      <linearGradient id="mkt-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop class="mkt-a" offset="0%" /><stop class="mkt-b" offset="100%" />
+      </linearGradient>
+    </defs>
+
+    <!-- ondes -->
+    <g class="mkt-waves">
+      <path class="mkt-wave" d="M104 160 A 52 52 0 0 1 104 270" style="--d:0s" />
+      <path class="mkt-wave" d="M104 160 A 52 52 0 0 1 104 270" style="--d:1s" />
+      <path class="mkt-wave" d="M104 160 A 52 52 0 0 1 104 270" style="--d:2s" />
+    </g>
+
+    <!-- mégaphone -->
+    <g class="mkt-mega">
+      <polygon class="mkt-horn" points="46,192 46,238 100,256 100,174" />
+      <rect class="mkt-mouth" x="28" y="200" width="18" height="30" rx="4" />
+      <path class="mkt-handle" d="M74 256 l9 18" />
+    </g>
+
+    <!-- audience -->
+    {audience.map((a) => (
+      <g class="mkt-av" style={`--d:${a.d}`} transform={`translate(${a.x},${a.y})`}>
+        <circle class="mkt-av-h" cx="0" cy="-5" r="6.2" />
+        <path class="mkt-av-b" d="M-10 10c0-6 4.5-9.5 10-9.5s10 3.5 10 9.5" />
+      </g>
+    ))}
+
+    <!-- entonnoir + conversion -->
+    <g class="mkt-funnel">
+      <polygon class="mkt-fun" points="356,136 474,136 438,196 392,196" />
+      <rect class="mkt-fun" x="408" y="196" width="14" height="26" rx="3" />
+      {["0", ".9", "1.8"].map((delay) => (
+        <g class="mkt-client" style={`offset-path:path('M415 224 V 306');animation-delay:${delay}s`}>
+          <circle r="9" /><polyline points="-3.8 0 -1.2 2.6 4 -3.8" />
+        </g>
+      ))}
+    </g>
+
+    <!-- résultats -->
+    <g class="mkt-dash" transform="translate(0,360)">
+      <line class="mkt-axis" x1="378" y1="4" x2="456" y2="4" />
+      {bars.map((b) => (
+        <rect class="mkt-bar" x={b.x} y={4 - b.h} width="14" height={b.h} rx="3" style={`--d:${b.d}`} />
+      ))}
+    </g>
+  </svg>
+</div>
+
+<style>
+  .mkt-a { stop-color: var(--hi-accent); } .mkt-b { stop-color: var(--hi-accent2); }
+  .mkt-wave { fill: none; stroke: var(--hi-accent); stroke-width: 2.6; stroke-linecap: round; opacity: 0; transform-box: view-box; transform-origin: 104px 215px; animation: mkt-wave 3s ease-out infinite; animation-delay: var(--d); }
+  .mkt-horn { fill: url(#mkt-grad); stroke: rgba(255,255,255,.3); stroke-width: 1; }
+  .mkt-mouth { fill: rgba(255,255,255,.14); stroke: rgba(255,255,255,.3); stroke-width: 1; }
+  .mkt-handle { stroke: rgba(255,255,255,.4); stroke-width: 3.4; stroke-linecap: round; fill: none; }
+
+  .mkt-av-h, .mkt-av-b { fill: none; stroke: rgba(255,255,255,.36); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .mkt-av { animation: mkt-lit 4.5s ease-in-out infinite; animation-delay: var(--d); }
+
+  .mkt-fun { fill: rgba(255,255,255,.06); stroke: rgba(255,255,255,.3); stroke-width: 1.4; }
+  .mkt-client { opacity: 0; animation: mkt-drop 2.7s ease-in infinite; }
+  .mkt-client circle { fill: url(#mkt-grad); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--hi-accent) 60%, transparent)); }
+  .mkt-client polyline { fill: none; stroke: #2a1206; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+
+  .mkt-axis { stroke: rgba(255,255,255,.2); stroke-width: 1.2; }
+  .mkt-bar { fill: url(#mkt-grad); transform-box: fill-box; transform-origin: bottom; animation: mkt-rise 4.4s ease-in-out infinite; animation-delay: var(--d); }
+
+  @keyframes mkt-wave { 0% { opacity: .7; transform: scale(.32); } 80% { opacity: 0; } 100% { opacity: 0; transform: scale(1.9); } }
+  @keyframes mkt-lit { 0%, 100% { stroke: rgba(255,255,255,.3); } 45% { stroke: var(--hi-accent); } }
+  @keyframes mkt-drop { 0% { offset-distance: 0%; opacity: 0; } 12% { opacity: 1; } 82% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+  @keyframes mkt-rise { 0%, 100% { transform: scaleY(.4); } 45%, 72% { transform: scaleY(1); } }
+  @media (prefers-reduced-motion: reduce) {
+    .mkt-wave, .mkt-av, .mkt-client, .mkt-bar { animation: none; }
+    .mkt-wave, .mkt-client { display: none; }
+  }
+</style>

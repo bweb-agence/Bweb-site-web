@@ -1,0 +1,93 @@
+---
+/* HERO-METHODOLOGIE — « De l'objectif au résultat, sans détour »
+   Un drapeau (objectif) -> une suite d'étapes numérotées qui se valident
+   en séquence -> un trophée (résultat). Timeline horizontale structurée
+   (distincte de la feuille de route sinueuse du Conseil). Remplit le cadre. */
+const SPINE = "M98 212 H 438";
+const steps = [
+  { x: 152, num: "1", above: true,  d: ".2s",  icon: '<circle cx="0" cy="-1" r="6"/><line x1="4.5" y1="3.5" x2="9" y2="8"/>' },                 // diagnostic (loupe)
+  { x: 236, num: "2", above: false, d: ".9s",  icon: '<path d="M-8 -8h4 M8 -8h-4 M-8 8h4 M8 8h-4 M-8 -8v4 M-8 8v-4 M8 -8v4 M8 8v-4"/>' },     // cadrage (cadre)
+  { x: 320, num: "3", above: true,  d: "1.6s", icon: '<path d="M0 -9c3.4 2 5 5.4 5 9l-2.2 2.2-2.8-1.6-2.8 1.6L-5 0c0-3.6 1.6-7 5-9z"/><circle cx="0" cy="-2" r="1.8"/>' }, // déploiement (fusée)
+  { x: 404, num: "4", above: false, d: "2.3s", icon: '<polyline points="-8 0 -2 6 8 -6"/>' },                                                    // suivi (check)
+];
+---
+<div class="hero-illus" data-parallax style="--hi-accent:#12A5C0;--hi-accent2:#8B7CF6" aria-hidden="true">
+  <span class="hi-glow"></span>
+  <svg class="hi-scene meth" viewBox="0 0 520 420" role="img">
+    <title>Une méthode en étapes, de l'objectif au résultat</title>
+    <defs>
+      <linearGradient id="meth-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop class="meth-a" offset="0%" /><stop class="meth-b" offset="100%" />
+      </linearGradient>
+    </defs>
+
+    <!-- ligne de progression -->
+    <path class="meth-spine-ghost" d={SPINE} />
+    <path class="meth-spine" d={SPINE} />
+    <circle class="meth-travel" r="4" style={`offset-path:path('${SPINE}')`} />
+
+    <!-- drapeau : objectif -->
+    <g class="meth-flag" transform="translate(74,212)">
+      <line class="meth-pole" x1="0" y1="-30" x2="0" y2="26" />
+      <path class="meth-flagf" d="M0 -30 L26 -22 L0 -14 Z" />
+      <text class="meth-cap" x="0" y="42">Objectif</text>
+    </g>
+
+    <!-- étapes -->
+    {steps.map((s) => (
+      <g>
+        <line class="meth-conn" x1={s.x} y1={s.above ? 196 : 228} x2={s.x} y2={s.above ? 160 : 264} />
+        <g class="meth-callout" style={`--d:${s.d}`} transform={`translate(${s.x},${s.above ? 138 : 286})`}>
+          <rect x="-27" y="-24" width="54" height="48" rx="11" />
+          <g class="meth-ic" set:html={s.icon} />
+        </g>
+        <circle class="meth-node" cx={s.x} cy="212" r="17" style={`--d:${s.d}`} />
+        <text class="meth-num" x={s.x} y="217" style={`--d:${s.d}`}>{s.num}</text>
+      </g>
+    ))}
+
+    <!-- trophée : résultat -->
+    <g class="meth-trophy" transform="translate(462,212)">
+      <circle class="meth-trophy-aura" r="30" />
+      <circle class="meth-trophy-disc" r="23" />
+      <g class="meth-trophy-ic">
+        <path d="M-8 -9 H8 V-4 A8 8 0 0 1 -8 -4 Z" /><path d="M-8 -7 C-14 -7 -14 1 -8 1" /><path d="M8 -7 C14 -7 14 1 8 1" />
+        <line x1="0" y1="0" x2="0" y2="5" /><line x1="-6" y1="8" x2="6" y2="8" />
+      </g>
+      <text class="meth-cap" x="0" y="44">Résultat</text>
+    </g>
+  </svg>
+</div>
+
+<style>
+  .meth-a { stop-color: var(--hi-accent); } .meth-b { stop-color: var(--hi-accent2); }
+  .meth-spine-ghost { fill: none; stroke: rgba(255,255,255,.12); stroke-width: 3; }
+  .meth-spine { fill: none; stroke: url(#meth-grad); stroke-width: 3.2; stroke-linecap: round; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--hi-accent) 55%, transparent)); stroke-dasharray: 342; stroke-dashoffset: 342; animation: meth-draw 5.5s ease-in-out infinite; }
+  .meth-travel { fill: #fff; filter: drop-shadow(0 0 6px var(--hi-accent)); animation: meth-travel 5.5s ease-in-out infinite; }
+
+  .meth-pole { stroke: rgba(255,255,255,.5); stroke-width: 2.4; stroke-linecap: round; }
+  .meth-flagf { fill: url(#meth-grad); stroke: rgba(255,255,255,.3); stroke-width: 1; }
+  .meth-cap { font-family: var(--f-display); font-weight: 700; font-size: 12px; fill: rgba(255,255,255,.72); text-anchor: middle; }
+
+  .meth-conn { stroke: rgba(255,255,255,.18); stroke-width: 1.3; stroke-dasharray: 2 4; }
+  .meth-callout { opacity: 0; animation: meth-pop 5.5s ease-in-out infinite; animation-delay: var(--d); }
+  .meth-callout rect { fill: rgba(255,255,255,.05); stroke: rgba(255,255,255,.2); stroke-width: 1.2; }
+  .meth-ic { fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .meth-node { fill: rgba(255,255,255,.06); stroke: rgba(255,255,255,.24); stroke-width: 1.6; animation: meth-lit 5.5s ease-in-out infinite; animation-delay: var(--d); }
+  .meth-num { font-family: var(--f-display); font-weight: 800; font-size: 15px; fill: #fff; text-anchor: middle; opacity: .55; animation: meth-numlit 5.5s ease-in-out infinite; animation-delay: var(--d); }
+
+  .meth-trophy-aura { fill: var(--hi-accent2); opacity: .24; filter: blur(9px); transform-box: fill-box; transform-origin: center; animation: meth-glow 5.5s ease-in-out infinite; }
+  .meth-trophy-disc { fill: url(#meth-grad); stroke: rgba(255,255,255,.3); stroke-width: 1; }
+  .meth-trophy-ic { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  @keyframes meth-draw { 0% { stroke-dashoffset: 342; } 60%, 100% { stroke-dashoffset: 0; } }
+  @keyframes meth-travel { 0% { offset-distance: 0%; opacity: 0; } 8% { opacity: 1; } 60% { offset-distance: 100%; opacity: 1; } 66%, 100% { offset-distance: 100%; opacity: 0; } }
+  @keyframes meth-pop { 0%, 100% { opacity: 0; } 20%, 92% { opacity: 1; } }
+  @keyframes meth-lit { 0%, 100% { stroke: rgba(255,255,255,.24); fill: rgba(255,255,255,.06); } 40%, 92% { stroke: var(--hi-accent); fill: color-mix(in srgb, var(--hi-accent) 22%, transparent); } }
+  @keyframes meth-numlit { 0%, 100% { opacity: .5; } 40%, 92% { opacity: 1; } }
+  @keyframes meth-glow { 0%, 62% { opacity: .12; } 82% { opacity: .4; } 100% { opacity: .12; } }
+  @media (prefers-reduced-motion: reduce) {
+    .meth-spine, .meth-travel, .meth-callout, .meth-node, .meth-num, .meth-trophy-aura { animation: none; }
+    .meth-spine { stroke-dashoffset: 0; } .meth-callout { opacity: 1; } .meth-travel { display: none; }
+  }
+</style>

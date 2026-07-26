@@ -57,25 +57,24 @@
 /* ---------------------------------------------------------
    4. Cartes « expertises » : bleu au survol + liste lisible
    --------------------------------------------------------- */
+/* Toutes les cartes sont identiques au repos (fond clair) et passent en
+   bleu au survol — aucune exception. */
 .service-card { transition: transform .4s var(--ease), box-shadow .4s var(--ease), background-color .4s var(--ease), border-color .4s var(--ease); }
-.service-card:not(.dark):hover {
+.service-card:hover {
   background: var(--g-navy);
   border-color: transparent;
   transform: translateY(-6px);
   box-shadow: var(--shadow-lg);
 }
 /* Tout le contenu passe en clair au survol */
-.service-card:not(.dark):hover h3,
-.service-card:not(.dark):hover .card-link { color: #fff; }
-.service-card:not(.dark):hover p { color: rgba(255,255,255,.72); }
-.service-card:not(.dark):hover ul li { color: rgba(255,255,255,.82); }
-.service-card:not(.dark):hover .icon-tile { background: rgba(255,255,255,.12); color: var(--c-yellow); }
-.service-card:not(.dark):hover ul li svg { color: var(--c-green); }
-.service-card:not(.dark):hover .card-link svg { color: #fff; }
-/* La carte "Automatisation & IA" est déjà dark en permanence : on garde,
-   mais on s'assure que sa liste est bien lisible */
-.service-card.dark ul li { color: rgba(255,255,255,.85); }
-.service-card.dark ul li svg { color: var(--c-green); }
+.service-card:hover h3,
+.service-card:hover h4,
+.service-card:hover .card-link { color: #fff; }
+.service-card:hover p { color: rgba(255,255,255,.72); }
+.service-card:hover ul li { color: rgba(255,255,255,.82); }
+.service-card:hover .icon-tile { background: rgba(255,255,255,.12); color: var(--c-yellow); }
+.service-card:hover ul li svg { color: var(--c-green); }
+.service-card:hover .card-link svg { color: #fff; }
 
 /* ---------------------------------------------------------
    5. Menu mobile : croix de fermeture + contenu scrollable
@@ -184,3 +183,36 @@ html, body { max-width: 100%; overflow-x: hidden; }
   position: absolute; inset: 0; width: 100%; height: 100%;
   z-index: 0; display: block; pointer-events: none;
 }
+
+/* ---------------------------------------------------------
+   9. Illustrations de hero sur-mesure — base partagée
+   Conteneur transparent + halo qui déborde pour fondre le
+   visuel dans le hero. Chaque illustration (composant dédié)
+   ajoute son propre art SVG. Voir src/scripts/heroIllus.ts.
+   --------------------------------------------------------- */
+.hero-illus {
+  position: relative; width: 100%; max-width: 540px; margin: 0 auto;
+  aspect-ratio: 520 / 420; isolation: isolate;
+}
+.hero-illus .hi-glow {
+  position: absolute; inset: -14%; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(42% 42% at 50% 50%, color-mix(in srgb, var(--hi-accent, #1F6CED) 32%, transparent) 0%, transparent 70%),
+    radial-gradient(58% 58% at 62% 40%, color-mix(in srgb, var(--hi-accent2, #12A5C0) 18%, transparent) 0%, transparent 72%);
+  filter: blur(16px); opacity: .9; will-change: transform, opacity;
+  animation: hi-breathe 7s ease-in-out infinite;
+}
+.hero-illus .hi-scene {
+  position: relative; z-index: 1; width: 100%; height: 100%;
+  display: block; overflow: visible; will-change: transform;
+}
+@keyframes hi-breathe { 0%, 100% { opacity: .82; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
+@media (max-width: 620px) { .hero-illus { max-width: 430px; } }
+@media (prefers-reduced-motion: reduce) {
+  .hero-illus .hi-glow { animation: none; }
+}
+
+/* Scroll-spy latéral : masqué tant qu'on est sur le hero (voir ui.ts),
+   il n'entre donc jamais en conflit avec l'illustration du hero. */
+.section-nav { opacity: 0; pointer-events: none; transition: opacity .35s var(--ease); }
+.section-nav.is-visible { opacity: 1; pointer-events: auto; }
