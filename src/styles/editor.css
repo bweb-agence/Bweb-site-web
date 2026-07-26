@@ -2,6 +2,7 @@
    BWEB — Éditeur de contenu plein écran (WYSIWYG)
    S'appuie sur tokens.css. Thème clair, cohérent avec l'admin.
    ========================================================= */
+.ed-body, .ed-body *, .ed-body *::before, .ed-body *::after { box-sizing: border-box; }
 .ed-body { margin: 0; background: var(--surface-2); color: var(--text); font-family: var(--f-body); -webkit-font-smoothing: antialiased; }
 /* L'attribut [hidden] doit primer sur les display: des composants (barre d'outils, boutons…). */
 .ed-body [hidden] { display: none !important; }
