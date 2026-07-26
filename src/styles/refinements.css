@@ -47,11 +47,11 @@
 /* ---------------------------------------------------------
    3. Logos (footer plus grand, navbar un peu plus grand)
    --------------------------------------------------------- */
-.brand img { height: 40px; }
-.footer-brand img { height: 46px; margin-bottom: 22px; }
+.brand img { height: 50px; width: auto; }
+.footer-brand img { height: 62px; width: auto; margin-bottom: 22px; }
 @media (max-width: 720px) {
-  .brand img { height: 34px; }
-  .footer-brand img { height: 40px; }
+  .brand img { height: 42px; }
+  .footer-brand img { height: 52px; }
 }
 
 /* ---------------------------------------------------------
@@ -153,10 +153,13 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .btn { min-height: 44px; }
 }
 
-/* Boutons : sur très petit écran, ils passent pleine largeur pour ne pas déborder */
-@media (max-width: 400px) {
+/* Boutons : sur mobile, les boutons d'action prennent toute la largeur.
+   Exceptions : petits boutons (.btn-sm), WhatsApp flottant, filtres, et
+   Précédent/Suivant du wizard qui restent en ligne. */
+@media (max-width: 600px) {
   .hero-actions, .cta-band .hero-actions { flex-direction: column; align-items: stretch; }
-  .hero-actions .btn { width: 100%; }
+  .section-head-row { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .btn:not(.btn-sm):not(.wa-float):not(.wizard-prev):not(.wizard-next) { width: 100%; }
 }
 
 /* Bandeaux CTA : padding resserré sur mobile */
@@ -216,3 +219,68 @@ html, body { max-width: 100%; overflow-x: hidden; }
    il n'entre donc jamais en conflit avec l'illustration du hero. */
 .section-nav { opacity: 0; pointer-events: none; transition: opacity .35s var(--ease); }
 .section-nav.is-visible { opacity: 1; pointer-events: auto; }
+
+/* ---------------------------------------------------------
+   10. Section « Méthode » (accueil) — parcours connecté
+   --------------------------------------------------------- */
+.method-flow {
+  position: relative; display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: clamp(12px, 1.5vw, 22px); margin-top: 12px;
+}
+.method-track {
+  position: absolute; top: 34px; left: 10%; right: 10%; height: 3px; border-radius: 2px;
+  background: color-mix(in srgb, var(--c-blue) 22%, transparent); overflow: hidden; z-index: 0;
+}
+.method-track__flow {
+  position: absolute; inset: 0; width: 40%; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--c-blue), var(--c-teal), transparent);
+  animation: method-flow 3.6s ease-in-out infinite;
+}
+.method-step {
+  position: relative; z-index: 1; display: flex; flex-direction: column;
+  align-items: center; text-align: center;
+}
+.method-node {
+  position: relative; width: 70px; height: 70px; border-radius: 22px; margin-bottom: 18px;
+  display: flex; align-items: center; justify-content: center; flex: none;
+  background: #fff; border: 1.5px solid var(--c-border); color: var(--c-blue);
+  box-shadow: 0 10px 26px -12px rgba(2, 11, 80, 0.22);
+  transition: transform .35s var(--ease), background .35s var(--ease), color .35s var(--ease), border-color .35s var(--ease), box-shadow .35s var(--ease);
+}
+.method-node svg { width: 30px; height: 30px; }
+.method-num {
+  position: absolute; top: -9px; right: -9px; width: 27px; height: 27px; border-radius: 50%;
+  background: var(--g-navy); color: #fff; font-family: var(--f-display); font-weight: 800;
+  font-size: .72rem; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 5px 12px -3px rgba(2, 11, 80, 0.4);
+}
+.method-body h4 { font-size: 1.02rem; margin-bottom: 6px; }
+.method-body p { font-size: .88rem; color: var(--c-gray-600); max-width: 24ch; margin: 0 auto; }
+.method-step:hover .method-node {
+  transform: translateY(-7px); background: var(--g-navy); color: #fff;
+  border-color: transparent; box-shadow: var(--shadow-lg);
+}
+
+@keyframes method-flow { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
+
+/* Tablette : 2 lignes, on masque la piste horizontale (désalignée) */
+@media (max-width: 860px) {
+  .method-flow { grid-template-columns: repeat(2, 1fr); gap: 32px 20px; }
+  .method-track { display: none; }
+}
+/* Mobile : timeline verticale */
+@media (max-width: 560px) {
+  .method-flow { grid-template-columns: 1fr; gap: 0; }
+  .method-track { display: block; left: 34px; right: auto; top: 20px; bottom: 20px; width: 3px; height: auto; }
+  .method-track__flow { width: 100%; height: 40%; background: linear-gradient(180deg, transparent, var(--c-blue), var(--c-teal), transparent); animation: method-flow-v 3.6s ease-in-out infinite; }
+  .method-step { flex-direction: row; text-align: left; align-items: flex-start; gap: 18px; padding: 14px 0; }
+  .method-node { margin-bottom: 0; width: 60px; height: 60px; border-radius: 18px; }
+  .method-node svg { width: 26px; height: 26px; }
+  .method-body { padding-top: 6px; }
+  .method-body p { margin: 0; max-width: none; }
+}
+@keyframes method-flow-v { 0% { transform: translateY(-120%); } 100% { transform: translateY(320%); } }
+@media (prefers-reduced-motion: reduce) { .method-track__flow { animation: none; opacity: .6; } }
+
+/* Cards « Notre engagement » : l'illustration remplace l'icône, alignée à gauche */
+.testimonial-card .engage-illus { margin-left: 0; }

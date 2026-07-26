@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import CosmicHero from "../components/CosmicHero.astro";
 import EcosystemViz from "../components/EcosystemViz.astro";
 import IllusDifference from "../components/illus/IllusDifference.astro";
+import IllusEngagement from "../components/illus/IllusEngagement.astro";
 ---
 
 <BaseLayout title="Bweb — Conseil, formation & accompagnement en IA et nouvelles technologies" description="Cabinet de conseil et de formation, Bweb aide dirigeants et équipes en Afrique à comprendre, maîtriser et exploiter l'intelligence artificielle et les outils numériques.">
@@ -314,17 +315,17 @@ import IllusDifference from "../components/illus/IllusDifference.astro";
     </div>
     <div class="grid grid-3" data-stagger>
       <div class="testimonial-card">
-        <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg></div>
+        <IllusEngagement variant="comprendre" />
         <h4 style="margin-bottom:10px">On comprend avant de proposer.</h4>
         <p style="margin:0">Nous prenons le temps de cerner votre réalité, vos contraintes et vos objectifs avant de recommander la moindre solution — jamais de recette générique.</p>
       </div>
       <div class="testimonial-card">
-        <div class="icon-tile" style="background:#D6F7EF;color:#0B8E70"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/><line x1="22" y1="9" x2="22" y2="15"/></svg></div>
+        <IllusEngagement variant="autonome" />
         <h4 style="margin-bottom:10px">On vous rend autonome.</h4>
         <p style="margin:0">Nos formations et notre accompagnement ont un seul but : que vos équipes maîtrisent les outils et l'IA, sans rester dépendantes de nous.</p>
       </div>
       <div class="testimonial-card">
-        <div class="icon-tile" style="background:var(--c-cream);color:var(--c-orange)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg></div>
+        <IllusEngagement variant="resultats" />
         <h4 style="margin-bottom:10px">On vise des résultats concrets.</h4>
         <p style="margin:0">Du temps gagné, des décisions plus rapides, un suivi client automatisé : on se concentre sur ce qui change vraiment pour votre activité.</p>
       </div>
@@ -339,12 +340,28 @@ import IllusDifference from "../components/illus/IllusDifference.astro";
       <div class="eyebrow" style="justify-content:center">Méthode</div>
       <h2>Une méthode simple pour transformer vos objectifs en résultats.</h2>
     </div>
-    <div class="grid grid-5" data-stagger>
-      <div class="step-card"><div class="step-num">01</div><h4>Diagnostic</h4><p style="font-size:.88rem">Comprendre vos besoins, difficultés et objectifs.</p></div>
-      <div class="step-card"><div class="step-num">02</div><h4>Stratégie</h4><p style="font-size:.88rem">Définir priorités, solutions et plan d'action.</p></div>
-      <div class="step-card"><div class="step-num">03</div><h4>Conception</h4><p style="font-size:.88rem">Créer les outils et systèmes nécessaires.</p></div>
-      <div class="step-card"><div class="step-num">04</div><h4>Déploiement</h4><p style="font-size:.88rem">Mettre en place et accompagner les utilisateurs.</p></div>
-      <div class="step-card"><div class="step-num">05</div><h4>Suivi</h4><p style="font-size:.88rem">Mesurer, corriger et optimiser la solution.</p></div>
+    <div class="method-flow" data-stagger>
+      <div class="method-track" aria-hidden="true"><span class="method-track__flow"></span></div>
+      <div class="method-step">
+        <div class="method-node"><span class="method-num">01</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+        <div class="method-body"><h4>Diagnostic</h4><p>Comprendre vos besoins, difficultés et objectifs.</p></div>
+      </div>
+      <div class="method-step">
+        <div class="method-node"><span class="method-num">02</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="20" y1="12" x2="22.5" y2="12"/></svg></div>
+        <div class="method-body"><h4>Stratégie</h4><p>Définir priorités, solutions et plan d'action.</p></div>
+      </div>
+      <div class="method-step">
+        <div class="method-node"><span class="method-num">03</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4.5-1L19 8.5 15.5 5 5 15.5 4 20z"/><path d="M14 6.5l3.5 3.5"/></svg></div>
+        <div class="method-body"><h4>Conception</h4><p>Créer les outils et systèmes nécessaires.</p></div>
+      </div>
+      <div class="method-step">
+        <div class="method-node"><span class="method-num">04</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3.2 2.2 5 5.8 5 10.5L14.4 16l-2.4-1.4L9.6 16 7 13.5C7 8.8 8.8 5.2 12 3z"/><circle cx="12" cy="10" r="1.8"/><path d="M9 18l-2 2M15 18l2 2"/></svg></div>
+        <div class="method-body"><h4>Déploiement</h4><p>Mettre en place et accompagner les utilisateurs.</p></div>
+      </div>
+      <div class="method-step">
+        <div class="method-node"><span class="method-num">05</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 15 9 10 13 14 20 6"/><polyline points="15 6 20 6 20 11"/></svg></div>
+        <div class="method-body"><h4>Suivi</h4><p>Mesurer, corriger et optimiser la solution.</p></div>
+      </div>
     </div>
     <div class="text-center" style="margin-top:44px">
       <a href="/methodologie" class="btn btn-outline">Voir notre méthodologie en détail
