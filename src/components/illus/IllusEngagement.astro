@@ -1,7 +1,8 @@
 ---
 /* Illustrations des cards « Notre engagement » (accueil, fond clair).
-   3 variantes = 3 promesses. Traits foncés/couleurs de marque sur fond
-   clair, animation subtile, figées en reduced-motion. */
+   Chaque illustration est présentée dans une mini-card rectangulaire à fond
+   bleu clair, SVG centré. 3 variantes = 3 promesses. Animation subtile,
+   figées et STABLES en reduced-motion (positions de repos définies). */
 export interface Props { variant: "comprendre" | "autonome" | "resultats" }
 const { variant } = Astro.props;
 ---
@@ -39,46 +40,60 @@ const { variant } = Astro.props;
       <g class="eng-target" transform="translate(120,28)">
         <circle cx="0" cy="0" r="11" /><circle cx="0" cy="0" r="5" />
       </g>
-      <g class="eng-clock" transform="translate(38,34)">
-        <circle cx="0" cy="0" r="13" /><line class="eng-hand" x1="0" y1="0" x2="0" y2="-8" /><line class="eng-hand" x1="0" y1="0" x2="6" y2="2" />
+      <g class="eng-clockg">
+        <circle cx="38" cy="34" r="13" />
+        <line class="eng-hand" x1="38" y1="34" x2="38" y2="26" />
+        <line class="eng-hand eng-hand--spin" x1="38" y1="34" x2="44.5" y2="36" />
       </g>
     </svg>
   )}
 </div>
 
 <style>
-  .engage-illus { width: 150px; max-width: 64%; margin-bottom: 20px; }
-  .engage-illus svg { width: 100%; height: auto; display: block; overflow: visible; }
+  /* Mini-card : rectangle à fond bleu clair, SVG centré */
+  .engage-illus {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 132px; margin-bottom: 22px;
+    background: color-mix(in srgb, var(--c-blue) 9%, #fff);
+    border: 1px solid color-mix(in srgb, var(--c-blue) 15%, transparent);
+    border-radius: 16px;
+  }
+  .engage-illus svg { width: auto; height: 96px; max-width: 84%; display: block; overflow: visible; }
 
   /* comprendre */
-  .eng-doc { fill: #f3f7ff; stroke: var(--c-border); stroke-width: 1.6; }
-  .eng-l { stroke: #c3d0ec; stroke-width: 3; stroke-linecap: round; }
-  .eng-lens { fill: none; stroke: var(--c-navy); stroke-width: 2.4; stroke-linecap: round; transform-box: view-box; animation: eng-scan 4s ease-in-out infinite; }
-  .eng-bulb { fill: none; stroke: var(--c-yellow); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transform-box: fill-box; transform-origin: center; animation: eng-bulb 3s ease-in-out infinite; }
+  .eng-doc { fill: #fff; stroke: var(--c-border); stroke-width: 1.6; }
+  .eng-l { stroke: #b9c9ea; stroke-width: 3; stroke-linecap: round; }
+  .eng-lens { fill: none; stroke: var(--c-navy); stroke-width: 2.4; stroke-linecap: round;
+    transform-box: view-box; transform: translate(55px, 58px); animation: eng-scan 4s ease-in-out infinite; }
+  .eng-bulb { fill: none; stroke: var(--c-yellow); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
+    transform-box: fill-box; transform-origin: center; animation: eng-bulb 3s ease-in-out infinite; }
 
   /* autonome */
-  .eng-axis { stroke: #d8e0f0; stroke-width: 2; stroke-linecap: round; }
-  .eng-step { fill: var(--c-skyblue); stroke: var(--c-blue); stroke-width: 1.4; transform-box: fill-box; transform-origin: bottom; animation: eng-grow 4s ease-in-out infinite; animation-delay: var(--d); }
-  .eng-step--hi { fill: color-mix(in srgb, var(--c-blue) 20%, #fff); }
+  .eng-axis { stroke: #cdd8ee; stroke-width: 2; stroke-linecap: round; }
+  .eng-step { fill: var(--c-skyblue); stroke: var(--c-blue); stroke-width: 1.4;
+    transform-box: fill-box; transform-origin: bottom; animation: eng-grow 4s ease-in-out infinite; animation-delay: var(--d); }
+  .eng-step--hi { fill: color-mix(in srgb, var(--c-blue) 22%, #fff); }
   .eng-person { fill: none; stroke: var(--c-navy); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   .eng-up { fill: none; stroke: var(--c-green); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; animation: eng-pulse 2.4s ease-in-out infinite; }
 
   /* resultats */
-  .eng-curve { fill: none; stroke: var(--c-green); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 180; stroke-dashoffset: 180; animation: eng-draw 4s ease-in-out infinite; }
+  .eng-curve { fill: none; stroke: var(--c-green); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 180; stroke-dashoffset: 180; animation: eng-draw 4s ease-in-out infinite; }
   .eng-arrow { fill: none; stroke: var(--c-green); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
   .eng-target { fill: none; stroke: var(--c-blue); stroke-width: 2.2; }
-  .eng-clock { fill: none; stroke: var(--c-navy); stroke-width: 2; }
-  .eng-hand { stroke: var(--c-navy); stroke-width: 2; stroke-linecap: round; transform-box: view-box; transform-origin: 38px 34px; }
-  .eng-clock .eng-hand:last-of-type { animation: eng-spin 6s linear infinite; }
+  .eng-clockg { fill: none; stroke: var(--c-navy); stroke-width: 2; }
+  .eng-hand { stroke: var(--c-navy); stroke-width: 2; stroke-linecap: round; }
+  .eng-hand--spin { transform-box: view-box; transform-origin: 38px 34px; animation: eng-spin 6s linear infinite; }
 
-  @keyframes eng-scan { 0%, 100% { transform: translate(36px,58px); } 50% { transform: translate(74px,58px); } }
+  @keyframes eng-scan { 0%, 100% { transform: translate(38px,58px); } 50% { transform: translate(72px,58px); } }
   @keyframes eng-bulb { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
-  @keyframes eng-grow { 0%, 100% { transform: scaleY(.5); } 45%, 72% { transform: scaleY(1); } }
-  @keyframes eng-pulse { 0%, 100% { opacity: .45; transform: translateY(2px); } 50% { opacity: 1; transform: translateY(-1px); } }
+  @keyframes eng-grow { 0%, 100% { transform: scaleY(.55); } 45%, 72% { transform: scaleY(1); } }
+  @keyframes eng-pulse { 0%, 100% { opacity: .5; transform: translateY(2px); } 50% { opacity: 1; transform: translateY(-1px); } }
   @keyframes eng-draw { 0% { stroke-dashoffset: 180; } 60%, 100% { stroke-dashoffset: 0; } }
   @keyframes eng-spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) {
-    .eng-lens, .eng-bulb, .eng-step, .eng-up, .eng-curve, .eng-hand { animation: none; }
+    .eng-lens, .eng-bulb, .eng-step, .eng-up, .eng-curve, .eng-hand--spin { animation: none; }
     .eng-curve { stroke-dashoffset: 0; }
+    .eng-bulb { opacity: 1; }
   }
 </style>
