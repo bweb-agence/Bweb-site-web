@@ -12,7 +12,7 @@ const { slug } = Astro.params;
 
 const { data: session } = await supabase
   .from("sessions")
-  .select("*, formations(slug,title,summary,description_md,duration,level), ticket_types(id,name,price,capacity,sold,badge,sales_end,sort)")
+  .select("*, formations(slug,title,summary,description_md,description_html,duration,level), ticket_types(id,name,price,capacity,sold,badge,sales_end,sort)")
   .eq("slug", slug)
   .in("status", ["published", "full"])
   .maybeSingle();
@@ -32,7 +32,7 @@ if (session) {
 }
 
 const formation = session?.formations as
-  | { title: string; summary: string | null; description_md: string | null; duration: string | null; level: string | null }
+  | { title: string; summary: string | null; description_md: string | null; description_html: string | null; duration: string | null; level: string | null }
   | null;
 
 const tickets = (session?.ticket_types ?? []).slice().sort((a: any, b: any) => a.sort - b.sort);
@@ -48,7 +48,9 @@ const [introRaw, progRaw] = desc.split(/##\s*Au programme/i);
 const intro = (introRaw || formation?.summary || "").trim();
 const learnItems = (progRaw || "")
   .split("\n").map((l) => l.trim()).filter((l) => l.startsWith("- ")).map((l) => l.slice(2).trim());
-const detailHtml = intro ? (marked.parse(intro, { async: false }) as string) : "";
+// Contenu riche (éditeur WYSIWYG) prioritaire : d'abord la session, puis la formation ; repli Markdown.
+const richHtml = (session as any)?.description_html || formation?.description_html || "";
+const detailHtml = richHtml || (intro ? (marked.parse(intro, { async: false }) as string) : "");
 
 function badgeInfo(badge: string | null, salesEnd: string | null) {
   if (badge === "hot") return { cls: "hot", label: "📈 Forte demande" };

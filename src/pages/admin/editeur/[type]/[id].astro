@@ -1,0 +1,186 @@
+---
+export const prerender = false;
+import EditorLayout from "../../../../layouts/EditorLayout.astro";
+
+const { type, id } = Astro.params;
+const TYPES = ["article", "formation", "session"] as const;
+if (!TYPES.includes(type as any)) return Astro.redirect("/admin");
+
+const cfg = {
+  article:   { label: "Article",   plural: "Articles",   back: "/admin/articles",   base: "/blog/" },
+  formation: { label: "Formation", plural: "Formations", back: "/admin/formations", base: "/formations/" },
+  session:   { label: "Session",   plural: "Sessions",   back: "/admin/sessions",   base: "/formations/session/" },
+}[type as "article" | "formation" | "session"];
+
+const isNew = id === "nouveau";
+---
+
+<EditorLayout title={`${isNew ? "Nouveau" : "Édition"} · ${cfg.label}`}>
+  <div id="ed-root" data-type={type} data-id={isNew ? "" : id} data-base={cfg.base}>
+
+    <!-- ============ Barre supérieure ============ -->
+    <header class="ed-topbar">
+      <a class="ed-icon" href={cfg.back} title="Retour à la liste" aria-label="Retour">←</a>
+      <div class="ed-crumb"><span>{cfg.plural}</span><span class="sep">/</span><b id="ed-crumb-doc">{isNew ? `Nouveau ${cfg.label.toLowerCase()}` : "…"}</b></div>
+      <div class="ed-spacer"></div>
+      <span class="ed-autostate" id="ed-autostate" aria-live="polite"></span>
+      {type !== "formation" && <span class="ed-status-pill" id="ed-status-pill"><span class="g"></span>Brouillon</span>}
+      <a class="ed-btn ghost" id="ed-preview" href="#" target="_blank" rel="noopener" hidden>Aperçu</a>
+      <button class="ed-btn" id="ed-save">Enregistrer</button>
+      {type !== "formation" && <button class="ed-btn primary" id="ed-publish">Publier</button>}
+    </header>
+
+    <div class="ed-layout">
+      <!-- ============ Zone d'édition ============ -->
+      <main class="ed-main">
+        <div class="ed-toolbar" id="ed-toolbar" role="toolbar" aria-label="Mise en forme">
+          <button class="ed-tb" data-cmd="bold" title="Gras (Ctrl+B)"><b>B</b></button>
+          <button class="ed-tb" data-cmd="italic" title="Italique (Ctrl+I)"><i>I</i></button>
+          <button class="ed-tb" data-cmd="underline" title="Souligné (Ctrl+U)"><u>U</u></button>
+          <button class="ed-tb" data-cmd="strike" title="Barré"><s>S</s></button>
+          <button class="ed-tb" data-cmd="code" title="Code en ligne"><span class="mono">&lt;/&gt;</span></button>
+          <span class="ed-sep"></span>
+          <button class="ed-tb" data-cmd="h2" title="Titre 2">H2</button>
+          <button class="ed-tb" data-cmd="h3" title="Titre 3">H3</button>
+          <button class="ed-tb" data-cmd="bulletList" title="Liste à puces">☰</button>
+          <button class="ed-tb" data-cmd="orderedList" title="Liste numérotée">1.</button>
+          <button class="ed-tb" data-cmd="blockquote" title="Citation">❝</button>
+          <button class="ed-tb" data-cmd="codeBlock" title="Bloc de code">▤</button>
+          <span class="ed-sep"></span>
+          <button class="ed-tb" data-cmd="link" title="Lien">🔗</button>
+          <button class="ed-tb" data-cmd="image" title="Image">🖼</button>
+          <button class="ed-tb" data-cmd="table" title="Tableau">▦</button>
+          <button class="ed-tb" data-cmd="hr" title="Séparateur">―</button>
+          <span class="ed-sep"></span>
+          <button class="ed-tb" data-cmd="undo" title="Annuler">↺</button>
+          <button class="ed-tb" data-cmd="redo" title="Rétablir">↻</button>
+          <span class="ed-slashhint">Tapez <kbd>/</kbd> pour insérer un bloc</span>
+        </div>
+
+        <div class="ed-canvas-wrap">
+          <div class="ed-canvas">
+            <textarea class="ed-doc-title" id="ed-title" rows="1"
+              placeholder={type === "article" ? "Titre de l'article…" : type === "formation" ? "Nom de la formation…" : "Titre de la session…"}></textarea>
+            <div class="ed-doc-meta" id="ed-doc-meta"></div>
+            <div id="ed-editor" class="ed-mount"></div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ============ Réglages ============ -->
+      <aside class="ed-aside" id="ed-aside">
+
+        {type !== "formation" && (
+          <section class="ed-panel">
+            <h4>Publication</h4>
+            <div class="ed-field">
+              <label>Statut</label>
+              <div class="ed-seg" id="ed-status" role="group" aria-label="Statut">
+                <button type="button" data-status="draft" aria-pressed="true">Brouillon</button>
+                <button type="button" data-status="published" class="pub" aria-pressed="false">Publié</button>
+                {type === "session" && <button type="button" data-status="cancelled" aria-pressed="false">Annulée</button>}
+              </div>
+            </div>
+            {type === "article" && (
+              <div class="ed-field"><label for="f-pubdate">Date de publication</label>
+                <input class="ed-inp" id="f-pubdate" type="datetime-local" />
+                <div class="ed-help">Vide = date du jour à la publication.</div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* -------- ARTICLE -------- */}
+        {type === "article" && (
+          <>
+            <section class="ed-panel"><h4>Adresse (URL)</h4>
+              <div class="ed-field"><div class="ed-slugbox"><span class="pre">/blog/</span><input id="f-slug" aria-label="Slug" /></div>
+                <div class="ed-help">Générée depuis le titre — modifiable.</div></div>
+            </section>
+            <section class="ed-panel"><h4>Organisation</h4>
+              <div class="ed-field"><label for="f-category">Catégorie</label>
+                <input class="ed-inp" id="f-category" list="cat-list" />
+                <datalist id="cat-list"><option value="IA"></option><option value="Marketing"></option><option value="Automatisation"></option><option value="Vente en ligne"></option><option value="Cas clients"></option></datalist></div>
+              <div class="ed-row2">
+                <div class="ed-field"><label for="f-author">Auteur</label><input class="ed-inp" id="f-author" value="Équipe Bweb" /></div>
+                <div class="ed-field"><label for="f-reading">Lecture (min)</label><input class="ed-inp" id="f-reading" type="number" min="1" placeholder="auto" /></div>
+              </div>
+            </section>
+            <section class="ed-panel"><h4>Extrait</h4>
+              <div class="ed-field"><textarea class="ed-ta" id="f-excerpt" rows="3" placeholder="Résumé affiché sur la liste du blog…"></textarea></div>
+            </section>
+            <section class="ed-panel"><h4>Image de couverture</h4>
+              <div class="ed-cover" id="ed-cover" data-target="f-cover"></div>
+              <input type="hidden" id="f-cover" />
+            </section>
+            <section class="ed-panel"><h4>Référencement (SEO)</h4>
+              <div class="ed-field"><label for="f-seotitle">Titre méta</label><input class="ed-inp" id="f-seotitle" /></div>
+              <div class="ed-field"><label for="f-seodesc">Description méta</label><textarea class="ed-ta" id="f-seodesc" rows="2"></textarea></div>
+            </section>
+          </>
+        )}
+
+        {/* -------- FORMATION -------- */}
+        {type === "formation" && (
+          <>
+            <section class="ed-panel"><h4>Adresse (URL)</h4>
+              <div class="ed-field"><div class="ed-slugbox"><span class="pre">/formations/</span><input id="f-slug" aria-label="Slug" /></div></div>
+              <div class="ed-help" style="margin-top:2px">Les formations sont toujours visibles dans le catalogue.</div>
+            </section>
+            <section class="ed-panel"><h4>Détails</h4>
+              <div class="ed-field"><label for="f-theme">Thème</label><input class="ed-inp" id="f-theme" list="th-list" />
+                <datalist id="th-list"><option value="IA"></option><option value="Marketing"></option><option value="Vente en ligne"></option><option value="Automatisation"></option></datalist></div>
+              <div class="ed-row2">
+                <div class="ed-field"><label for="f-level">Niveau</label><input class="ed-inp" id="f-level" placeholder="Débutant accepté" /></div>
+                <div class="ed-field"><label for="f-duration">Durée</label><input class="ed-inp" id="f-duration" placeholder="2 jours (14 h)" /></div>
+              </div>
+              <div class="ed-field"><label for="f-price">Prix indicatif (FCFA)</label><input class="ed-inp" id="f-price" type="number" min="0" /></div>
+              <div class="ed-field"><label for="f-summary">Résumé (carte)</label><textarea class="ed-ta" id="f-summary" rows="3"></textarea></div>
+            </section>
+            <section class="ed-panel"><h4>Visuel (16/9)</h4>
+              <div class="ed-cover" id="ed-cover" data-target="f-image"></div>
+              <input type="hidden" id="f-image" />
+            </section>
+          </>
+        )}
+
+        {/* -------- SESSION -------- */}
+        {type === "session" && (
+          <>
+            <section class="ed-panel"><h4>Adresse (URL)</h4>
+              <div class="ed-field"><div class="ed-slugbox"><span class="pre">/…/session/</span><input id="f-slug" aria-label="Slug" /></div></div>
+            </section>
+            <section class="ed-panel"><h4>Quand &amp; où</h4>
+              <div class="ed-field"><label for="f-formation">Formation liée</label><select class="ed-sel" id="f-formation"><option value="">— Aucune —</option></select></div>
+              <div class="ed-field"><label for="f-theme">Thème</label><input class="ed-inp" id="f-theme" list="th-list" />
+                <datalist id="th-list"><option value="IA"></option><option value="Marketing"></option><option value="Vente en ligne"></option><option value="Automatisation"></option></datalist></div>
+              <div class="ed-row2">
+                <div class="ed-field"><label for="f-start">Début *</label><input class="ed-inp" id="f-start" type="datetime-local" /></div>
+                <div class="ed-field"><label for="f-end">Fin</label><input class="ed-inp" id="f-end" type="datetime-local" /></div>
+              </div>
+              <div class="ed-row2">
+                <div class="ed-field"><label for="f-city">Ville</label><input class="ed-inp" id="f-city" value="Abidjan" /></div>
+                <div class="ed-field"><label for="f-venue">Lieu</label><input class="ed-inp" id="f-venue" value="Espace de formation Bweb · Cocody" /></div>
+              </div>
+            </section>
+            <section class="ed-panel"><h4>Billetterie</h4>
+              <div class="ed-tt-list" id="ed-tt-list"></div>
+              <button type="button" class="ed-addline" id="ed-tt-add">+ Ajouter un tarif</button>
+              <div class="ed-help" style="margin-top:8px">Chaque tarif a sa propre capacité (anti‑surbooking).</div>
+            </section>
+            <section class="ed-panel"><h4>Affiche (16/9)</h4>
+              <div class="ed-cover" id="ed-cover" data-target="f-image"></div>
+              <input type="hidden" id="f-image" />
+            </section>
+          </>
+        )}
+
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    import { initEditorPage } from "../../../../scripts/editorPage";
+    initEditorPage();
+  </script>
+</EditorLayout>

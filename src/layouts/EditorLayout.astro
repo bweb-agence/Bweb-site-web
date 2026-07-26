@@ -1,0 +1,66 @@
+---
+export const prerender = false;
+
+import "@fontsource-variable/sora";
+import "@fontsource-variable/plus-jakarta-sans";
+import "../styles/tokens.css";
+import "../styles/admin.css";
+import "../styles/editor.css";
+
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · Éditeur Bweb</title>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+  </head>
+  <body class="ed-body">
+    <div class="admin-loading" id="admin-loading">
+      <div style="text-align:center"><div class="spin"></div>Vérification de l'accès…</div>
+    </div>
+
+    <div class="ed-shell" data-admin hidden>
+      <slot />
+    </div>
+
+    <script>
+      import { supabaseBrowser } from "../lib/supabaseBrowser";
+
+      const failsafe = setTimeout(() => {
+        const el = document.getElementById("admin-loading");
+        if (el && !el.hasAttribute("hidden")) {
+          el.innerHTML =
+            '<div style="text-align:center;max-width:340px;padding:0 16px">' +
+            '<p style="color:var(--c-gray-700);font-weight:600;margin-bottom:14px">La vérification de la session prend trop de temps.</p>' +
+            '<button id="admin-reload" style="padding:11px 20px;border:0;border-radius:10px;background:var(--c-blue);color:#fff;font-weight:700;cursor:pointer">Recharger la page</button></div>';
+          document.getElementById("admin-reload")?.addEventListener("click", () => location.reload());
+        }
+      }, 7000);
+
+      (async () => {
+        try {
+          const { data: { session } } = await supabaseBrowser.auth.getSession();
+          if (!session) { location.replace("/admin/connexion?next=" + encodeURIComponent(location.pathname)); return; }
+          const { data: isAdmin, error } = await supabaseBrowser.rpc("is_admin");
+          if (error) throw error;
+          if (!isAdmin) { await supabaseBrowser.auth.signOut(); location.replace("/admin/connexion?err=forbidden"); return; }
+          clearTimeout(failsafe);
+          document.getElementById("admin-loading")?.setAttribute("hidden", "");
+          document.querySelector("[data-admin]")?.removeAttribute("hidden");
+          window.dispatchEvent(new CustomEvent("admin-ready"));
+        } catch (e) {
+          console.error("[éditeur] erreur de vérification de session", e);
+          location.replace("/admin/connexion?err=session");
+        }
+      })();
+    </script>
+  </body>
+</html>
