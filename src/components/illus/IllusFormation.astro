@@ -1,76 +1,109 @@
 ---
-/* HERO-FORMATION — « Montée en compétence »
-   Un apprenant devant un écran, puis des badges de compétence qui se
-   débloquent en gravissant un escalier jusqu'à l'autonomie (toque).
-   Métaphore : apprendre en faisant, gagner en autonomie. */
-const LINE = "M150 320 L236 266 L322 212 L408 156";
-const steps = [
-  { x: 150, y: 320, d: "0",   icon: '<path d="M-5 3a6 6 0 1 1 10 0c-1.2 1.2-2 2.3-2 4h-6c0-1.7-.8-2.8-2-4z"/><line x1="-2.5" y1="9.5" x2="2.5" y2="9.5"/>' },       // idée
-  { x: 236, y: 266, d: "0.8", icon: '<circle cx="0" cy="0" r="4"/><path d="M0 -9v3 M0 6v3 M-9 0h3 M6 0h3 M-6.4 -6.4l2.1 2.1 M4.3 4.3l2.1 2.1 M6.4 -6.4l-2.1 2.1 M-4.3 4.3l-2.1 2.1"/>' }, // pratique
-  { x: 322, y: 212, d: "1.6", icon: '<path d="M0 -9c1 4.4 2.5 6 7 7-4.5 1-6 2.6-7 7-1-4.4-2.5-6-7-7 4.5-1 6-2.6 7-7z"/>' },  // IA (étincelle)
-  { x: 408, y: 156, d: "2.4", icon: '<path d="M0 -8 L12 -3.5 L0 1 L-12 -3.5 Z"/><path d="M4 -0.5 V4.5 C4 6.5 -4 6.5 -4 4.5 V-0.5"/>' },  // autonomie (toque)
+/* HERO-FORMATION — « La maîtrise de l'IA »
+   Un grand cerveau-réseau (qui remplit le cadre) s'illumine nœud par nœud —
+   le savoir qui s'ancre — coiffé d'une toque de diplôme et nourri par un
+   livre d'où montent des particules de connaissance.
+   Métaphore : on forme à l'IA -> maîtrise et autonomie. */
+const nodes = [
+  { x: 88,  y: 210, d: "0s"   },
+  { x: 140, y: 150, d: ".4s"  },
+  { x: 214, y: 128, d: ".8s"  },
+  { x: 300, y: 128, d: "1.2s" },
+  { x: 374, y: 150, d: "1.6s" },
+  { x: 436, y: 210, d: "2.0s" },
+  { x: 378, y: 272, d: "2.4s" },
+  { x: 300, y: 300, d: "2.8s" },
+  { x: 214, y: 300, d: "3.2s" },
+  { x: 148, y: 272, d: "3.6s" },
+  { x: 262, y: 212, d: ".6s"  }, // centre
 ];
+const edges = [
+  // anneau externe (0..9)
+  [88,210,140,150],[140,150,214,128],[214,128,300,128],[300,128,374,150],[374,150,436,210],
+  [436,210,378,272],[378,272,300,300],[300,300,214,300],[214,300,148,272],[148,272,88,210],
+  // liaisons vers le centre (réparties, réseau)
+  [262,212,140,150],[262,212,300,128],[262,212,436,210],[262,212,300,300],[262,212,148,272],
+  // quelques cordes internes
+  [214,128,262,212],[374,150,378,272],[214,300,262,212],
+];
+const RING = "M88 210 L140 150 L214 128 L300 128 L374 150 L436 210 L378 272 L300 300 L214 300 L148 272 Z";
+const FEED = "M262 356 C 256 328 268 300 262 274";
 ---
 <div class="hero-illus" data-parallax style="--hi-accent:#00C89E;--hi-accent2:#12A5C0" aria-hidden="true">
   <span class="hi-glow"></span>
   <svg class="hi-scene frm" viewBox="0 0 520 420" role="img">
-    <title>Des compétences qui se débloquent jusqu'à l'autonomie</title>
+    <title>La formation qui ancre la maîtrise de l'IA</title>
+    <defs>
+      <linearGradient id="frm-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop class="frm-a" offset="0%" /><stop class="frm-b" offset="100%" />
+      </linearGradient>
+    </defs>
 
-    <!-- progression -->
-    <path class="frm-ghost" d={LINE} />
-    <path class="frm-line" d={LINE} />
-    <circle class="frm-dot" r="4" style={`offset-path:path('${LINE}')`} />
+    <!-- aura du savoir -->
+    <ellipse class="frm-aura" cx="262" cy="212" rx="188" ry="132" />
 
-    <!-- apprenant + écran (source) -->
-    <g transform="translate(96,300)">
-      <g class="frm-base">
-        <rect class="frm-screen" x="-34" y="-30" width="68" height="46" rx="8" />
-        <line class="frm-screen-l" x1="-22" y1="-18" x2="14" y2="-18" />
-        <line class="frm-screen-l" x1="-22" y1="-9" x2="6" y2="-9" />
-        <circle class="frm-head" cx="0" cy="26" r="8" />
-        <path class="frm-body" d="M-13 40c0-7 5.8-11 13-11s13 4 13 11" />
-      </g>
+    <!-- réseau (cerveau) -->
+    <g class="frm-net">
+      {edges.map((e, i) => (
+        <line class="frm-edge" x1={e[0]} y1={e[1]} x2={e[2]} y2={e[3]} style={`--d:${(i * 0.16).toFixed(2)}s`} />
+      ))}
+      <circle class="frm-pulse" r="4.2" style={`offset-path:path('${RING}')`} />
+      <circle class="frm-pulse" r="3.6" style={`offset-path:path('${RING}');animation-delay:-4s`} />
+      {nodes.map((n, i) => (
+        <circle class="frm-node" cx={n.x} cy={n.y} r={i === nodes.length - 1 ? 13 : 9} style={`--d:${n.d}`} />
+      ))}
     </g>
 
-    <!-- badges de compétence -->
-    {steps.map((s) => (
-      <g transform={`translate(${s.x},${s.y})`}>
-        <circle class="frm-halo" style={`--d:${s.d}`} r="19" />
-        <circle class="frm-badge" style={`--d:${s.d}`} r="17" />
-        <g class="frm-ic" set:html={s.icon} />
-        <g class="frm-check" style={`--d:${s.d}`} transform="translate(13,-13)">
-          <circle r="7" /><polyline points="-3 0 -1 2 3 -3" />
-        </g>
-      </g>
+    <!-- toque de diplôme -->
+    <g class="frm-cap">
+      <polygon class="frm-cap-board" points="262,36 354,80 262,124 170,80" />
+      <path class="frm-cap-head" d="M234 110 C 242 136 282 136 290 110" />
+      <circle class="frm-cap-btn" cx="262" cy="80" r="3.4" />
+      <path class="frm-cap-tassel" d="M354 80 V 114" />
+      <circle class="frm-cap-bead" cx="354" cy="118" r="3.4" />
+      <g class="frm-spark"><path d="M336 56 c1 4.2 2.1 5.3 6.2 6.3 -4.1 1 -5.2 2.1 -6.2 6.3 -1-4.2-2.1-5.3-6.2-6.3 4.1-1 5.2-2.1 6.2-6.3z" /></g>
+    </g>
+
+    <!-- livre + particules de savoir -->
+    <g class="frm-book">
+      <path class="frm-page" d="M262 344 C 242 331 208 331 188 337 L188 366 C208 358 242 358 262 370 Z" />
+      <path class="frm-page" d="M262 344 C 282 331 316 331 336 337 L336 366 C316 358 282 358 262 370 Z" />
+      <line class="frm-spine" x1="262" y1="344" x2="262" y2="370" />
+    </g>
+    {["0", ".8", "1.6"].map((delay) => (
+      <circle class="frm-seed" r="3.2" style={`offset-path:path('${FEED}');animation-delay:${delay}s`} />
     ))}
   </svg>
 </div>
 
 <style>
-  .frm-ghost { fill: none; stroke: rgba(255,255,255,.1); stroke-width: 2.4; }
-  .frm-line { fill: none; stroke: var(--hi-accent); stroke-width: 2.6; stroke-linecap: round; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--hi-accent) 70%, transparent)); stroke-dasharray: 360; stroke-dashoffset: 360; animation: frm-draw 5s ease-in-out infinite; }
-  .frm-dot { fill: #fff; filter: drop-shadow(0 0 5px var(--hi-accent)); animation: frm-travel 5s ease-in-out infinite; }
+  .frm-a { stop-color: var(--hi-accent); } .frm-b { stop-color: var(--hi-accent2); }
+  .frm-aura { fill: var(--hi-accent); opacity: .15; filter: blur(22px); transform-box: fill-box; transform-origin: center; animation: frm-breathe 6s ease-in-out infinite; }
 
-  .frm-screen { fill: rgba(255,255,255,.05); stroke: rgba(255,255,255,.18); stroke-width: 1.2; }
-  .frm-screen-l { stroke: var(--hi-accent); stroke-width: 2; stroke-linecap: round; opacity: .8; }
-  .frm-head, .frm-body { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; opacity: .82; }
-  .frm-base { animation: frm-float 6s ease-in-out infinite; }
+  .frm-edge { stroke: rgba(255,255,255,.3); stroke-width: 1.8; animation: frm-edge 4.8s ease-in-out infinite; animation-delay: var(--d); }
+  .frm-node { fill: url(#frm-grad); stroke: rgba(255,255,255,.6); stroke-width: 1.3; fill-opacity: .6; transform-box: fill-box; transform-origin: center; animation: frm-light 4.8s ease-in-out infinite; animation-delay: var(--d); }
+  .frm-pulse { fill: #fff; filter: drop-shadow(0 0 7px var(--hi-accent)); animation: frm-travel 7s linear infinite; }
 
-  .frm-halo { fill: var(--hi-accent); opacity: 0; transform-box: fill-box; transform-origin: center; animation: frm-halo 5s ease-in-out infinite; animation-delay: var(--d); }
-  .frm-badge { fill: rgba(255,255,255,.05); stroke: rgba(255,255,255,.2); stroke-width: 1.3; animation: frm-unlock 5s ease-in-out infinite; animation-delay: var(--d); }
-  .frm-ic { fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; opacity: .92; }
-  .frm-check { opacity: 0; animation: frm-pop 5s ease-in-out infinite; animation-delay: var(--d); }
-  .frm-check circle { fill: var(--hi-accent); }
-  .frm-check polyline { fill: none; stroke: #06231c; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .frm-cap-board { fill: url(#frm-grad); stroke: rgba(255,255,255,.34); stroke-width: 1.3; filter: drop-shadow(0 12px 26px color-mix(in srgb, var(--hi-accent) 48%, transparent)); }
+  .frm-cap-head { fill: none; stroke: #fff; stroke-width: 2.3; stroke-linecap: round; opacity: .88; }
+  .frm-cap-btn, .frm-cap-bead { fill: #fff; }
+  .frm-cap-tassel { stroke: #fff; stroke-width: 1.9; stroke-linecap: round; opacity: .88; }
+  .frm-cap { animation: frm-bob 6s ease-in-out infinite; }
+  .frm-spark { fill: #fff; animation: frm-twinkle 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 
-  @keyframes frm-draw { 0% { stroke-dashoffset: 360; } 60%, 100% { stroke-dashoffset: 0; } }
-  @keyframes frm-travel { 0% { offset-distance: 0%; opacity: 0; } 8% { opacity: 1; } 60% { offset-distance: 100%; opacity: 1; } 66%, 100% { offset-distance: 100%; opacity: 0; } }
-  @keyframes frm-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-  @keyframes frm-halo { 0%, 100% { opacity: 0; transform: scale(.6); } 74% { opacity: .34; transform: scale(1); } 88% { opacity: 0; transform: scale(1.5); } }
-  @keyframes frm-unlock { 0%, 100% { stroke: rgba(255,255,255,.2); } 74%, 92% { stroke: var(--hi-accent); } }
-  @keyframes frm-pop { 0%, 100% { opacity: 0; } 78%, 94% { opacity: 1; } }
+  .frm-page { fill: rgba(255,255,255,.06); stroke: rgba(255,255,255,.32); stroke-width: 1.5; }
+  .frm-spine { stroke: rgba(255,255,255,.32); stroke-width: 1.5; }
+  .frm-seed { fill: var(--hi-accent); filter: drop-shadow(0 0 6px var(--hi-accent)); animation: frm-rise 2.7s ease-in infinite; }
+
+  @keyframes frm-breathe { 0%, 100% { opacity: .12; transform: scale(1); } 50% { opacity: .24; transform: scale(1.04); } }
+  @keyframes frm-edge { 0%, 100% { stroke: rgba(255,255,255,.22); } 45% { stroke: color-mix(in srgb, var(--hi-accent) 92%, white); } }
+  @keyframes frm-light { 0%, 100% { fill-opacity: .55; transform: scale(.88); } 42% { fill-opacity: 1; transform: scale(1.16); } 72% { fill-opacity: .85; transform: scale(1); } }
+  @keyframes frm-travel { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+  @keyframes frm-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes frm-twinkle { 0%, 100% { opacity: .2; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.2); } }
+  @keyframes frm-rise { 0% { offset-distance: 0%; opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
   @media (prefers-reduced-motion: reduce) {
-    .frm-line, .frm-dot, .frm-halo, .frm-badge, .frm-check, .frm-base { animation: none; }
-    .frm-line { stroke-dashoffset: 0; } .frm-check { opacity: 1; } .frm-dot { display: none; }
+    .frm-aura, .frm-edge, .frm-node, .frm-pulse, .frm-cap, .frm-spark, .frm-seed { animation: none; }
+    .frm-node { fill-opacity: 1; } .frm-pulse, .frm-seed { display: none; }
   }
 </style>
