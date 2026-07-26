@@ -11,7 +11,7 @@
         pré-rempli — canal fiable, fonctionne sans backend.
      6. État de succès inline avec lien WhatsApp de secours.
    ========================================================= */
-import { contact, forms as formsCfg } from "../config/site";
+import { contact } from "../config/site";
 
 type FieldEl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
@@ -112,22 +112,22 @@ function setStatus(form: HTMLFormElement, msg: string, kind: "error" | "success"
 }
 
 async function sendEmail(form: HTMLFormElement): Promise<boolean> {
-  const endpoint = formsCfg.emailEndpoint;
-  if (!endpoint) return false; // non configuré -> on s'appuie sur WhatsApp
+  // Endpoint serveur Bird (route Astro /api/contact). En l'absence de couche
+  // serveur (prod statique) ou si Bird n'est pas configuré, l'appel échoue ou
+  // renvoie { ok:false } → on bascule proprement sur WhatsApp.
+  const endpoint = form.dataset.endpoint || "/api/contact";
   const fd = new FormData(form);
-  // Champs de contrôle FormSubmit (ignorés par Formspree) — ajoutés hors DOM
-  // pour ne PAS polluer le récapitulatif WhatsApp.
-  fd.append("_subject", form.getAttribute("data-form-title") || "Nouvelle demande — Bweb");
-  fd.append("_template", "table");
-  fd.append("_captcha", "false");
-  if (!fd.has("_honey")) fd.append("_honey", "");
+  fd.append("subject", form.getAttribute("data-form-title") || "Nouvelle demande — Bweb");
+  fd.append("message", composeMessage(form)); // récap lisible réutilisé pour l'e-mail
   try {
     const res = await fetch(endpoint, {
       method: "POST",
       body: fd,
       headers: { Accept: "application/json" },
     });
-    return res.ok;
+    if (!res.ok) return false;
+    const data = await res.json().catch(() => null);
+    return data?.ok === true;
   } catch {
     return false;
   }

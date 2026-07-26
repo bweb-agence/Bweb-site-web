@@ -28,6 +28,8 @@ import PhoneField from "../components/PhoneField.astro";
              Sans JS, toutes les étapes restent visibles et le formulaire fonctionne
              normalement (soumission gérée par src/scripts/forms.ts). -->
         <form data-form data-wizard data-wizard-cta="Démarrer ma demande" data-form-title="Nouvelle demande de devis">
+          <!-- Honeypot anti-spam : masqué aux humains, laissé vide ; rejeté côté serveur si rempli. -->
+          <div class="hp-field" aria-hidden="true"><label>Ne pas remplir<input type="text" name="company_site" tabindex="-1" autocomplete="off" /></label></div>
 
           <!-- Étape 1 — Le besoin (une question simple pour démarrer) -->
           <div class="wizard-step" data-wizard-step data-step-title="Votre besoin" data-wizard-auto>

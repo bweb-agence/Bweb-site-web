@@ -87,6 +87,8 @@ const socials = [
                Sans JS, toutes les étapes restent visibles et le formulaire fonctionne
                normalement (la soumission est prise en charge par src/scripts/forms.ts). -->
           <form data-form data-wizard data-wizard-cta="Écrire à Bweb" data-form-title="Nouveau message — Contact">
+            <!-- Honeypot anti-spam : masqué aux humains, laissé vide ; rejeté côté serveur si rempli. -->
+            <div class="hp-field" aria-hidden="true"><label>Ne pas remplir<input type="text" name="company_site" tabindex="-1" autocomplete="off" /></label></div>
             <!-- Étape 1 — Identité -->
             <div class="wizard-step" data-wizard-step data-step-title="Identité">
               <p class="wizard-q">Comment vous appelez-vous&nbsp;?</p>

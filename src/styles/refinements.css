@@ -397,3 +397,9 @@ html.wiz-lock .wa-float { opacity: 0; pointer-events: none; }
 .form-success [data-success-msg] { font-size: .95rem; margin-bottom: 18px; }
 .form-success .success-optional { font-size: .85rem; color: var(--c-gray-600); margin-bottom: 14px; }
 .form-success .success-optional[hidden] { display: none; }
+
+/* ============================================================
+   13. Honeypot anti-spam — retiré du flux et invisible/inaccessible
+   ============================================================ */
+.hp-field { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; overflow: hidden; }
+.hp-field input { pointer-events: none; }
