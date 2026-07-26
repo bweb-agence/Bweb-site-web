@@ -109,7 +109,7 @@ export async function initEditorPage() {
   });
 
   /* ---------- Éléments d'UI communs ---------- */
-  updateCrumb(); updatePill(); updatePreview(); autoGrow();
+  updateCrumb(); updatePill(); updatePreview(); autoGrow(); updateMeta();
 
   titleEl.addEventListener("input", () => {
     autoGrow();
@@ -173,9 +173,14 @@ export async function initEditorPage() {
   function markDirty() {
     dirty = true;
     if (autostate) autostate.textContent = "Modifications non enregistrées";
-    updateCrumb();
+    updateCrumb(); updateMeta();
     clearTimeout(saveTimer);
     if (id) saveTimer = setTimeout(() => save(true), 1600); // autosave sur enregistrement existant
+  }
+  function updateMeta() {
+    const meta = $("ed-doc-meta"); if (!meta) return;
+    const words = (handle.getHTML().replace(/<[^>]+>/g, " ").match(/\S+/g) || []).length;
+    meta.textContent = words ? `${words} mot${words > 1 ? "s" : ""} · ~${Math.max(1, Math.round(words / 200))} min de lecture` : "Commencez à écrire…";
   }
   function setSaved() {
     dirty = false;

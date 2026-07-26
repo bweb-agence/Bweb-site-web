@@ -10,6 +10,7 @@ import { Image } from "@tiptap/extension-image";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { TableKit } from "@tiptap/extension-table";
+import { Callout } from "./callout";
 
 export type MountOptions = {
   element: HTMLElement;               // conteneur où monter l'éditeur
@@ -47,6 +48,8 @@ function slashItems(pickImage: () => void): SlashItem[] {
       run: (e, r) => e.chain().focus().deleteRange(r).toggleOrderedList().run() },
     { title: "Citation", hint: "Mise en avant d'une phrase", icon: "❝", keywords: "citation quote blockquote",
       run: (e, r) => e.chain().focus().deleteRange(r).toggleBlockquote().run() },
+    { title: "Encadré", hint: "Bloc d'information mis en avant", icon: "💡", keywords: "encadre callout info note aide astuce important",
+      run: (e, r) => e.chain().focus().deleteRange(r).wrapIn("callout").run() },
     { title: "Bloc de code", hint: "Extrait de code", icon: "</>", keywords: "code bloc pre",
       run: (e, r) => e.chain().focus().deleteRange(r).toggleCodeBlock().run() },
     { title: "Tableau", hint: "3 × 3 avec en-tête", icon: "▦", keywords: "tableau table grille",
@@ -143,9 +146,15 @@ function attachToolbar(editor: Editor, toolbar: HTMLElement, pickImage: () => vo
     bulletList: () => editor.chain().focus().toggleBulletList().run(),
     orderedList: () => editor.chain().focus().toggleOrderedList().run(),
     blockquote: () => editor.chain().focus().toggleBlockquote().run(),
+    callout: () => editor.chain().focus().toggleWrap("callout").run(),
     codeBlock: () => editor.chain().focus().toggleCodeBlock().run(),
     hr: () => editor.chain().focus().setHorizontalRule().run(),
     table: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+    tableAddCol: () => editor.chain().focus().addColumnAfter().run(),
+    tableDelCol: () => editor.chain().focus().deleteColumn().run(),
+    tableAddRow: () => editor.chain().focus().addRowAfter().run(),
+    tableDelRow: () => editor.chain().focus().deleteRow().run(),
+    tableDel: () => editor.chain().focus().deleteTable().run(),
     image: () => pickImage(),
     undo: () => editor.chain().focus().undo().run(),
     redo: () => editor.chain().focus().redo().run(),
@@ -162,10 +171,10 @@ function attachToolbar(editor: Editor, toolbar: HTMLElement, pickImage: () => vo
     btn.addEventListener("click", (e) => { e.preventDefault(); run[btn.dataset.cmd!]?.(); });
   });
 
-  const marks: [string, any?][] = [["bold"], ["italic"], ["underline"], ["strike"], ["code"],
-    ["blockquote"], ["bulletList"], ["orderedList"], ["codeBlock"], ["link"]];
+  const marks = ["bold", "italic", "underline", "strike", "code", "blockquote", "callout",
+    "bulletList", "orderedList", "codeBlock", "link"];
   const sync = () => {
-    marks.forEach(([name]) => {
+    marks.forEach((name) => {
       const b = toolbar.querySelector<HTMLElement>(`[data-cmd="${name}"]`);
       if (b) b.classList.toggle("on", editor.isActive(name));
     });
@@ -173,7 +182,11 @@ function attachToolbar(editor: Editor, toolbar: HTMLElement, pickImage: () => vo
     const h3 = toolbar.querySelector<HTMLElement>('[data-cmd="h3"]');
     if (h2) h2.classList.toggle("on", editor.isActive("heading", { level: 2 }));
     if (h3) h3.classList.toggle("on", editor.isActive("heading", { level: 3 }));
+    // Contrôles de tableau : visibles seulement quand le curseur est dans un tableau.
+    const inTable = editor.isActive("table");
+    toolbar.querySelectorAll<HTMLElement>("[data-table-only]").forEach((el) => { el.hidden = !inTable; });
   };
+  sync();
   editor.on("selectionUpdate", sync);
   editor.on("transaction", sync);
 }
@@ -204,6 +217,7 @@ export function mountEditor(opts: MountOptions): EditorHandle {
       Image.configure({ inline: false, allowBase64: false, HTMLAttributes: { class: "ed-img" } }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TableKit.configure({ table: { resizable: true, HTMLAttributes: { class: "ed-table" } } }),
+      Callout,
       Placeholder.configure({
         includeChildren: false,
         placeholder: ({ node }: any) =>

@@ -3,6 +3,8 @@
    S'appuie sur tokens.css. Thème clair, cohérent avec l'admin.
    ========================================================= */
 .ed-body { margin: 0; background: var(--surface-2); color: var(--text); font-family: var(--f-body); -webkit-font-smoothing: antialiased; }
+/* L'attribut [hidden] doit primer sur les display: des composants (barre d'outils, boutons…). */
+.ed-body [hidden] { display: none !important; }
 .ed-shell { min-height: 100vh; }
 .ed-body .mono { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
 
@@ -45,6 +47,10 @@
   display: inline-flex; align-items: center; justify-content: center; }
 .ed-tb:hover { background: #eef4ff; color: var(--c-blue); }
 .ed-tb.on { background: var(--c-blue); color: #fff; }
+.ed-tb.danger:hover { background: var(--c-danger-bg); color: var(--c-danger); }
+.ed-tb:focus-visible, .ed-btn:focus-visible, .ed-icon:focus-visible { outline: 2px solid var(--c-blue); outline-offset: 2px; }
+.ed-inp:focus-visible, .ed-sel:focus-visible, .ed-ta:focus-visible { outline: none; }
+.ed-seg button:focus-visible, .ed-slash-item:focus-visible { outline: 2px solid var(--c-blue); outline-offset: -2px; }
 .ed-tb .mono { font-size: 12px; }
 .ed-sep { width: 1px; height: 22px; background: var(--c-border); margin: 0 5px; }
 .ed-slashhint { margin-left: auto; color: var(--c-gray-400); font-size: 12px; font-weight: 600; }
@@ -80,6 +86,14 @@
 .ed-content img.ed-img.ProseMirror-selectednode { outline: 3px solid var(--c-blue); outline-offset: 2px; }
 .ed-content hr { border: 0; border-top: 2px solid var(--c-border); margin: 4px 0; }
 .ed-content hr.ProseMirror-selectednode { border-top-color: var(--c-blue); }
+/* Encadré (callout) */
+.ed-content .callout { position: relative; padding: 15px 18px 15px 50px; background: #fdf6ea; border: 1px solid #efe0c6;
+  border-radius: 12px; color: #5a4a30; }
+.ed-content .callout::before { content: "💡"; position: absolute; left: 16px; top: 13px; font-size: 18px; line-height: 1.4; }
+.ed-content .callout > * { margin-top: 0; }
+.ed-content .callout > * + * { margin-top: 8px; }
+.ed-content .callout h2, .ed-content .callout h3 { color: var(--c-navy); margin-top: 0; }
+.ed-content .callout a { color: var(--c-blue-dark); }
 .ed-content table.ed-table, .ed-content table { border-collapse: collapse; width: 100%; font-size: 15px; overflow: hidden; }
 .ed-content th, .ed-content td { border: 1px solid var(--c-border); padding: 8px 12px; text-align: left; vertical-align: top; }
 .ed-content th { background: var(--surface-2); font-weight: 700; color: var(--c-navy); }

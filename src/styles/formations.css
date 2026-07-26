@@ -219,6 +219,21 @@
 .sess-prose h2 { font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; color: var(--c-ink); margin-top: 1.2em; }
 .sess-prose ul { padding-left: 1.15em; color: var(--c-gray-700); line-height: 1.6; font-size: 0.92rem; }
 .sess-prose li + li { margin-top: 0.3em; }
+.sess-prose h3 { font-family: var(--f-display); font-weight: 700; font-size: 0.98rem; color: var(--c-ink); margin-top: 1em; }
+.sess-prose a { color: var(--c-blue); text-underline-offset: 3px; }
+.sess-prose img { border-radius: var(--radius-md); max-width: 100%; height: auto; }
+.sess-prose blockquote { border-left: 3px solid var(--c-blue); padding-left: 1em; color: var(--c-gray-600); font-style: italic; }
+.sess-prose .callout { position: relative; padding: 13px 16px 13px 46px; background: #fdf6ea; border: 1px solid #efe0c6;
+  border-radius: var(--radius-md); color: #5a4a30; font-size: 0.9rem; }
+.sess-prose .callout::before { content: "💡"; position: absolute; left: 15px; top: 12px; font-size: 17px; }
+.sess-prose .callout > * + * { margin-top: 0.4em; }
+.sess-prose pre { background: var(--c-ink); color: #eef1f8; border-radius: var(--radius-md); padding: 14px 16px; overflow-x: auto; font-size: 0.82rem; }
+.sess-prose pre code { background: none; padding: 0; color: inherit; }
+.sess-prose hr { border: 0; border-top: 1px solid var(--c-border); margin: 1.4em 0; }
+.sess-prose .tableWrapper { overflow-x: auto; }
+.sess-prose table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+.sess-prose th, .sess-prose td { border: 1px solid var(--c-border); padding: 7px 11px; text-align: left; }
+.sess-prose th { background: var(--surface-2); font-weight: 700; color: var(--c-navy); }
 
 /* programme + infos */
 .two-col { display: grid; gap: var(--space-lg); }

@@ -45,6 +45,7 @@ const isNew = id === "nouveau";
           <button class="ed-tb" data-cmd="bulletList" title="Liste à puces">☰</button>
           <button class="ed-tb" data-cmd="orderedList" title="Liste numérotée">1.</button>
           <button class="ed-tb" data-cmd="blockquote" title="Citation">❝</button>
+          <button class="ed-tb" data-cmd="callout" title="Encadré (Ctrl+Maj+E)">💡</button>
           <button class="ed-tb" data-cmd="codeBlock" title="Bloc de code">▤</button>
           <span class="ed-sep"></span>
           <button class="ed-tb" data-cmd="link" title="Lien">🔗</button>
@@ -54,6 +55,12 @@ const isNew = id === "nouveau";
           <span class="ed-sep"></span>
           <button class="ed-tb" data-cmd="undo" title="Annuler">↺</button>
           <button class="ed-tb" data-cmd="redo" title="Rétablir">↻</button>
+          <span class="ed-sep" data-table-only hidden></span>
+          <button class="ed-tb" data-cmd="tableAddRow" data-table-only hidden title="Ajouter une ligne">＋▤</button>
+          <button class="ed-tb" data-cmd="tableDelRow" data-table-only hidden title="Supprimer la ligne">－▤</button>
+          <button class="ed-tb" data-cmd="tableAddCol" data-table-only hidden title="Ajouter une colonne">＋▥</button>
+          <button class="ed-tb" data-cmd="tableDelCol" data-table-only hidden title="Supprimer la colonne">－▥</button>
+          <button class="ed-tb danger" data-cmd="tableDel" data-table-only hidden title="Supprimer le tableau">🗑</button>
           <span class="ed-slashhint">Tapez <kbd>/</kbd> pour insérer un bloc</span>
         </div>
 
