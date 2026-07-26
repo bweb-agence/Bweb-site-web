@@ -284,3 +284,67 @@ html, body { max-width: 100%; overflow-x: hidden; }
 
 /* Cards « Notre engagement » : l'illustration remplace l'icône, alignée à gauche */
 .testimonial-card .engage-illus { margin-left: 0; }
+
+/* ---------------------------------------------------------
+   11. Wizard en MODALE plein écran (voir src/scripts/wizard.ts)
+   --------------------------------------------------------- */
+html.wiz-lock { overflow: hidden; }
+html.wiz-lock .wa-float { opacity: 0; pointer-events: none; }
+
+/* Panneau de lancement (sur la page, à la place du formulaire inline) */
+.wiz-launch { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; padding: clamp(14px, 3vw, 26px) 0; }
+.wiz-launch__badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px; border-radius: var(--radius-pill); background: var(--c-skyblue); color: var(--c-blue-dark); font-weight: 700; font-size: .8rem; }
+.wiz-launch .wiz-open { font-size: 1.02rem; padding: 15px 30px; }
+.wiz-launch .wiz-open svg { width: 18px; height: 18px; }
+.wiz-launch__hint { margin: 0; font-size: .9rem; color: var(--c-gray-600); }
+
+/* Modale */
+.wiz-modal { position: fixed; inset: 0; z-index: 1000; opacity: 0; transition: opacity .26s var(--ease); }
+.wiz-modal.is-open { opacity: 1; }
+.wiz-modal[hidden] { display: none; }
+.wiz-modal__panel {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f7ff 100%);
+  transform: translateY(16px); transition: transform .32s var(--ease);
+}
+.wiz-modal.is-open .wiz-modal__panel { transform: none; }
+
+/* En-tête épinglé */
+.wiz-modal__head {
+  position: relative; z-index: 2; display: grid; grid-template-columns: 1fr auto;
+  align-items: center; column-gap: 18px; row-gap: 9px;
+  padding: clamp(14px, 2.2vw, 22px) clamp(16px, 4vw, 44px);
+  border-bottom: 1px solid rgba(2, 11, 80, .08); background: rgba(255, 255, 255, .72); backdrop-filter: blur(6px);
+}
+.wiz-progress { grid-column: 1; height: 8px; border-radius: var(--radius-pill); background: var(--c-gray-100); overflow: hidden; }
+.wiz-progress__bar { display: block; height: 100%; width: 20%; border-radius: inherit; background: var(--g-blue); transition: width var(--dur) var(--ease); }
+.wiz-count { grid-column: 1; margin: 0; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--c-gray-600); }
+.wiz-close { grid-column: 2; grid-row: 1 / span 2; width: 46px; height: 46px; display: grid; place-items: center; border: 1px solid var(--c-border); border-radius: 50%; background: #fff; color: var(--c-navy); cursor: pointer; transition: background .2s var(--ease), color .2s var(--ease), transform .3s var(--ease); }
+.wiz-close svg { width: 20px; height: 20px; }
+.wiz-close:hover { background: var(--g-navy); color: #fff; border-color: transparent; transform: rotate(90deg); }
+
+/* Corps : le form remplit, étape centrée, scroll interne seulement si besoin */
+.wiz-modal form[data-wizard] { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.wiz-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; justify-content: safe center; padding: clamp(28px, 6vh, 72px) clamp(18px, 5vw, 44px); }
+.wiz-scroll__inner { width: 100%; max-width: 620px; margin-inline: auto; }
+.wiz-modal .wizard-q { font-size: clamp(1.4rem, 1.1rem + 1.4vw, 2rem); }
+
+/* Pied épinglé */
+.wiz-foot {
+  flex: none; border-top: 1px solid rgba(2, 11, 80, .08); background: rgba(255, 255, 255, .82); backdrop-filter: blur(6px);
+  padding: clamp(14px, 2vw, 20px) clamp(18px, 5vw, 44px) calc(clamp(14px, 2vw, 20px) + env(safe-area-inset-bottom, 0px));
+}
+.wiz-foot .wizard-nav { margin-top: 0; max-width: 620px; margin-inline: auto; justify-content: flex-end; }
+.wiz-foot .wizard-error { max-width: 620px; margin: 0 auto 12px; }
+.wiz-foot .form-status { max-width: 620px; margin-inline: auto; }
+.wiz-foot .form-note { max-width: 620px; margin: 12px auto 0; }
+
+/* Succès affiché dans la modale */
+.wiz-modal__panel .form-success { margin: auto; max-width: 480px; padding: clamp(24px, 5vw, 48px); text-align: center; }
+.wiz-modal:has(.form-success.is-visible) .wiz-progress,
+.wiz-modal:has(.form-success.is-visible) .wiz-count { visibility: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wiz-modal, .wiz-modal__panel { transition: none; }
+  .wiz-modal__panel { transform: none; }
+}
