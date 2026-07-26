@@ -1,0 +1,75 @@
+---
+/* HERO-SERVICES — « Console d'orchestration »
+   Un noyau Bweb IA route des faisceaux lumineux, en séquence, vers 4
+   modules-services qui s'illuminent à l'arrivée. Métaphore : tous les
+   leviers, un seul objectif. Fond transparent (fusionne dans le hero). */
+const CORE = { x: 122, y: 210 };
+const modules = [
+  { y: 78,  label: "Conseil",        icon: '<circle cx="0" cy="0" r="8"/><circle cx="0" cy="0" r="3.2"/><line x1="0" y1="-11" x2="0" y2="-8"/><line x1="11" y1="0" x2="8" y2="0"/>', d: "0" },
+  { y: 165, label: "Formation",      icon: '<path d="M0 -8c-3-2-6-2-9-1v13c3-1 6-1 9 1"/><path d="M0 -8c3-2 6-2 9-1v13c-3-1-6-1-9 1"/><line x1="0" y1="-8" x2="0" y2="5"/>', d: "0.9" },
+  { y: 252, label: "Digitalisation", icon: '<polygon points="0 -9 9 -4 0 1 -9 -4"/><polyline points="-9 1 0 6 9 1"/><polyline points="-9 5 0 10 9 5"/>', d: "1.8" },
+  { y: 339, label: "Automatisation", icon: '<circle cx="0" cy="0" r="4"/><path d="M0 -9v3 M0 6v3 M-9 0h3 M6 0h3 M-6.4 -6.4l2.1 2.1 M4.3 4.3l2.1 2.1 M6.4 -6.4l-2.1 2.1 M-4.3 4.3l-2.1 2.1"/>', d: "2.7" },
+];
+---
+<div class="hero-illus" data-parallax style="--hi-accent:#1F6CED;--hi-accent2:#12A5C0" aria-hidden="true">
+  <span class="hi-glow"></span>
+  <svg class="hi-scene svc" viewBox="0 0 520 420" role="img">
+    <title>Bweb orchestre ses services vers un même objectif</title>
+    <defs>
+      <linearGradient id="svc-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop class="svc-a" offset="0%" /><stop class="svc-b" offset="100%" />
+      </linearGradient>
+    </defs>
+
+    <!-- faisceaux + jetons -->
+    {modules.map((m) => (
+      <g>
+        <path class="svc-beam" d={`M162 210 C250 210 250 ${m.y} 338 ${m.y}`} />
+        <circle class="svc-jet" r="3" style={`offset-path:path('M162 210 C250 210 250 ${m.y} 338 ${m.y}');animation-delay:${m.d}s`} />
+      </g>
+    ))}
+
+    <!-- modules -->
+    {modules.map((m) => (
+      <g class="svc-mod" style={`--d:${m.d}s`}>
+        <rect class="svc-card" x="338" y={m.y - 29} width="162" height="58" rx="14" />
+        <g class="svc-ic" transform={`translate(366,${m.y})`} set:html={m.icon} />
+        <text class="svc-lbl" x="388" y={m.y + 5}>{m.label}</text>
+      </g>
+    ))}
+
+    <!-- noyau -->
+    <g class="svc-core" transform={`translate(${CORE.x},${CORE.y})`}>
+      <circle class="svc-aura" r="56" />
+      <rect class="svc-box" x="-42" y="-42" width="84" height="84" rx="24" />
+      <g class="svc-core-ic">
+        <line x1="-16" y1="-11" x2="16" y2="-11" /><circle cx="6" cy="-11" r="4" />
+        <line x1="-16" y1="0" x2="16" y2="0" /><circle cx="-6" cy="0" r="4" />
+        <line x1="-16" y1="11" x2="16" y2="11" /><circle cx="9" cy="11" r="4" />
+      </g>
+      <text class="svc-core-lbl" x="0" y="62">Bweb IA</text>
+    </g>
+  </svg>
+</div>
+
+<style>
+  .svc-a { stop-color: var(--hi-accent); } .svc-b { stop-color: var(--hi-accent2); }
+  .svc-beam { fill: none; stroke: rgba(255,255,255,.14); stroke-width: 1.4; }
+  .svc-jet { fill: var(--hi-accent); filter: drop-shadow(0 0 5px var(--hi-accent)); animation: svc-flow 3.6s linear infinite; }
+  .svc-card { fill: rgba(255,255,255,.05); stroke: rgba(255,255,255,.16); stroke-width: 1.2; }
+  .svc-mod { animation: svc-arrive 3.6s ease-in-out infinite; animation-delay: var(--d); transform-box: view-box; }
+  .svc-ic { fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; opacity: .92; }
+  .svc-lbl { font-family: var(--f-display); font-weight: 600; font-size: 14px; fill: rgba(255,255,255,.95); dominant-baseline: middle; }
+  .svc-aura { fill: var(--hi-accent); opacity: .26; filter: blur(9px); transform-box: fill-box; transform-origin: center; animation: svc-pulse 5s ease-in-out infinite; }
+  .svc-box { fill: url(#svc-grad); stroke: rgba(255,255,255,.28); stroke-width: 1; filter: drop-shadow(0 10px 26px color-mix(in srgb, var(--hi-accent) 45%, transparent)); }
+  .svc-core-ic { fill: var(--hi-accent2); stroke: #fff; stroke-width: 1.8; stroke-linecap: round; }
+  .svc-core-lbl { font-family: var(--f-display); font-weight: 800; font-size: 12px; fill: #fff; text-anchor: middle; letter-spacing: .1em; text-transform: uppercase; }
+
+  @keyframes svc-flow { 0% { offset-distance: 0%; opacity: 0; } 10% { opacity: 1; } 88% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+  @keyframes svc-arrive { 0%, 62%, 100% { opacity: .78; } 78% { opacity: 1; } }
+  @keyframes svc-pulse { 0%, 100% { opacity: .2; transform: scale(1); } 50% { opacity: .4; transform: scale(1.08); } }
+  @media (prefers-reduced-motion: reduce) {
+    .svc-jet, .svc-mod, .svc-aura { animation: none; }
+    .svc-jet { display: none; }
+  }
+</style>

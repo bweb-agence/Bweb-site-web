@@ -1,6 +1,7 @@
 ---
 import { contact, whatsappLink } from "../config/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import IllusAutomatisation from "../components/illus/IllusAutomatisation.astro";
 ---
 
 <BaseLayout title="Automatisation & IA pour entreprises | Bweb" description="WhatsApp, chatbots et IA : Bweb automatise les tâches répétitives des entreprises pour libérer du temps et gagner en productivité.">
@@ -25,13 +26,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         </div>
       </div>
       <div class="visual" data-hero-in>
-        <div class="phone-frame">
-          <div class="phone-screen">
-            <div class="chat-bubble in">Bonjour 👋 Comment puis-je vous aider ?</div>
-            <div class="chat-bubble out">Je voudrais un devis</div>
-            <div class="chat-bubble in">Avec plaisir, un conseiller vous répond sous peu.</div>
-          </div>
-        </div>
+        <IllusAutomatisation />
       </div>
     </div>
   </div>

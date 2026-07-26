@@ -182,3 +182,36 @@ html, body { max-width: 100%; overflow-x: hidden; }
   position: absolute; inset: 0; width: 100%; height: 100%;
   z-index: 0; display: block; pointer-events: none;
 }
+
+/* ---------------------------------------------------------
+   9. Illustrations de hero sur-mesure — base partagée
+   Conteneur transparent + halo qui déborde pour fondre le
+   visuel dans le hero. Chaque illustration (composant dédié)
+   ajoute son propre art SVG. Voir src/scripts/heroIllus.ts.
+   --------------------------------------------------------- */
+.hero-illus {
+  position: relative; width: 100%; max-width: 540px; margin: 0 auto;
+  aspect-ratio: 520 / 420; isolation: isolate;
+}
+.hero-illus .hi-glow {
+  position: absolute; inset: -14%; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(42% 42% at 50% 50%, color-mix(in srgb, var(--hi-accent, #1F6CED) 32%, transparent) 0%, transparent 70%),
+    radial-gradient(58% 58% at 62% 40%, color-mix(in srgb, var(--hi-accent2, #12A5C0) 18%, transparent) 0%, transparent 72%);
+  filter: blur(16px); opacity: .9; will-change: transform, opacity;
+  animation: hi-breathe 7s ease-in-out infinite;
+}
+.hero-illus .hi-scene {
+  position: relative; z-index: 1; width: 100%; height: 100%;
+  display: block; overflow: visible; will-change: transform;
+}
+@keyframes hi-breathe { 0%, 100% { opacity: .82; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
+@media (max-width: 620px) { .hero-illus { max-width: 430px; } }
+@media (prefers-reduced-motion: reduce) {
+  .hero-illus .hi-glow { animation: none; }
+}
+
+/* Scroll-spy latéral : masqué tant qu'on est sur le hero (voir ui.ts),
+   il n'entre donc jamais en conflit avec l'illustration du hero. */
+.section-nav { opacity: 0; pointer-events: none; transition: opacity .35s var(--ease); }
+.section-nav.is-visible { opacity: 1; pointer-events: auto; }

@@ -46,7 +46,11 @@ export function initMobileNav(): void {
 
 /* ---------- Navigation latérale par sections (scroll-spy) ---------- */
 export function initSectionNav(): void {
-  const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-nav-section]"));
+  // On exclut les heros (.page-hero) : leur label opaque, fixé à droite,
+  // chevaucherait l'illustration du hero. Le scroll-spy démarre donc à la
+  // première section de contenu.
+  const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-nav-section]"))
+    .filter((s) => !s.classList.contains("page-hero"));
   if (sections.length < 2) return;
 
   const nav = document.createElement("nav");
@@ -74,6 +78,14 @@ export function initSectionNav(): void {
   });
 
   document.body.appendChild(nav);
+
+  // N'afficher le scroll-spy qu'une fois le hero dépassé : il ne chevauche
+  // ainsi jamais l'illustration du hero.
+  const toggleNavVisibility = () => {
+    nav.classList.toggle("is-visible", window.scrollY > window.innerHeight * 0.6);
+  };
+  toggleNavVisibility();
+  window.addEventListener("scroll", toggleNavVisibility, { passive: true });
 
   if ("IntersectionObserver" in window) {
     const observer = new IntersectionObserver(

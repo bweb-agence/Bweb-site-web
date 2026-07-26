@@ -1,0 +1,210 @@
+---
+/* Visuel de hero — sombre, sans cadre, se fond dans le fond du page-hero.
+   Un hub IA central (halo qui respire + ondes de diffusion) relié à des nœuds
+   thématiques par des liens lumineux parcourus de flux. Parallaxe souris.
+   Chaque page passe un `variant` : motif + libellés adaptés à sa section.
+   Aucune étoile : le cosmique reste réservé au branding (hero d'accueil).
+   Entièrement figé sous prefers-reduced-motion. */
+export interface Props { variant?: string; }
+const { variant = "services" } = Astro.props;
+
+// --- Jeu d'icônes (tracé sur ±10, dessiné en stroke) ---
+const IC: Record<string, string> = {
+  team: '<circle cx="-4" cy="-3" r="3.4"/><circle cx="5" cy="-2" r="2.8"/><path d="M-11 7c0-4 3.5-6 7-6s7 2 7 6"/><path d="M2 6c.3-2.6 2.4-4 5-4s4.6 1.6 4.8 4"/>',
+  target: '<circle cx="0" cy="0" r="8"/><circle cx="0" cy="0" r="3.4"/><line x1="0" y1="-11" x2="0" y2="-8"/><line x1="8" y1="0" x2="11" y2="0"/>',
+  growth: '<polyline points="-9 6 -2 -2 3 3 10 -6"/><polyline points="5 -6 10 -6 10 -1"/>',
+  gear: '<circle cx="0" cy="0" r="4"/><path d="M0 -9v3 M0 6v3 M-9 0h3 M6 0h3 M-6.4 -6.4l2.1 2.1 M4.3 4.3l2.1 2.1 M6.4 -6.4l-2.1 2.1 M-4.3 4.3l-2.1 2.1"/>',
+  data: '<ellipse cx="0" cy="-6" rx="8" ry="3"/><path d="M-8 -6v12c0 1.7 3.6 3 8 3s8-1.3 8-3v-12"/><path d="M-8 0c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  book: '<path d="M0 -8c-3-2-6-2-9-1v13c3-1 6-1 9 1"/><path d="M0 -8c3-2 6-2 9-1v13c-3-1-6-1-9 1"/><line x1="0" y1="-8" x2="0" y2="5"/>',
+  bulb: '<path d="M-5 3a6 6 0 1 1 10 0c-1.2 1.2-2 2.3-2 4h-6c0-1.7-.8-2.8-2-4z"/><line x1="-2.5" y1="9.5" x2="2.5" y2="9.5"/>',
+  spark: '<path d="M0 -10c1.2 5 2.8 6.8 8 8-5.2 1.2-6.8 3-8 8-1.2-5-2.8-6.8-8-8 5.2-1.2 6.8-3 8-8z"/>',
+  layers: '<polygon points="0 -9 9 -4 0 1 -9 -4"/><polyline points="-9 1 0 6 9 1"/><polyline points="-9 5 0 10 9 5"/>',
+  code: '<polyline points="-3 -7 -9 0 -3 7"/><polyline points="3 -7 9 0 3 7"/>',
+  rocket: '<path d="M0 -10c4 2.4 6 6.4 6 11l-2.6 2.6-3.4-2-3.4 2L-6 1c0-4.6 2-8.6 6-11z"/><circle cx="0" cy="-2" r="2.2"/><path d="M-3 9l-3 3M3 9l3 3"/>',
+  megaphone: '<path d="M-9 -2v4l13 5v-14z"/><path d="M-9 -2h-1a1.5 1.5 0 0 0 0 4h1"/><path d="M4 4.5c2.2 0 3.5-1.4 3.5-3.5"/>',
+  chat: '<path d="M-8 -7h16a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 8 4H-1l-5 4V4h-2A1.5 1.5 0 0 1-9.5 2.5v-8A1.5 1.5 0 0 1-8 -7z"/>',
+  compass: '<circle cx="0" cy="0" r="9"/><polyline points="4 -4 -1 1 -3 5"/><polyline points="4 -4 -1 1 3 4"/>',
+  check: '<circle cx="0" cy="0" r="9"/><polyline points="-4 0 -1 3 4 -4"/>',
+  chart: '<line x1="-8" y1="8" x2="-8" y2="-3"/><line x1="0" y1="8" x2="0" y2="-8"/><line x1="8" y1="8" x2="8" y2="1"/><line x1="-11" y1="9.5" x2="11" y2="9.5"/>',
+  web: '<circle cx="0" cy="0" r="9"/><ellipse cx="0" cy="0" rx="4" ry="9"/><line x1="-9" y1="0" x2="9" y2="0"/>',
+};
+
+type Node = { label: string; icon: string; c?: string };
+type Variant = { accent: string; accent2: string; hub: string; hubIcon: string; nodes: Node[] };
+
+const AI = '<rect x="-13" y="-13" width="26" height="26" rx="6"/><rect x="-6" y="-6" width="12" height="12" rx="3"/><path d="M0 -19v6 M0 13v6 M-19 0h6 M13 0h6 M-13 -13l4 4 M9 9l4 4 M13 -13l-4 4 M-9 9l-4 4"/>';
+
+const VARIANTS: Record<string, Variant> = {
+  services: { accent: "#3B82F6", accent2: "#12A5C0", hub: "IA", hubIcon: AI, nodes: [
+    { label: "Conseil", icon: "target" }, { label: "Formation", icon: "book" },
+    { label: "Digitalisation", icon: "layers" }, { label: "Automatisation", icon: "gear" }, { label: "Données", icon: "data" } ] },
+  "conseil-strategie": { accent: "#3B82F6", accent2: "#8B7CF6", hub: "Cap", hubIcon: IC.compass, nodes: [
+    { label: "Diagnostic", icon: "data" }, { label: "Stratégie", icon: "target" },
+    { label: "Feuille de route", icon: "compass" }, { label: "Priorités", icon: "check" }, { label: "ROI", icon: "chart" } ] },
+  formation: { accent: "#00C89E", accent2: "#12A5C0", hub: "Savoir", hubIcon: IC.book, nodes: [
+    { label: "Compétences", icon: "bulb" }, { label: "Pratique", icon: "gear" },
+    { label: "Autonomie", icon: "rocket" }, { label: "IA", icon: "spark" }, { label: "Marketing", icon: "megaphone" } ] },
+  digitalisation: { accent: "#12A5C0", accent2: "#3B82F6", hub: "Outils", hubIcon: IC.layers, nodes: [
+    { label: "Sites & boutiques", icon: "web" }, { label: "CRM", icon: "data" },
+    { label: "Process", icon: "gear" }, { label: "Outils métiers", icon: "code" }, { label: "Productivité", icon: "growth" } ] },
+  "sites-web": { accent: "#3B82F6", accent2: "#00C89E", hub: "Web", hubIcon: IC.code, nodes: [
+    { label: "Vitrine", icon: "web" }, { label: "Boutique", icon: "layers" },
+    { label: "Plateforme", icon: "rocket" }, { label: "SEO", icon: "target" }, { label: "Performance", icon: "chart" } ] },
+  marketing: { accent: "#FF835F", accent2: "#E0A400", hub: "Portée", hubIcon: IC.megaphone, nodes: [
+    { label: "Réseaux sociaux", icon: "chat" }, { label: "Contenu", icon: "spark" },
+    { label: "Publicité", icon: "target" }, { label: "Audience", icon: "team" }, { label: "Conversion", icon: "growth" } ] },
+  automatisation: { accent: "#8B7CF6", accent2: "#3B82F6", hub: "IA", hubIcon: AI, nodes: [
+    { label: "Workflows", icon: "gear" }, { label: "Agents IA", icon: "chat" },
+    { label: "Intégrations", icon: "code" }, { label: "Relances", icon: "megaphone" }, { label: "Gain de temps", icon: "growth" } ] },
+  "a-propos": { accent: "#3B82F6", accent2: "#00C89E", hub: "Bweb", hubIcon: IC.spark, nodes: [
+    { label: "Mission", icon: "target" }, { label: "Équipe", icon: "team" },
+    { label: "Valeurs", icon: "bulb" }, { label: "Impact", icon: "growth" }, { label: "Afrique", icon: "compass" } ] },
+  formations: { accent: "#00C89E", accent2: "#3B82F6", hub: "Savoir", hubIcon: IC.book, nodes: [
+    { label: "Présentiel", icon: "team" }, { label: "En ligne", icon: "web" },
+    { label: "Certifiante", icon: "check" }, { label: "Pratique", icon: "gear" }, { label: "IA & data", icon: "spark" } ] },
+  realisations: { accent: "#3B82F6", accent2: "#E0A400", hub: "Impact", hubIcon: IC.growth, nodes: [
+    { label: "Projets", icon: "layers" }, { label: "Clients", icon: "team" },
+    { label: "Résultats", icon: "chart" }, { label: "Secteurs", icon: "compass" }, { label: "Satisfaction", icon: "check" } ] },
+  methodologie: { accent: "#12A5C0", accent2: "#8B7CF6", hub: "Méthode", hubIcon: IC.compass, nodes: [
+    { label: "Diagnostic", icon: "data" }, { label: "Cadrage", icon: "target" },
+    { label: "Déploiement", icon: "rocket" }, { label: "Formation", icon: "book" }, { label: "Suivi", icon: "check" } ] },
+};
+
+const cfg = VARIANTS[variant] ?? VARIANTS.services;
+const HUB = { x: 260, y: 208 };
+const RX = 178, RY = 150;
+const N = cfg.nodes.length;
+const START = -90; // premier nœud en haut
+const nodes = cfg.nodes.map((node, i) => {
+  const a = ((START + (360 / N) * i) * Math.PI) / 180;
+  const x = Math.round(HUB.x + RX * Math.cos(a));
+  const y = Math.round(HUB.y + RY * Math.sin(a));
+  const w = Math.max(104, Math.round(node.label.length * 8.2 + 48));
+  return { ...node, x, y, w, delay: (i * 0.6).toFixed(2) };
+});
+---
+<div class="hero-viz" data-parallax style={`--hv-accent:${cfg.accent};--hv-accent2:${cfg.accent2};`} aria-hidden="true">
+  <span class="hv-glow"></span>
+  <svg class="hv-scene" viewBox="0 0 520 420" role="presentation">
+    <defs>
+      <linearGradient id="hv-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop class="hv-stop-a" offset="0%" />
+        <stop class="hv-stop-b" offset="100%" />
+      </linearGradient>
+    </defs>
+    <!-- liens + flux -->
+    {nodes.map((n) => (
+      <g class="hv-spoke">
+        <line class="hv-wire" x1={HUB.x} y1={HUB.y} x2={n.x} y2={n.y} />
+        <circle class="hv-flow" r="2.8" style={`offset-path:path('M${HUB.x} ${HUB.y} L${n.x} ${n.y}');animation-delay:${n.delay}s`} />
+      </g>
+    ))}
+
+    <!-- ondes de diffusion depuis le hub -->
+    <g class="hv-signals" transform={`translate(${HUB.x},${HUB.y})`}>
+      <circle class="hv-ring" r="46" />
+      <circle class="hv-ring" r="46" style="animation-delay:1.4s" />
+      <circle class="hv-ring" r="46" style="animation-delay:2.8s" />
+    </g>
+
+    <!-- nœuds -->
+    {nodes.map((n) => (
+      <g class="hv-node" transform={`translate(${n.x},${n.y})`} style={`--d:${n.delay}s`}>
+        <g class="hv-node-in">
+          <rect class="hv-chip" x={-n.w / 2} y="-20" width={n.w} height="40" rx="12" />
+          <g class="hv-ic" transform={`translate(${-n.w / 2 + 22},0)`} set:html={IC[n.icon] ?? IC.target} />
+          <text class="hv-lbl" x={-n.w / 2 + 40} y="5">{n.label}</text>
+        </g>
+      </g>
+    ))}
+
+    <!-- hub central -->
+    <g class="hv-hub" transform={`translate(${HUB.x},${HUB.y})`}>
+      <circle class="hv-hub-aura" r="52" />
+      <rect class="hv-hub-card" x="-38" y="-38" width="76" height="76" rx="22" />
+      <g class="hv-hub-ic" set:html={cfg.hubIcon} />
+      <text class="hv-hub-lbl" x="0" y="34">{cfg.hub}</text>
+    </g>
+  </svg>
+</div>
+
+<style>
+  .hero-viz {
+    position: relative; width: 100%; max-width: 540px; margin: 0 auto;
+    aspect-ratio: 520 / 420; isolation: isolate;
+  }
+  /* halo qui déborde et fond le visuel dans le fond du hero */
+  .hv-glow {
+    position: absolute; inset: -14%; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(42% 42% at 50% 50%, color-mix(in srgb, var(--hv-accent) 34%, transparent) 0%, transparent 70%),
+      radial-gradient(58% 58% at 62% 38%, color-mix(in srgb, var(--hv-accent2) 20%, transparent) 0%, transparent 72%);
+    filter: blur(14px); opacity: .9;
+    animation: hv-breathe 7s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+  .hv-scene { position: relative; z-index: 1; width: 100%; height: 100%; display: block; overflow: visible; will-change: transform; }
+
+  /* liens */
+  .hv-wire { stroke: rgba(255,255,255,.16); stroke-width: 1.4; }
+  .hv-flow { fill: var(--hv-accent); filter: drop-shadow(0 0 5px var(--hv-accent)); animation: hv-flow 3.4s linear infinite; }
+
+  /* ondes */
+  .hv-ring { fill: none; stroke: var(--hv-accent); stroke-width: 1.2; opacity: 0; transform-box: fill-box; transform-origin: center; animation: hv-ring 4.2s ease-out infinite; }
+
+  /* nœuds */
+  .hv-node-in { transform-box: fill-box; transform-origin: center; animation: hv-float 6s ease-in-out infinite; animation-delay: var(--d); }
+  .hv-chip {
+    fill: rgba(255,255,255,.05); stroke: rgba(255,255,255,.18); stroke-width: 1.2;
+    filter: drop-shadow(0 8px 20px rgba(2,6,40,.35));
+  }
+  .hv-ic { fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; opacity: .92; }
+  .hv-lbl { font-family: var(--f-display); font-weight: 600; font-size: 13.5px; fill: rgba(255,255,255,.94); dominant-baseline: middle; letter-spacing: .01em; }
+
+  /* hub */
+  .hv-hub-aura { fill: var(--hv-accent); opacity: .28; filter: blur(9px); transform-box: fill-box; transform-origin: center; animation: hv-pulse 5s ease-in-out infinite; }
+  .hv-hub-card { fill: url(#hv-grad); stroke: rgba(255,255,255,.28); stroke-width: 1; filter: drop-shadow(0 10px 28px color-mix(in srgb, var(--hv-accent) 45%, transparent)); }
+  .hv-stop-a { stop-color: var(--hv-accent); }
+  .hv-stop-b { stop-color: var(--hv-accent2); }
+  .hv-hub-ic { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .hv-hub-lbl { font-family: var(--f-display); font-weight: 800; font-size: 12.5px; fill: #fff; text-anchor: middle; letter-spacing: .12em; text-transform: uppercase; }
+
+  @keyframes hv-flow { from { offset-distance: 0%; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } to { offset-distance: 100%; opacity: 0; } }
+  @keyframes hv-ring { 0% { transform: scale(.5); opacity: .55; } 80% { opacity: 0; } 100% { transform: scale(2.6); opacity: 0; } }
+  @keyframes hv-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes hv-pulse { 0%, 100% { opacity: .22; transform: scale(1); } 50% { opacity: .42; transform: scale(1.08); } }
+  @keyframes hv-breathe { 0%, 100% { opacity: .8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
+
+  @media (max-width: 620px) { .hero-viz { max-width: 420px; } }
+  @media (prefers-reduced-motion: reduce) {
+    .hv-glow, .hv-flow, .hv-ring, .hv-node-in, .hv-hub-aura { animation: none; }
+    .hv-ring { display: none; }
+  }
+</style>
+
+<script>
+  // Parallaxe souris légère — le visuel "flotte" dans le hero (comme l'accueil).
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduce) {
+    document.querySelectorAll<HTMLElement>(".hero-viz[data-parallax]").forEach((viz) => {
+      const hero = viz.closest<HTMLElement>(".page-hero") ?? viz;
+      const scene = viz.querySelector<HTMLElement>(".hv-scene");
+      const glow = viz.querySelector<HTMLElement>(".hv-glow");
+      let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0;
+      const onMove = (e: PointerEvent) => {
+        const r = hero.getBoundingClientRect();
+        tx = ((e.clientX - r.left) / r.width - 0.5) * 2;
+        ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
+        if (!raf) raf = requestAnimationFrame(tick);
+      };
+      const tick = () => {
+        cx += (tx - cx) * 0.06; cy += (ty - cy) * 0.06;
+        if (scene) scene.style.transform = `translate(${cx * 10}px, ${cy * 10}px)`;
+        if (glow) glow.style.transform = `translate(${cx * -16}px, ${cy * -16}px)`;
+        raf = Math.abs(tx - cx) > 0.001 || Math.abs(ty - cy) > 0.001 ? requestAnimationFrame(tick) : 0;
+      };
+      hero.addEventListener("pointermove", onMove, { passive: true });
+      hero.addEventListener("pointerleave", () => { tx = 0; ty = 0; if (!raf) raf = requestAnimationFrame(tick); }, { passive: true });
+    });
+  }
+</script>
