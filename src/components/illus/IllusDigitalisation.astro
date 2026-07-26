@@ -1,0 +1,85 @@
+---
+/* HERO-DIGITALISATION — « Du désordre au process piloté »
+   Des fiches en vrac passent par un pipeline (engrenages) et deviennent un
+   tableau de bord ordonné avec une courbe qui monte. Métaphore : désordre
+   -> process numérique piloté par la donnée. */
+const RAIL = "M150 210 L346 210";
+const teeth = [0, 45, 90, 135, 180, 225, 270, 315];
+const bars = [
+  { x: 384, h: 34, d: "0s" },
+  { x: 408, h: 54, d: ".3s" },
+  { x: 432, h: 40, d: ".6s" },
+];
+---
+<div class="hero-illus" data-parallax style="--hi-accent:#12A5C0;--hi-accent2:#1F6CED" aria-hidden="true">
+  <span class="hi-glow"></span>
+  <svg class="hi-scene dig" viewBox="0 0 520 420" role="img">
+    <title>Des fiches en désordre transformées en tableau de bord piloté</title>
+
+    <!-- fiches en vrac -->
+    <g class="dig-mess">
+      <g transform="translate(96,150) rotate(-9)"><rect class="dig-card" x="-30" y="-20" width="60" height="40" rx="6" style="--d:0s" /></g>
+      <g transform="translate(84,214) rotate(7)"><rect class="dig-card" x="-30" y="-20" width="60" height="40" rx="6" style="--d:.8s" /></g>
+      <g transform="translate(100,278) rotate(-4)"><rect class="dig-card" x="-30" y="-20" width="60" height="40" rx="6" style="--d:1.6s" /></g>
+    </g>
+
+    <!-- rail + flux -->
+    <path class="dig-rail" d={RAIL} />
+    {["0", "1.3", "2.6"].map((delay) => (
+      <circle class="dig-flow" r="3" style={`offset-path:path('${RAIL}');animation-delay:-${delay}s`} />
+    ))}
+
+    <!-- engrenages -->
+    <g transform="translate(226,200)">
+      <g class="dig-gear dig-gear--cw">
+        <circle class="dig-gear-ring" r="13" /><circle class="dig-gear-hub" r="4.5" />
+        {teeth.map((a) => (<rect class="dig-tooth" x="-2.2" y="-18" width="4.4" height="6" rx="1.4" transform={`rotate(${a})`} />))}
+      </g>
+    </g>
+    <g transform="translate(252,224)">
+      <g class="dig-gear dig-gear--ccw">
+        <circle class="dig-gear-ring" r="9" /><circle class="dig-gear-hub" r="3" />
+        {teeth.map((a) => (<rect class="dig-tooth" x="-1.8" y="-13" width="3.6" height="4.6" rx="1.2" transform={`rotate(${a})`} />))}
+      </g>
+    </g>
+
+    <!-- tableau de bord ordonné -->
+    <g class="dig-dash" transform="translate(422,210)">
+      <rect class="dig-dash-card" x="-66" y="-64" width="132" height="128" rx="14" />
+      <line class="dig-axis" x1="-46" y1="40" x2="46" y2="40" />
+      {bars.map((b) => (
+        <rect class="dig-bar" x={b.x - 422} y={40 - b.h} width="14" height={b.h} rx="3" style={`--h:${b.h}px;--d:${b.d}`} />
+      ))}
+      <polyline class="dig-curve" points="-46 20 -20 4 4 12 30 -18 48 -34" />
+    </g>
+  </svg>
+</div>
+
+<style>
+  .dig-card { fill: rgba(255,255,255,.045); stroke: rgba(255,255,255,.14); stroke-width: 1.2; animation: dig-drift 6s ease-in-out infinite; animation-delay: var(--d); }
+
+  .dig-rail { fill: none; stroke: rgba(255,255,255,.14); stroke-width: 1.4; stroke-dasharray: 3 7; }
+  .dig-flow { fill: var(--hi-accent); filter: drop-shadow(0 0 5px var(--hi-accent)); animation: dig-flow 3.9s linear infinite; }
+
+  .dig-gear-ring, .dig-gear-hub { fill: none; stroke: rgba(255,255,255,.5); stroke-width: 1.6; }
+  .dig-tooth { fill: rgba(255,255,255,.5); }
+  .dig-gear { transform-box: fill-box; transform-origin: center; }
+  .dig-gear--cw { animation: dig-spin 9s linear infinite; }
+  .dig-gear--ccw { animation: dig-spin-rev 7s linear infinite; }
+
+  .dig-dash-card { fill: rgba(255,255,255,.05); stroke: rgba(255,255,255,.18); stroke-width: 1.2; }
+  .dig-axis { stroke: rgba(255,255,255,.2); stroke-width: 1.2; }
+  .dig-bar { fill: var(--hi-accent); opacity: .9; transform-box: fill-box; transform-origin: bottom; animation: dig-rise 4.4s ease-in-out infinite; animation-delay: var(--d); }
+  .dig-curve { fill: none; stroke: var(--hi-accent2); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hi-accent2) 60%, transparent)); stroke-dasharray: 200; stroke-dashoffset: 200; animation: dig-draw 4.4s ease-in-out infinite; }
+
+  @keyframes dig-drift { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  @keyframes dig-flow { 0% { offset-distance: 0%; opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+  @keyframes dig-spin { to { transform: rotate(360deg); } }
+  @keyframes dig-spin-rev { to { transform: rotate(-360deg); } }
+  @keyframes dig-rise { 0%, 100% { transform: scaleY(.35); } 45%, 72% { transform: scaleY(1); } }
+  @keyframes dig-draw { 0% { stroke-dashoffset: 200; } 55%, 100% { stroke-dashoffset: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .dig-mess rect, .dig-flow, .dig-gear, .dig-bar, .dig-curve { animation: none; }
+    .dig-curve { stroke-dashoffset: 0; } .dig-flow { display: none; }
+  }
+</style>

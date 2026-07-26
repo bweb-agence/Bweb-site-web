@@ -1,0 +1,76 @@
+---
+/* HERO-FORMATION — « Montée en compétence »
+   Un apprenant devant un écran, puis des badges de compétence qui se
+   débloquent en gravissant un escalier jusqu'à l'autonomie (toque).
+   Métaphore : apprendre en faisant, gagner en autonomie. */
+const LINE = "M150 320 L236 266 L322 212 L408 156";
+const steps = [
+  { x: 150, y: 320, d: "0",   icon: '<path d="M-5 3a6 6 0 1 1 10 0c-1.2 1.2-2 2.3-2 4h-6c0-1.7-.8-2.8-2-4z"/><line x1="-2.5" y1="9.5" x2="2.5" y2="9.5"/>' },       // idée
+  { x: 236, y: 266, d: "0.8", icon: '<circle cx="0" cy="0" r="4"/><path d="M0 -9v3 M0 6v3 M-9 0h3 M6 0h3 M-6.4 -6.4l2.1 2.1 M4.3 4.3l2.1 2.1 M6.4 -6.4l-2.1 2.1 M-4.3 4.3l-2.1 2.1"/>' }, // pratique
+  { x: 322, y: 212, d: "1.6", icon: '<path d="M0 -9c1 4.4 2.5 6 7 7-4.5 1-6 2.6-7 7-1-4.4-2.5-6-7-7 4.5-1 6-2.6 7-7z"/>' },  // IA (étincelle)
+  { x: 408, y: 156, d: "2.4", icon: '<path d="M0 -8 L12 -3.5 L0 1 L-12 -3.5 Z"/><path d="M4 -0.5 V4.5 C4 6.5 -4 6.5 -4 4.5 V-0.5"/>' },  // autonomie (toque)
+];
+---
+<div class="hero-illus" data-parallax style="--hi-accent:#00C89E;--hi-accent2:#12A5C0" aria-hidden="true">
+  <span class="hi-glow"></span>
+  <svg class="hi-scene frm" viewBox="0 0 520 420" role="img">
+    <title>Des compétences qui se débloquent jusqu'à l'autonomie</title>
+
+    <!-- progression -->
+    <path class="frm-ghost" d={LINE} />
+    <path class="frm-line" d={LINE} />
+    <circle class="frm-dot" r="4" style={`offset-path:path('${LINE}')`} />
+
+    <!-- apprenant + écran (source) -->
+    <g transform="translate(96,300)">
+      <g class="frm-base">
+        <rect class="frm-screen" x="-34" y="-30" width="68" height="46" rx="8" />
+        <line class="frm-screen-l" x1="-22" y1="-18" x2="14" y2="-18" />
+        <line class="frm-screen-l" x1="-22" y1="-9" x2="6" y2="-9" />
+        <circle class="frm-head" cx="0" cy="26" r="8" />
+        <path class="frm-body" d="M-13 40c0-7 5.8-11 13-11s13 4 13 11" />
+      </g>
+    </g>
+
+    <!-- badges de compétence -->
+    {steps.map((s) => (
+      <g transform={`translate(${s.x},${s.y})`}>
+        <circle class="frm-halo" style={`--d:${s.d}`} r="19" />
+        <circle class="frm-badge" style={`--d:${s.d}`} r="17" />
+        <g class="frm-ic" set:html={s.icon} />
+        <g class="frm-check" style={`--d:${s.d}`} transform="translate(13,-13)">
+          <circle r="7" /><polyline points="-3 0 -1 2 3 -3" />
+        </g>
+      </g>
+    ))}
+  </svg>
+</div>
+
+<style>
+  .frm-ghost { fill: none; stroke: rgba(255,255,255,.1); stroke-width: 2.4; }
+  .frm-line { fill: none; stroke: var(--hi-accent); stroke-width: 2.6; stroke-linecap: round; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--hi-accent) 70%, transparent)); stroke-dasharray: 360; stroke-dashoffset: 360; animation: frm-draw 5s ease-in-out infinite; }
+  .frm-dot { fill: #fff; filter: drop-shadow(0 0 5px var(--hi-accent)); animation: frm-travel 5s ease-in-out infinite; }
+
+  .frm-screen { fill: rgba(255,255,255,.05); stroke: rgba(255,255,255,.18); stroke-width: 1.2; }
+  .frm-screen-l { stroke: var(--hi-accent); stroke-width: 2; stroke-linecap: round; opacity: .8; }
+  .frm-head, .frm-body { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; opacity: .82; }
+  .frm-base { animation: frm-float 6s ease-in-out infinite; }
+
+  .frm-halo { fill: var(--hi-accent); opacity: 0; transform-box: fill-box; transform-origin: center; animation: frm-halo 5s ease-in-out infinite; animation-delay: var(--d); }
+  .frm-badge { fill: rgba(255,255,255,.05); stroke: rgba(255,255,255,.2); stroke-width: 1.3; animation: frm-unlock 5s ease-in-out infinite; animation-delay: var(--d); }
+  .frm-ic { fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; opacity: .92; }
+  .frm-check { opacity: 0; animation: frm-pop 5s ease-in-out infinite; animation-delay: var(--d); }
+  .frm-check circle { fill: var(--hi-accent); }
+  .frm-check polyline { fill: none; stroke: #06231c; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  @keyframes frm-draw { 0% { stroke-dashoffset: 360; } 60%, 100% { stroke-dashoffset: 0; } }
+  @keyframes frm-travel { 0% { offset-distance: 0%; opacity: 0; } 8% { opacity: 1; } 60% { offset-distance: 100%; opacity: 1; } 66%, 100% { offset-distance: 100%; opacity: 0; } }
+  @keyframes frm-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes frm-halo { 0%, 100% { opacity: 0; transform: scale(.6); } 74% { opacity: .34; transform: scale(1); } 88% { opacity: 0; transform: scale(1.5); } }
+  @keyframes frm-unlock { 0%, 100% { stroke: rgba(255,255,255,.2); } 74%, 92% { stroke: var(--hi-accent); } }
+  @keyframes frm-pop { 0%, 100% { opacity: 0; } 78%, 94% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .frm-line, .frm-dot, .frm-halo, .frm-badge, .frm-check, .frm-base { animation: none; }
+    .frm-line { stroke-dashoffset: 0; } .frm-check { opacity: 1; } .frm-dot { display: none; }
+  }
+</style>
