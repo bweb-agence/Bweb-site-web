@@ -82,22 +82,33 @@ export function initMotion(): void {
       });
     });
 
-    /* ---------- Compteurs animés ---------- */
+    /* ---------- Compteurs animés ----------
+       La valeur finale est déjà rendue dans le HTML (fallback fiable si le
+       JS ou l'animation ne tournent pas). Ici on ne fait qu'animer 0 → cible,
+       puis on restaure le texte d'origine (format exact avec espaces). */
     document.querySelectorAll<HTMLElement>(".js-counter").forEach((el) => {
       const target = parseFloat(el.getAttribute("data-count") || "0");
       const decimals = (el.getAttribute("data-count") || "").includes(".") ? 1 : 0;
+      const finalText = el.textContent || String(target);
+      const fmt = (v: number) =>
+        decimals ? v.toFixed(1).replace(".", ",") : Math.round(v).toLocaleString("fr-FR");
       const counter = { val: 0 };
       ScrollTrigger.create({
         trigger: el,
         start: "top 90%",
         once: true,
         onEnter: () => {
-          gsap.to(counter, {
-            val: target,
-            duration: 1.8,
-            ease: "power2.out",
-            onUpdate: () => { el.textContent = counter.val.toFixed(decimals).replace(".", ","); },
-          });
+          gsap.fromTo(
+            counter,
+            { val: 0 },
+            {
+              val: target,
+              duration: 1.8,
+              ease: "power2.out",
+              onUpdate: () => { el.textContent = fmt(counter.val); },
+              onComplete: () => { el.textContent = finalText; },
+            },
+          );
         },
       });
     });

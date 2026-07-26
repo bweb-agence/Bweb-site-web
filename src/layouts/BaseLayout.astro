@@ -12,21 +12,29 @@ interface Props {
   description?: string;
   image?: string;
   noindex?: boolean;
+  /* N'émet le bloc JSON-LD Organization/ProfessionalService QUE sur les pages
+     qui l'activent (l'accueil). Évite de répéter le même bloc générique sur
+     chaque URL — une seule entité faisant autorité pour le site. */
+  organization?: boolean;
 }
 
-const { title, description = site.description, image = site.ogImage, noindex = false } = Astro.props;
+const { title, description = site.description, image = site.ogImage, noindex = false, organization = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, site.url).href.replace(/\/$/, "") || site.url;
 const ogImageUrl = new URL(image, site.url).href;
 
+// TODO (contenu à confirmer) : ajouter streetAddress, postalCode et
+// openingHoursSpecification quand l'adresse réelle sera validée (audit #2).
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "ProfessionalService",
+  "@id": site.url + "#organization",
   name: site.name,
   description: site.description,
   url: site.url,
   email: contact.email,
   telephone: "+" + contact.whatsapp.primary,
   image: ogImageUrl,
+  logo: new URL("/images/favicon.svg", site.url).href,
   address: {
     "@type": "PostalAddress",
     addressLocality: contact.address.city,
@@ -64,7 +72,7 @@ const jsonLd = {
 
     <meta name="theme-color" content="#020B50" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+    {organization && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />}
 
     <!-- Gating motion : masque les révélations AVANT le 1er paint uniquement
          si le JS est actif ET que l'utilisateur ne réduit pas les animations.

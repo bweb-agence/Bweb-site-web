@@ -16,3 +16,7 @@ npm-debug.log*
 .idea/
 .vscode/
 .vercel
+
+# Anciens artefacts (hors dépôt de production)
+_legacy/
+_build/

@@ -25,22 +25,53 @@ export function initMobileNav(): void {
   const toggle = document.querySelector<HTMLElement>(".nav-toggle");
   const mobileNav = document.querySelector<HTMLElement>(".mobile-nav");
   if (!toggle || !mobileNav) return;
+
+  const FOCUSABLE =
+    'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  const isOpen = () => mobileNav.classList.contains("is-open");
+  const focusables = () =>
+    Array.from(mobileNav.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.offsetParent !== null);
+  let lastFocused: HTMLElement | null = null;
+
+  const open = () => {
+    lastFocused = (document.activeElement as HTMLElement) || toggle;
+    toggle.classList.add("is-open");
+    mobileNav.classList.add("is-open");
+    document.body.classList.add("no-scroll");
+    toggle.setAttribute("aria-expanded", "true");
+    // Déplace le focus DANS le panneau (bouton Fermer en priorité).
+    const first = mobileNav.querySelector<HTMLElement>(".mobile-nav__close") || focusables()[0];
+    requestAnimationFrame(() => first?.focus());
+  };
   const close = () => {
     toggle.classList.remove("is-open");
     mobileNav.classList.remove("is-open");
     document.body.classList.remove("no-scroll");
     toggle.setAttribute("aria-expanded", "false");
+    lastFocused?.focus(); // rend le focus au déclencheur
   };
-  toggle.addEventListener("click", () => {
-    const isOpen = toggle.classList.toggle("is-open");
-    mobileNav.classList.toggle("is-open", isOpen);
-    document.body.classList.toggle("no-scroll", isOpen);
-    toggle.setAttribute("aria-expanded", String(isOpen));
-  });
+
+  toggle.addEventListener("click", () => (isOpen() ? close() : open()));
   mobileNav.querySelectorAll("a").forEach((a) => a.addEventListener("click", close));
   mobileNav.querySelector(".mobile-nav__close")?.addEventListener("click", close);
+
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && mobileNav.classList.contains("is-open")) close();
+    if (!isOpen()) return;
+    if (e.key === "Escape") { close(); return; }
+    if (e.key !== "Tab") return;
+    // Piège à focus : maintient la tabulation à l'intérieur du menu.
+    const items = focusables();
+    if (!items.length) return;
+    const firstEl = items[0];
+    const lastEl = items[items.length - 1];
+    const active = document.activeElement as HTMLElement;
+    if (e.shiftKey && (active === firstEl || !mobileNav.contains(active))) {
+      e.preventDefault();
+      lastEl.focus();
+    } else if (!e.shiftKey && active === lastEl) {
+      e.preventDefault();
+      firstEl.focus();
+    }
   });
 }
 
@@ -71,7 +102,14 @@ export function initSectionNav(): void {
     item.type = "button";
     item.className = "section-nav__item";
     item.setAttribute("aria-label", "Aller à la section " + label);
-    item.innerHTML = `<span class="section-nav__label">${label}</span><span class="section-nav__dash"></span>`;
+    // Construction via API DOM (pas d'innerHTML) : aucune interpolation de
+    // chaîne dans le HTML, robuste si un libellé contient des caractères < & >.
+    const labelEl = document.createElement("span");
+    labelEl.className = "section-nav__label";
+    labelEl.textContent = label;
+    const dashEl = document.createElement("span");
+    dashEl.className = "section-nav__dash";
+    item.append(labelEl, dashEl);
     item.addEventListener("click", () => section.scrollIntoView({ behavior: "smooth", block: "start" }));
     nav.appendChild(item);
     return { section, item };
