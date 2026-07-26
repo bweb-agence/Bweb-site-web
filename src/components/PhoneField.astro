@@ -1,20 +1,23 @@
 ---
-/* Champ téléphone international : sélecteur d'indicatif pays + numéro.
-   Défaut Côte d'Ivoire (+225). L'indicatif (name="phone_cc") est fusionné
-   au numéro (name="phone") par forms.ts dans le récapitulatif. */
+/* Champ téléphone international.
+   Repli sans JS : un <select name="phone_cc"> avec TOUS les pays (drapeau,
+   nom, indicatif). Avec JS (src/scripts/phoneField.ts) il est enrichi en
+   combobox RECHERCHABLE (bouton + recherche + liste), façon grandes
+   plateformes. L'indicatif est fusionné au numéro par forms.ts. */
+import { COUNTRIES } from "../data/countries";
 export interface Props { id?: string; required?: boolean }
 const { id = "phone", required = true } = Astro.props;
-const codes = [
-  { c: "+225", f: "🇨🇮" }, { c: "+221", f: "🇸🇳" }, { c: "+229", f: "🇧🇯" }, { c: "+226", f: "🇧🇫" },
-  { c: "+228", f: "🇹🇬" }, { c: "+223", f: "🇲🇱" }, { c: "+224", f: "🇬🇳" }, { c: "+227", f: "🇳🇪" },
-  { c: "+237", f: "🇨🇲" }, { c: "+241", f: "🇬🇦" }, { c: "+242", f: "🇨🇬" }, { c: "+243", f: "🇨🇩" },
-  { c: "+233", f: "🇬🇭" }, { c: "+234", f: "🇳🇬" }, { c: "+212", f: "🇲🇦" }, { c: "+216", f: "🇹🇳" },
-  { c: "+33", f: "🇫🇷" }, { c: "+32", f: "🇧🇪" }, { c: "+41", f: "🇨🇭" }, { c: "+1", f: "🇨🇦" }, { c: "+44", f: "🇬🇧" },
-];
+const flag = (iso: string) => iso.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+const list = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+const DEFAULT = "CI";
 ---
-<div class="phone-field">
-  <select name="phone_cc" class="phone-cc" aria-label="Indicatif pays" autocomplete="tel-country-code">
-    {codes.map((o) => (<option value={o.c} selected={o.c === "+225"}>{o.f}&nbsp;{o.c}</option>))}
+<div class="phone-field" data-phone-field>
+  <select name="phone_cc" class="phone-cc" aria-label="Indicatif pays (choisir le pays)">
+    {list.map((c) => (
+      <option value={"+" + c.dial} data-iso={c.iso} data-dial={c.dial} data-name={c.name} data-flag={flag(c.iso)} selected={c.iso === DEFAULT}>
+        {flag(c.iso)} {c.name} (+{c.dial})
+      </option>
+    ))}
   </select>
   <input id={id} type="tel" name="phone" inputmode="tel" autocomplete="tel-national" required={required} placeholder="07 00 00 00 00" />
 </div>

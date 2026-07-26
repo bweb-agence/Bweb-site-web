@@ -6,6 +6,7 @@ import { contact, whatsappLink } from "../config/site";
 import { setYear, initHeaderScroll, initMobileNav, initSectionNav, initAccordion, initFilters } from "./ui";
 import { initForms } from "./forms";
 import { initWizard } from "./wizard";
+import { initPhoneField } from "./phoneField";
 import { initLottie } from "./lottie";
 import { initCosmos } from "./cosmos";
 import { initHeroIllus } from "./heroIllus";
@@ -52,6 +53,7 @@ function boot(): void {
   initFilters();
   initForms();
   initWizard();
+  initPhoneField();
   initLottie();
   initCosmos();
   initHeroIllus();
