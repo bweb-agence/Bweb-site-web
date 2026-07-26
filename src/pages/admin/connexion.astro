@@ -1,0 +1,101 @@
+---
+export const prerender = false;
+
+import "@fontsource-variable/sora";
+import "@fontsource-variable/plus-jakarta-sans";
+import "../../styles/tokens.css";
+import "../../styles/admin.css";
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Connexion · Admin Bweb Agence</title>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+  </head>
+  <body class="admin-body">
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="brand"><span class="m">B</span> Espace admin</div>
+        <p class="sub">Réservé à l'équipe Bweb Agence.</p>
+
+        <form id="login-form">
+          <div class="login-field">
+            <label for="email">E-mail</label>
+            <input class="login-input" id="email" type="email" autocomplete="username" required placeholder="info@bwebagence.com" />
+          </div>
+          <div class="login-field" id="pw-field">
+            <label for="password">Mot de passe</label>
+            <input class="login-input" id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+          </div>
+          <button class="login-btn" id="submit" type="submit">Se connecter</button>
+        </form>
+
+        <div class="login-sep">ou</div>
+        <p class="login-alt">
+          <button type="button" id="magic-btn">Recevoir un lien de connexion par e-mail</button>
+        </p>
+
+        <div class="login-msg" id="msg" style="display:none"></div>
+      </div>
+    </div>
+
+    <script>
+      import { supabaseBrowser } from "../../lib/supabaseBrowser";
+
+      const params = new URLSearchParams(location.search);
+      const next = params.get("next") || "/admin";
+      const form = document.getElementById("login-form") as HTMLFormElement;
+      const emailEl = document.getElementById("email") as HTMLInputElement;
+      const pwEl = document.getElementById("password") as HTMLInputElement;
+      const submitBtn = document.getElementById("submit") as HTMLButtonElement;
+      const msg = document.getElementById("msg") as HTMLElement;
+
+      function show(kind: "err" | "ok", text: string) {
+        msg.className = "login-msg " + kind;
+        msg.textContent = text;
+        msg.style.display = "block";
+      }
+
+      if (params.get("err") === "forbidden") {
+        show("err", "Ce compte n'est pas autorisé à accéder à l'administration.");
+      }
+
+      // Déjà connecté ? On file au tableau de bord.
+      supabaseBrowser.auth.getSession().then(async ({ data: { session } }) => {
+        if (session) {
+          const { data: isAdmin } = await supabaseBrowser.rpc("is_admin");
+          if (isAdmin) location.replace(next);
+        }
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!pwEl.value) { show("err", "Saisissez votre mot de passe, ou utilisez le lien par e-mail."); return; }
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Connexion…";
+        const { error } = await supabaseBrowser.auth.signInWithPassword({ email: emailEl.value.trim(), password: pwEl.value });
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Se connecter";
+        if (error) { show("err", "E-mail ou mot de passe incorrect."); return; }
+        const { data: isAdmin } = await supabaseBrowser.rpc("is_admin");
+        if (!isAdmin) { await supabaseBrowser.auth.signOut(); show("err", "Ce compte n'est pas autorisé."); return; }
+        location.replace(next);
+      });
+
+      document.getElementById("magic-btn")?.addEventListener("click", async () => {
+        const email = emailEl.value.trim();
+        if (!email) { show("err", "Saisissez d'abord votre e-mail."); return; }
+        const { error } = await supabaseBrowser.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: location.origin + next },
+        });
+        if (error) { show("err", "Impossible d'envoyer le lien : " + error.message); return; }
+        show("ok", "Lien de connexion envoyé à " + email + ". Vérifiez votre boîte mail.");
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,128 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { supabase } from "../../lib/supabase";
+import { frDateShort, coverClass } from "../../lib/format";
+import "../../styles/blog.css";
+
+type Post = {
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  category: string | null;
+  cover_url: string | null;
+  author: string | null;
+  reading_minutes: number | null;
+  published_at: string | null;
+};
+
+// Thème sélectionné (filtre)
+const activeCat = Astro.url.searchParams.get("categorie");
+
+const { data, error } = await supabase
+  .from("posts")
+  .select("slug,title,excerpt,category,cover_url,author,reading_minutes,published_at")
+  .eq("status", "published")
+  .order("published_at", { ascending: false });
+
+const posts: Post[] = data ?? [];
+
+// Liste des thèmes disponibles (à partir des articles publiés)
+const categories = [...new Set(posts.map((p) => p.category).filter(Boolean))] as string[];
+
+// Application du filtre
+const filtered = activeCat ? posts.filter((p) => p.category === activeCat) : posts;
+const [featured, ...rest] = filtered;
+
+const initials = (name?: string | null) =>
+  (name || "Bweb").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+---
+
+<BaseLayout
+  title="Blog — conseils IA, marketing & digital | Bweb Agence"
+  description="Idées et ressources pour votre transformation digitale : IA, marketing, automatisation, vente en ligne et cas clients par Bweb Agence."
+>
+  <section class="page-hero" data-nav-section="Blog">
+    <div class="mesh-bg"></div>
+    <div class="grid-lines"></div>
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/">Accueil</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
+        <span>Blog</span>
+      </div>
+      <div class="text-white" data-hero-in>
+        <div class="eyebrow on-dark">Le blog</div>
+        <h1>Idées &amp; ressources pour votre transformation digitale.</h1>
+        <p class="lead">Conseils concrets, cas clients et actualités sur l'IA, le marketing digital, l'automatisation et la vente en ligne.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      {categories.length > 0 && (
+        <nav class="blog-filters" aria-label="Filtrer par thème">
+          <a class={`blog-chip ${!activeCat ? "is-active" : ""}`} href="/blog">Tous</a>
+          {categories.map((cat) => (
+            <a
+              class={`blog-chip ${activeCat === cat ? "is-active" : ""}`}
+              href={`/blog?categorie=${encodeURIComponent(cat)}`}
+            >{cat}</a>
+          ))}
+        </nav>
+      )}
+
+      {error && (
+        <p class="lead">Le blog est momentanément indisponible. Merci de réessayer dans un instant.</p>
+      )}
+
+      {!error && filtered.length === 0 && (
+        <p class="lead">Aucun article pour le moment. Revenez bientôt !</p>
+      )}
+
+      {featured && (
+        <a class="blog-featured card" href={`/blog/${featured.slug}`} style="text-decoration:none;color:inherit">
+          <div class={`cover ${coverClass(featured.category)}`}>
+            {featured.cover_url && <img src={featured.cover_url} alt="" loading="lazy" />}
+            {featured.category && <span class="cover-kat">{featured.category}</span>}
+          </div>
+          <div>
+            <h2 class="featured-title">{featured.title}</h2>
+            {featured.excerpt && <p class="post-excerpt">{featured.excerpt}</p>}
+            <div class="post-meta">
+              <span class="post-avatar">{initials(featured.author)}</span>
+              <span>
+                {featured.author || "Équipe Bweb"}
+                {featured.published_at && ` · ${frDateShort(featured.published_at)}`}
+                {featured.reading_minutes && ` · ${featured.reading_minutes} min`}
+              </span>
+            </div>
+          </div>
+        </a>
+      )}
+
+      {rest.length > 0 && (
+        <div class="blog-grid">
+          {rest.map((post) => (
+            <a class="post-card" href={`/blog/${post.slug}`}>
+              <div class={`cover ${coverClass(post.category)}`}>
+                {post.cover_url && <img src={post.cover_url} alt="" loading="lazy" />}
+                {post.category && <span class="cover-kat">{post.category}</span>}
+              </div>
+              <div class="post-card__body">
+                <h3 class="post-title">{post.title}</h3>
+                {post.excerpt && <p class="post-excerpt">{post.excerpt}</p>}
+                <div class="post-meta">
+                  {post.published_at && <span>{frDateShort(post.published_at)}</span>}
+                  {post.reading_minutes && <span>· {post.reading_minutes} min</span>}
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+</BaseLayout>

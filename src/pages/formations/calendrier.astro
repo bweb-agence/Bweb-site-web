@@ -1,0 +1,277 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { supabase } from "../../lib/supabase";
+import { priceFCFA, frTime, gradClass } from "../../lib/format";
+import "../../styles/formations.css";
+
+type TT = { price: number; capacity: number; sold: number };
+type Session = {
+  id: string;
+  slug: string;
+  title: string;
+  theme: string | null;
+  city: string | null;
+  venue: string | null;
+  image_url: string | null;
+  starts_at: string;
+  status: string;
+  likes_count: number;
+  ticket_types: TT[];
+};
+
+const { data } = await supabase
+  .from("sessions")
+  .select("id,slug,title,theme,city,venue,image_url,starts_at,status,likes_count,ticket_types(price,capacity,sold)")
+  .in("status", ["published", "full"])
+  .order("starts_at", { ascending: true });
+
+const sessions: Session[] = data ?? [];
+
+function derive(s: Session) {
+  const tts = s.ticket_types ?? [];
+  const cap = tts.reduce((a, t) => a + t.capacity, 0);
+  const sold = tts.reduce((a, t) => a + t.sold, 0);
+  const remaining = Math.max(0, cap - sold);
+  const minPrice = tts.length ? Math.min(...tts.map((t) => t.price)) : null;
+  const pct = cap > 0 ? Math.round((sold / cap) * 100) : 0;
+  const full = s.status === "full" || remaining <= 0;
+  const level = full ? "full" : pct >= 80 ? "warn" : "ok";
+  return { cap, sold, remaining, minPrice, pct, full, level };
+}
+
+const themes = [...new Set(sessions.map((s) => s.theme).filter(Boolean))] as string[];
+const dateISO = (s: string) => new Date(s).toISOString().slice(0, 10);
+const weekday = (s: string) =>
+  new Date(s).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+const posterDate = (s: string) =>
+  new Date(s).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }).toUpperCase();
+---
+
+<BaseLayout
+  title="Calendrier des formations en présentiel | Bweb Agence"
+  description="Réservez votre place aux prochaines sessions de formation en présentiel de Bweb Agence à Abidjan : IA, marketing, vente en ligne."
+>
+  <section class="page-hero" data-nav-section="Calendrier">
+    <div class="mesh-bg"></div>
+    <div class="grid-lines"></div>
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/">Accueil</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
+        <a href="/formations">Formations</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
+        <span>Calendrier</span>
+      </div>
+      <div class="text-white" data-hero-in>
+        <div class="eyebrow on-dark">Formations en présentiel</div>
+        <h1>Calendrier des sessions.</h1>
+        <p class="lead">Réservez votre place aux prochaines sessions à l'espace de formation Bweb Agence, à Abidjan.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      {sessions.length === 0 ? (
+        <p class="cal-empty">Aucune session programmée pour le moment. Revenez bientôt, ou <a href="/devis">demandez le catalogue</a>.</p>
+      ) : (
+        <>
+          <div class="cal-filters" role="group" aria-label="Filtres">
+            <button type="button" class="fchip is-active" data-theme="all">Tous les thèmes</button>
+            {themes.map((t) => (
+              <button type="button" class="fchip" data-theme={t}>{t}</button>
+            ))}
+            <span class="fchip-sep"></span>
+            <button type="button" class="fchip" id="month-btn" aria-expanded="false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+              Mois ▾
+            </button>
+            <button type="button" class="fchip" id="dispo-btn"><span class="fchip__knob"></span>Places disponibles</button>
+          </div>
+
+          <div class="month-pop" id="month-pop" aria-label="Choisir une date">
+            <div class="mp-head">
+              <button type="button" class="mp-nav" id="mp-prev" aria-label="Mois précédent">‹</button>
+              <span id="mp-label">—</span>
+              <button type="button" class="mp-nav" id="mp-next" aria-label="Mois suivant">›</button>
+            </div>
+            <div class="mp-dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+            <div class="mp-days" id="mp-days"></div>
+            <button type="button" class="mp-reset" id="mp-reset">Toutes les dates</button>
+          </div>
+
+          <div class="ev-grid" id="ev-grid">
+            {sessions.map((s) => {
+              const d = derive(s);
+              return (
+                <article
+                  class="ev-card"
+                  data-theme={s.theme ?? ""}
+                  data-date={dateISO(s.starts_at)}
+                  data-full={d.full ? "1" : "0"}
+                >
+                  <div class={`ev-media ${gradClass(s.theme)}`}>
+                    {s.image_url && <img src={s.image_url} alt="" loading="lazy" />}
+                    {!s.image_url && (
+                      <div class="poster"><div class="pt">{s.title}</div><div class="pd">{posterDate(s.starts_at)}</div></div>
+                    )}
+                    {s.theme && <span class="ev-tag">{s.theme}</span>}
+                    {d.full && <span class="ev-sold">Complet</span>}
+                    <button type="button" class="ev-fav" data-session-id={s.id} aria-label="Ajouter aux favoris">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9C.7 8.4 2.4 5 5.8 5c2 0 3.3 1.1 4.2 2.4C11 6.1 12.2 5 14.2 5c3.4 0 5.1 3.4 3.3 7-2.5 4.4-9.5 9-9.5 9z"/></svg>
+                      <span class="fav-count">{s.likes_count}</span>
+                    </button>
+                  </div>
+                  <div class="ev-body">
+                    <h3 class="ev-title">{s.title}</h3>
+                    <div class="ev-row">📅 {weekday(s.starts_at)} · {frTime(s.starts_at)}</div>
+                    {d.minPrice !== null && (
+                      <div class="ev-row price">💵 À partir de {priceFCFA(d.minPrice)}</div>
+                    )}
+                    <div class={`ev-seats ${d.level}`}>
+                      <span class="num">{d.remaining}</span>
+                      <div style="flex:1">
+                        <div class="lbl">{d.full ? "session complète" : "places restantes"}</div>
+                        <div class="bar"><i style={`width:${d.cap ? Math.round((d.sold / d.cap) * 100) : 100}%`}></i></div>
+                      </div>
+                    </div>
+                    <div class="ev-loc">📍 {s.venue ?? "Espace de formation Bweb · Cocody"}</div>
+                    {d.full ? (
+                      <a class="btn btn-outline btn-block" href={`/formations/session/${s.slug}`}>Liste d'attente</a>
+                    ) : (
+                      <a class="btn btn-primary btn-block" href={`/formations/session/${s.slug}`}>Réserver</a>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          <p class="cal-empty" id="no-result" style="display:none;margin-top:16px">Aucune session ne correspond à ces filtres. <button type="button" class="mp-reset" id="clear-all">Réinitialiser</button></p>
+        </>
+      )}
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const SB_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+  const SB_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+  const grid = document.getElementById("ev-grid");
+  if (grid) {
+    const cards = Array.from(grid.querySelectorAll<HTMLElement>(".ev-card"));
+    const state = { theme: "all", date: "", dispo: false };
+
+    // ---- Filtres combinés ----
+    function apply() {
+      let visible = 0;
+      cards.forEach((c) => {
+        const okTheme = state.theme === "all" || c.dataset.theme === state.theme;
+        const okDate = !state.date || c.dataset.date === state.date;
+        const okDispo = !state.dispo || c.dataset.full === "0";
+        const show = okTheme && okDate && okDispo;
+        c.classList.toggle("is-hidden", !show);
+        if (show) visible++;
+      });
+      const nr = document.getElementById("no-result");
+      if (nr) nr.style.display = visible === 0 ? "block" : "none";
+    }
+
+    // ---- Thèmes ----
+    document.querySelectorAll<HTMLElement>(".fchip[data-theme]").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll(".fchip[data-theme]").forEach((c) => c.classList.remove("is-active"));
+        chip.classList.add("is-active");
+        state.theme = chip.dataset.theme || "all";
+        apply();
+      });
+    });
+
+    // ---- Places disponibles ----
+    const dispoBtn = document.getElementById("dispo-btn");
+    dispoBtn?.addEventListener("click", () => {
+      state.dispo = !state.dispo;
+      dispoBtn.classList.toggle("is-on", state.dispo);
+      apply();
+    });
+
+    // ---- Calendrier (popover sous « Mois ») ----
+    const pop = document.getElementById("month-pop");
+    const monthBtn = document.getElementById("month-btn");
+    const label = document.getElementById("mp-label");
+    const daysEl = document.getElementById("mp-days");
+    const eventDates = new Set(cards.map((c) => c.dataset.date));
+    const firstDate = cards.map((c) => c.dataset.date || "").filter(Boolean).sort()[0];
+    let cursor = firstDate ? new Date(firstDate + "T00:00:00") : new Date();
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+
+    function renderCal() {
+      if (!label || !daysEl) return;
+      label.textContent = cursor.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+      const y = cursor.getFullYear(), m = cursor.getMonth();
+      const first = new Date(y, m, 1);
+      const startDow = (first.getDay() + 6) % 7; // lundi = 0
+      const nbDays = new Date(y, m + 1, 0).getDate();
+      let html = "";
+      for (let i = 0; i < startDow; i++) html += `<button class="mut" disabled></button>`;
+      for (let d = 1; d <= nbDays; d++) {
+        const iso = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        const has = eventDates.has(iso);
+        const sel = state.date === iso;
+        html += `<button data-iso="${iso}" class="${has ? "has" : ""} ${sel ? "sel" : ""}" ${has ? "" : "disabled"}>${d}</button>`;
+      }
+      daysEl.innerHTML = html;
+      daysEl.querySelectorAll<HTMLElement>("button[data-iso]").forEach((b) => {
+        b.addEventListener("click", () => {
+          const iso = b.dataset.iso || "";
+          state.date = state.date === iso ? "" : iso;
+          renderCal();
+          apply();
+        });
+      });
+    }
+    renderCal();
+
+    monthBtn?.addEventListener("click", () => {
+      const open = pop?.classList.toggle("is-open");
+      monthBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    document.getElementById("mp-prev")?.addEventListener("click", () => { cursor = new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1); renderCal(); });
+    document.getElementById("mp-next")?.addEventListener("click", () => { cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1); renderCal(); });
+    document.getElementById("mp-reset")?.addEventListener("click", () => { state.date = ""; renderCal(); apply(); });
+    document.getElementById("clear-all")?.addEventListener("click", () => {
+      state.theme = "all"; state.date = ""; state.dispo = false;
+      document.querySelectorAll(".fchip[data-theme]").forEach((c) => c.classList.toggle("is-active", (c as HTMLElement).dataset.theme === "all"));
+      dispoBtn?.classList.remove("is-on");
+      renderCal(); apply();
+    });
+
+    // ---- Favoris ----
+    let anon = localStorage.getItem("bweb_anon");
+    if (!anon) { anon = crypto.randomUUID(); localStorage.setItem("bweb_anon", anon); }
+    const favSet = new Set<string>(JSON.parse(localStorage.getItem("bweb_favs") || "[]"));
+    document.querySelectorAll<HTMLElement>(".ev-fav").forEach((btn) => {
+      const id = btn.dataset.sessionId!;
+      if (favSet.has(id)) btn.classList.add("is-on");
+      btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const countEl = btn.querySelector(".fav-count")!;
+        const wasOn = btn.classList.contains("is-on");
+        // Optimiste
+        btn.classList.toggle("is-on", !wasOn);
+        countEl.textContent = String(Math.max(0, parseInt(countEl.textContent || "0") + (wasOn ? -1 : 1)));
+        wasOn ? favSet.delete(id) : favSet.add(id);
+        localStorage.setItem("bweb_favs", JSON.stringify([...favSet]));
+        try {
+          await fetch(`${SB_URL}/rest/v1/rpc/toggle_favorite`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+            body: JSON.stringify({ p_target_type: "session", p_target_id: id, p_anon_id: anon }),
+          });
+        } catch {}
+      });
+    });
+  }
+</script>

@@ -1,0 +1,120 @@
+---
+export const prerender = false;
+
+import "@fontsource-variable/sora";
+import "@fontsource-variable/plus-jakarta-sans";
+import "../styles/tokens.css";
+import "../styles/admin.css";
+
+interface Props {
+  title: string;
+  active?: "dashboard" | "articles" | "formations" | "sessions" | "reservations";
+}
+const { title, active } = Astro.props;
+
+const nav = [
+  { key: "dashboard", href: "/admin", label: "Tableau de bord", icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>' },
+  { key: "articles", href: "/admin/articles", label: "Articles", icon: '<path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/>' },
+  { key: "formations", href: "/admin/formations", label: "Formations", icon: '<path d="M2 7l10-4 10 4-10 4z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>' },
+  { key: "sessions", href: "/admin/sessions", label: "Sessions", icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>' },
+  { key: "reservations", href: "/admin/reservations", label: "Réservations", icon: '<path d="M4 6h16v12H4z"/><path d="M4 10h16"/>' },
+];
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · Admin Bweb Agence</title>
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+  </head>
+  <body class="admin-body">
+    <div class="admin-loading" id="admin-loading">
+      <div style="text-align:center"><div class="spin"></div>Vérification de l'accès…</div>
+    </div>
+
+    <div class="admin-shell" data-admin hidden>
+      <aside class="admin-side">
+        <a href="/admin" class="brand"><span class="m">B</span> Admin</a>
+        <nav>
+          {nav.map((item) => (
+            <a href={item.href} class={`item ${active === item.key ? "on" : ""}`}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" set:html={item.icon} />
+              {item.label}
+            </a>
+          ))}
+        </nav>
+        <div class="side-foot">
+          <button type="button" class="admin-logout" id="admin-logout">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+            Se déconnecter
+          </button>
+        </div>
+      </aside>
+
+      <div class="admin-main">
+        <header class="admin-topbar">
+          <h1>{title}</h1>
+          <span class="admin-user"><span class="av" data-user-initials>—</span><span data-user-email>…</span></span>
+        </header>
+        <div class="admin-content">
+          <slot />
+        </div>
+      </div>
+    </div>
+
+    <script>
+      import { supabaseBrowser } from "../lib/supabaseBrowser";
+
+      // Filet anti-blocage : si la vérification n'aboutit pas, on propose de recharger
+      // plutôt que de laisser un spinner infini.
+      const failsafe = setTimeout(() => {
+        const el = document.getElementById("admin-loading");
+        if (el && !el.hasAttribute("hidden")) {
+          el.innerHTML =
+            '<div style="text-align:center;max-width:340px;padding:0 16px">' +
+            '<p style="color:var(--c-gray-700);font-weight:600;margin-bottom:14px">La vérification de la session prend trop de temps.</p>' +
+            '<button id="admin-reload" style="padding:11px 20px;border:0;border-radius:10px;background:var(--c-blue);color:#fff;font-weight:700;cursor:pointer">Recharger la page</button>' +
+            '<p style="color:var(--c-gray-500);font-size:.8rem;margin-top:12px">Si le problème persiste, faites un rafraîchissement forcé (Ctrl/Cmd + Shift + R).</p></div>';
+          document.getElementById("admin-reload")?.addEventListener("click", () => location.reload());
+        }
+      }, 7000);
+
+      (async () => {
+        try {
+          const { data: { session } } = await supabaseBrowser.auth.getSession();
+          if (!session) {
+            location.replace("/admin/connexion?next=" + encodeURIComponent(location.pathname));
+            return;
+          }
+          // Vérifie l'appartenance à l'allowlist admin (défense en profondeur ; la RLS protège déjà les données)
+          const { data: isAdmin, error } = await supabaseBrowser.rpc("is_admin");
+          if (error) throw error;
+          if (!isAdmin) {
+            await supabaseBrowser.auth.signOut();
+            location.replace("/admin/connexion?err=forbidden");
+            return;
+          }
+          const email = session.user.email || "";
+          const emailEl = document.querySelector("[data-user-email]");
+          const initEl = document.querySelector("[data-user-initials]");
+          if (emailEl) emailEl.textContent = email;
+          if (initEl) initEl.textContent = email.slice(0, 2).toUpperCase();
+          document.getElementById("admin-loading")?.setAttribute("hidden", "");
+          document.querySelector("[data-admin]")?.removeAttribute("hidden");
+          window.dispatchEvent(new CustomEvent("admin-ready"));
+
+          document.getElementById("admin-logout")?.addEventListener("click", async () => {
+            await supabaseBrowser.auth.signOut();
+            location.replace("/admin/connexion");
+          });
+        } catch (e) {
+          console.error("[admin] erreur de vérification de session", e);
+          location.replace("/admin/connexion?err=session");
+        }
+      })();
+    </script>
+  </body>
+</html>

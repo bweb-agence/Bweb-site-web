@@ -66,6 +66,7 @@ export const mainNav = [
   { label: "Services", href: "/services" },
   { label: "Réalisations", href: "/realisations" },
   { label: "Formations", href: "/formations" },
+  { label: "Blog", href: "/blog" },
 ];
 
 export const navCta = [
@@ -80,6 +81,7 @@ export const footerNav = {
     { label: "Services", href: "/services" },
     { label: "Réalisations", href: "/realisations" },
     { label: "Formations", href: "/formations" },
+    { label: "Blog", href: "/blog" },
     { label: "Méthodologie", href: "/methodologie" },
     { label: "Contact", href: "/contact" },
   ],

@@ -1,0 +1,312 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { supabase } from "../../../lib/supabase";
+import { contact } from "../../../config/site";
+import { priceFCFA, frDateLong, frDateShort, frTime, gradClass } from "../../../lib/format";
+import { marked } from "marked";
+import "../../../styles/formations.css";
+
+const { slug } = Astro.params;
+
+const { data: session } = await supabase
+  .from("sessions")
+  .select("*, formations(slug,title,summary,description_md,duration,level), ticket_types(id,name,price,capacity,sold,badge,sales_end,sort)")
+  .eq("slug", slug)
+  .in("status", ["published", "full"])
+  .maybeSingle();
+
+if (!session) {
+  Astro.response.status = 404;
+}
+
+let faqs: { question: string; answer_md: string }[] = [];
+if (session) {
+  let q = supabase.from("faqs").select("question,answer_md,sort").order("sort", { ascending: true });
+  q = session.formation_id
+    ? q.or(`formation_id.is.null,formation_id.eq.${session.formation_id}`)
+    : q.is("formation_id", null);
+  const { data } = await q;
+  faqs = data ?? [];
+}
+
+const formation = session?.formations as
+  | { title: string; summary: string | null; description_md: string | null; duration: string | null; level: string | null }
+  | null;
+
+const tickets = (session?.ticket_types ?? []).slice().sort((a: any, b: any) => a.sort - b.sort);
+const totalCap = tickets.reduce((s: number, t: any) => s + t.capacity, 0);
+const totalSold = tickets.reduce((s: number, t: any) => s + t.sold, 0);
+const totalRemaining = Math.max(0, totalCap - totalSold);
+const isFull = session?.status === "full" || totalRemaining <= 0;
+const minPrice = tickets.length ? Math.min(...tickets.map((t: any) => t.price)) : null;
+
+// Découpe la description en intro + éléments « Au programme »
+const desc = formation?.description_md ?? "";
+const [introRaw, progRaw] = desc.split(/##\s*Au programme/i);
+const intro = (introRaw || formation?.summary || "").trim();
+const learnItems = (progRaw || "")
+  .split("\n").map((l) => l.trim()).filter((l) => l.startsWith("- ")).map((l) => l.slice(2).trim());
+const detailHtml = intro ? (marked.parse(intro, { async: false }) as string) : "";
+
+function badgeInfo(badge: string | null, salesEnd: string | null) {
+  if (badge === "hot") return { cls: "hot", label: "📈 Forte demande" };
+  if (badge === "limited") return { cls: "limited", label: salesEnd ? `⏱ Jusqu'au ${frDateShort(salesEnd)}` : "⏱ Places limitées" };
+  if (badge === "ok") return { cls: "ok", label: "Avantageux" };
+  return null;
+}
+
+const mapQuery = `${(session?.venue ?? "").split("·").pop()?.trim() || session?.city || "Abidjan"}, Côte d'Ivoire`;
+const shareUrl = Astro.url.href;
+const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+---
+
+{session ? (
+  <BaseLayout
+    title={`${session.title} — ${frDateShort(session.starts_at)} | Formations Bweb`}
+    description={formation?.summary || `Session de formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`}
+  >
+    <article class="section" style="padding-top:calc(var(--header-h) + var(--space-lg))">
+      <div class="container">
+        <a class="sess-back" href="/formations/calendrier">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6" /></svg>
+          Retour au calendrier
+        </a>
+
+        <div class="sess-layout">
+          <!-- ===== Titre (col. gauche, ligne 1) ===== -->
+          <div class="sess-head">
+            {session.theme && <div class="eyebrow">{session.theme} · Présentiel</div>}
+            <h1 style="font-family:var(--f-display);font-weight:800;font-size:var(--fs-h1);line-height:1.08;letter-spacing:-.02em;margin:8px 0 10px;color:var(--c-ink)">{session.title}</h1>
+            {formation?.summary && <p class="sess-desc" style="max-width:60ch">{formation.summary}</p>}
+
+            <div class="sess-meta">
+              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>{frDateLong(session.starts_at)}</span>
+              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg>{isFull ? "Session complète" : `${totalRemaining} places restantes`}</span>
+              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>{session.venue ?? "Espace Bweb · Cocody"}, {session.city ?? "Abidjan"}</span>
+            </div>
+          </div>
+
+          <!-- ===== Contenu (col. gauche, ligne 2) ===== -->
+          <div class="sess-main">
+            {learnItems.length > 0 && (
+              <div class="learn-box">
+                <h2>Ce que vous apprendrez</h2>
+                <ul class="learn-grid">
+                  {learnItems.map((it) => (
+                    <li><Fragment set:html={ck} />{it}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {detailHtml && (
+              <>
+                <h2 class="sectitle">À propos de cette formation</h2>
+                <div class="sess-prose" set:html={detailHtml} />
+              </>
+            )}
+
+            <h2 class="sectitle">Infos pratiques</h2>
+            <div class="info-grid">
+              <div class="c"><div class="k">Durée</div><div class="v">{formation?.duration ?? "—"}</div></div>
+              <div class="c"><div class="k">Niveau</div><div class="v">{formation?.level ?? "Tous niveaux"}</div></div>
+              <div class="c"><div class="k">Formateur</div><div class="v">Expert Bweb</div></div>
+              <div class="c"><div class="k">Langue</div><div class="v">Français</div></div>
+              <div class="c"><div class="k">Format</div><div class="v">Présentiel</div></div>
+              <div class="c"><div class="k">Places</div><div class="v">{totalCap} max.</div></div>
+            </div>
+
+            <h2 class="sectitle">Lieu sur carte</h2>
+            <iframe class="map-embed" title="Lieu de la formation" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+              src={`https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`}></iframe>
+
+            {faqs.length > 0 && (
+              <>
+                <h2 class="sectitle">Questions fréquentes</h2>
+                <div class="faq">
+                  {faqs.map((f, i) => (
+                    <details class="faq-item" open={i === 0}>
+                      <summary>{f.question}</summary>
+                      <div class="faq-answer" set:html={marked.parseInline(f.answer_md, { async: false }) as string} />
+                    </details>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <h2 class="sectitle">Partager cette formation</h2>
+            <div class="share-row">
+              <a class="share-wa" target="_blank" rel="noopener" href={`https://wa.me/?text=${encodeURIComponent(session.title + " " + shareUrl)}`}>WhatsApp</a>
+              <a class="share-fb" target="_blank" rel="noopener" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}>Facebook</a>
+              <a class="share-x" target="_blank" rel="noopener" href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(session.title)}&url=${encodeURIComponent(shareUrl)}`}>X</a>
+              <a class="share-in" target="_blank" rel="noopener" href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}>LinkedIn</a>
+            </div>
+          </div>
+
+          <!-- ===== Carte d'achat (collante) ===== -->
+          <aside class="sess-aside">
+            <div class="buy-card">
+              <div class={`buy-card__media ${gradClass(session.theme)}`}>
+                {session.image_url ? <img src={session.image_url} alt="" /> : (
+                  <div class="poster"><div class="pt">{session.title}</div><div class="pd">{frDateShort(session.starts_at)}</div></div>
+                )}
+                {session.theme && <span class="ev-tag">{session.theme}</span>}
+                {isFull && <span class="ev-sold">Complet</span>}
+                <button type="button" class="ev-fav" id="fav" data-session-id={session.id} aria-label="Ajouter aux favoris">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9C.7 8.4 2.4 5 5.8 5c2 0 3.3 1.1 4.2 2.4C11 6.1 12.2 5 14.2 5c3.4 0 5.1 3.4 3.3 7-2.5 4.4-9.5 9-9.5 9z"/></svg>
+                  <span class="fav-count">{session.likes_count}</span>
+                </button>
+              </div>
+              <div class="buy-card__pad">
+                {minPrice !== null && (
+                  <div class="buy-card__price">À partir de <b>{priceFCFA(minPrice)}</b></div>
+                )}
+                {!isFull && <p class="buy-card__note">💺 Plus que <strong>{totalRemaining}</strong> places pour cette session.</p>}
+                {isFull ? (
+                  <a class="btn btn-outline btn-block btn-lg" href={`https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("Bonjour, je souhaite être sur la liste d'attente pour « " + session.title + " » du " + frDateLong(session.starts_at) + ".")}`} target="_blank" rel="noopener">Rejoindre la liste d'attente</a>
+                ) : (
+                  <button type="button" class="btn btn-primary btn-block btn-lg" id="open-rz">Réserver ma place</button>
+                )}
+                <div class="buy-includes-title">Cette formation comprend :</div>
+                <ul class="buy-includes">
+                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span><b>{formation?.duration ?? "Session"}</b> en présentiel</span></li>
+                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Groupe limité à <b>{totalCap} participants</b></li>
+                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.5 13.5L7 22l5-3 5 3-1.5-8.5"/></svg><b>Attestation</b> de fin de formation</li>
+                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12H4z"/><path d="M8 9h6M8 13h8M8 17h5"/></svg><b>Support</b> de formation fourni</li>
+                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 5.8 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.8-4-9s1.5-6.4 4-9z"/></svg>Formation en <b>français</b></li>
+                </ul>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- ===================== MODALE RÉSERVATION ===================== -->
+      <div class="rz-overlay" id="rz" role="dialog" aria-modal="true" aria-label="Réserver votre place"
+        data-wa={contact.whatsapp.primary} data-phone={contact.phoneDisplay}
+        data-title={session.title} data-date={frDateLong(session.starts_at)} data-session={session.id}>
+        <div class="rz-top">
+          <span class="rz-brand"><span class="m">B</span>Bweb Agence</span>
+          <span class="rz-title">{session.title} · {frDateShort(session.starts_at)}</span>
+          <button type="button" class="rz-close" id="rz-close" aria-label="Fermer">✕</button>
+        </div>
+        <div class="rz-progress" id="rz-progress">
+          <div class="p active" data-p="1">Tarif<span class="bar"></span></div>
+          <div class="p" data-p="2">Vos infos<span class="bar"></span></div>
+          <div class="p" data-p="3">Paiement<span class="bar"></span></div>
+          <div class="p" data-p="4">Justificatif<span class="bar"></span></div>
+        </div>
+
+        <div class="rz-scroll">
+          <div class="rz-container">
+            <!-- Étape 1 : tarifs -->
+            <section class="rz-step active" data-step="1">
+              <h2 class="rz-h">Choisissez votre tarif</h2>
+              <p class="rz-sub">Sélectionnez le nombre de places par tarif.</p>
+              <div class="ticket-grid" style="grid-template-columns:1fr">
+                {tickets.map((t: any) => {
+                  const remaining = Math.max(0, t.capacity - t.sold);
+                  const bi = badgeInfo(t.badge, t.sales_end);
+                  return (
+                    <div class="ticket" data-ticket data-id={t.id} data-name={t.name} data-price={t.price} data-remaining={remaining}>
+                      <div class="th">
+                        <div><div class="tn">{t.name}</div><div class="tp">{priceFCFA(t.price)}</div></div>
+                        {bi && <span class={`t-badge ${bi.cls}`}>{bi.label}</span>}
+                      </div>
+                      {remaining <= 0 ? <span class="t-soldout">Épuisé</span> : (
+                        <div class="stepper" data-stepper>
+                          <button type="button" data-dec aria-label="Retirer">−</button>
+                          <span class="val" data-val>0</span>
+                          <button type="button" data-inc aria-label="Ajouter">+</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div class="rz-summary">
+                <div id="rz-lines"><div class="row muted"><span>Aucune place sélectionnée</span></div></div>
+                <div class="row tot"><span>Total</span><b id="rz-total">0 F CFA</b></div>
+              </div>
+            </section>
+
+            <!-- Étape 2 : informations -->
+            <section class="rz-step" data-step="2">
+              <h2 class="rz-h">Vos informations</h2>
+              <p class="rz-sub">Pour établir votre inscription et votre attestation.</p>
+              <div class="rz-field"><label for="rz-name">Nom complet *</label><input class="rz-input" id="rz-name" name="name" autocomplete="name" required /></div>
+              <div class="rz-2col">
+                <div class="rz-field"><label for="rz-email">E-mail *</label><input class="rz-input" id="rz-email" name="email" type="email" autocomplete="email" required /></div>
+                <div class="rz-field"><label for="rz-phone">Téléphone / WhatsApp *</label><input class="rz-input" id="rz-phone" name="phone" type="tel" autocomplete="tel" placeholder="+225 …" required /></div>
+              </div>
+              <div class="rz-field"><label for="rz-company">Entreprise / organisation (optionnel)</label><input class="rz-input" id="rz-company" name="company" /></div>
+            </section>
+
+            <!-- Étape 3 : paiement -->
+            <section class="rz-step" data-step="3">
+              <h2 class="rz-h">Moyen de paiement</h2>
+              <p class="rz-sub">Choisissez comment régler votre inscription.</p>
+              <div class="pm-grid" id="pm-grid">
+                <button type="button" class="pm" data-method="wave"><span class="lg wave">Wave</span><span>Wave</span></button>
+                <button type="button" class="pm" data-method="orange_money"><span class="lg om">OM</span><span>Orange Money</span></button>
+                <button type="button" class="pm" data-method="mobile_money"><span class="lg momo">MoMo</span><span>Mobile Money<span class="sub">MTN · Moov</span></span></button>
+                <button type="button" class="pm" data-method="sur_place"><span class="lg place">🏢</span><span>Sur place<span class="sub">Acompte 50 %</span></span></button>
+              </div>
+              <div class="pay-note" id="pm-note" style="display:none"></div>
+            </section>
+
+            <!-- Étape 4 : justificatif -->
+            <section class="rz-step" data-step="4">
+              <h2 class="rz-h">Justificatif de paiement</h2>
+              <p class="rz-sub">Après avoir payé, indiquez la référence et joignez la capture. Votre place est bloquée immédiatement.</p>
+              <div class="rz-field"><label for="rz-ref">Référence de la transaction</label><input class="rz-input" id="rz-ref" name="reference" placeholder="Ex. TXN-WAVE-83920145" /></div>
+              <label class="rz-upload" id="rz-upload-label">
+                📎 Déposer la capture d'écran du paiement
+                <span class="sub" id="rz-upload-sub">JPG ou PNG</span>
+                <input type="file" id="rz-file" accept="image/*" />
+              </label>
+              <label class="rz-check"><input type="checkbox" id="rz-confirm" /> <span>Je confirme avoir effectué le paiement (ou l'acompte pour un règlement sur place).</span></label>
+              <div class="rz-summary" id="rz-summary2"></div>
+            </section>
+
+            <!-- Étape 5 : confirmation -->
+            <section class="rz-step" data-step="5">
+              <div class="rz-success">
+                <div class="ic">✓</div>
+                <h2 class="rz-h" id="rz-success-title">Inscription enregistrée !</h2>
+                <p class="rz-sub" id="rz-success-sub">Votre place est réservée.</p>
+                <div class="ref" id="rz-ref-out"></div>
+                <div class="rz-wait-note" id="rz-wait-note">Votre paiement va être vérifié par notre équipe. Vous recevrez un e-mail de confirmation dès validation.</div>
+              </div>
+            </section>
+
+            <div class="rz-foot">
+              <button type="button" class="btn btn-ghost" id="rz-prev" style="display:none">‹ Précédent</button>
+              <button type="button" class="btn btn-primary btn-lg" id="rz-next">Continuer ›</button>
+              <a class="btn btn-primary btn-lg" id="rz-done" href="/formations/calendrier" style="display:none">Terminer</a>
+              <span class="rz-err" id="rz-err"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </BaseLayout>
+) : (
+  <BaseLayout title="Session introuvable | Bweb Agence" noindex={true}>
+    <section class="section" style="padding-top:calc(var(--header-h) + var(--space-xl))">
+      <div class="container" style="text-align:center">
+        <div class="eyebrow" style="justify-content:center">Erreur 404</div>
+        <h1>Cette session n'existe pas (ou plus).</h1>
+        <p class="lead">Elle est peut-être passée ou complète. Voir les prochaines sessions au calendrier.</p>
+        <p style="margin-top:var(--space-md)"><a class="btn btn-primary" href="/formations/calendrier">Voir le calendrier</a></p>
+      </div>
+    </section>
+  </BaseLayout>
+)}
+
+<script>
+  import { initReservation } from "../../../scripts/reservation";
+  initReservation();
+</script>

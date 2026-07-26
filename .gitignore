@@ -20,3 +20,6 @@ npm-debug.log*
 # Anciens artefacts (hors dépôt de production)
 _legacy/
 _build/
+
+# Claude Code (local)
+.claude/

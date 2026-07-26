@@ -1,0 +1,117 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { supabase } from "../../lib/supabase";
+import { frDateLong, coverClass } from "../../lib/format";
+import { marked } from "marked";
+import "../../styles/blog.css";
+
+const { slug } = Astro.params;
+
+const { data: post } = await supabase
+  .from("posts")
+  .select("*")
+  .eq("slug", slug)
+  .eq("status", "published")
+  .maybeSingle();
+
+if (!post) {
+  Astro.response.status = 404;
+}
+
+// Articles liés (même thème)
+let related: { slug: string; title: string }[] = [];
+if (post?.category) {
+  const { data } = await supabase
+    .from("posts")
+    .select("slug,title")
+    .eq("status", "published")
+    .eq("category", post.category)
+    .neq("slug", post.slug)
+    .order("published_at", { ascending: false })
+    .limit(3);
+  related = data ?? [];
+}
+
+const bodyHtml = post ? (marked.parse(post.body_md || "", { async: false }) as string) : "";
+const initials = (name?: string | null) =>
+  (name || "Bweb").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+
+const shareUrl = Astro.url.href;
+const shareText = post?.title ?? "";
+---
+
+{post ? (
+  <BaseLayout
+    title={`${post.seo_title || post.title} | Blog Bweb Agence`}
+    description={post.seo_description || post.excerpt || undefined}
+  >
+    <article class="section" style="padding-top:calc(var(--header-h) + var(--space-lg))">
+      <div class="container">
+        <div class="breadcrumb" style="margin-bottom:var(--space-md)">
+          <a href="/">Accueil</a>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
+          <a href="/blog">Blog</a>
+        </div>
+
+        <div class={`article-hero ${coverClass(post.category)}`}>
+          {post.cover_url && <img src={post.cover_url} alt="" class="cover-img-abs" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" />}
+          <div class="article-hero__inner">
+            {post.category && <span class="cover-kat">{post.category}</span>}
+            <h1>{post.title}</h1>
+          </div>
+        </div>
+
+        <div class="article-byline">
+          <span class="post-avatar">{initials(post.author)}</span>
+          <div>
+            <div class="who">{post.author || "Équipe Bweb"}</div>
+            <div class="sub">
+              {post.published_at && `Publié le ${frDateLong(post.published_at)}`}
+              {post.reading_minutes && ` · ${post.reading_minutes} min de lecture`}
+            </div>
+          </div>
+        </div>
+
+        <div class="article-layout">
+          <div class="article-prose" set:html={bodyHtml} />
+
+          <aside class="article-aside">
+            {related.length > 0 && (
+              <div class="aside-card">
+                <h2>Sur le même thème</h2>
+                {related.map((r) => (
+                  <a class="related-link" href={`/blog/${r.slug}`}><span class="arrow">→</span>{r.title}</a>
+                ))}
+              </div>
+            )}
+            <div class="aside-card is-cta">
+              <h2 style="color:#fff">Besoin d'aide pour vous lancer ?</h2>
+              <p>Un diagnostic offert avec un expert Bweb.</p>
+              <a class="btn btn-warm btn-sm" href="/devis">Demander un devis</a>
+            </div>
+
+            <div class="share-row">
+              <a class="share-wa" target="_blank" rel="noopener" href={`https://wa.me/?text=${encodeURIComponent(shareText + " " + shareUrl)}`}>WhatsApp</a>
+              <a class="share-fb" target="_blank" rel="noopener" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}>Facebook</a>
+              <a class="share-x" target="_blank" rel="noopener" href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`}>X</a>
+              <a class="share-in" target="_blank" rel="noopener" href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}>LinkedIn</a>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </article>
+  </BaseLayout>
+) : (
+  <BaseLayout title="Article introuvable | Bweb Agence" noindex={true}>
+    <section class="section" style="padding-top:calc(var(--header-h) + var(--space-xl))">
+      <div class="container" style="text-align:center">
+        <div class="eyebrow" style="justify-content:center">Erreur 404</div>
+        <h1>Cet article n'existe pas (ou plus).</h1>
+        <p class="lead">Il a peut-être été déplacé. Retrouvez tous nos articles sur le blog.</p>
+        <p style="margin-top:var(--space-md)"><a class="btn btn-primary" href="/blog">Retour au blog</a></p>
+      </div>
+    </section>
+  </BaseLayout>
+)}
