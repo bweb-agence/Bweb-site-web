@@ -1,0 +1,114 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Formations" active="formations">
+  <div class="admin-toolbar">
+    <div class="left"><input class="admin-search" id="f-search" type="search" placeholder="Rechercher une formation…" /></div>
+    <button class="abtn primary" id="new-btn">+ Nouvelle formation</button>
+  </div>
+
+  <div class="panel">
+    <table class="admin-table">
+      <thead><tr><th>Titre</th><th>Thème</th><th>Durée</th><th>Prix indicatif</th><th></th></tr></thead>
+      <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="a-drawer-overlay" id="overlay"></div>
+  <aside class="a-drawer" id="drawer" aria-hidden="true">
+    <div class="a-drawer-head"><h2 id="drawer-title">Nouvelle formation</h2><button class="icon-btn" id="close-btn">✕</button></div>
+    <div class="a-drawer-body">
+      <input type="hidden" id="f-id" />
+      <div class="a-field"><label for="f-title">Titre *</label><input class="a-input" id="f-title" /></div>
+      <div class="a-field"><label for="f-slug">Slug *</label><input class="a-input" id="f-slug" /></div>
+      <div class="a-row2">
+        <div class="a-field"><label for="f-theme">Thème</label><input class="a-input" id="f-theme" list="th-list" /><datalist id="th-list"><option value="IA"></option><option value="Marketing"></option><option value="Vente en ligne"></option><option value="Automatisation"></option></datalist></div>
+        <div class="a-field"><label for="f-price">Prix indicatif (FCFA)</label><input class="a-input" id="f-price" type="number" min="0" /></div>
+      </div>
+      <div class="a-row2">
+        <div class="a-field"><label for="f-duration">Durée</label><input class="a-input" id="f-duration" placeholder="2 jours (14 h)" /></div>
+        <div class="a-field"><label for="f-level">Niveau</label><input class="a-input" id="f-level" placeholder="Débutant accepté" /></div>
+      </div>
+      <div class="a-field"><label for="f-summary">Résumé (accroche)</label><textarea class="a-textarea" id="f-summary" rows="2"></textarea></div>
+      <div class="a-field"><label for="f-desc">Description &amp; programme (Markdown)</label><textarea class="a-textarea code" id="f-desc" rows="10" placeholder="Intro…&#10;&#10;## Au programme&#10;- Point 1&#10;- Point 2"></textarea><div class="hint">Les puces sous « ## Au programme » alimentent le bloc « Ce que vous apprendrez ».</div></div>
+      <div class="a-field"><label for="f-image">Image (URL)</label><input class="a-input" id="f-image" placeholder="https://… (optionnel)" /></div>
+    </div>
+    <div class="a-drawer-foot"><span class="grow"></span><button class="abtn" id="cancel-btn">Annuler</button><button class="abtn primary" id="save-btn">Enregistrer</button></div>
+  </aside>
+</AdminLayout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+  import { slugify, esc, fmtFCFA, toast } from "../../scripts/adminUtils";
+
+  const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+  const rows = document.querySelector("[data-rows]")!;
+  const drawer = document.getElementById("drawer")!, overlay = document.getElementById("overlay")!;
+  let all: any[] = [], slugTouched = false;
+
+  const open = () => { drawer.classList.add("open"); overlay.classList.add("open"); document.body.style.overflow = "hidden"; };
+  const close = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); document.body.style.overflow = ""; };
+
+  function render(list: any[]) {
+    rows.innerHTML = list.length ? list.map((f) => `
+      <tr>
+        <td><strong>${esc(f.title)}</strong><br><span style="color:var(--c-gray-500);font-size:.78rem">${esc(f.slug)}</span></td>
+        <td>${esc(f.theme || "—")}</td><td>${esc(f.duration || "—")}</td><td>${f.default_price ? fmtFCFA(f.default_price) : "—"}</td>
+        <td><div class="row-actions">
+          <button class="icon-btn" data-edit="${f.id}" title="Éditer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="icon-btn danger" data-del="${f.id}" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+        </div></td>
+      </tr>`).join("") : `<tr><td class="empty" colspan="5">Aucune formation.</td></tr>`;
+    rows.querySelectorAll<HTMLElement>("[data-edit]").forEach((b) => b.addEventListener("click", () => edit(b.dataset.edit!)));
+    rows.querySelectorAll<HTMLElement>("[data-del]").forEach((b) => b.addEventListener("click", () => del(b.dataset.del!)));
+  }
+  const applySearch = () => { const q = ($("f-search").value || "").toLowerCase(); render(all.filter((f) => !q || (f.title + " " + (f.theme || "")).toLowerCase().includes(q))); };
+
+  async function load() {
+    const { data } = await supabaseBrowser.from("formations").select("*").order("created_at", { ascending: false });
+    all = data || []; applySearch();
+  }
+  function fill(f: any) {
+    $("f-id").value = f?.id || ""; $("f-title").value = f?.title || ""; $("f-slug").value = f?.slug || "";
+    $("f-theme").value = f?.theme || ""; $("f-price").value = f?.default_price || ""; $("f-duration").value = f?.duration || "";
+    $("f-level").value = f?.level || ""; $("f-summary").value = f?.summary || ""; $("f-desc").value = f?.description_md || ""; $("f-image").value = f?.image_url || "";
+    slugTouched = !!f?.slug; document.getElementById("drawer-title")!.textContent = f ? "Modifier la formation" : "Nouvelle formation";
+  }
+  const openNew = () => { fill(null); open(); $("f-title").focus(); };
+  const edit = (id: string) => { const f = all.find((x) => x.id === id); if (f) { fill(f); open(); } };
+  async function del(id: string) {
+    const f = all.find((x) => x.id === id);
+    if (!window.confirm(`Supprimer « ${f?.title} » ? Les sessions liées ne seront pas supprimées.`)) return;
+    const { error } = await supabaseBrowser.from("formations").delete().eq("id", id);
+    if (error) { toast("Suppression impossible.", "err"); return; }
+    toast("Formation supprimée."); await load();
+  }
+  async function save() {
+    const title = $("f-title").value.trim(); const slug = $("f-slug").value.trim() || slugify(title);
+    if (!title || !slug) { toast("Titre et slug obligatoires.", "err"); return; }
+    const payload: any = {
+      title, slug, theme: $("f-theme").value.trim() || null,
+      default_price: $("f-price").value ? parseInt($("f-price").value) : null,
+      duration: $("f-duration").value.trim() || null, level: $("f-level").value.trim() || null,
+      summary: $("f-summary").value.trim() || null, description_md: $("f-desc").value || null, image_url: $("f-image").value.trim() || null,
+    };
+    const id = $("f-id").value; const btn = document.getElementById("save-btn")!;
+    btn.setAttribute("disabled", "true"); btn.textContent = "Enregistrement…";
+    const { error } = id ? await supabaseBrowser.from("formations").update(payload).eq("id", id) : await supabaseBrowser.from("formations").insert(payload);
+    btn.removeAttribute("disabled"); btn.textContent = "Enregistrer";
+    if (error) { toast(error.message.includes("duplicate") ? "Ce slug existe déjà." : "Enregistrement impossible.", "err"); return; }
+    toast(id ? "Formation mise à jour." : "Formation créée."); close(); await load();
+  }
+  document.getElementById("new-btn")!.addEventListener("click", openNew);
+  document.getElementById("close-btn")!.addEventListener("click", close);
+  document.getElementById("cancel-btn")!.addEventListener("click", close);
+  overlay.addEventListener("click", close);
+  document.getElementById("save-btn")!.addEventListener("click", save);
+  $("f-search").addEventListener("input", applySearch);
+  $("f-title").addEventListener("input", () => { if (!slugTouched) $("f-slug").value = slugify($("f-title").value); });
+  $("f-slug").addEventListener("input", () => { slugTouched = true; });
+
+  (async () => { const { data: { session } } = await supabaseBrowser.auth.getSession(); if (!session) return; await load(); })();
+</script>

@@ -1,0 +1,135 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Tableau de bord" active="dashboard">
+  <div class="stat-grid">
+    <div class="stat"><div class="k">Articles publiés</div><div class="v" data-stat="posts">—</div></div>
+    <div class="stat"><div class="k">Sessions à venir</div><div class="v" data-stat="sessions">—</div></div>
+    <div class="stat"><div class="k">Paiements à vérifier</div><div class="v warn" data-stat="pending">—</div></div>
+    <div class="stat"><div class="k">Réservations confirmées</div><div class="v ok" data-stat="confirmed">—</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Paiements à vérifier</h2>
+      <a class="abtn sm" href="/admin/reservations">Toutes les réservations</a>
+    </div>
+    <table class="admin-table">
+      <thead>
+        <tr><th>Participant</th><th>Session · Tarif</th><th>Moyen</th><th>Justif.</th><th>Montant</th><th></th></tr>
+      </thead>
+      <tbody data-pending><tr><td class="empty" colspan="6">Chargement…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Prochaines sessions</h2>
+      <a class="abtn sm" href="/admin/sessions">Gérer les sessions</a>
+    </div>
+    <table class="admin-table">
+      <thead><tr><th>Session</th><th>Date</th><th>Remplissage</th><th>Statut</th></tr></thead>
+      <tbody data-sessions><tr><td class="empty" colspan="4">Chargement…</td></tr></tbody>
+    </table>
+  </div>
+</AdminLayout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+  import { confirmBooking } from "../../scripts/adminUtils";
+
+  const fmt = (n: number) => (n || 0).toLocaleString("fr-FR") + " F CFA";
+  const dshort = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  const methodLabel: Record<string, string> = { wave: "Wave", orange_money: "Orange Money", mobile_money: "Mobile Money", sur_place: "Sur place" };
+  const esc = (s: any) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+
+  async function viewProof(path: string) {
+    const { data } = await supabaseBrowser.storage.from("payment-proofs").createSignedUrl(path, 120);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank", "noopener");
+  }
+
+  async function loadStats() {
+    const nowISO = new Date().toISOString();
+    const [posts, sessions, pending, confirmed] = await Promise.all([
+      supabaseBrowser.from("posts").select("id", { count: "exact", head: true }).eq("status", "published"),
+      supabaseBrowser.from("sessions").select("id", { count: "exact", head: true }).in("status", ["published", "full"]).gte("starts_at", nowISO),
+      supabaseBrowser.from("bookings").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabaseBrowser.from("bookings").select("id", { count: "exact", head: true }).eq("status", "confirmed"),
+    ]);
+    const set = (k: string, v: any) => { const el = document.querySelector(`[data-stat="${k}"]`); if (el) el.textContent = String(v ?? 0); };
+    set("posts", posts.count); set("sessions", sessions.count); set("pending", pending.count); set("confirmed", confirmed.count);
+  }
+
+  async function loadPending() {
+    const { data } = await supabaseBrowser
+      .from("bookings")
+      .select("id,reference,full_name,payment_method,payment_reference,payment_proof_url,amount_due,is_deposit,quantity,sessions(title,starts_at),ticket_types(name)")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true })
+      .limit(20);
+    const tb = document.querySelector("[data-pending]")!;
+    if (!data || data.length === 0) { tb.innerHTML = `<tr><td class="empty" colspan="6">Aucun paiement en attente. 🎉</td></tr>`; return; }
+    tb.innerHTML = data.map((b: any) => {
+      const due = b.is_deposit ? Math.ceil(b.amount_due / 2) : b.amount_due;
+      const proof = b.payment_proof_url
+        ? `<button class="abtn sm" data-proof="${esc(b.payment_proof_url)}">Voir reçu</button>`
+        : (b.payment_reference ? `<span title="${esc(b.payment_reference)}">réf.</span>` : "—");
+      return `<tr>
+        <td><strong>${esc(b.full_name)}</strong><br><span style="color:var(--c-gray-500);font-size:.78rem">${esc(b.reference)}</span></td>
+        <td>${esc(b.sessions?.title || "")}<br><span style="color:var(--c-gray-500);font-size:.78rem">${b.quantity}× ${esc(b.ticket_types?.name || "")}</span></td>
+        <td>${esc(methodLabel[b.payment_method] || "—")}${b.is_deposit ? " <span class=\"tag-pill wait\">acompte</span>" : ""}</td>
+        <td>${proof}</td>
+        <td style="font-variant-numeric:tabular-nums">${fmt(due)}</td>
+        <td style="white-space:nowrap;text-align:right">
+          <button class="abtn primary sm" data-confirm="${b.id}">Valider</button>
+          <button class="abtn sm" data-cancel="${b.id}">Refuser</button>
+        </td></tr>`;
+    }).join("");
+
+    tb.querySelectorAll<HTMLElement>("[data-proof]").forEach((el) => el.addEventListener("click", () => viewProof(el.dataset.proof!)));
+    tb.querySelectorAll<HTMLElement>("[data-confirm]").forEach((el) => el.addEventListener("click", async () => {
+      el.setAttribute("disabled", "true"); el.textContent = "…";
+      await confirmBooking(supabaseBrowser, el.dataset.confirm!);
+      await refresh();
+    }));
+    tb.querySelectorAll<HTMLElement>("[data-cancel]").forEach((el) => el.addEventListener("click", async () => {
+      if (!window.confirm("Refuser cette réservation ? La place sera libérée.")) return;
+      await supabaseBrowser.rpc("cancel_booking", { p_booking_id: el.dataset.cancel });
+      await refresh();
+    }));
+  }
+
+  async function loadSessions() {
+    const nowISO = new Date().toISOString();
+    const { data } = await supabaseBrowser
+      .from("sessions")
+      .select("id,slug,title,starts_at,status,ticket_types(capacity,sold)")
+      .in("status", ["published", "full", "draft"])
+      .gte("starts_at", nowISO)
+      .order("starts_at", { ascending: true })
+      .limit(10);
+    const tb = document.querySelector("[data-sessions]")!;
+    if (!data || data.length === 0) { tb.innerHTML = `<tr><td class="empty" colspan="4">Aucune session à venir.</td></tr>`; return; }
+    tb.innerHTML = data.map((s: any) => {
+      const cap = (s.ticket_types || []).reduce((a: number, t: any) => a + t.capacity, 0);
+      const sold = (s.ticket_types || []).reduce((a: number, t: any) => a + t.sold, 0);
+      const pct = cap ? Math.round((sold / cap) * 100) : 0;
+      const stat = s.status === "full" ? `<span class="tag-pill full">Complet</span>` : s.status === "draft" ? `<span class="tag-pill draft">Brouillon</span>` : `<span class="tag-pill pub">Publiée</span>`;
+      return `<tr>
+        <td><a href="/formations/session/${esc(s.slug)}" target="_blank" style="color:var(--c-blue);font-weight:700;text-decoration:none">${esc(s.title)}</a></td>
+        <td>${dshort(s.starts_at)}</td>
+        <td style="font-variant-numeric:tabular-nums">${sold}/${cap} · ${pct}%</td>
+        <td>${stat}</td></tr>`;
+    }).join("");
+  }
+
+  async function refresh() { await Promise.all([loadStats(), loadPending(), loadSessions()]); }
+
+  (async () => {
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    if (!session) return; // AdminLayout gère la redirection
+    await refresh();
+  })();
+</script>
