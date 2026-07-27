@@ -66,8 +66,8 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
 
 {session ? (
   <BaseLayout
-    title={`${session.title} — ${frDateShort(session.starts_at)} | Formations Bweb`}
-    description={formation?.summary || `Session de formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`}
+    title={session.seo_title || `${session.title} — ${frDateShort(session.starts_at)} | Formations Bweb`}
+    description={session.seo_description || formation?.summary || `Session de formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`}
   >
     <article class="section" style="padding-top:calc(var(--header-h) + var(--space-lg))">
       <div class="container">

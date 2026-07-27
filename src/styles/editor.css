@@ -158,6 +158,8 @@
 .ed-inp:focus, .ed-sel:focus, .ed-ta:focus { outline: none; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31,108,237,.14); background: var(--surface); }
 .ed-ta { resize: vertical; min-height: 72px; line-height: 1.5; }
 .ed-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ed-row2 > * { min-width: 0; } /* laisse les colonnes rétrécir sous la largeur intrinsèque (évite le débordement des inputs date/nombre) */
+.ed-inp[type="datetime-local"] { min-width: 0; }
 .ed-help { font-size: 11.5px; color: var(--c-gray-400); margin-top: 5px; }
 .ed-slugbox { display: flex; align-items: center; border: 1px solid var(--c-border); border-radius: 9px; background: var(--surface-2); overflow: hidden; }
 .ed-slugbox:focus-within { border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31,108,237,.14); }

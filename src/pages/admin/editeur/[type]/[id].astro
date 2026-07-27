@@ -164,6 +164,24 @@ const isNew = id === "nouveau";
               <div class="ed-cover" id="ed-cover" data-target="f-image"></div>
               <input type="hidden" id="f-image" />
             </section>
+            <section class="ed-panel ed-seo">
+              <h4>Référencement (SEO)<span class="ed-seo-badge" id="ed-seo-badge">—</span></h4>
+              <div class="ed-field"><label for="f-focus">Mot-clé cible</label>
+                <input class="ed-inp" id="f-focus" placeholder="Ex. formation IA Abidjan" />
+                <div class="ed-help">L'expression sur laquelle vous voulez être trouvé.</div></div>
+              <div class="ed-seo-preview" id="ed-seo-preview" aria-label="Aperçu Google">
+                <div class="g-url" id="seo-url"></div>
+                <div class="g-title" id="seo-title">Titre de la formation</div>
+                <div class="g-desc" id="seo-desc">Ajoutez une description méta…</div>
+              </div>
+              <div class="ed-field"><label for="f-seotitle">Titre méta</label>
+                <input class="ed-inp" id="f-seotitle" />
+                <div class="ed-help" id="seo-title-count"></div></div>
+              <div class="ed-field"><label for="f-seodesc">Description méta</label>
+                <textarea class="ed-ta" id="f-seodesc" rows="3"></textarea>
+                <div class="ed-help" id="seo-desc-count"></div></div>
+              <div class="ed-seo-checks" id="ed-seo-checks"></div>
+            </section>
           </>
         )}
 
@@ -177,10 +195,8 @@ const isNew = id === "nouveau";
               <div class="ed-field"><label for="f-formation">Formation liée</label><select class="ed-sel" id="f-formation"><option value="">— Aucune —</option></select></div>
               <div class="ed-field"><label for="f-theme">Thème</label><input class="ed-inp" id="f-theme" list="th-list" />
                 <datalist id="th-list"><option value="IA"></option><option value="Marketing"></option><option value="Vente en ligne"></option><option value="Automatisation"></option></datalist></div>
-              <div class="ed-row2">
-                <div class="ed-field"><label for="f-start">Début *</label><input class="ed-inp" id="f-start" type="datetime-local" /></div>
-                <div class="ed-field"><label for="f-end">Fin</label><input class="ed-inp" id="f-end" type="datetime-local" /></div>
-              </div>
+              <div class="ed-field"><label for="f-start">Début *</label><input class="ed-inp" id="f-start" type="datetime-local" /></div>
+              <div class="ed-field"><label for="f-end">Fin</label><input class="ed-inp" id="f-end" type="datetime-local" /></div>
               <div class="ed-row2">
                 <div class="ed-field"><label for="f-city">Ville</label><input class="ed-inp" id="f-city" value="Abidjan" /></div>
                 <div class="ed-field"><label for="f-venue">Lieu</label><input class="ed-inp" id="f-venue" value="Espace de formation Bweb · Cocody" /></div>
@@ -194,6 +210,24 @@ const isNew = id === "nouveau";
             <section class="ed-panel"><h4>Affiche (16/9)</h4>
               <div class="ed-cover" id="ed-cover" data-target="f-image"></div>
               <input type="hidden" id="f-image" />
+            </section>
+            <section class="ed-panel ed-seo">
+              <h4>Référencement (SEO)<span class="ed-seo-badge" id="ed-seo-badge">—</span></h4>
+              <div class="ed-field"><label for="f-focus">Mot-clé cible</label>
+                <input class="ed-inp" id="f-focus" placeholder="Ex. formation IA Abidjan" />
+                <div class="ed-help">L'expression sur laquelle vous voulez être trouvé.</div></div>
+              <div class="ed-seo-preview" id="ed-seo-preview" aria-label="Aperçu Google">
+                <div class="g-url" id="seo-url"></div>
+                <div class="g-title" id="seo-title">Titre de la session</div>
+                <div class="g-desc" id="seo-desc">Ajoutez une description méta…</div>
+              </div>
+              <div class="ed-field"><label for="f-seotitle">Titre méta</label>
+                <input class="ed-inp" id="f-seotitle" />
+                <div class="ed-help" id="seo-title-count"></div></div>
+              <div class="ed-field"><label for="f-seodesc">Description méta</label>
+                <textarea class="ed-ta" id="f-seodesc" rows="3"></textarea>
+                <div class="ed-help" id="seo-desc-count"></div></div>
+              <div class="ed-seo-checks" id="ed-seo-checks"></div>
             </section>
           </>
         )}
