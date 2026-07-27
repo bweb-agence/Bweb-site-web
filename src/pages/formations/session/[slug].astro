@@ -3,8 +3,8 @@ export const prerender = false;
 
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { supabase } from "../../../lib/supabase";
-import { contact } from "../../../config/site";
-import { priceFCFA, frDateLong, frDateShort, frTime, gradClass } from "../../../lib/format";
+import { site, contact } from "../../../config/site";
+import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix } from "../../../lib/format";
 import { marked } from "marked";
 import PhoneField from "../../../components/PhoneField.astro";
 import "../../../styles/formations.css";
@@ -13,7 +13,7 @@ const { slug } = Astro.params;
 
 const { data: session } = await supabase
   .from("sessions")
-  .select("*, formations(slug,title,summary,description_md,description_html,duration,level), ticket_types(id,name,price,capacity,sold,badge,sales_end,sort)")
+  .select("*, formations(slug,title,summary,description_md,description_html,duration,level,audience,prerequisites,instructor_name,instructor_role,instructor_photo_url,instructor_bio,included_extra), ticket_types(id,name,price,compare_at_price,capacity,sold,badge,sales_end,sort)")
   .eq("slug", slug)
   .in("status", ["published", "full"])
   .maybeSingle();
@@ -33,7 +33,13 @@ if (session) {
 }
 
 const formation = session?.formations as
-  | { title: string; summary: string | null; description_md: string | null; description_html: string | null; duration: string | null; level: string | null }
+  | {
+      title: string; summary: string | null; description_md: string | null; description_html: string | null;
+      duration: string | null; level: string | null;
+      audience: string | null; prerequisites: string | null;
+      instructor_name: string | null; instructor_role: string | null;
+      instructor_photo_url: string | null; instructor_bio: string | null; included_extra: string | null;
+    }
   | null;
 
 const tickets = (session?.ticket_types ?? []).slice().sort((a: any, b: any) => a.sort - b.sort);
@@ -41,7 +47,53 @@ const totalCap = tickets.reduce((s: number, t: any) => s + t.capacity, 0);
 const totalSold = tickets.reduce((s: number, t: any) => s + t.sold, 0);
 const totalRemaining = Math.max(0, totalCap - totalSold);
 const isFull = session?.status === "full" || totalRemaining <= 0;
-const minPrice = tickets.length ? Math.min(...tickets.map((t: any) => t.price)) : null;
+const cheapest = tickets.length ? tickets.reduce((a: any, t: any) => (t.price < a.price ? t : a)) : null;
+const minPrice = cheapest ? cheapest.price : null;
+const minCompareAt = cheapest && cheapest.compare_at_price && cheapest.compare_at_price > cheapest.price ? cheapest.compare_at_price : null;
+const minDiscountPct = minCompareAt && minPrice ? Math.round((1 - minPrice / minCompareAt) * 100) : 0;
+const ttPromo = (t: any) => (t.compare_at_price && t.compare_at_price > t.price
+  ? { compareAt: t.compare_at_price, pct: Math.round((1 - t.price / t.compare_at_price) * 100) }
+  : null);
+
+// Session déjà passée ? (garde-fou : plus réservable, non indexable)
+const isPast = session ? new Date(session.starts_at).getTime() < Date.now() : false;
+
+// Tarif anticipé encore actif (urgence) : plus proche échéance future parmi les tarifs
+const earlyDeadline = tickets
+  .map((t: any) => t.sales_end)
+  .filter((d: any): d is string => !!d && new Date(d).getTime() > Date.now())
+  .sort()[0] || null;
+
+// Autres dates de la même formation (repêchage / cross-sell)
+let nextSessions: any[] = [];
+if (session?.formation_id) {
+  const { data: ns } = await supabase
+    .from("sessions")
+    .select("slug,title,theme,starts_at,venue,city,status")
+    .eq("formation_id", session.formation_id)
+    .neq("id", session.id)
+    .in("status", ["published", "full"])
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true })
+    .limit(3);
+  nextSessions = ns ?? [];
+}
+
+// Avis approuvés (témoignages) de la formation
+let reviews: { author_name: string; author_role: string | null; rating: number; comment: string; created_at: string }[] = [];
+if (session?.formation_id) {
+  const { data: rv } = await supabase
+    .from("reviews")
+    .select("author_name,author_role,rating,comment,created_at")
+    .eq("formation_id", session.formation_id)
+    .eq("status", "approved")
+    .order("created_at", { ascending: false })
+    .limit(12);
+  reviews = rv ?? [];
+}
+const reviewCount = reviews.length;
+const reviewAvg = reviewCount ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviewCount) * 10) / 10 : 0;
+const stars = (n: number) => "★★★★★".slice(0, Math.round(n)) + "☆☆☆☆☆".slice(0, 5 - Math.round(n));
 
 // Découpe la description en intro + éléments « Au programme »
 const desc = formation?.description_md ?? "";
@@ -51,7 +103,12 @@ const learnItems = (progRaw || "")
   .split("\n").map((l) => l.trim()).filter((l) => l.startsWith("- ")).map((l) => l.slice(2).trim());
 // Contenu riche (éditeur WYSIWYG) prioritaire : d'abord la session, puis la formation ; repli Markdown.
 const richHtml = (session as any)?.description_html || formation?.description_html || "";
-const detailHtml = richHtml || (intro ? (marked.parse(intro, { async: false }) as string) : "");
+let detailHtml = richHtml || (intro ? (marked.parse(intro, { async: false }) as string) : "");
+// Dé-duplication : si « Ce que vous apprendrez » est affiché (learnItems), on retire la
+// section « Au programme » de la prose pour ne pas répéter la même liste deux fois.
+if (learnItems.length > 0 && richHtml) {
+  detailHtml = detailHtml.replace(/<h[1-6][^>]*>\s*au programme[\s\S]*$/i, "").trim();
+}
 
 function badgeInfo(badge: string | null, salesEnd: string | null) {
   if (badge === "hot") return { cls: "hot", label: "📈 Forte demande" };
@@ -60,8 +117,88 @@ function badgeInfo(badge: string | null, salesEnd: string | null) {
   return null;
 }
 
+const dNum = (s: string) => new Date(s).getDate();
+const mShort = (s: string) => {
+  const m = new Date(s).toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
+  return m.charAt(0).toUpperCase() + m.slice(1);
+};
+
 const mapQuery = `${(session?.venue ?? "").split("·").pop()?.trim() || session?.city || "Abidjan"}, Côte d'Ivoire`;
+const mapEmbed = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`;
 const shareUrl = Astro.url.href;
+
+// Données structurées Schema.org — rich results Google (date, lieu, prix, disponibilité).
+const maxPrice = tickets.length ? Math.max(...tickets.map((t: any) => t.price)) : null;
+const eventLd = session
+  ? {
+      "@context": "https://schema.org",
+      "@type": "EducationEvent",
+      name: session.title,
+      description:
+        session.seo_description || formation?.summary ||
+        `Formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`,
+      startDate: session.starts_at,
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      eventStatus: "https://schema.org/EventScheduled",
+      ...(session.image_url ? { image: [session.image_url] } : {}),
+      location: {
+        "@type": "Place",
+        name: session.venue || "Espace de formation Bweb",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: session.city || "Abidjan",
+          addressCountry: "CI",
+        },
+      },
+      organizer: { "@type": "Organization", name: site.name, url: site.url },
+      ...(minPrice !== null
+        ? {
+            offers: {
+              "@type": "AggregateOffer",
+              priceCurrency: "XOF",
+              lowPrice: minPrice,
+              highPrice: maxPrice,
+              offerCount: tickets.length,
+              availability: isFull ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+              url: shareUrl,
+            },
+          }
+        : {}),
+    }
+  : null;
+
+// Schéma Course avec note agrégée (étoiles dans les résultats Google) — seulement si avis.
+const courseLd = session && reviewCount
+  ? {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      name: formation?.title || session.title,
+      description:
+        session.seo_description || formation?.summary ||
+        `Formation en présentiel à Abidjan.`,
+      provider: { "@type": "Organization", name: site.name, url: site.url },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: reviewAvg,
+        reviewCount,
+        bestRating: 5,
+        worstRating: 1,
+      },
+      hasCourseInstance: {
+        "@type": "CourseInstance",
+        courseMode: "Onsite",
+        startDate: session.starts_at,
+        location: {
+          "@type": "Place",
+          name: session.venue || "Espace de formation Bweb",
+          address: { "@type": "PostalAddress", addressLocality: session.city || "Abidjan", addressCountry: "CI" },
+        },
+        ...(minPrice !== null
+          ? { offers: { "@type": "Offer", price: minPrice, priceCurrency: "XOF", availability: isFull ? "https://schema.org/SoldOut" : "https://schema.org/InStock", url: shareUrl } }
+          : {}),
+      },
+    }
+  : null;
 const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
 ---
 
@@ -69,13 +206,24 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
   <BaseLayout
     title={session.seo_title || `${session.title} — ${frDateShort(session.starts_at)} | Formations Bweb`}
     description={session.seo_description || formation?.summary || `Session de formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`}
+    image={session.image_url || undefined}
+    noindex={isPast}
   >
+    {eventLd && <script type="application/ld+json" slot="head" is:inline set:html={JSON.stringify(eventLd)} />}
+    {courseLd && <script type="application/ld+json" slot="head" is:inline set:html={JSON.stringify(courseLd)} />}
     <article class="section" style="padding-top:calc(var(--header-h) + var(--space-lg))">
       <div class="container">
         <a class="sess-back" href="/formations/calendrier">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6" /></svg>
           Retour au calendrier
         </a>
+
+        {isPast && (
+          <div class="sess-past" role="status">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span>Cette session est <b>passée</b>. Découvrez les prochaines dates au <a href="/formations/calendrier">calendrier</a>.</span>
+          </div>
+        )}
 
         <div class="sess-layout">
           <!-- ===== Titre (col. gauche, ligne 1) ===== -->
@@ -85,8 +233,8 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
             {formation?.summary && <p class="sess-desc" style="max-width:60ch">{formation.summary}</p>}
 
             <div class="sess-meta">
-              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>{frDateLong(session.starts_at)}</span>
-              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg>{isFull ? "Session complète" : `${totalRemaining} places restantes`}</span>
+              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>{frDateLong(session.starts_at)} · {frTime(session.starts_at)}</span>
+              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg>{isPast ? "Session passée" : isFull ? "Session complète" : `${totalRemaining} places restantes`}</span>
               <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>{session.venue ?? "Espace Bweb · Cocody"}, {session.city ?? "Abidjan"}</span>
             </div>
           </div>
@@ -111,19 +259,113 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
               </>
             )}
 
+            {(formation?.audience || formation?.prerequisites) && (
+              <>
+                <h2 class="sectitle">À qui s'adresse cette formation</h2>
+                <div class="audience-grid">
+                  {formation?.audience && (
+                    <div class="ag-card">
+                      <div class="ag-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M22 20a6.5 6.5 0 0 0-4-6"/></svg>Public visé</div>
+                      <p>{formation.audience}</p>
+                    </div>
+                  )}
+                  {formation?.prerequisites && (
+                    <div class="ag-card">
+                      <div class="ag-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Prérequis</div>
+                      <p>{formation.prerequisites}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {formation?.instructor_name && (formation.instructor_bio || formation.instructor_photo_url) && (
+              <>
+                <h2 class="sectitle">Votre formateur</h2>
+                <div class="instructor">
+                  {formation.instructor_photo_url && <img class="instructor__photo" src={formation.instructor_photo_url} alt={formation.instructor_name} loading="lazy" />}
+                  <div class="instructor__body">
+                    <div class="instructor__name">{formation.instructor_name}</div>
+                    {formation.instructor_role && <div class="instructor__role">{formation.instructor_role}</div>}
+                    {formation.instructor_bio && <p class="instructor__bio">{formation.instructor_bio}</p>}
+                  </div>
+                </div>
+              </>
+            )}
+
             <h2 class="sectitle">Infos pratiques</h2>
             <div class="info-grid">
               <div class="c"><div class="k">Durée</div><div class="v">{formation?.duration ?? "—"}</div></div>
               <div class="c"><div class="k">Niveau</div><div class="v">{formation?.level ?? "Tous niveaux"}</div></div>
-              <div class="c"><div class="k">Formateur</div><div class="v">Expert Bweb</div></div>
+              <div class="c"><div class="k">Formateur</div><div class="v">{formation?.instructor_name ?? "Expert Bweb"}{formation?.instructor_role && <span class="isub">{formation.instructor_role}</span>}</div></div>
               <div class="c"><div class="k">Langue</div><div class="v">Français</div></div>
               <div class="c"><div class="k">Format</div><div class="v">Présentiel</div></div>
               <div class="c"><div class="k">Places</div><div class="v">{totalCap} max.</div></div>
             </div>
 
             <h2 class="sectitle">Lieu sur carte</h2>
-            <iframe class="map-embed" title="Lieu de la formation" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-              src={`https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`}></iframe>
+            <div class="map-facade" id="map-facade" data-src={mapEmbed} data-title="Lieu de la formation">
+              <div class="map-facade__info">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
+                <div>
+                  <div class="mf-place">{session.venue ?? "Espace de formation Bweb · Cocody"}</div>
+                  {(session as any).address && <div class="mf-addr">{(session as any).address}</div>}
+                  <div class="mf-city">{session.city ?? "Abidjan"}, Côte d'Ivoire</div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline map-facade__btn" id="map-load">Afficher la carte</button>
+              <p class="map-facade__note">La carte est fournie par Google Maps. En l'affichant, vous acceptez le dépôt de cookies Google.</p>
+            </div>
+
+            {session.formation_id && (
+              <>
+                <h2 class="sectitle">Avis des participants</h2>
+                <div class="reviews">
+                  {reviewCount > 0 ? (
+                    <div class="reviews__head">
+                      <span class="rv-avg">{reviewAvg.toFixed(1).replace(".", ",")}</span>
+                      <span class="rv-stars" aria-hidden="true">{stars(reviewAvg)}</span>
+                      <span class="rv-count">{reviewCount} avis</span>
+                    </div>
+                  ) : (
+                    <p class="reviews__empty">Pas encore d'avis — soyez le premier à partager votre expérience.</p>
+                  )}
+
+                  {reviewCount > 0 && (
+                    <div class="reviews__list">
+                      {reviews.map((r) => (
+                        <figure class="rv-item">
+                          <div class="rv-stars sm" aria-label={`${r.rating} sur 5`}>{stars(r.rating)}</div>
+                          <blockquote>{r.comment}</blockquote>
+                          <figcaption>{r.author_name}{r.author_role && <span> · {r.author_role}</span>}</figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  )}
+
+                  <details class="rv-form-wrap">
+                    <summary>Laisser un avis</summary>
+                    <form class="rv-form" id="rv-form" data-formation={session.formation_id} data-session={session.id}>
+                      <div class="rv-field">
+                        <label>Votre note *</label>
+                        <div class="rv-rate" id="rv-rate" role="radiogroup" aria-label="Note sur 5">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button type="button" class="rv-star" data-n={n} aria-label={`${n} étoile${n > 1 ? "s" : ""}`}>★</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div class="rz-2col">
+                        <div class="rv-field"><label for="rv-name">Nom *</label><input class="rz-input" id="rv-name" maxlength="80" required /></div>
+                        <div class="rv-field"><label for="rv-role">Rôle / activité (optionnel)</label><input class="rz-input" id="rv-role" maxlength="80" /></div>
+                      </div>
+                      <div class="rv-field"><label for="rv-comment">Votre avis *</label><textarea class="rz-input" id="rv-comment" rows="3" maxlength="1000" required></textarea></div>
+                      <button type="submit" class="btn btn-primary" id="rv-submit">Envoyer mon avis</button>
+                      <p class="rv-msg" id="rv-msg" hidden></p>
+                    </form>
+                  </details>
+                </div>
+              </>
+            )}
 
             {faqs.length > 0 && (
               <>
@@ -132,8 +374,36 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
                   {faqs.map((f, i) => (
                     <details class="faq-item" open={i === 0}>
                       <summary>{f.question}</summary>
-                      <div class="faq-answer" set:html={marked.parseInline(f.answer_md, { async: false }) as string} />
+                      <div class="faq-answer" set:html={marked.parse(f.answer_md, { async: false }) as string} />
                     </details>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <h2 class="sectitle">Une question avant de vous inscrire ?</h2>
+            <div class="ask-box">
+              <p>Notre équipe vous répond directement sur WhatsApp — programme détaillé, prérequis, facture, paiement en plusieurs fois…</p>
+              <a class="btn btn-primary" target="_blank" rel="noopener"
+                href={`https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("Bonjour Bweb Agence, j'ai une question sur la formation « " + session.title + " » du " + frDateLong(session.starts_at) + ".")}`}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1012 2zm5.6 14.2c-.2.6-1.2 1.2-1.7 1.2-.4.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.5-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.4-1-2.6 0-1.2.6-1.8.9-2 .2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.5c-.2.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2 1.3 2.3 1.5.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.6-.1l1.8.9c.3.1.4.2.5.3.1.2.1.7-.1 1.3z"/></svg>
+                Poser ma question
+              </a>
+            </div>
+
+            {nextSessions.length > 0 && (
+              <>
+                <h2 class="sectitle">Autres dates pour cette formation</h2>
+                <div class="next-list">
+                  {nextSessions.map((n: any) => (
+                    <a class="next-item" href={`/formations/session/${n.slug}`}>
+                      <span class="ni-date"><span class="d">{dNum(n.starts_at)}</span><span class="m">{mShort(n.starts_at)}</span></span>
+                      <span class="ni-body">
+                        <span class="ni-title">{n.title}</span>
+                        <span class="ni-meta">{frDateLong(n.starts_at)} · {frTime(n.starts_at)}{n.status === "full" ? " · Complet" : ""}</span>
+                      </span>
+                      <svg class="ni-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                    </a>
                   ))}
                 </div>
               </>
@@ -150,24 +420,42 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
 
           <!-- ===== Carte d'achat (collante) ===== -->
           <aside class="sess-aside">
-            <div class="buy-card">
-              <div class={`buy-card__media ${gradClass(session.theme)}`}>
-                {session.image_url ? <img src={session.image_url} alt="" /> : (
-                  <div class="poster"><div class="pt">{session.title}</div><div class="pd">{frDateShort(session.starts_at)}</div></div>
-                )}
-                {session.theme && <span class="ev-tag">{session.theme}</span>}
-                {isFull && <span class="ev-sold">Complet</span>}
+            <div class="buy-card" data-grad={gradSuffix(session.theme)}>
+              <div class={`buy-card__media ev-media ${gradClass(session.theme)}`}>
+                {session.image_url && <img src={session.image_url} alt="" />}
+                <span class="ev-scrim"></span>
+                {session.theme && <span class="ev-theme"><span class="dot"></span>{session.theme}</span>}
                 <button type="button" class="ev-fav" id="fav" data-session-id={session.id} aria-label="Ajouter aux favoris">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9C.7 8.4 2.4 5 5.8 5c2 0 3.3 1.1 4.2 2.4C11 6.1 12.2 5 14.2 5c3.4 0 5.1 3.4 3.3 7-2.5 4.4-9.5 9-9.5 9z"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9C.7 8.4 2.4 5 5.8 5c2 0 3.3 1.1 4.2 2.4C11 6.1 12.2 5 14.2 5c3.4 0 5.1 3.4 3.3 7-2.5 4.4-9.5 9-9.5 9z"/></svg>
                   <span class="fav-count">{session.likes_count}</span>
                 </button>
+                <div class="ev-date"><span class="d">{dNum(session.starts_at)}</span><span class="m">{mShort(session.starts_at)}</span></div>
+                {isPast ? (
+                  <span class="ev-sold ev-sold--past">Passée</span>
+                ) : isFull ? (
+                  <span class="ev-sold">Complet</span>
+                ) : minCompareAt ? (
+                  <span class="ev-promo">−{minDiscountPct}%</span>
+                ) : null}
               </div>
               <div class="buy-card__pad">
+                <div class="buy-card__when">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+                  {frDateLong(session.starts_at)} · {frTime(session.starts_at)}
+                </div>
                 {minPrice !== null && (
-                  <div class="buy-card__price">À partir de <b>{priceFCFA(minPrice)}</b></div>
+                  <div class={`buy-card__price ${minCompareAt ? "has-promo" : ""}`}>
+                    <span class="bcp-line">À partir de <b>{priceFCFA(minPrice)}</b>{minCompareAt && <span class="bcp-off">−{minDiscountPct}%</span>}</span>
+                    {minCompareAt && <span class="bcp-was">{priceFCFA(minCompareAt)}</span>}
+                  </div>
                 )}
-                {!isFull && <p class="buy-card__note">💺 Plus que <strong>{totalRemaining}</strong> places pour cette session.</p>}
-                {isFull ? (
+                {!isPast && earlyDeadline && (
+                  <p class="buy-card__early">⏱ Tarif anticipé jusqu'au <b>{frDateShort(earlyDeadline)}</b></p>
+                )}
+                {!isPast && !isFull && <p class="buy-card__note">💺 Plus que <strong>{totalRemaining}</strong> places pour cette session.</p>}
+                {isPast ? (
+                  <a class="btn btn-outline btn-block btn-lg" href="/formations/calendrier">Voir les prochaines sessions</a>
+                ) : isFull ? (
                   <a class="btn btn-outline btn-block btn-lg" href={`https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("Bonjour, je souhaite être sur la liste d'attente pour « " + session.title + " » du " + frDateLong(session.starts_at) + ".")}`} target="_blank" rel="noopener">Rejoindre la liste d'attente</a>
                 ) : (
                   <button type="button" class="btn btn-primary btn-block btn-lg" id="open-rz">Réserver ma place</button>
@@ -179,7 +467,14 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.5 13.5L7 22l5-3 5 3-1.5-8.5"/></svg><b>Attestation</b> de fin de formation</li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12H4z"/><path d="M8 9h6M8 13h8M8 17h5"/></svg><b>Support</b> de formation fourni</li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 5.8 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.8-4-9s1.5-6.4 4-9z"/></svg>Formation en <b>français</b></li>
+                  {formation?.included_extra && formation.included_extra.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => (
+                    <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>{l}</span></li>
+                  ))}
                 </ul>
+                <p class="buy-card__secure">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                  Paiement mobile sécurisé (Wave · Orange Money · MoMo) · place bloquée dès le justificatif reçu.
+                </p>
               </div>
             </div>
           </aside>
@@ -212,10 +507,14 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
                 {tickets.map((t: any) => {
                   const remaining = Math.max(0, t.capacity - t.sold);
                   const bi = badgeInfo(t.badge, t.sales_end);
+                  const promo = ttPromo(t);
                   return (
                     <div class="ticket" data-ticket data-id={t.id} data-name={t.name} data-price={t.price} data-remaining={remaining}>
                       <div class="th">
-                        <div><div class="tn">{t.name}</div><div class="tp">{priceFCFA(t.price)}</div></div>
+                        <div>
+                          <div class="tn">{t.name}</div>
+                          <div class={`tp ${promo ? "has-promo" : ""}`}>{priceFCFA(t.price)}{promo && <span class="tp-was">{priceFCFA(promo.compareAt)}</span>}{promo && <span class="tp-off">−{promo.pct}%</span>}</div>
+                        </div>
                         {bi && <span class={`t-badge ${bi.cls}`}>{bi.label}</span>}
                       </div>
                       {remaining <= 0 ? <span class="t-soldout">Épuisé</span> : (
@@ -312,4 +611,55 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
 <script>
   import { initReservation } from "../../../scripts/reservation";
   initReservation();
+
+  // Carte Google Maps chargée au clic (RGPD : pas de cookie tiers avant consentement).
+  const mf = document.getElementById("map-facade");
+  document.getElementById("map-load")?.addEventListener("click", () => {
+    if (!mf) return;
+    const iframe = document.createElement("iframe");
+    iframe.className = "map-embed";
+    iframe.title = mf.dataset.title || "Lieu de la formation";
+    iframe.loading = "lazy";
+    iframe.referrerPolicy = "no-referrer-when-downgrade";
+    iframe.src = mf.dataset.src || "";
+    mf.replaceWith(iframe);
+  });
+
+  // Formulaire « Laisser un avis »
+  import("../../../lib/supabaseBrowser").then(({ supabaseBrowser }) => {
+    const form = document.getElementById("rv-form") as HTMLFormElement | null;
+    if (!form) return;
+    const rate = document.getElementById("rv-rate")!;
+    const msg = document.getElementById("rv-msg") as HTMLElement;
+    const submit = document.getElementById("rv-submit") as HTMLButtonElement;
+    let rating = 0;
+    const stars = Array.from(rate.querySelectorAll<HTMLButtonElement>(".rv-star"));
+    const paint = (v: number) => stars.forEach((s, i) => s.classList.toggle("on", i < v));
+    stars.forEach((s) => {
+      s.addEventListener("click", () => { rating = Number(s.dataset.n); paint(rating); });
+      s.addEventListener("mouseenter", () => paint(Number(s.dataset.n)));
+    });
+    rate.addEventListener("mouseleave", () => paint(rating));
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = (document.getElementById("rv-name") as HTMLInputElement).value.trim();
+      const role = (document.getElementById("rv-role") as HTMLInputElement).value.trim();
+      const comment = (document.getElementById("rv-comment") as HTMLTextAreaElement).value.trim();
+      const show = (text: string, ok: boolean) => { msg.textContent = text; msg.hidden = false; msg.className = "rv-msg " + (ok ? "ok" : "err"); };
+      if (!rating) return show("Merci d'indiquer une note.", false);
+      if (name.length < 2) return show("Merci d'indiquer votre nom.", false);
+      if (comment.length < 5) return show("Votre avis est un peu court.", false);
+      submit.disabled = true; submit.textContent = "Envoi…";
+      const { error } = await supabaseBrowser.rpc("submit_review", {
+        p_formation_id: form.dataset.formation || null,
+        p_session_id: form.dataset.session || null,
+        p_author_name: name, p_author_role: role || null, p_rating: rating, p_comment: comment,
+      });
+      submit.disabled = false; submit.textContent = "Envoyer mon avis";
+      if (error) { show("Envoi impossible pour le moment. Réessayez.", false); return; }
+      form.reset(); rating = 0; paint(0);
+      show("Merci ! Votre avis sera publié après validation. ✓", true);
+    });
+  });
 </script>

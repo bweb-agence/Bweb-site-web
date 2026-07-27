@@ -42,7 +42,7 @@ export function gradClass(theme?: string | null): string {
   return "grad grad-mesh grad--" + gradSuffix(theme);
 }
 
-function gradSuffix(t?: string | null): string {
+export function gradSuffix(t?: string | null): string {
   const c = (t || "").toLowerCase();
   if (c.includes("ia") || c.includes("intelligence")) return "blue";
   if (c.includes("market") || c.includes("publicit")) return "warm";

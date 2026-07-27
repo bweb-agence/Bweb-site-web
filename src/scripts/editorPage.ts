@@ -46,7 +46,7 @@ export async function initEditorPage() {
   let record: any = null;
   if (id) {
     const sel = type === "session"
-      ? "*, ticket_types(id,name,price,capacity,sold,badge,sales_end,sort)"
+      ? "*, ticket_types(id,name,price,compare_at_price,capacity,sold,badge,sales_end,sort)"
       : "*";
     const { data, error } = await supabaseBrowser.from(TABLE[type]).select(sel).eq("id", id).maybeSingle();
     if (error || !data) { toast("Enregistrement introuvable.", "err"); }
@@ -84,6 +84,13 @@ export async function initEditorPage() {
       setVal("f-duration", record.duration || "");
       setVal("f-price", record.default_price ?? "");
       setVal("f-summary", record.summary || "");
+      setVal("f-instructor", record.instructor_name || "");
+      setVal("f-instructor-role", record.instructor_role || "");
+      setVal("f-instructor-photo", record.instructor_photo_url || "");
+      setVal("f-instructor-bio", record.instructor_bio || "");
+      setVal("f-audience", record.audience || "");
+      setVal("f-prerequis", record.prerequisites || "");
+      setVal("f-included", record.included_extra || "");
       setVal("f-image", record.image_url || "");
       setVal("f-seotitle", record.seo_title || "");
       setVal("f-seodesc", record.seo_description || "");
@@ -95,6 +102,7 @@ export async function initEditorPage() {
       setVal("f-end", record.ends_at ? dtLocalValue(record.ends_at) : "");
       setVal("f-city", record.city || "Abidjan");
       setVal("f-venue", record.venue || "Espace de formation Bweb · Cocody");
+      setVal("f-address", record.address || "");
       setVal("f-image", record.image_url || "");
       setVal("f-seotitle", record.seo_title || "");
       setVal("f-seodesc", record.seo_description || "");
@@ -229,6 +237,9 @@ export async function initEditorPage() {
       <input class="ed-inp" data-tt-name placeholder="Nom du tarif" value="${esc(tt?.name || "")}" />
       <div class="ed-row2" style="margin-top:8px">
         <input class="ed-inp" data-tt-price type="number" min="0" placeholder="Prix FCFA" value="${tt?.price ?? ""}" />
+        <input class="ed-inp" data-tt-compare type="number" min="0" placeholder="Prix barré (promo, optionnel)" title="Prix normal affiché barré ; doit être supérieur au prix" value="${tt?.compare_at_price ?? ""}" />
+      </div>
+      <div class="ed-row2" style="margin-top:8px">
         <input class="ed-inp" data-tt-cap type="number" min="0" placeholder="Places" value="${tt?.capacity ?? ""}" />
       </div>
       <div class="ed-row2" style="margin-top:8px">
@@ -249,6 +260,8 @@ export async function initEditorPage() {
       const payload: any = {
         session_id: sessionId, name,
         price: parseInt((it.querySelector("[data-tt-price]") as HTMLInputElement).value || "0"),
+        compare_at_price: (it.querySelector("[data-tt-compare]") as HTMLInputElement).value
+          ? parseInt((it.querySelector("[data-tt-compare]") as HTMLInputElement).value) : null,
         capacity: parseInt((it.querySelector("[data-tt-cap]") as HTMLInputElement).value || "0"),
         badge: (it.querySelector("[data-tt-badge]") as HTMLSelectElement).value || null,
         sales_end: (it.querySelector("[data-tt-end]") as HTMLInputElement).value
@@ -331,6 +344,13 @@ export async function initEditorPage() {
         duration: val("f-duration").trim() || null,
         default_price: val("f-price") ? parseInt(val("f-price")) : null,
         summary: val("f-summary").trim() || null,
+        instructor_name: val("f-instructor").trim() || null,
+        instructor_role: val("f-instructor-role").trim() || null,
+        instructor_photo_url: val("f-instructor-photo").trim() || null,
+        instructor_bio: val("f-instructor-bio").trim() || null,
+        audience: val("f-audience").trim() || null,
+        prerequisites: val("f-prerequis").trim() || null,
+        included_extra: val("f-included").trim() || null,
         image_url: val("f-image").trim() || null,
         seo_title: val("f-seotitle").trim() || null,
         seo_description: val("f-seodesc").trim() || null,
@@ -344,6 +364,7 @@ export async function initEditorPage() {
         ends_at: val("f-end") ? new Date(val("f-end")).toISOString() : null,
         city: val("f-city").trim() || null,
         venue: val("f-venue").trim() || null,
+        address: val("f-address").trim() || null,
         image_url: val("f-image").trim() || null,
         seo_title: val("f-seotitle").trim() || null,
         seo_description: val("f-seodesc").trim() || null,
@@ -375,6 +396,7 @@ export async function initEditorPage() {
       const m = String(e?.message || "");
       const msg = m.includes("duplicate") ? "Ce slug existe déjà — choisissez-en un autre."
         : m.includes("ticket_sold_within_capacity") ? "Le quota ne peut pas être inférieur au nombre déjà vendu."
+        : m.includes("ticket_compare_gte_price") ? "Le prix barré doit être supérieur (ou égal) au prix de vente."
         : m.includes("restrict") ? "Un tarif avec réservations ne peut pas être retiré."
         : "Enregistrement impossible.";
       toast(msg, "err");

@@ -255,12 +255,44 @@ export function initReservation() {
     }
   }
 
-  // ---------- Ouverture / fermeture ----------
-  function open() { overlay.classList.add("is-open"); document.body.classList.add("rz-lock"); show(1); refreshTotal(); }
-  function close() { overlay.classList.remove("is-open"); document.body.classList.remove("rz-lock"); }
+  // ---------- Ouverture / fermeture (avec gestion du focus) ----------
+  let lastFocused: HTMLElement | null = null;
+  const focusablesIn = (el: HTMLElement) =>
+    Array.from(
+      el.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((n) => n.offsetParent !== null);
+
+  function open() {
+    lastFocused = document.activeElement as HTMLElement;
+    overlay.classList.add("is-open");
+    document.body.classList.add("rz-lock");
+    show(1);
+    refreshTotal();
+    // Focus dans la modale (bouton fermer par défaut).
+    (document.getElementById("rz-close") as HTMLElement | null)?.focus();
+  }
+  function close() {
+    overlay.classList.remove("is-open");
+    document.body.classList.remove("rz-lock");
+    lastFocused?.focus(); // rend le focus au bouton déclencheur
+  }
   $("open-rz")?.addEventListener("click", open);
   $("rz-close")?.addEventListener("click", close);
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay.classList.contains("is-open") && step <= FORM_STEPS) close(); });
+  document.addEventListener("keydown", (e) => {
+    if (!overlay.classList.contains("is-open")) return;
+    if (e.key === "Escape" && step <= FORM_STEPS) { close(); return; }
+    // Piège de focus : Tab boucle à l'intérieur de la modale.
+    if (e.key === "Tab") {
+      const f = focusablesIn(overlay);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      const active = document.activeElement as HTMLElement;
+      if (e.shiftKey && (active === first || !overlay.contains(active))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+    }
+  });
 
   refreshTotal();
 }

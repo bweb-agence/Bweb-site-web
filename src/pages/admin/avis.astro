@@ -1,0 +1,101 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Avis" active="avis">
+  <div class="admin-toolbar">
+    <div class="left">
+      <input class="admin-search" id="a-search" type="search" placeholder="Nom, avis, formation…" />
+      <select class="admin-filter" id="a-status">
+        <option value="pending" selected>En attente</option>
+        <option value="approved">Publiés</option>
+        <option value="rejected">Rejetés</option>
+        <option value="">Tous</option>
+      </select>
+    </div>
+    <span class="admin-user" id="a-count" style="font-size:.82rem">—</span>
+  </div>
+
+  <div class="panel">
+    <table class="admin-table">
+      <thead><tr><th>Auteur</th><th>Note</th><th>Avis</th><th>Formation</th><th>Statut</th><th></th></tr></thead>
+      <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
+    </table>
+  </div>
+</AdminLayout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+  import { esc, dshort, toast } from "../../scripts/adminUtils";
+
+  const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+  const rows = document.querySelector("[data-rows]")!;
+  let all: any[] = [];
+
+  const stars = (n: number) => '<span style="color:#f5a623;letter-spacing:1px">' + "★★★★★".slice(0, n) + '</span><span style="color:#c7cbdb">' + "★★★★★".slice(0, 5 - n) + "</span>";
+  const statusPill: Record<string, string> = {
+    pending: '<span class="tag-pill wait">En attente</span>',
+    approved: '<span class="tag-pill ok">Publié</span>',
+    rejected: '<span class="tag-pill draft">Rejeté</span>',
+  };
+
+  async function setStatus(id: string, status: string) {
+    const { error } = await supabaseBrowser.from("reviews").update({ status }).eq("id", id);
+    if (error) { toast("Action impossible.", "err"); return; }
+    toast(status === "approved" ? "Avis publié. ✓" : "Avis rejeté.");
+    await load();
+  }
+  async function remove(id: string) {
+    if (!window.confirm("Supprimer définitivement cet avis ?")) return;
+    const { error } = await supabaseBrowser.from("reviews").delete().eq("id", id);
+    if (error) { toast("Suppression impossible.", "err"); return; }
+    toast("Avis supprimé."); await load();
+  }
+
+  function render(list: any[]) {
+    rows.innerHTML = list.length ? list.map((r) => {
+      let actions = "";
+      if (r.status !== "approved") actions += `<button class="abtn primary sm" data-approve="${r.id}">Publier</button> `;
+      if (r.status !== "rejected") actions += `<button class="abtn sm" data-reject="${r.id}">Rejeter</button> `;
+      actions += `<button class="abtn sm" data-del="${r.id}">Supprimer</button>`;
+      return `<tr>
+        <td><strong>${esc(r.author_name)}</strong>${r.author_role ? `<br><span style="color:var(--c-gray-500);font-size:.76rem">${esc(r.author_role)}</span>` : ""}<br><span style="color:var(--c-gray-400);font-size:.72rem">${dshort(r.created_at)}</span></td>
+        <td>${stars(r.rating)}</td>
+        <td style="max-width:320px;color:var(--c-gray-700);font-size:.82rem">${esc(r.comment)}</td>
+        <td style="font-size:.82rem">${esc(r.formations?.title || "—")}${r.sessions?.title ? `<br><span style="color:var(--c-gray-500);font-size:.74rem">${esc(r.sessions.title)}</span>` : ""}</td>
+        <td>${statusPill[r.status] || r.status}</td>
+        <td><div class="row-actions">${actions}</div></td></tr>`;
+    }).join("") : `<tr><td class="empty" colspan="6">Aucun avis.</td></tr>`;
+
+    rows.querySelectorAll<HTMLElement>("[data-approve]").forEach((el) => el.addEventListener("click", () => setStatus(el.dataset.approve!, "approved")));
+    rows.querySelectorAll<HTMLElement>("[data-reject]").forEach((el) => el.addEventListener("click", () => setStatus(el.dataset.reject!, "rejected")));
+    rows.querySelectorAll<HTMLElement>("[data-del]").forEach((el) => el.addEventListener("click", () => remove(el.dataset.del!)));
+  }
+
+  function applyFilters() {
+    const q = ($("a-search").value || "").toLowerCase();
+    const st = $("a-status").value;
+    const list = all.filter((r) =>
+      (!st || r.status === st) &&
+      (!q || (r.author_name + " " + r.comment + " " + (r.formations?.title || "")).toLowerCase().includes(q)));
+    document.getElementById("a-count")!.textContent = `${list.length} avis`;
+    render(list);
+  }
+
+  async function load() {
+    const { data } = await supabaseBrowser.from("reviews")
+      .select("*, formations(title), sessions(title)").order("created_at", { ascending: false });
+    all = data || [];
+    applyFilters();
+  }
+
+  $("a-search").addEventListener("input", applyFilters);
+  $("a-status").addEventListener("change", applyFilters);
+
+  (async () => {
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    if (!session) return; // la garde de AdminLayout redirige déjà vers la connexion
+    await load();
+  })();
+</script>
