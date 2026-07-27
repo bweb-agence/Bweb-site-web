@@ -47,6 +47,16 @@ const weekday = (s: string) =>
   new Date(s).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 const posterDate = (s: string) =>
   new Date(s).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }).toUpperCase();
+const dayNum = (s: string) => new Date(s).getDate();
+const monthShort = (s: string) => {
+  const m = new Date(s).toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
+  return m.charAt(0).toUpperCase() + m.slice(1);
+};
+const weekdayLine = (s: string) => {
+  const w = new Date(s).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" }).replace(".", "");
+  return w.charAt(0).toUpperCase() + w.slice(1);
+};
+const availLabel = (level: string) => (level === "full" ? "Complet" : level === "warn" ? "Bientôt complet" : "Disponible");
 
 // Données pré-dérivées pour la vue Calendrier (façon Calendly), consommées côté client.
 const calData = sessions.map((s) => {
@@ -177,39 +187,56 @@ const calData = sessions.map((s) => {
                 <article
                   class="ev-card"
                   data-theme={s.theme ?? ""}
+                  data-grad={gradSuffix(s.theme)}
                   data-date={dateISO(s.starts_at)}
                   data-full={d.full ? "1" : "0"}
                 >
                   <div class={`ev-media ${gradClass(s.theme)}`}>
                     {s.image_url && <img src={s.image_url} alt="" loading="lazy" />}
-                    {!s.image_url && (
-                      <div class="poster"><div class="pt">{s.title}</div><div class="pd">{posterDate(s.starts_at)}</div></div>
-                    )}
-                    {s.theme && <span class="ev-tag">{s.theme}</span>}
-                    {d.full && <span class="ev-sold">Complet</span>}
+                    <span class="ev-scrim"></span>
+                    {s.theme && <span class="ev-theme"><span class="dot"></span>{s.theme}</span>}
                     <button type="button" class="ev-fav" data-session-id={s.id} aria-label="Ajouter aux favoris">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9C.7 8.4 2.4 5 5.8 5c2 0 3.3 1.1 4.2 2.4C11 6.1 12.2 5 14.2 5c3.4 0 5.1 3.4 3.3 7-2.5 4.4-9.5 9-9.5 9z"/></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9C.7 8.4 2.4 5 5.8 5c2 0 3.3 1.1 4.2 2.4C11 6.1 12.2 5 14.2 5c3.4 0 5.1 3.4 3.3 7-2.5 4.4-9.5 9-9.5 9z"/></svg>
                       <span class="fav-count">{s.likes_count}</span>
                     </button>
+                    <div class="ev-date"><span class="d">{dayNum(s.starts_at)}</span><span class="m">{monthShort(s.starts_at)}</span></div>
+                    {d.full && <span class="ev-sold">Complet</span>}
                   </div>
+
+                  <div class="ev-fold"><span class="dash"></span></div>
+
                   <div class="ev-body">
                     <h3 class="ev-title">{s.title}</h3>
-                    <div class="ev-row">📅 {weekday(s.starts_at)} · {frTime(s.starts_at)}</div>
-                    {d.minPrice !== null && (
-                      <div class="ev-row price">💵 À partir de {priceFCFA(d.minPrice)}</div>
-                    )}
-                    <div class={`ev-seats ${d.level}`}>
-                      <span class="num">{d.remaining}</span>
-                      <div style="flex:1">
-                        <div class="lbl">{d.full ? "session complète" : "places restantes"}</div>
-                        <div class="bar"><i style={`width:${d.cap ? Math.round((d.sold / d.cap) * 100) : 100}%`}></i></div>
+                    <div class="ev-meta">
+                      <div class="r">
+                        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                        {weekdayLine(s.starts_at)} · {frTime(s.starts_at)}
+                      </div>
+                      <div class="r">
+                        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
+                        {s.venue ?? "Espace de formation Bweb · Cocody"}
                       </div>
                     </div>
-                    <div class="ev-loc">📍 {s.venue ?? "Espace de formation Bweb · Cocody"}</div>
+
+                    {d.minPrice !== null && (
+                      <div class="ev-price"><span class="lbl">À partir de</span><span class="val">{d.minPrice.toLocaleString("fr-FR")}</span><span class="cur">F CFA</span></div>
+                    )}
+
+                    <div class={`ev-avail ${d.level}`}>
+                      <div class="top">
+                        <span class="cnt">{d.full ? "Session complète" : (<><b>{d.remaining}</b> places restantes</>)}</span>
+                        <span class="st">{availLabel(d.level)}</span>
+                      </div>
+                      <div class="track"><i style={`width:${d.cap ? Math.round((d.sold / d.cap) * 100) : 100}%`}></i></div>
+                    </div>
+
                     {d.full ? (
-                      <a class="btn btn-outline btn-block" href={`/formations/session/${s.slug}`}>Liste d'attente</a>
+                      <a class="btn btn-outline btn-block" href={`/formations/session/${s.slug}`}>Rejoindre la liste d'attente</a>
                     ) : (
-                      <a class="btn btn-primary btn-block" href={`/formations/session/${s.slug}`}>Réserver</a>
+                      <a class="btn btn-primary btn-block" href={`/formations/session/${s.slug}`}>
+                        Réserver ma place
+                        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                      </a>
                     )}
                   </div>
                 </article>
