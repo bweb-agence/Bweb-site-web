@@ -120,8 +120,8 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     document.getElementById("art-drawer-title")!.textContent = p ? "Modifier l'article" : "Nouvel article";
   }
 
-  function openNew() { fill(null); openDrawer(); $("f-title").focus(); }
-  function edit(id: string) { const p = all.find((x) => x.id === id); if (p) { fill(p); openDrawer(); } }
+  function openNew() { location.href = "/admin/editeur/article/nouveau"; }
+  function edit(id: string) { location.href = "/admin/editeur/article/" + id; }
 
   async function del(id: string) {
     const p = all.find((x) => x.id === id);

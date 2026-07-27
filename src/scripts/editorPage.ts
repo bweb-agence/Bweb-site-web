@@ -1,0 +1,359 @@
+/* =========================================================
+   BWEB — Contrôleur de la page d'édition plein écran.
+   Un seul écran pour Article / Formation / Session :
+   charge l'enregistrement, monte l'éditeur riche, gère les
+   réglages, le statut, l'autosave, les tarifs et la couverture.
+   ========================================================= */
+import { supabaseBrowser } from "../lib/supabaseBrowser";
+import { slugify, dtLocalValue, toast, esc } from "./adminUtils";
+import { mountEditor, type EditorHandle } from "./editor/editor";
+import { uploadMedia } from "./editor/uploadMedia";
+import { marked } from "marked";
+
+type Kind = "article" | "formation" | "session";
+const TABLE: Record<Kind, string> = { article: "posts", formation: "formations", session: "sessions" };
+const HTMLCOL: Record<Kind, string> = { article: "body_html", formation: "description_html", session: "description_html" };
+const MDCOL: Record<Kind, string | null> = { article: "body_md", formation: "description_md", session: null };
+
+const $ = <T extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as T | null;
+const val = (id: string) => ($(id) as HTMLInputElement | null)?.value ?? "";
+const setVal = (id: string, v: any) => { const el = $(id) as HTMLInputElement | null; if (el) el.value = v ?? ""; };
+const mdToHtml = (md: string) => (md ? (marked.parse(md) as string) : "");
+
+export async function initEditorPage() {
+  const root = $("ed-root") as HTMLElement | null;
+  if (!root) return;
+  const type = root.dataset.type as Kind;
+  let id = root.dataset.id || "";
+  const base = root.dataset.base || "/";
+
+  const { data: { session } } = await supabaseBrowser.auth.getSession();
+  if (!session) return; // le layout gère la redirection
+
+  let status = type === "formation" ? "published" : "draft";
+  let slugTouched = false;
+  let dirty = false;
+  let saving = false;
+  let handle: EditorHandle;
+  let originalTtIds: string[] = [];
+
+  const titleEl = $("ed-title") as HTMLTextAreaElement;
+  const autostate = $("ed-autostate") as HTMLElement;
+
+  /* ---------- Chargement de l'enregistrement ---------- */
+  let record: any = null;
+  if (id) {
+    const sel = type === "session"
+      ? "*, ticket_types(id,name,price,capacity,sold,badge,sales_end,sort)"
+      : "*";
+    const { data, error } = await supabaseBrowser.from(TABLE[type]).select(sel).eq("id", id).maybeSingle();
+    if (error || !data) { toast("Enregistrement introuvable.", "err"); }
+    else record = data;
+  }
+
+  /* ---------- Formations (pour le select de session) ---------- */
+  if (type === "session") {
+    const { data: fs } = await supabaseBrowser.from("formations").select("id,title,theme").order("title");
+    const sel = $("f-formation") as HTMLSelectElement | null;
+    if (sel) sel.innerHTML = '<option value="">— Aucune —</option>' +
+      (fs || []).map((f: any) => `<option value="${f.id}">${esc(f.title)}</option>`).join("");
+  }
+
+  /* ---------- Pré-remplissage des champs ---------- */
+  if (record) {
+    titleEl.value = record.title || "";
+    setVal("f-slug", record.slug || "");
+    slugTouched = !!record.slug;
+    if (type !== "formation") status = record.status || "draft";
+
+    if (type === "article") {
+      setVal("f-category", record.category || "");
+      setVal("f-author", record.author || "Équipe Bweb");
+      setVal("f-reading", record.reading_minutes || "");
+      setVal("f-excerpt", record.excerpt || "");
+      setVal("f-cover", record.cover_url || "");
+      setVal("f-seotitle", record.seo_title || "");
+      setVal("f-seodesc", record.seo_description || "");
+      setVal("f-pubdate", record.published_at ? dtLocalValue(record.published_at) : "");
+    } else if (type === "formation") {
+      setVal("f-theme", record.theme || "");
+      setVal("f-level", record.level || "");
+      setVal("f-duration", record.duration || "");
+      setVal("f-price", record.default_price ?? "");
+      setVal("f-summary", record.summary || "");
+      setVal("f-image", record.image_url || "");
+    } else {
+      setVal("f-formation", record.formation_id || "");
+      setVal("f-theme", record.theme || "");
+      setVal("f-start", record.starts_at ? dtLocalValue(record.starts_at) : "");
+      setVal("f-end", record.ends_at ? dtLocalValue(record.ends_at) : "");
+      setVal("f-city", record.city || "Abidjan");
+      setVal("f-venue", record.venue || "Espace de formation Bweb · Cocody");
+      setVal("f-image", record.image_url || "");
+      originalTtIds = (record.ticket_types || []).map((t: any) => t.id);
+      (record.ticket_types || []).sort((a: any, b: any) => a.sort - b.sort).forEach((t: any) => addTtRow(t));
+    }
+  }
+
+  /* ---------- Montage de l'éditeur ---------- */
+  const initialHtml = record
+    ? (record[HTMLCOL[type]] || (MDCOL[type] ? mdToHtml(record[MDCOL[type] as string]) : ""))
+    : "";
+  handle = mountEditor({
+    element: $("ed-editor") as HTMLElement,
+    toolbar: $("ed-toolbar") as HTMLElement,
+    content: initialHtml,
+    placeholder: type === "article" ? "Racontez votre article, ou tapez « / »…" : "Décrivez le contenu, ou tapez « / »…",
+    uploadImage: (f) => uploadMedia(f, type),
+    onChange: markDirty,
+  });
+
+  /* ---------- Éléments d'UI communs ---------- */
+  updateCrumb(); updatePill(); updatePreview(); autoGrow(); updateMeta();
+
+  titleEl.addEventListener("input", () => {
+    autoGrow();
+    if (!slugTouched && !id) { setVal("f-slug", slugify(titleEl.value)); updatePreview(); }
+    markDirty();
+  });
+  $("f-slug")?.addEventListener("input", () => { slugTouched = true; updatePreview(); markDirty(); });
+  root.querySelectorAll<HTMLElement>(".ed-inp, .ed-ta, .ed-sel").forEach((el) =>
+    el.addEventListener("input", markDirty));
+
+  // Statut (segmented)
+  root.querySelectorAll<HTMLElement>("#ed-status [data-status]").forEach((b) =>
+    b.addEventListener("click", () => { setStatus(b.dataset.status!); markDirty(); }));
+
+  $("ed-save")?.addEventListener("click", () => save(false));
+  $("ed-publish")?.addEventListener("click", () => { setStatus("published"); save(false); });
+
+  // Tarifs (session)
+  $("ed-tt-add")?.addEventListener("click", () => addTtRow(null));
+
+  // Couverture / visuel
+  setupCover();
+
+  // Raccourci ⌘/Ctrl+S
+  window.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(false); }
+  });
+  window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+  /* ============================================================= */
+  function autoGrow() { titleEl.style.height = "auto"; titleEl.style.height = titleEl.scrollHeight + "px"; }
+
+  function updateCrumb() {
+    const c = $("ed-crumb-doc"); if (c) c.textContent = titleEl.value.trim() || c.textContent || "Sans titre";
+  }
+  function setStatus(s: string) {
+    status = s;
+    root.querySelectorAll<HTMLElement>("#ed-status [data-status]").forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.status === s)));
+    updatePill();
+  }
+  function updatePill() {
+    const pill = $("ed-status-pill"); if (!pill) return;
+    const label = { draft: "Brouillon", published: "Publié", full: "Complète", cancelled: "Annulée" }[status] || status;
+    pill.lastChild!.textContent = label;
+    pill.className = "ed-status-pill " + (status === "published" ? "ok" : status === "cancelled" ? "off" : "draft");
+    setStatusButtons();
+  }
+  function setStatusButtons() {
+    root.querySelectorAll<HTMLElement>("#ed-status [data-status]").forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.status === status)));
+  }
+  function updatePreview() {
+    const a = $("ed-preview") as HTMLAnchorElement | null; if (!a) return;
+    const slug = val("f-slug");
+    if (type !== "formation" && slug) { a.href = base + slug; a.hidden = false; }
+    else a.hidden = true;
+  }
+
+  let saveTimer: ReturnType<typeof setTimeout> | undefined;
+  function markDirty() {
+    dirty = true;
+    if (autostate) autostate.textContent = "Modifications non enregistrées";
+    updateCrumb(); updateMeta();
+    clearTimeout(saveTimer);
+    if (id) saveTimer = setTimeout(() => save(true), 1600); // autosave sur enregistrement existant
+  }
+  function updateMeta() {
+    const meta = $("ed-doc-meta"); if (!meta) return;
+    const words = (handle.getHTML().replace(/<[^>]+>/g, " ").match(/\S+/g) || []).length;
+    meta.textContent = words ? `${words} mot${words > 1 ? "s" : ""} · ~${Math.max(1, Math.round(words / 200))} min de lecture` : "Commencez à écrire…";
+  }
+  function setSaved() {
+    dirty = false;
+    if (autostate) autostate.textContent = "Enregistré à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  /* ---------- Tarifs (session) ---------- */
+  const BADGES: [string, string][] = [["", "— Aucun —"], ["hot", "Forte demande"], ["limited", "Places limitées"], ["ok", "Avantageux"]];
+  function addTtRow(tt: any) {
+    const list = $("ed-tt-list"); if (!list) return;
+    const div = document.createElement("div");
+    div.className = "ed-tt";
+    div.dataset.ttId = tt?.id || "";
+    div.innerHTML = `
+      <div class="ed-tt-head"><span>${tt ? "Vendus : " + tt.sold : "Nouveau tarif"}</span>
+        <button type="button" class="ed-tt-del" title="Retirer">✕</button></div>
+      <input class="ed-inp" data-tt-name placeholder="Nom du tarif" value="${esc(tt?.name || "")}" />
+      <div class="ed-row2" style="margin-top:8px">
+        <input class="ed-inp" data-tt-price type="number" min="0" placeholder="Prix FCFA" value="${tt?.price ?? ""}" />
+        <input class="ed-inp" data-tt-cap type="number" min="0" placeholder="Places" value="${tt?.capacity ?? ""}" />
+      </div>
+      <div class="ed-row2" style="margin-top:8px">
+        <select class="ed-sel" data-tt-badge>${BADGES.map(([v, l]) => `<option value="${v}" ${tt?.badge === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+        <input class="ed-inp" data-tt-end type="datetime-local" title="Fin de validité" value="${tt?.sales_end ? dtLocalValue(tt.sales_end) : ""}" />
+      </div>`;
+    div.querySelector(".ed-tt-del")!.addEventListener("click", () => { div.remove(); markDirty(); });
+    div.querySelectorAll("input,select").forEach((el) => el.addEventListener("input", markDirty));
+    list.appendChild(div);
+  }
+  async function syncTickets(sessionId: string) {
+    const items = Array.from(($("ed-tt-list") as HTMLElement).querySelectorAll<HTMLElement>(".ed-tt"));
+    const keptIds: string[] = [];
+    let sort = 0;
+    for (const it of items) {
+      const name = (it.querySelector("[data-tt-name]") as HTMLInputElement).value.trim();
+      if (!name) continue;
+      const payload: any = {
+        session_id: sessionId, name,
+        price: parseInt((it.querySelector("[data-tt-price]") as HTMLInputElement).value || "0"),
+        capacity: parseInt((it.querySelector("[data-tt-cap]") as HTMLInputElement).value || "0"),
+        badge: (it.querySelector("[data-tt-badge]") as HTMLSelectElement).value || null,
+        sales_end: (it.querySelector("[data-tt-end]") as HTMLInputElement).value
+          ? new Date((it.querySelector("[data-tt-end]") as HTMLInputElement).value).toISOString() : null,
+        sort: sort++,
+      };
+      const ttId = it.dataset.ttId;
+      if (ttId) { keptIds.push(ttId); const { error } = await supabaseBrowser.from("ticket_types").update(payload).eq("id", ttId); if (error) throw error; }
+      else { const { data, error } = await supabaseBrowser.from("ticket_types").insert(payload).select("id").single(); if (error) throw error; it.dataset.ttId = data.id; keptIds.push(data.id); }
+    }
+    const toDelete = originalTtIds.filter((x) => !keptIds.includes(x));
+    if (toDelete.length) { const { error } = await supabaseBrowser.from("ticket_types").delete().in("id", toDelete); if (error) throw error; }
+    originalTtIds = keptIds;
+  }
+
+  /* ---------- Couverture / visuel ---------- */
+  function setupCover() {
+    const box = $("ed-cover") as HTMLElement | null; if (!box) return;
+    const targetId = box.dataset.target!;
+    const draw = () => {
+      const url = val(targetId);
+      box.innerHTML = url
+        ? `<div class="ed-cover-thumb"><img src="${esc(url)}" alt="" /><button type="button" class="ed-cover-rm">Retirer</button></div>`
+        : `<div class="ed-cover-drop"><span class="em">🖼</span><span class="t">Déposer ou choisir une image</span><span class="s">JPG/PNG · 5 Mo max · 16/9 conseillé</span></div>`;
+      if (url) box.querySelector(".ed-cover-rm")!.addEventListener("click", (e) => { e.stopPropagation(); setVal(targetId, ""); draw(); markDirty(); });
+    };
+    const pick = async () => {
+      const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*";
+      inp.onchange = async () => {
+        const f = inp.files?.[0]; if (!f) return;
+        box.classList.add("busy");
+        const url = await uploadMedia(f, type + "-cover");
+        box.classList.remove("busy");
+        if (url) { setVal(targetId, url); draw(); markDirty(); }
+      };
+      inp.click();
+    };
+    box.addEventListener("click", (e) => { if (!(e.target as HTMLElement).closest(".ed-cover-rm")) pick(); });
+    box.addEventListener("dragover", (e) => { e.preventDefault(); box.classList.add("over"); });
+    box.addEventListener("dragleave", () => box.classList.remove("over"));
+    box.addEventListener("drop", async (e) => {
+      e.preventDefault(); box.classList.remove("over");
+      const f = (e as DragEvent).dataTransfer?.files?.[0];
+      if (f && f.type.startsWith("image/")) { box.classList.add("busy"); const url = await uploadMedia(f, type + "-cover"); box.classList.remove("busy"); if (url) { setVal(targetId, url); draw(); markDirty(); } }
+    });
+    draw();
+  }
+
+  /* ---------- Sauvegarde ---------- */
+  async function save(silent: boolean) {
+    if (saving) return;
+    const title = titleEl.value.trim();
+    let slug = val("f-slug").trim() || slugify(title);
+    if (!title) { if (!silent) toast("Le titre est obligatoire.", "err"); return; }
+    if (!slug) { if (!silent) toast("Le slug est obligatoire.", "err"); return; }
+    if (type === "session" && !val("f-start")) { if (!silent) toast("La date de début est obligatoire.", "err"); return; }
+
+    const html = handle.getHTML();
+    const payload: any = { title, slug };
+    payload[HTMLCOL[type]] = html || null;
+
+    if (type === "article") {
+      let publishedAt = val("f-pubdate") ? new Date(val("f-pubdate")).toISOString() : (record?.published_at || null);
+      if (status === "published" && !publishedAt) publishedAt = new Date().toISOString();
+      Object.assign(payload, {
+        category: val("f-category").trim() || null,
+        author: val("f-author").trim() || "Équipe Bweb",
+        reading_minutes: val("f-reading") ? parseInt(val("f-reading")) : estimateReading(html),
+        excerpt: val("f-excerpt").trim() || null,
+        cover_url: val("f-cover").trim() || null,
+        seo_title: val("f-seotitle").trim() || null,
+        seo_description: val("f-seodesc").trim() || null,
+        status, published_at: publishedAt,
+      });
+    } else if (type === "formation") {
+      Object.assign(payload, {
+        theme: val("f-theme").trim() || null,
+        level: val("f-level").trim() || null,
+        duration: val("f-duration").trim() || null,
+        default_price: val("f-price") ? parseInt(val("f-price")) : null,
+        summary: val("f-summary").trim() || null,
+        image_url: val("f-image").trim() || null,
+      });
+    } else {
+      Object.assign(payload, {
+        formation_id: val("f-formation") || null,
+        theme: val("f-theme").trim() || null,
+        starts_at: new Date(val("f-start")).toISOString(),
+        ends_at: val("f-end") ? new Date(val("f-end")).toISOString() : null,
+        city: val("f-city").trim() || null,
+        venue: val("f-venue").trim() || null,
+        image_url: val("f-image").trim() || null,
+        status,
+      });
+    }
+
+    saving = true; clearTimeout(saveTimer);
+    const saveBtn = $("ed-save"); const pubBtn = $("ed-publish");
+    saveBtn?.setAttribute("disabled", "true");
+    if (!silent && saveBtn) saveBtn.textContent = "Enregistrement…";
+    if (autostate) autostate.textContent = "Enregistrement…";
+
+    try {
+      if (id) {
+        const { error } = await supabaseBrowser.from(TABLE[type]).update(payload).eq("id", id); if (error) throw error;
+      } else {
+        const { data, error } = await supabaseBrowser.from(TABLE[type]).insert(payload).select("id").single(); if (error) throw error;
+        id = data.id; root.dataset.id = id;
+        history.replaceState(null, "", `/admin/editeur/${type}/${id}`);
+      }
+      if (type === "session") await syncTickets(id);
+      setSaved();
+      updatePreview();
+      if (!silent) toast(record ? "Modifications enregistrées." : "Créé avec succès. ✅");
+      record = record || {};
+    } catch (e: any) {
+      const m = String(e?.message || "");
+      const msg = m.includes("duplicate") ? "Ce slug existe déjà — choisissez-en un autre."
+        : m.includes("ticket_sold_within_capacity") ? "Le quota ne peut pas être inférieur au nombre déjà vendu."
+        : m.includes("restrict") ? "Un tarif avec réservations ne peut pas être retiré."
+        : "Enregistrement impossible.";
+      toast(msg, "err");
+      if (autostate) autostate.textContent = "Échec de l'enregistrement";
+    } finally {
+      saving = false;
+      saveBtn?.removeAttribute("disabled");
+      if (saveBtn) saveBtn.textContent = "Enregistrer";
+      if (pubBtn) pubBtn.textContent = "Publier";
+    }
+  }
+}
+
+function estimateReading(html: string): number {
+  const text = (html || "").replace(/<[^>]+>/g, " ");
+  const words = (text.match(/\S+/g) || []).length;
+  return Math.max(1, Math.round(words / 200));
+}

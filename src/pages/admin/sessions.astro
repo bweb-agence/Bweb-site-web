@@ -127,8 +127,8 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     (s?.ticket_types || []).forEach((t: any) => addTtRow(t));
     slugTouched = !!s?.slug; document.getElementById("drawer-title")!.textContent = s ? "Modifier la session" : "Nouvelle session";
   }
-  const openNew = () => { fill(null); open(); $("s-title").focus(); };
-  const edit = (id: string) => { const s = all.find((x) => x.id === id); if (s) { fill(s); open(); } };
+  const openNew = () => { location.href = "/admin/editeur/session/nouveau"; };
+  const edit = (id: string) => { location.href = "/admin/editeur/session/" + id; };
 
   async function del(id: string) {
     const s = all.find((x) => x.id === id);

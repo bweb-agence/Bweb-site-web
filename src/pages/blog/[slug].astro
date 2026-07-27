@@ -34,7 +34,8 @@ if (post?.category) {
   related = data ?? [];
 }
 
-const bodyHtml = post ? (marked.parse(post.body_md || "", { async: false }) as string) : "";
+// Contenu riche (éditeur WYSIWYG) prioritaire ; repli Markdown pour les articles historiques.
+const bodyHtml = post ? (post.body_html || (marked.parse(post.body_md || "", { async: false }) as string)) : "";
 const initials = (name?: string | null) =>
   (name || "Bweb").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 

@@ -76,8 +76,8 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     $("f-level").value = f?.level || ""; $("f-summary").value = f?.summary || ""; $("f-desc").value = f?.description_md || ""; $("f-image").value = f?.image_url || "";
     slugTouched = !!f?.slug; document.getElementById("drawer-title")!.textContent = f ? "Modifier la formation" : "Nouvelle formation";
   }
-  const openNew = () => { fill(null); open(); $("f-title").focus(); };
-  const edit = (id: string) => { const f = all.find((x) => x.id === id); if (f) { fill(f); open(); } };
+  const openNew = () => { location.href = "/admin/editeur/formation/nouveau"; };
+  const edit = (id: string) => { location.href = "/admin/editeur/formation/" + id; };
   async function del(id: string) {
     const f = all.find((x) => x.id === id);
     if (!window.confirm(`Supprimer « ${f?.title} » ? Les sessions liées ne seront pas supprimées.`)) return;
