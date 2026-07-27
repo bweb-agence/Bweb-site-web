@@ -59,15 +59,51 @@ export const forms = {
   },
 };
 
-/* Services (source unique — utilisée par le menu déroulant du header et le footer) */
+/* Services (source unique — utilisée par le mega menu du header et le footer).
+   `icon` : markup interne d'un <svg viewBox="0 0 24 24"> (voir Header.astro). */
 export const services = [
-  { label: "Conseil & stratégie", href: "/services-conseil-strategie" },
-  { label: "Création de SaaS", href: "/services-creation-saas" },
-  { label: "Marketing digital", href: "/services-marketing-digital" },
-  { label: "Digitalisation", href: "/services-digitalisation" },
-  { label: "Automatisation & IA", href: "/services-automatisation-ia" },
-  { label: "Formation professionnelle", href: "/services-formation" },
-  { label: "Location de salle", href: "/services-location-salle" },
+  {
+    label: "Conseil & stratégie",
+    href: "/services-conseil-strategie",
+    description: "Diagnostic, feuille de route et priorités claires.",
+    icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7c2.5 2.6 4 5.8 4 5s-1.5-2.4-4-5c-2.5 2.6-4 4.2-4 5s1.5-2.4 4-5z"/><path d="M14.5 9.5 12 12l-2.5 2.5L12 12l2.5-2.5z" fill="currentColor" stroke="none"/>',
+  },
+  {
+    label: "Création de SaaS",
+    href: "/services-creation-saas",
+    description: "Plateformes et outils SaaS pensés pour vendre.",
+    icon: '<path d="M12 3l8 4.5-8 4.5-8-4.5L12 3z"/><path d="M4 12l8 4.5 8-4.5"/><path d="M4 16.5l8 4.5 8-4.5"/>',
+  },
+  {
+    label: "Marketing digital",
+    href: "/services-marketing-digital",
+    description: "Contenus et acquisition qui font vendre en ligne.",
+    icon: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>',
+  },
+  {
+    label: "Digitalisation",
+    href: "/services-digitalisation",
+    description: "Sites, boutiques et process digitalisés.",
+    icon: '<rect x="3" y="4" width="18" height="14" rx="2"/><line x1="3" y1="8.5" x2="21" y2="8.5"/><circle cx="6" cy="6.2" r=".7" fill="currentColor" stroke="none"/><line x1="9" y1="21" x2="15" y2="21"/>',
+  },
+  {
+    label: "Automatisation & IA",
+    href: "/services-automatisation-ia",
+    description: "Agents IA et automatisations qui font gagner du temps.",
+    icon: '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><line x1="12" y1="1.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22.5" y2="12"/>',
+  },
+  {
+    label: "Formation professionnelle",
+    href: "/services-formation",
+    description: "Équipes formées, autonomes sur l'IA et le digital.",
+    icon: '<path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/><line x1="22" y1="9" x2="22" y2="15"/>',
+  },
+  {
+    label: "Location de salle",
+    href: "/services-location-salle",
+    description: "Salle équipée à louer pour formations et événements.",
+    icon: '<rect x="3" y="4" width="18" height="11" rx="1.5"/><line x1="12" y1="15" x2="12" y2="19"/><line x1="8" y1="19" x2="16" y2="19"/>',
+  },
 ];
 
 /* Navigation principale */
