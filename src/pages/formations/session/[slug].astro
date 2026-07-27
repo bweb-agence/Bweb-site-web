@@ -4,7 +4,7 @@ export const prerender = false;
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { supabase } from "../../../lib/supabase";
 import { site, contact } from "../../../config/site";
-import { priceFCFA, frDateLong, frDateShort, frTime, gradClass } from "../../../lib/format";
+import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix } from "../../../lib/format";
 import { marked } from "marked";
 import PhoneField from "../../../components/PhoneField.astro";
 import "../../../styles/formations.css";
@@ -49,6 +49,30 @@ const ttPromo = (t: any) => (t.compare_at_price && t.compare_at_price > t.price
   ? { compareAt: t.compare_at_price, pct: Math.round((1 - t.price / t.compare_at_price) * 100) }
   : null);
 
+// Session déjà passée ? (garde-fou : plus réservable, non indexable)
+const isPast = session ? new Date(session.starts_at).getTime() < Date.now() : false;
+
+// Tarif anticipé encore actif (urgence) : plus proche échéance future parmi les tarifs
+const earlyDeadline = tickets
+  .map((t: any) => t.sales_end)
+  .filter((d: any): d is string => !!d && new Date(d).getTime() > Date.now())
+  .sort()[0] || null;
+
+// Autres dates de la même formation (repêchage / cross-sell)
+let nextSessions: any[] = [];
+if (session?.formation_id) {
+  const { data: ns } = await supabase
+    .from("sessions")
+    .select("slug,title,theme,starts_at,venue,city,status")
+    .eq("formation_id", session.formation_id)
+    .neq("id", session.id)
+    .in("status", ["published", "full"])
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true })
+    .limit(3);
+  nextSessions = ns ?? [];
+}
+
 // Découpe la description en intro + éléments « Au programme »
 const desc = formation?.description_md ?? "";
 const [introRaw, progRaw] = desc.split(/##\s*Au programme/i);
@@ -71,7 +95,14 @@ function badgeInfo(badge: string | null, salesEnd: string | null) {
   return null;
 }
 
+const dNum = (s: string) => new Date(s).getDate();
+const mShort = (s: string) => {
+  const m = new Date(s).toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
+  return m.charAt(0).toUpperCase() + m.slice(1);
+};
+
 const mapQuery = `${(session?.venue ?? "").split("·").pop()?.trim() || session?.city || "Abidjan"}, Côte d'Ivoire`;
+const mapEmbed = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`;
 const shareUrl = Astro.url.href;
 
 // Données structurées Schema.org — rich results Google (date, lieu, prix, disponibilité).
@@ -121,6 +152,7 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
     title={session.seo_title || `${session.title} — ${frDateShort(session.starts_at)} | Formations Bweb`}
     description={session.seo_description || formation?.summary || `Session de formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`}
     image={session.image_url || undefined}
+    noindex={isPast}
   >
     {eventLd && <script type="application/ld+json" slot="head" is:inline set:html={JSON.stringify(eventLd)} />}
     <article class="section" style="padding-top:calc(var(--header-h) + var(--space-lg))">
@@ -129,6 +161,13 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6" /></svg>
           Retour au calendrier
         </a>
+
+        {isPast && (
+          <div class="sess-past" role="status">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span>Cette session est <b>passée</b>. Découvrez les prochaines dates au <a href="/formations/calendrier">calendrier</a>.</span>
+          </div>
+        )}
 
         <div class="sess-layout">
           <!-- ===== Titre (col. gauche, ligne 1) ===== -->
@@ -139,7 +178,7 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
 
             <div class="sess-meta">
               <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>{frDateLong(session.starts_at)} · {frTime(session.starts_at)}</span>
-              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg>{isFull ? "Session complète" : `${totalRemaining} places restantes`}</span>
+              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg>{isPast ? "Session passée" : isFull ? "Session complète" : `${totalRemaining} places restantes`}</span>
               <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>{session.venue ?? "Espace Bweb · Cocody"}, {session.city ?? "Abidjan"}</span>
             </div>
           </div>
@@ -175,8 +214,17 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
             </div>
 
             <h2 class="sectitle">Lieu sur carte</h2>
-            <iframe class="map-embed" title="Lieu de la formation" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-              src={`https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`}></iframe>
+            <div class="map-facade" id="map-facade" data-src={mapEmbed} data-title="Lieu de la formation">
+              <div class="map-facade__info">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
+                <div>
+                  <div class="mf-place">{session.venue ?? "Espace de formation Bweb · Cocody"}</div>
+                  <div class="mf-city">{session.city ?? "Abidjan"}, Côte d'Ivoire</div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline map-facade__btn" id="map-load">Afficher la carte</button>
+              <p class="map-facade__note">La carte est fournie par Google Maps. En l'affichant, vous acceptez le dépôt de cookies Google.</p>
+            </div>
 
             {faqs.length > 0 && (
               <>
@@ -185,8 +233,36 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
                   {faqs.map((f, i) => (
                     <details class="faq-item" open={i === 0}>
                       <summary>{f.question}</summary>
-                      <div class="faq-answer" set:html={marked.parseInline(f.answer_md, { async: false }) as string} />
+                      <div class="faq-answer" set:html={marked.parse(f.answer_md, { async: false }) as string} />
                     </details>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <h2 class="sectitle">Une question avant de vous inscrire ?</h2>
+            <div class="ask-box">
+              <p>Notre équipe vous répond directement sur WhatsApp — programme détaillé, prérequis, facture, paiement en plusieurs fois…</p>
+              <a class="btn btn-primary" target="_blank" rel="noopener"
+                href={`https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("Bonjour Bweb Agence, j'ai une question sur la formation « " + session.title + " » du " + frDateLong(session.starts_at) + ".")}`}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1012 2zm5.6 14.2c-.2.6-1.2 1.2-1.7 1.2-.4.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.5-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.4-1-2.6 0-1.2.6-1.8.9-2 .2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.5c-.2.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2 1.3 2.3 1.5.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.6-.1l1.8.9c.3.1.4.2.5.3.1.2.1.7-.1 1.3z"/></svg>
+                Poser ma question
+              </a>
+            </div>
+
+            {nextSessions.length > 0 && (
+              <>
+                <h2 class="sectitle">Autres dates pour cette formation</h2>
+                <div class="next-list">
+                  {nextSessions.map((n: any) => (
+                    <a class="next-item" href={`/formations/session/${n.slug}`}>
+                      <span class="ni-date"><span class="d">{dNum(n.starts_at)}</span><span class="m">{mShort(n.starts_at)}</span></span>
+                      <span class="ni-body">
+                        <span class="ni-title">{n.title}</span>
+                        <span class="ni-meta">{frDateLong(n.starts_at)} · {frTime(n.starts_at)}{n.status === "full" ? " · Complet" : ""}</span>
+                      </span>
+                      <svg class="ni-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                    </a>
                   ))}
                 </div>
               </>
@@ -203,17 +279,23 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
 
           <!-- ===== Carte d'achat (collante) ===== -->
           <aside class="sess-aside">
-            <div class="buy-card">
-              <div class={`buy-card__media ${gradClass(session.theme)}`}>
-                {session.image_url ? <img src={session.image_url} alt="" /> : (
-                  <div class="poster"><div class="pt">{session.title}</div><div class="pd">{frDateShort(session.starts_at)}</div></div>
-                )}
-                {session.theme && <span class="ev-tag">{session.theme}</span>}
-                {isFull && <span class="ev-sold">Complet</span>}
+            <div class="buy-card" data-grad={gradSuffix(session.theme)}>
+              <div class={`buy-card__media ev-media ${gradClass(session.theme)}`}>
+                {session.image_url && <img src={session.image_url} alt="" />}
+                <span class="ev-scrim"></span>
+                {session.theme && <span class="ev-theme"><span class="dot"></span>{session.theme}</span>}
                 <button type="button" class="ev-fav" id="fav" data-session-id={session.id} aria-label="Ajouter aux favoris">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9C.7 8.4 2.4 5 5.8 5c2 0 3.3 1.1 4.2 2.4C11 6.1 12.2 5 14.2 5c3.4 0 5.1 3.4 3.3 7-2.5 4.4-9.5 9-9.5 9z"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9C.7 8.4 2.4 5 5.8 5c2 0 3.3 1.1 4.2 2.4C11 6.1 12.2 5 14.2 5c3.4 0 5.1 3.4 3.3 7-2.5 4.4-9.5 9-9.5 9z"/></svg>
                   <span class="fav-count">{session.likes_count}</span>
                 </button>
+                <div class="ev-date"><span class="d">{dNum(session.starts_at)}</span><span class="m">{mShort(session.starts_at)}</span></div>
+                {isPast ? (
+                  <span class="ev-sold ev-sold--past">Passée</span>
+                ) : isFull ? (
+                  <span class="ev-sold">Complet</span>
+                ) : minCompareAt ? (
+                  <span class="ev-promo">−{minDiscountPct}%</span>
+                ) : null}
               </div>
               <div class="buy-card__pad">
                 <div class="buy-card__when">
@@ -226,8 +308,13 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
                     {minCompareAt && <span class="bcp-was">{priceFCFA(minCompareAt)}</span>}
                   </div>
                 )}
-                {!isFull && <p class="buy-card__note">💺 Plus que <strong>{totalRemaining}</strong> places pour cette session.</p>}
-                {isFull ? (
+                {!isPast && earlyDeadline && (
+                  <p class="buy-card__early">⏱ Tarif anticipé jusqu'au <b>{frDateShort(earlyDeadline)}</b></p>
+                )}
+                {!isPast && !isFull && <p class="buy-card__note">💺 Plus que <strong>{totalRemaining}</strong> places pour cette session.</p>}
+                {isPast ? (
+                  <a class="btn btn-outline btn-block btn-lg" href="/formations/calendrier">Voir les prochaines sessions</a>
+                ) : isFull ? (
                   <a class="btn btn-outline btn-block btn-lg" href={`https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("Bonjour, je souhaite être sur la liste d'attente pour « " + session.title + " » du " + frDateLong(session.starts_at) + ".")}`} target="_blank" rel="noopener">Rejoindre la liste d'attente</a>
                 ) : (
                   <button type="button" class="btn btn-primary btn-block btn-lg" id="open-rz">Réserver ma place</button>
@@ -240,6 +327,10 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12H4z"/><path d="M8 9h6M8 13h8M8 17h5"/></svg><b>Support</b> de formation fourni</li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 5.8 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.8-4-9s1.5-6.4 4-9z"/></svg>Formation en <b>français</b></li>
                 </ul>
+                <p class="buy-card__secure">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                  Paiement mobile sécurisé (Wave · Orange Money · MoMo) · place bloquée dès le justificatif reçu.
+                </p>
               </div>
             </div>
           </aside>
@@ -376,4 +467,17 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
 <script>
   import { initReservation } from "../../../scripts/reservation";
   initReservation();
+
+  // Carte Google Maps chargée au clic (RGPD : pas de cookie tiers avant consentement).
+  const mf = document.getElementById("map-facade");
+  document.getElementById("map-load")?.addEventListener("click", () => {
+    if (!mf) return;
+    const iframe = document.createElement("iframe");
+    iframe.className = "map-embed";
+    iframe.title = mf.dataset.title || "Lieu de la formation";
+    iframe.loading = "lazy";
+    iframe.referrerPolicy = "no-referrer-when-downgrade";
+    iframe.src = mf.dataset.src || "";
+    mf.replaceWith(iframe);
+  });
 </script>

@@ -494,6 +494,50 @@
 .buy-includes li svg { flex: none; color: var(--c-gray-500); }
 .buy-includes li b { color: var(--c-ink); font-weight: 700; }
 
+/* Carte d'achat — style « billet » (médaillon de date coloré par thème) */
+.buy-card__media { height: 150px; aspect-ratio: auto; }
+.buy-card[data-grad="warm"] .ev-date .m { color: #cf7a10; }
+.buy-card[data-grad="teal"] .ev-date .m { color: #0e9c8f; }
+.buy-card[data-grad="navy"] .ev-date .m { color: #3a3f8f; }
+.buy-card[data-grad="green"] .ev-date .m { color: #058a70; }
+.ev-sold--past { background: var(--c-gray-500); box-shadow: none; }
+.buy-card__early { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: #a4650a; background: rgba(245, 158, 11, 0.12); border-radius: 10px; padding: 7px 10px; margin: 8px 0 10px; }
+.buy-card__secure { display: flex; align-items: flex-start; gap: 7px; font-size: 0.74rem; line-height: 1.4; color: var(--c-gray-600); margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--c-border-soft); }
+.buy-card__secure svg { flex: none; color: var(--c-green); margin-top: 1px; }
+
+/* Bandeau « session passée » */
+.sess-past { display: flex; align-items: center; gap: 10px; background: var(--c-gray-100); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 12px 16px; margin: 14px 0 4px; font-size: 0.9rem; color: var(--c-gray-700); }
+.sess-past svg { flex: none; color: var(--c-gray-500); }
+.sess-past b { color: var(--c-ink); }
+.sess-past a { color: var(--c-blue); font-weight: 700; }
+
+/* Carte Maps chargée au clic (RGPD) */
+.map-facade { border: 1px dashed var(--c-border); border-radius: var(--radius-md); background: var(--surface-2, #f8faff); padding: 22px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.map-facade__info { display: flex; align-items: center; gap: 12px; }
+.map-facade__info svg { flex: none; color: var(--c-blue); }
+.map-facade .mf-place { font-family: var(--f-display); font-weight: 800; color: var(--c-ink); }
+.map-facade .mf-city { font-size: 0.85rem; color: var(--c-gray-600); margin-top: 2px; }
+.map-facade__btn { width: auto; }
+.map-facade__note { font-size: 0.72rem; color: var(--c-gray-500); margin: 0; max-width: 46ch; }
+
+/* Bloc « une question ? » */
+.ask-box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; background: linear-gradient(120deg, rgba(31, 108, 237, 0.06), rgba(0, 200, 158, 0.06)); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 18px 20px; }
+.ask-box p { margin: 0; font-size: 0.9rem; color: var(--c-gray-700); max-width: 52ch; }
+.ask-box .btn { width: auto; gap: 8px; }
+
+/* Autres dates de la même formation */
+.next-list { display: flex; flex-direction: column; gap: 10px; }
+.next-item { display: flex; align-items: center; gap: 14px; text-decoration: none; border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 12px 14px; background: #fff; transition: border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease); }
+.next-item:hover { border-color: var(--c-blue); transform: translateY(-2px); }
+.next-item .ni-date { flex: none; width: 52px; text-align: center; line-height: 1; background: var(--c-gray-100); border-radius: 12px; padding: 9px 0; }
+.next-item .ni-date .d { display: block; font-family: var(--f-display); font-weight: 800; font-size: 1.2rem; color: var(--c-navy); }
+.next-item .ni-date .m { display: block; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-blue); margin-top: 3px; }
+.next-item .ni-body { flex: 1; min-width: 0; }
+.next-item .ni-title { display: block; font-family: var(--f-display); font-weight: 800; font-size: 0.95rem; color: var(--c-ink); }
+.next-item .ni-meta { display: block; font-size: 0.8rem; color: var(--c-gray-600); margin-top: 2px; }
+.next-item .ni-arrow { flex: none; color: var(--c-gray-400); }
+.next-item:hover .ni-arrow { color: var(--c-blue); }
+
 /* =========================================================
    MODALE PLEIN ÉCRAN — réservation & paiement (multi-étapes)
    ========================================================= */
