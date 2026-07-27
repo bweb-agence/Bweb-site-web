@@ -40,6 +40,7 @@ export function initPhoneField(): void {
     const pop = document.createElement("div");
     pop.className = "pf-pop";
     pop.hidden = true;
+    pop.setAttribute("data-lenis-prevent", ""); // laisse le défilement natif (sinon Lenis capte la molette au desktop)
     pop.innerHTML =
       `<div class="pf-search-wrap">${SEARCH_ICON}<input type="text" class="pf-search" placeholder="Rechercher un pays…" aria-label="Rechercher un pays" autocomplete="off"></div>` +
       `<ul class="pf-list" role="listbox" tabindex="-1" aria-label="Pays"></ul><p class="pf-empty" hidden>Aucun pays trouvé.</p>`;

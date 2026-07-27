@@ -98,16 +98,20 @@ export function initWebGLCosmos(canvas: HTMLCanvasElement): () => void {
   const mesh = new Mesh(gl, { geometry, program, mode: gl.POINTS });
   mesh.setParent(scene);
 
+  // On mesure le PARENT (.cosmic-bg, toujours en inset:0) et non le canvas :
+  // OGL pose un style inline (300×150 par défaut) sur le canvas, ce qui masque
+  // le CSS width/height:100% et fige la taille (poussières bloquées en haut-gauche).
+  const sizer = (canvas.parentElement as HTMLElement) || canvas;
   const resize = () => {
-    const w = canvas.clientWidth || canvas.offsetWidth;
-    const h = canvas.clientHeight || canvas.offsetHeight;
+    const w = sizer.clientWidth;
+    const h = sizer.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h);
     camera.perspective({ aspect: w / h });
   };
   resize();
   const ro = new ResizeObserver(resize);
-  ro.observe(canvas);
+  ro.observe(sizer);
 
   const mouse = [0, 0];
   const target = [0, 0];
