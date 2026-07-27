@@ -193,7 +193,10 @@ export function initReservation() {
     fd.append("lines", JSON.stringify(lines.map((l) => ({ ticket_type_id: l.id, quantity: l.qty }))));
     fd.append("name", ($("rz-name") as HTMLInputElement).value.trim());
     fd.append("email", ($("rz-email") as HTMLInputElement).value.trim());
-    fd.append("phone", ($("rz-phone") as HTMLInputElement).value.trim());
+    const phoneEl = $("rz-phone") as HTMLInputElement;
+    const phoneCc = (phoneEl.closest(".phone-field")?.querySelector('[name="phone_cc"]') as HTMLSelectElement | null)?.value || "";
+    const phoneVal = phoneEl.value.trim();
+    fd.append("phone", phoneVal ? (phoneCc ? `${phoneCc} ${phoneVal}` : phoneVal) : "");
     fd.append("company", ($("rz-company") as HTMLInputElement).value.trim());
     fd.append("payment_method", method);
     fd.append("payment_reference", ($("rz-ref") as HTMLInputElement).value.trim());

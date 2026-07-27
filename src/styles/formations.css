@@ -356,6 +356,11 @@ body.rz-lock { overflow: hidden; }
 .rz-input { width: 100%; border: 1px solid var(--c-border); border-radius: 10px; padding: 11px 13px; font-size: 0.95rem; color: var(--c-ink); background: #fff; font-family: inherit; }
 .rz-input:focus { outline: none; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31, 108, 237, 0.14); }
 .rz-input[aria-invalid="true"] { border-color: var(--c-danger); }
+/* Champ téléphone international (PhoneField) aligné sur le style de la modale */
+.rz-field .phone-field input[type="tel"] { width: 100%; border: 1px solid var(--c-border); border-radius: 10px; padding: 11px 13px; font-size: 0.95rem; color: var(--c-ink); background: #fff; font-family: inherit; }
+.rz-field .phone-field input[type="tel"]:focus { outline: none; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31, 108, 237, 0.14); }
+.rz-field .phone-field input[type="tel"][aria-invalid="true"] { border-color: var(--c-danger); }
+.rz-field .pf-trigger { min-height: 0; padding: 11px 12px; border-width: 1px; border-radius: 10px; }
 .rz-2col { display: grid; gap: 14px; }
 @media (min-width: 520px) { .rz-2col { grid-template-columns: 1fr 1fr; } }
 
