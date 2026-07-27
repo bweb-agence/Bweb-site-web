@@ -479,6 +479,8 @@
 .buy-card__media .poster .pd { font-size: 0.68rem; font-weight: 600; opacity: 0.92; margin-top: 5px; }
 .buy-card__media .ev-tag { top: 10px; left: 10px; }
 .buy-card__pad { padding: 18px; }
+.buy-card__when { display: flex; align-items: center; gap: 7px; font-size: 0.85rem; font-weight: 700; color: var(--c-gray-700); margin-bottom: 10px; }
+.buy-card__when svg { color: var(--c-blue); flex: none; }
 .buy-card__price { font-size: 0.85rem; color: var(--c-gray-600); margin-bottom: 4px; }
 .buy-card__price b { font-family: var(--f-display); font-weight: 800; font-size: 1.7rem; color: var(--c-navy); display: block; }
 .buy-card__price.has-promo b { color: #cf1f1a; display: inline; }

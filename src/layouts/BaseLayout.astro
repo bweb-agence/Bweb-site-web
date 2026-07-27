@@ -74,6 +74,9 @@ const jsonLd = {
     <link rel="sitemap" href="/sitemap-index.xml" />
     {organization && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />}
 
+    <!-- Balises additionnelles propres à une page (ex. JSON-LD Event). -->
+    <slot name="head" />
+
     <!-- Gating motion : masque les révélations AVANT le 1er paint uniquement
          si le JS est actif ET que l'utilisateur ne réduit pas les animations.
          Failsafe : si le bundle ne démarre pas, on ré-affiche tout. -->
