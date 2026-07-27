@@ -163,8 +163,11 @@ const isNew = id === "nouveau";
                 <div class="ed-field"><label for="f-instructor">Formateur (nom)</label><input class="ed-inp" id="f-instructor" placeholder="Ex. Awa K." /></div>
                 <div class="ed-field"><label for="f-instructor-role">Formateur (rôle)</label><input class="ed-inp" id="f-instructor-role" placeholder="Ex. Consultante IA" /></div>
               </div>
+              <div class="ed-field"><label for="f-instructor-photo">Photo formateur (URL)</label><input class="ed-inp" id="f-instructor-photo" placeholder="https://…/photo.jpg" /></div>
+              <div class="ed-field"><label for="f-instructor-bio">Bio formateur</label><textarea class="ed-ta" id="f-instructor-bio" rows="2" placeholder="Courte présentation du formateur…"></textarea></div>
               <div class="ed-field"><label for="f-audience">À qui s'adresse cette formation</label><textarea class="ed-ta" id="f-audience" rows="2" placeholder="Ex. Entrepreneurs, indépendants, responsables marketing…"></textarea></div>
               <div class="ed-field"><label for="f-prerequis">Prérequis</label><textarea class="ed-ta" id="f-prerequis" rows="2" placeholder="Ex. Aucun prérequis. Apportez un ordinateur portable."></textarea></div>
+              <div class="ed-field"><label for="f-included">Inclus en plus (1 par ligne)</label><textarea class="ed-ta" id="f-included" rows="2" placeholder="Déjeuner et pauses café inclus&#10;Accès à la communauté privée"></textarea></div>
             </section>
             <section class="ed-panel"><h4>Visuel (16/9)</h4>
               <div class="ed-cover" id="ed-cover" data-target="f-image"></div>
@@ -207,6 +210,7 @@ const isNew = id === "nouveau";
                 <div class="ed-field"><label for="f-city">Ville</label><input class="ed-inp" id="f-city" value="Abidjan" /></div>
                 <div class="ed-field"><label for="f-venue">Lieu</label><input class="ed-inp" id="f-venue" value="Espace de formation Bweb · Cocody" /></div>
               </div>
+              <div class="ed-field"><label for="f-address">Adresse précise / accès (optionnel)</label><input class="ed-inp" id="f-address" placeholder="Rue, repère, étage, indications…" /></div>
             </section>
             <section class="ed-panel"><h4>Billetterie</h4>
               <div class="ed-tt-list" id="ed-tt-list"></div>

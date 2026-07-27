@@ -547,6 +547,46 @@
 .next-item .ni-arrow { flex: none; color: var(--c-gray-400); }
 .next-item:hover .ni-arrow { color: var(--c-blue); }
 
+/* Adresse précise dans la facade Maps */
+.map-facade .mf-addr { font-size: 0.85rem; color: var(--c-gray-700); font-weight: 600; margin-top: 2px; }
+
+/* Formateur */
+.instructor { display: flex; gap: 16px; align-items: flex-start; border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 18px; background: #fff; }
+.instructor__photo { flex: none; width: 76px; height: 76px; border-radius: 50%; object-fit: cover; background: var(--c-gray-100); }
+.instructor__name { font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; color: var(--c-ink); }
+.instructor__role { font-size: 0.82rem; font-weight: 700; color: var(--c-blue); margin-top: 2px; }
+.instructor__bio { margin: 8px 0 0; font-size: 0.88rem; color: var(--c-gray-700); line-height: 1.55; }
+
+/* Avis / témoignages */
+.reviews__head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.reviews__head .rv-avg { font-family: var(--f-display); font-weight: 800; font-size: 2rem; color: var(--c-ink); line-height: 1; }
+.rv-stars { color: #f5a623; letter-spacing: 2px; font-size: 1.1rem; }
+.rv-stars.sm { font-size: 0.9rem; letter-spacing: 1px; }
+.reviews__head .rv-count { font-size: 0.85rem; color: var(--c-gray-600); font-weight: 600; }
+.reviews__empty { color: var(--c-gray-600); font-size: 0.9rem; margin: 0 0 16px; }
+.reviews__list { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 18px; }
+@media (min-width: 620px) { .reviews__list { grid-template-columns: 1fr 1fr; } }
+.rv-item { margin: 0; border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 16px 18px; background: #fff; }
+.rv-item blockquote { margin: 8px 0 10px; font-size: 0.9rem; color: var(--c-gray-800, #232a52); line-height: 1.55; }
+.rv-item figcaption { font-size: 0.82rem; font-weight: 700; color: var(--c-ink); }
+.rv-item figcaption span { color: var(--c-gray-500); font-weight: 600; }
+
+/* Formulaire « laisser un avis » */
+.rv-form-wrap { border: 1px solid var(--c-border); border-radius: var(--radius-md); overflow: hidden; }
+.rv-form-wrap > summary { list-style: none; cursor: pointer; padding: 13px 18px; font-weight: 700; color: var(--c-navy); background: var(--surface-2, #f8faff); display: flex; align-items: center; gap: 8px; }
+.rv-form-wrap > summary::-webkit-details-marker { display: none; }
+.rv-form-wrap > summary::before { content: "✍"; }
+.rv-form-wrap[open] > summary { border-bottom: 1px solid var(--c-border); }
+.rv-form { display: flex; flex-direction: column; gap: 14px; padding: 18px; }
+.rv-field { display: flex; flex-direction: column; gap: 6px; }
+.rv-field > label { font-size: 0.8rem; font-weight: 700; color: var(--c-gray-700); }
+.rv-rate { display: inline-flex; gap: 4px; }
+.rv-star { border: 0; background: none; cursor: pointer; font-size: 1.7rem; line-height: 1; color: var(--c-gray-300); padding: 0; transition: color var(--dur-fast) var(--ease); }
+.rv-star.on { color: #f5a623; }
+.rv-msg { margin: 0; font-size: 0.84rem; font-weight: 600; }
+.rv-msg.ok { color: #058a70; }
+.rv-msg.err { color: var(--c-danger, #d33); }
+
 /* =========================================================
    MODALE PLEIN ÉCRAN — réservation & paiement (multi-étapes)
    ========================================================= */
