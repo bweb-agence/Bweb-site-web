@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PhoneField from "../components/PhoneField.astro";
+import ConsentMap from "../components/ConsentMap.astro";
 import { contact, whatsappLink } from "../config/site";
 const socials = [
   { key: "facebook", label: "Facebook", href: contact.social.facebook },
@@ -48,7 +49,7 @@ const socials = [
           </div>
           <div class="audience-pill" style="justify-content:flex-start">
             <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg></div>
-            <span>Abidjan, Côte d'Ivoire <em style="color:var(--c-gray-500);font-style:normal;font-size:.8rem">(adresse à confirmer)</em></span>
+            <a href="https://www.google.com/maps/dir/?api=1&destination=83JG%2BHH4%20Abidjan" target="_blank" rel="noopener">Carrefour Miami Beach, Faya Abatta — Cocody, Abidjan</a>
           </div>
           <div class="audience-pill" style="justify-content:flex-start">
             <div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg></div>
@@ -68,15 +69,7 @@ const socials = [
         </div>
         )}
 
-        <div class="card" style="padding:0;overflow:hidden">
-          <div style="aspect-ratio:16/10;background:var(--g-navy);display:flex;align-items:center;justify-content:center;position:relative">
-            <div class="grid-lines"></div>
-            <div style="position:relative;z-index:2;text-align:center;color:#fff">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:34px;height:34px;margin:0 auto 10px;opacity:.8"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg>
-              <span class="badge badge-placeholder">Carte de localisation à intégrer</span>
-            </div>
-          </div>
-        </div>
+        <ConsentMap query="83JG%2BHH4%20Abidjan" title="Carte — Bweb Agence, Carrefour Miami Beach, Cocody (Abidjan)" />
       </div>
 
       <div class="reveal" data-delay=".1">

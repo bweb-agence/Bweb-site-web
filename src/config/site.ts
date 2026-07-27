@@ -98,6 +98,12 @@ export const services = [
     description: "Équipes formées, autonomes sur l'IA et le digital.",
     icon: '<path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/><line x1="22" y1="9" x2="22" y2="15"/>',
   },
+  {
+    label: "Location de salle",
+    href: "/services-location-salle",
+    description: "Salle équipée à louer pour formations et événements.",
+    icon: '<rect x="3" y="4" width="18" height="11" rx="1.5"/><line x1="12" y1="15" x2="12" y2="19"/><line x1="8" y1="19" x2="16" y2="19"/>',
+  },
 ];
 
 /* Navigation principale */
