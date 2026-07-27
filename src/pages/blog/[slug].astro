@@ -9,12 +9,19 @@ import "../../styles/blog.css";
 
 const { slug } = Astro.params;
 
-const { data: post } = await supabase
-  .from("posts")
-  .select("*")
-  .eq("slug", slug)
-  .eq("status", "published")
-  .maybeSingle();
+let post = null;
+try {
+  const res = await supabase
+    .from("posts")
+    .select("*")
+    .eq("slug", slug)
+    .eq("status", "published")
+    .maybeSingle();
+  post = res.data;
+} catch {
+  // Supabase mal configuré ou injoignable : traité comme un article introuvable.
+  post = null;
+}
 
 if (!post) {
   Astro.response.status = 404;
@@ -23,15 +30,19 @@ if (!post) {
 // Articles liés (même thème)
 let related: { slug: string; title: string }[] = [];
 if (post?.category) {
-  const { data } = await supabase
-    .from("posts")
-    .select("slug,title")
-    .eq("status", "published")
-    .eq("category", post.category)
-    .neq("slug", post.slug)
-    .order("published_at", { ascending: false })
-    .limit(3);
-  related = data ?? [];
+  try {
+    const { data } = await supabase
+      .from("posts")
+      .select("slug,title")
+      .eq("status", "published")
+      .eq("category", post.category)
+      .neq("slug", post.slug)
+      .order("published_at", { ascending: false })
+      .limit(3);
+    related = data ?? [];
+  } catch {
+    related = [];
+  }
 }
 
 // Contenu riche (éditeur WYSIWYG) prioritaire ; repli Markdown pour les articles historiques.

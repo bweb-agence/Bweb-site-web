@@ -26,6 +26,13 @@
   status = 301
   force = true
 
+# ---------- Service renommé : sites web -> SaaS ----------
+[[redirects]]
+  from = "/services-creation-sites-web"
+  to = "/services-creation-saas"
+  status = 301
+  force = true
+
 # ---------- En-têtes de sécurité (toutes les pages) ----------
 [[headers]]
   for = "/*"

@@ -30,8 +30,20 @@ export function initMobileNav(): void {
     'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
   const isOpen = () => mobileNav.classList.contains("is-open");
   const focusables = () =>
-    Array.from(mobileNav.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.offsetParent !== null);
+    Array.from(mobileNav.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+      (el) => el.offsetParent !== null && el.getAttribute("tabindex") !== "-1",
+    );
   let lastFocused: HTMLElement | null = null;
+
+  const collapseSubmenus = () => {
+    mobileNav.querySelectorAll<HTMLElement>(".mobile-nav-item").forEach((item) => {
+      item.classList.remove("is-open");
+      item.querySelector<HTMLButtonElement>(".mobile-nav-item__toggle")?.setAttribute("aria-expanded", "false");
+      const submenu = item.querySelector<HTMLElement>(".mobile-nav-submenu");
+      if (submenu) submenu.style.maxHeight = "";
+      submenu?.querySelectorAll<HTMLAnchorElement>("a").forEach((a) => (a.tabIndex = -1));
+    });
+  };
 
   const open = () => {
     lastFocused = (document.activeElement as HTMLElement) || toggle;
@@ -49,11 +61,28 @@ export function initMobileNav(): void {
     document.body.classList.remove("no-scroll");
     toggle.setAttribute("aria-expanded", "false");
     lastFocused?.focus(); // rend le focus au déclencheur
+    collapseSubmenus();
   };
 
   toggle.addEventListener("click", () => (isOpen() ? close() : open()));
   mobileNav.querySelectorAll("a").forEach((a) => a.addEventListener("click", close));
   mobileNav.querySelector(".mobile-nav__close")?.addEventListener("click", close);
+
+  // Sous-menus (ex. Services) : accordéon indépendant du panneau principal.
+  mobileNav.querySelectorAll<HTMLElement>(".mobile-nav-item").forEach((item) => {
+    const submenuToggle = item.querySelector<HTMLButtonElement>(".mobile-nav-item__toggle");
+    const submenu = item.querySelector<HTMLElement>(".mobile-nav-submenu");
+    if (!submenuToggle || !submenu) return;
+    const links = Array.from(submenu.querySelectorAll<HTMLAnchorElement>("a"));
+    submenuToggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      const willOpen = !item.classList.contains("is-open");
+      item.classList.toggle("is-open", willOpen);
+      submenuToggle.setAttribute("aria-expanded", String(willOpen));
+      submenu.style.maxHeight = willOpen ? submenu.scrollHeight + "px" : "";
+      links.forEach((a) => (a.tabIndex = willOpen ? 0 : -1));
+    });
+  });
 
   document.addEventListener("keydown", (e) => {
     if (!isOpen()) return;

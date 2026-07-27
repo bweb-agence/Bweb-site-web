@@ -43,7 +43,25 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path === href 
   </button>
   <nav aria-label="Navigation mobile">
     {mainNav.map((item) => (
-      <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>{item.label}</a>
+      item.children ? (
+        <div class="mobile-nav-item">
+          <div class="mobile-nav-item__row">
+            <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>{item.label}</a>
+            <button type="button" class="mobile-nav-item__toggle" aria-expanded="false" aria-label="Afficher les services">
+              <svg class="mobile-nav-item__chevron" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="mobile-nav-submenu">
+            <div class="mobile-nav-submenu__inner">
+              {item.children.map((child) => (
+                <a href={child.href} tabindex="-1" aria-current={isActive(child.href) ? "page" : undefined}>{child.label}</a>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>{item.label}</a>
+      )
     ))}
   </nav>
   <div class="mobile-nav-cta">

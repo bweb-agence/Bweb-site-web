@@ -20,11 +20,20 @@ type Post = {
 // Thème sélectionné (filtre)
 const activeCat = Astro.url.searchParams.get("categorie");
 
-const { data, error } = await supabase
-  .from("posts")
-  .select("slug,title,excerpt,category,cover_url,author,reading_minutes,published_at")
-  .eq("status", "published")
-  .order("published_at", { ascending: false });
+let data: Post[] | null = null;
+let error: unknown = null;
+try {
+  const res = await supabase
+    .from("posts")
+    .select("slug,title,excerpt,category,cover_url,author,reading_minutes,published_at")
+    .eq("status", "published")
+    .order("published_at", { ascending: false });
+  data = res.data;
+  error = res.error;
+} catch (e) {
+  // Supabase mal configuré ou injoignable : on dégrade proprement plutôt que de faire planter la page.
+  error = e;
+}
 
 const posts: Post[] = data ?? [];
 

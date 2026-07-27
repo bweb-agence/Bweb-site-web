@@ -17,7 +17,11 @@ if (!url || !anonKey) {
   );
 }
 
-export const supabase = createClient(url ?? "", anonKey ?? "", {
+// `createClient` exige une URL valide et lève une exception à l'import sinon :
+// on retombe sur un hôte factice (mais syntaxiquement valide) tant que .env
+// n'est pas renseigné, pour que les pages échouent proprement à la requête
+// (gérée par chaque page) plutôt que de planter tout le rendu.
+export const supabase = createClient(url || "https://placeholder.invalid", anonKey || "placeholder-anon-key", {
   auth: { persistSession: false },
   // Node < 22 n'a pas de WebSocket natif : on fournit `ws` pour que le client
   // Supabase s'initialise sans erreur (on n'utilise pas Realtime de toute façon).

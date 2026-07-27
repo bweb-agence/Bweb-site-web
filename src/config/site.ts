@@ -9,7 +9,7 @@ export const site = {
   legalName: "Bweb Agence",
   tagline: "Conseil, formation et transformation digitale en Afrique",
   description:
-    "Bweb Agence accompagne entrepreneurs, PME et organisations dans leur transformation digitale : conseil stratégique, création de sites web, marketing digital, automatisation & IA, formation professionnelle.",
+    "Bweb Agence accompagne entrepreneurs, PME et organisations dans leur transformation digitale : conseil stratégique, création de SaaS, marketing digital, automatisation & IA, formation professionnelle.",
   url: "https://www.bwebagence.com",
   locale: "fr_FR",
   lang: "fr",
@@ -62,7 +62,7 @@ export const forms = {
 /* Services (source unique — utilisée par le menu déroulant du header et le footer) */
 export const services = [
   { label: "Conseil & stratégie", href: "/services-conseil-strategie" },
-  { label: "Création de sites web", href: "/services-creation-sites-web" },
+  { label: "Création de SaaS", href: "/services-creation-saas" },
   { label: "Marketing digital", href: "/services-marketing-digital" },
   { label: "Digitalisation", href: "/services-digitalisation" },
   { label: "Automatisation & IA", href: "/services-automatisation-ia" },
