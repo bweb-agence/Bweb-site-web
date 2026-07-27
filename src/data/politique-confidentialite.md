@@ -489,7 +489,7 @@ Nous conservons les données pendant la période nécessaire à l’objectif pou
 | Données traitées pour un client | selon ses instructions et le contrat de sous-traitance | retour, suppression ou anonymisation à la fin du service |
 | Demande d’exercice de droits | durée nécessaire au traitement et à la preuve, généralement 3 ans | traçabilité, défense et amélioration du processus |
 
-Les chiffres entre crochets doivent être alignés avec les outils effectivement utilisés. La conservation ne signifie pas que toutes les données sont continuellement consultées : une archive intermédiaire est accessible seulement à des personnes autorisées pour répondre à une obligation ou défendre un droit. Au terme prévu, nous procédons à une suppression sécurisée, à une anonymisation irréversible ou à une destruction physique lorsque le support l’exige.
+La conservation ne signifie pas que toutes les données sont continuellement consultées : une archive intermédiaire est accessible seulement à des personnes autorisées pour répondre à une obligation ou défendre un droit. Au terme prévu, nous procédons à une suppression sécurisée, à une anonymisation irréversible ou à une destruction physique lorsque le support l’exige.
 
 ## 16. Vos droits et leur exercice
 
@@ -564,21 +564,20 @@ Nous pouvons confier certaines opérations à des prestataires spécialisés : h
 
 Un sous-traitant ne peut pas utiliser les données confiées pour ses propres finalités incompatibles avec nos instructions, sauf lorsqu’il agit indépendamment comme responsable du traitement pour une opération clairement séparée et qu’il vous informe directement. Nous demeurons attentifs aux changements de sous-traitants ultérieurs et aux données transférées hors du territoire concerné.
 
-### 19.3 Liste indicative de catégories de prestataires
+### 19.3 Nos prestataires
 
-La liste suivante ne signifie pas que chacun de ces fournisseurs est utilisé par Bweb Agence. Elle identifie des catégories de services courantes à confirmer dans l’Annexe C avant publication :
+Les prestataires suivants sont actuellement utilisés pour le fonctionnement de ce site et de nos services. Cette liste est tenue à jour en cas de changement ; les clients reçoivent, à leur demande légitime, une information plus détaillée dans le cadre de leurs contrats.
 
-| Catégorie | Exemples possibles | Rôle envisagé |
+| Catégorie | Prestataire | Rôle |
 | --- | --- | --- |
-| Hébergement et infrastructure | OVHcloud, Netlify, Cloudflare, AWS, Microsoft Azure | hébergement, CDN, DNS, sécurité, sauvegardes |
-| Messagerie, CRM et marketing | Microsoft, Google Workspace, HubSpot, Brevo | e-mail, relation client, newsletters, gestion commerciale |
-| Prise de rendez-vous et visioconférence | Calendly, Google Meet, Microsoft Teams | réservation, réunions et invitations |
-| Paiement | Stripe, Lygos, Wave ou prestataire local approuvé | traitement sécurisé de paiements et notifications |
-| Analyse et publicité | Google Analytics, Google Tag Manager, Microsoft Clarity, Meta, LinkedIn | audience, gestion de balises et performance de campagnes |
-| Cartes, vidéos et contenu | Google Maps, YouTube, Vimeo | affichage de cartes et médias à la demande |
-| IA et automatisation | OpenAI, Anthropic, Google, Mistral, Make, Zapier, n8n | modèles, API et orchestration de flux |
+| Hébergement et infrastructure | Vercel | hébergement du site et exécution des fonctions serverless |
+| Base de données et backend | Supabase | base de données, authentification et stockage de fichiers |
+| Envoi d’e-mails | Bird (MessageBird) | e-mails transactionnels (accusés de réception, confirmations) |
+| Formulaires | FormSubmit | relais des formulaires de contact vers notre messagerie |
+| Cartographie | Google Maps | affichage de la carte de localisation, après consentement |
+| Messagerie | WhatsApp (Meta) | échanges initiés depuis nos liens WhatsApp |
 
-Avant publication, remplacez ce tableau par la liste exacte des prestataires utilisés, avec pour chacun les données concernées, le pays ou la région lorsque connu, le lien vers sa politique et le rôle juridique pertinent. Retirez les noms qui ne correspondent pas à la réalité. Les clients reçoivent, à leur demande légitime, une information plus détaillée dans le cadre de leurs contrats.
+Le recours à d’autres prestataires (paiement en ligne, newsletter, publicité, IA) dans le cadre d’un projet client est encadré par le contrat correspondant et, le cas échéant, une information dédiée.
 
 ### 19.4 Partages imposés ou nécessaires
 
@@ -613,28 +612,18 @@ La présente politique est rédigée en français. Une traduction peut être pro
 
 ## 22. Annexes opérationnelles
 
-Les annexes suivantes constituent un cadre de publication et de gouvernance. Elles ne doivent pas être laissées fictives : elles sont à renseigner, supprimer ou adapter en fonction de la configuration réelle de Bweb Agence. Leur mise à jour fait partie de la maintenance normale de la politique.
+Les annexes suivantes détaillent, de façon opérationnelle, les cookies réellement déposés, nos principaux traitements et les références juridiques applicables. Elles sont tenues à jour dans le cadre de la maintenance de la politique.
 
-### Annexe A — Registre public des cookies et traceurs
+### Annexe A — Registre des cookies
 
-Le tableau ci-dessous est un modèle. Avant mise en ligne, l’équipe technique doit procéder à un audit des pages et supprimer les lignes de services qui ne sont pas chargés. Les noms de cookies peuvent varier selon les versions des fournisseurs ; le registre du gestionnaire de consentement, alimenté par l’audit effectif, fait foi.
+Ce site fonctionne avec un minimum de traceurs. Le registre du gestionnaire de consentement, accessible via « Gérer mes cookies », fait foi ; les noms peuvent varier selon les versions des fournisseurs.
 
 | Service / traceur | Finalité | Catégorie | Durée indicative | Déclenchement | Comment refuser |
 | --- | --- | --- | --- | --- | --- |
-| `cookie_consent` ou équivalent | mémoriser vos préférences de confidentialité | nécessaire | 6 mois | choix de l’utilisateur | modifier dans « Gérer mes cookies » |
-| cookie de session sécurisé | maintenir une session authentifiée et prévenir certaines attaques | nécessaire | session | connexion à l’espace | déconnexion et suppression navigateur ; certaines fonctions exigent ce cookie |
-| Cloudflare ou CDN équivalent | sécurité, anti-bot, disponibilité et répartition de charge | nécessaire | de quelques minutes à plusieurs mois selon le cookie | accès au site | désactiver peut empêcher l’accès sécurisé ; contacter Bweb Agence si besoin |
-| Google Analytics / GA4 | statistiques de fréquentation et amélioration | analytique | selon paramétrage, identifiant limité à 13 mois au plus | après consentement | refuser la catégorie analytique ; utiliser les paramètres Google si applicables |
-| Google Tag Manager | chargement maîtrisé de balises | technique / analytique selon les balises | variable | n’active les tags facultatifs qu’après votre choix | modifier le consentement ; auditer les tags actifs |
-| Microsoft Clarity ou Hotjar | compréhension de l’ergonomie, cartes de chaleur, diagnostic d’usage | analytique | selon paramétrage | après consentement | refuser la catégorie analytique ; champs sensibles exclus du suivi |
-| Meta Pixel | mesure de conversion et audiences de campagne | marketing | selon paramétrage du fournisseur | après consentement | refuser la catégorie marketing ; paramètres du compte Meta |
-| LinkedIn Insight Tag | mesure de campagnes B2B et audiences | marketing | selon paramétrage du fournisseur | après consentement | refuser la catégorie marketing ; paramètres LinkedIn |
-| YouTube / Vimeo | lecture de vidéos intégrées | contenu tiers | selon le fournisseur | clic sur la vidéo ou consentement | ne pas charger la vidéo ; utiliser le lien externe si proposé |
-| Google Maps | afficher une carte et un itinéraire | contenu tiers | selon le fournisseur | clic sur « Afficher la carte » ou consentement | ne pas charger la carte ; utiliser l’adresse textuelle |
-| Calendly ou équivalent | réservation de rendez-vous | contenu tiers / fonctionnel | selon le fournisseur | clic sur le module | ne pas charger le module ; nous contacter par e-mail |
-| Chatbot | assistance et continuité de la conversation | fonctionnel / contenu tiers | session ou durée indiquée au chat | ouverture du chat, selon vos choix | ne pas ouvrir le chat ; nous contacter par e-mail |
+| `cc_cookie` | mémoriser vos préférences de confidentialité | nécessaire | 6 mois | à votre choix sur le bandeau | modifier via « Gérer mes cookies » |
+| Google Maps | afficher la carte de localisation et l’itinéraire | contenu tiers | selon Google | après votre consentement ou un clic « Afficher la carte » | ne pas charger la carte ; utiliser l’adresse textuelle |
 
-Les outils d’analyse et de publicité ne sont pas indispensables au fonctionnement de nos pages. Leur absence ou leur refus ne doit pas vous empêcher de consulter les informations essentielles. Si un cookie nécessaire est utilisé dans un cadre authentifié, son blocage peut empêcher l’accès sécurisé demandé par l’utilisateur.
+Les contenus tiers comme la carte ne sont pas indispensables à la consultation des informations essentielles : leur refus n’empêche pas d’utiliser le site.
 
 ### Annexe B — Registre synthétique des traitements de Bweb Agence
 
@@ -681,22 +670,6 @@ Cette vérification doit être proportionnée. Un fournisseur qui ne traite aucu
 - Principes de protection des données dès la conception et par défaut, utilisés comme bonne pratique internationale lorsque pertinents.
 
 Ces références ne constituent pas une liste exhaustive des règles pouvant s’appliquer à une activité, un secteur ou un pays donné. Une entreprise qui traite des données de santé, de paiement, de mineurs, de biométrie, d’employés ou de résidents d’autres territoires doit faire réaliser une analyse complémentaire et adapter cette politique, ses procédures et ses contrats.
-
-### Annexe E — Checklist de mise en publication
-
-Avant de publier cette politique, Bweb Agence doit confirmer les points suivants :
-
-1. Les mentions d’identité, adresse, e-mail, RCCM et contact confidentialité sont exactes.
-2. Chaque formulaire affiche une information courte cohérente avec la présente politique et ne demande que les données utiles.
-3. Le bandeau de consentement bloque réellement les traceurs non essentiels avant le choix de l’utilisateur.
-4. Le registre des cookies correspond à un audit technique des pages en production, y compris les pages de campagne et sous-domaines.
-5. Les noms de fournisseurs non utilisés ont été retirés ; les fournisseurs utilisés ont été ajoutés avec leur rôle réel.
-6. Les contrats clients et sous-traitants décrivent correctement qui est responsable du traitement et qui agit sur instruction.
-7. Les procédures d’exercice des droits et de notification d’incident sont connues des équipes et testées.
-8. Les durées de conservation sont compatibles avec les obligations comptables, contractuelles et opérationnelles réelles.
-9. Les intégrations IA ont fait l’objet d’une analyse de données, de flux, de paramètres de rétention et d’accès.
-10. Les transferts internationaux et hébergements hors Côte d’Ivoire sont documentés et encadrés.
-11. La version publiée est validée par la direction et, lorsque nécessaire, par un professionnel du droit compétent.
 
 ---
 
