@@ -1,64 +1,82 @@
 ---
-import { contact, whatsappLink } from "../config/site";
+import { marked } from "marked";
+import raw from "../data/politique-confidentialite.md?raw";
+import { site, contact } from "../config/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+/* Politique de confidentialité — texte de référence dans
+   src/data/politique-confidentialite.md, rendu via marked.
+   Nettoyage léger pour l'affichage web :
+   - on retire le titre H1 (déjà présent dans le hero) et la table des matières
+     (la navigation se fait au défilement) ;
+   - on retire la note interne « À compléter avant publication » ;
+   - on renseigne les coordonnées connues (e-mail, téléphone, lien cookies, durées).
+   Les champs légaux propres à l'entité (forme juridique, adresse, RCCM, identifiant
+   fiscal, correspondant données) restent à compléter dans le fichier source. */
+let md = raw
+  .replace(/^#\s+Politique de confidentialité.*$/m, "")
+  .replace(/^>\s*\*\*À compléter avant publication\.\*\*[\s\S]*?\n\n/m, "")
+  .replace(/## Table des matières[\s\S]*?\n---\n/m, "")
+  .replaceAll("[privacy@domaine.tld]", contact.email)
+  .replaceAll("| Téléphone | [numéro] |", `| Téléphone | ${contact.phoneDisplay} |`)
+  .replaceAll("[Gérer mes cookies]", "« Gérer mes cookies »")
+  .replaceAll("[24 mois]", "24 mois")
+  .replaceAll("[3 ans]", "3 ans")
+  .replaceAll("[90 jours]", "90 jours")
+  .trim();
+
+let html = await marked.parse(md);
+// Rendre les tableaux défilables horizontalement sur petit écran.
+html = html.replace(/<table>/g, '<div class="legal-table"><table>').replace(/<\/table>/g, "</table></div>");
 ---
 
-<BaseLayout title="Politique de confidentialité — Bweb Agence" description="Politique de confidentialité et de protection des données personnelles de Bweb Agence.">
-<section class="page-hero" style="padding-bottom:56px" data-nav-section="Confidentialité">
-  <div class="mesh-bg"></div>
-  <div class="grid-lines"></div>
-  <div class="container">
-    <div class="breadcrumb"><a href="/">Accueil</a>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-      <span>Politique de confidentialité</span>
+<BaseLayout
+  title="Politique de confidentialité — Bweb Agence"
+  description="Politique de confidentialité et de protection des données personnelles de Bweb Agence : données collectées, finalités, cookies, Google Maps, IA, vos droits et contact."
+>
+  <section class="page-hero" style="padding-bottom:56px" data-nav-section="Confidentialité">
+    <div class="mesh-bg"></div>
+    <div class="grid-lines"></div>
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/">Accueil</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
+        <span>Politique de confidentialité</span>
+      </div>
+      <div class="text-white" data-hero-in>
+        <div class="eyebrow on-dark">Vos données</div>
+        <h1>Politique de confidentialité</h1>
+      </div>
     </div>
-    <div class="text-white" data-hero-in>
-      <div class="eyebrow on-dark">Vos données</div>
-      <h1>Politique de confidentialité</h1>
+  </section>
+
+  <section class="section" data-nav-section="Le texte">
+    <div class="container">
+      <div class="container-narrow legal-content legal-prose" set:html={html} />
     </div>
-  </div>
-</section>
-
-<section class="section" data-nav-section="Le texte">
-  <div class="container">
-    <div class="container-narrow legal-content">
-      <p class="placeholder-note">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/></svg>
-        Document type à finaliser avec les informations réelles de traitement des données avant mise en ligne (outils utilisés pour le formulaire, hébergeur, éventuel sous-traitant).
-      </p>
-      <p class="legal-updated">Dernière mise à jour : 23 juillet 2026</p>
-
-      <h2>1. Données collectées</h2>
-      <p>Lorsque vous utilisez nos formulaires de contact ou de demande de devis, nous collectons les données que vous nous transmettez volontairement : nom, prénom, entreprise, coordonnées (téléphone, e-mail), et informations relatives à votre projet.</p>
-
-      <h2>2. Finalités du traitement</h2>
-      <ul>
-        <li>Répondre à vos demandes de contact, de devis ou de rendez-vous</li>
-        <li>Vous adresser des informations sur nos services et formations</li>
-        <li>Assurer le suivi de la relation commerciale</li>
-      </ul>
-
-      <h2>3. Base légale</h2>
-      <p>Le traitement de vos données repose sur votre consentement, exprimé lors de l'envoi d'un formulaire, ainsi que sur l'intérêt légitime de Bweb Agence à répondre à vos demandes.</p>
-
-      <h2>4. Durée de conservation</h2>
-      <p>Vos données sont conservées pendant la durée nécessaire au traitement de votre demande, puis archivées ou supprimées conformément aux obligations légales applicables.</p>
-
-      <h2>5. Destinataires des données</h2>
-      <p>Vos données sont destinées à l'équipe de Bweb Agence et, le cas échéant, aux prestataires techniques (hébergement, outil d'envoi de formulaire) nécessaires au fonctionnement du site.</p>
-
-      <h2>6. Vos droits</h2>
-      <p>Conformément à la réglementation applicable en Côte d'Ivoire relative à la protection des données à caractère personnel, vous disposez d'un droit d'accès, de rectification, d'opposition et de suppression de vos données. Pour exercer ces droits, contactez-nous à l'adresse <a href={`mailto:${contact.email}`} data-email-display style="color:var(--c-blue)">{contact.email}</a>.</p>
-
-      <h2>7. Cookies</h2>
-      <p>Ce site peut utiliser des cookies strictement nécessaires à son fonctionnement. Aucun cookie publicitaire n'est utilisé à ce jour.</p>
-
-      <h2>8. Sécurité</h2>
-      <p>Bweb Agence met en œuvre des mesures raisonnables pour protéger vos données contre tout accès, modification ou divulgation non autorisés.</p>
-
-      <h2>9. Modification de la politique</h2>
-      <p>Cette politique peut être mise à jour à tout moment. La date de dernière mise à jour est indiquée en haut de cette page.</p>
-    </div>
-  </div>
-</section>
+  </section>
 </BaseLayout>
+
+<style is:global>
+  /* Rendu du Markdown légal (contenu injecté via set:html → styles globaux). */
+  .legal-prose { max-width: 80ch; }
+  .legal-prose > * + * { margin-top: 1em; }
+  .legal-prose h2 { font-family: var(--f-display); font-weight: 800; font-size: var(--fs-h3); color: var(--c-navy); margin-top: 2em; letter-spacing: -0.01em; }
+  .legal-prose > h2:first-child { margin-top: 0; }
+  .legal-prose h3 { font-family: var(--f-display); font-weight: 700; font-size: var(--fs-h4); color: var(--c-navy); margin-top: 1.6em; }
+  .legal-prose h4 { font-family: var(--f-display); font-weight: 700; font-size: 1.05rem; color: var(--c-navy); margin-top: 1.3em; }
+  .legal-prose p, .legal-prose li { color: var(--c-gray-700); line-height: 1.75; font-size: .98rem; }
+  .legal-prose ul, .legal-prose ol { padding-left: 1.4em; }
+  .legal-prose ul li { list-style: disc; margin-top: .3em; }
+  .legal-prose ol li { list-style: decimal; margin-top: .3em; }
+  .legal-prose a { color: var(--c-blue); text-underline-offset: 3px; text-decoration: underline; }
+  .legal-prose strong { color: var(--c-navy); }
+  .legal-prose blockquote { border-left: 3px solid var(--c-orange); background: var(--c-cream); padding: 14px 18px; border-radius: 0 12px 12px 0; color: var(--c-navy); }
+  .legal-prose blockquote p { color: var(--c-navy); }
+  .legal-prose hr { border: 0; border-top: 1px solid var(--c-border); margin: 2.2em 0; }
+  .legal-prose code { background: var(--c-gray-100); padding: .12em .4em; border-radius: 5px; font-size: .88em; color: var(--c-navy); }
+  .legal-table { overflow-x: auto; margin-top: 1em; -webkit-overflow-scrolling: touch; }
+  .legal-prose table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: .9rem; }
+  .legal-prose th, .legal-prose td { border: 1px solid var(--c-border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  .legal-prose th { background: var(--surface-2); font-weight: 700; color: var(--c-navy); }
+</style>
