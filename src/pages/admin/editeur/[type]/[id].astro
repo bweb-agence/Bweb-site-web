@@ -34,11 +34,7 @@ const isNew = id === "nouveau";
       <!-- ============ Zone d'édition ============ -->
       <main class="ed-main">
         <div class="ed-toolbar" id="ed-toolbar" role="toolbar" aria-label="Mise en forme">
-          <select class="ed-style" data-style aria-label="Style de bloc" title="Style de bloc">
-            <option value="paragraph">Paragraphe</option>
-            <option value="2">Titre 2</option>
-            <option value="3">Titre 3</option>
-          </select>
+          <div class="ed-style" data-style></div>
           <span class="ed-sep"></span>
           <button class="ed-tb" data-cmd="bold" title="Gras (Ctrl+B)"><b>B</b></button>
           <button class="ed-tb" data-cmd="italic" title="Italique (Ctrl+I)"><i>I</i></button>
@@ -46,8 +42,6 @@ const isNew = id === "nouveau";
           <button class="ed-tb" data-cmd="strike" title="Barré"><s>S</s></button>
           <button class="ed-tb" data-cmd="code" title="Code en ligne"><span class="mono">&lt;/&gt;</span></button>
           <span class="ed-sep"></span>
-          <button class="ed-tb" data-cmd="h2" title="Titre 2">H2</button>
-          <button class="ed-tb" data-cmd="h3" title="Titre 3">H3</button>
           <button class="ed-tb" data-cmd="bulletList" title="Liste à puces">☰</button>
           <button class="ed-tb" data-cmd="orderedList" title="Liste numérotée">1.</button>
           <button class="ed-tb" data-cmd="blockquote" title="Citation">❝</button>
@@ -128,9 +122,23 @@ const isNew = id === "nouveau";
               <div class="ed-cover" id="ed-cover" data-target="f-cover"></div>
               <input type="hidden" id="f-cover" />
             </section>
-            <section class="ed-panel"><h4>Référencement (SEO)</h4>
-              <div class="ed-field"><label for="f-seotitle">Titre méta</label><input class="ed-inp" id="f-seotitle" /></div>
-              <div class="ed-field"><label for="f-seodesc">Description méta</label><textarea class="ed-ta" id="f-seodesc" rows="2"></textarea></div>
+            <section class="ed-panel ed-seo">
+              <h4>Référencement (SEO)<span class="ed-seo-badge" id="ed-seo-badge">—</span></h4>
+              <div class="ed-field"><label for="f-focus">Mot-clé cible</label>
+                <input class="ed-inp" id="f-focus" placeholder="Ex. IA pour PME" />
+                <div class="ed-help">L'expression sur laquelle vous voulez être trouvé.</div></div>
+              <div class="ed-seo-preview" id="ed-seo-preview" aria-label="Aperçu Google">
+                <div class="g-url" id="seo-url"></div>
+                <div class="g-title" id="seo-title">Titre de l'article</div>
+                <div class="g-desc" id="seo-desc">Ajoutez une description méta…</div>
+              </div>
+              <div class="ed-field"><label for="f-seotitle">Titre méta</label>
+                <input class="ed-inp" id="f-seotitle" />
+                <div class="ed-help" id="seo-title-count"></div></div>
+              <div class="ed-field"><label for="f-seodesc">Description méta</label>
+                <textarea class="ed-ta" id="f-seodesc" rows="3"></textarea>
+                <div class="ed-help" id="seo-desc-count"></div></div>
+              <div class="ed-seo-checks" id="ed-seo-checks"></div>
             </section>
           </>
         )}

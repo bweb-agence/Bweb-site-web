@@ -13,8 +13,8 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
   <div class="panel">
     <table class="admin-table">
-      <thead><tr><th>Titre</th><th>Catégorie</th><th>Statut</th><th>Publié le</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
+      <thead><tr><th>Titre</th><th>Catégorie</th><th>SEO</th><th>Statut</th><th>Publié le</th><th></th></tr></thead>
+      <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
     </table>
   </div>
 
@@ -60,6 +60,16 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
   import { slugify, esc, dshort, dtLocalValue, toast } from "../../scripts/adminUtils";
+  import { analyzeSeo } from "../../scripts/editor/seo";
+  import { marked } from "marked";
+
+  function seoBadge(p: any): string {
+    const html = p.body_html || (p.body_md ? (marked.parse(p.body_md, { async: false }) as string) : "");
+    const r = analyzeSeo({ title: p.title, slug: p.slug, metaTitle: p.seo_title || "", metaDescription: p.seo_description || "",
+      excerpt: p.excerpt || "", html, focusKeyword: p.focus_keyword || "", coverUrl: p.cover_url || "" });
+    const c = r.grade === "ok" ? "success" : r.grade === "warn" ? "warning" : "danger";
+    return `<span title="Score SEO ${r.score}/100" style="display:inline-flex;align-items:center;font-weight:800;font-size:.76rem;padding:3px 9px;border-radius:999px;background:var(--c-${c}-bg);color:var(--c-${c});font-variant-numeric:tabular-nums">${r.score}</span>`;
+  }
 
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
@@ -72,11 +82,12 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   const closeDrawer = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); document.body.style.overflow = ""; };
 
   function render(list: any[]) {
-    if (!list.length) { rows.innerHTML = `<tr><td class="empty" colspan="5">Aucun article. Cliquez sur « Nouvel article ».</td></tr>`; return; }
+    if (!list.length) { rows.innerHTML = `<tr><td class="empty" colspan="6">Aucun article. Cliquez sur « Nouvel article ».</td></tr>`; return; }
     rows.innerHTML = list.map((p) => `
       <tr>
-        <td><strong>${esc(p.title)}</strong><br><span style="color:var(--c-gray-500);font-size:.78rem">/blog/${esc(p.slug)}</span></td>
+        <td><a href="/admin/editeur/article/${p.id}" class="row-title"><strong>${esc(p.title)}</strong></a><br><span style="color:var(--c-gray-500);font-size:.78rem">/blog/${esc(p.slug)}</span></td>
         <td>${esc(p.category || "—")}</td>
+        <td>${seoBadge(p)}</td>
         <td>${p.status === "published" ? '<span class="tag-pill pub">Publié</span>' : '<span class="tag-pill draft">Brouillon</span>'}</td>
         <td>${p.status === "published" ? dshort(p.published_at) : "—"}</td>
         <td><div class="row-actions">
@@ -96,7 +107,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
   async function load() {
     const { data, error } = await supabaseBrowser.from("posts").select("*").order("created_at", { ascending: false });
-    if (error) { rows.innerHTML = `<tr><td class="empty" colspan="5">Erreur de chargement.</td></tr>`; return; }
+    if (error) { rows.innerHTML = `<tr><td class="empty" colspan="6">Erreur de chargement.</td></tr>`; return; }
     all = data || [];
     applySearch();
   }
@@ -181,3 +192,9 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     await load();
   })();
 </script>
+
+<style is:global>
+  .admin-table .row-title { text-decoration: none; color: var(--c-ink); transition: color .15s; }
+  .admin-table .row-title:hover { color: var(--c-blue); }
+  .admin-table .row-title:hover strong { text-decoration: underline; }
+</style>

@@ -141,8 +141,6 @@ function attachToolbar(editor: Editor, toolbar: HTMLElement, pickImage: () => vo
     underline: () => editor.chain().focus().toggleUnderline().run(),
     strike: () => editor.chain().focus().toggleStrike().run(),
     code: () => editor.chain().focus().toggleCode().run(),
-    h2: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-    h3: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
     bulletList: () => editor.chain().focus().toggleBulletList().run(),
     orderedList: () => editor.chain().focus().toggleOrderedList().run(),
     blockquote: () => editor.chain().focus().toggleBlockquote().run(),
@@ -171,13 +169,9 @@ function attachToolbar(editor: Editor, toolbar: HTMLElement, pickImage: () => vo
     btn.addEventListener("click", (e) => { e.preventDefault(); run[btn.dataset.cmd!]?.(); });
   });
 
-  // Sélecteur de style de bloc (Paragraphe / Titre 2 / Titre 3)
-  const styleSel = toolbar.querySelector<HTMLSelectElement>("[data-style]");
-  styleSel?.addEventListener("change", () => {
-    const v = styleSel.value;
-    if (v === "paragraph") editor.chain().focus().setNode("paragraph").run();
-    else editor.chain().focus().setNode("heading", { level: Number(v) }).run();
-  });
+  // Sélecteur de style de bloc custom (Paragraphe / Titre 1 → 5)
+  const styleContainer = toolbar.querySelector<HTMLElement>("[data-style]");
+  const styleSync = styleContainer ? attachStyleDropdown(editor, styleContainer) : null;
 
   const marks = ["bold", "italic", "underline", "strike", "code", "blockquote", "callout",
     "bulletList", "orderedList", "codeBlock", "link"];
@@ -186,13 +180,7 @@ function attachToolbar(editor: Editor, toolbar: HTMLElement, pickImage: () => vo
       const b = toolbar.querySelector<HTMLElement>(`[data-cmd="${name}"]`);
       if (b) b.classList.toggle("on", editor.isActive(name));
     });
-    const h2on = editor.isActive("heading", { level: 2 });
-    const h3on = editor.isActive("heading", { level: 3 });
-    const h2 = toolbar.querySelector<HTMLElement>('[data-cmd="h2"]');
-    const h3 = toolbar.querySelector<HTMLElement>('[data-cmd="h3"]');
-    if (h2) h2.classList.toggle("on", h2on);
-    if (h3) h3.classList.toggle("on", h3on);
-    if (styleSel) styleSel.value = h2on ? "2" : h3on ? "3" : "paragraph";
+    styleSync?.();
     // Contrôles de tableau : visibles seulement quand le curseur est dans un tableau.
     const inTable = editor.isActive("table");
     toolbar.querySelectorAll<HTMLElement>("[data-table-only]").forEach((el) => { el.hidden = !inTable; });
@@ -200,6 +188,47 @@ function attachToolbar(editor: Editor, toolbar: HTMLElement, pickImage: () => vo
   sync();
   editor.on("selectionUpdate", sync);
   editor.on("transaction", sync);
+}
+
+/* ---------- Dropdown de style custom (design maison, aligné branding) ---------- */
+function attachStyleDropdown(editor: Editor, container: HTMLElement): () => void {
+  const OPTIONS = [
+    { v: "paragraph", label: "Paragraphe" },
+    { v: "1", label: "Titre 1" },
+    { v: "2", label: "Titre 2" },
+    { v: "3", label: "Titre 3" },
+    { v: "4", label: "Titre 4" },
+    { v: "5", label: "Titre 5" },
+  ];
+  container.classList.add("ed-style");
+  container.innerHTML =
+    `<button type="button" class="ed-style-btn" aria-haspopup="listbox" aria-expanded="false">
+       <span class="lbl">Paragraphe</span><span class="car" aria-hidden="true"></span>
+     </button>
+     <div class="ed-style-menu" role="listbox" hidden>
+       ${OPTIONS.map((o) => `<button type="button" class="ed-style-opt s-${o.v}" role="option" data-v="${o.v}">${o.label}</button>`).join("")}
+     </div>`;
+  const btn = container.querySelector<HTMLElement>(".ed-style-btn")!;
+  const menu = container.querySelector<HTMLElement>(".ed-style-menu")!;
+  const lbl = container.querySelector<HTMLElement>(".lbl")!;
+  const setOpen = (o: boolean) => { menu.hidden = !o; btn.setAttribute("aria-expanded", String(o)); };
+  const apply = (v: string) => {
+    if (v === "paragraph") editor.chain().focus().setNode("paragraph").run();
+    else editor.chain().focus().setNode("heading", { level: Number(v) }).run();
+    setOpen(false);
+  };
+  btn.addEventListener("click", (e) => { e.preventDefault(); setOpen(menu.hidden); });
+  menu.querySelectorAll<HTMLElement>("[data-v]").forEach((o) =>
+    o.addEventListener("mousedown", (e) => { e.preventDefault(); apply(o.dataset.v!); }));
+  document.addEventListener("mousedown", (e) => { if (!container.contains(e.target as Node)) setOpen(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
+
+  return () => {
+    let cur = "paragraph";
+    for (let l = 1; l <= 5; l++) if (editor.isActive("heading", { level: l })) { cur = String(l); break; }
+    lbl.textContent = OPTIONS.find((o) => o.v === cur)!.label;
+    menu.querySelectorAll<HTMLElement>("[data-v]").forEach((o) => o.classList.toggle("on", o.dataset.v === cur));
+  };
 }
 
 /* ---------- Montage ---------- */
@@ -221,7 +250,7 @@ export function mountEditor(opts: MountOptions): EditorHandle {
     element: opts.element,
     extensions: [
       StarterKit.configure({
-        heading: { levels: [2, 3] },
+        heading: { levels: [1, 2, 3, 4, 5] },
         link: { openOnClick: false, autolink: true, HTMLAttributes: { rel: "noopener nofollow", target: "_blank" } },
         codeBlock: { HTMLAttributes: { class: "ed-code" } },
       }),

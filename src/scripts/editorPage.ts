@@ -8,6 +8,7 @@ import { supabaseBrowser } from "../lib/supabaseBrowser";
 import { slugify, dtLocalValue, toast, esc } from "./adminUtils";
 import { mountEditor, type EditorHandle } from "./editor/editor";
 import { uploadMedia } from "./editor/uploadMedia";
+import { analyzeSeo } from "./editor/seo";
 import { marked } from "marked";
 
 type Kind = "article" | "formation" | "session";
@@ -74,6 +75,7 @@ export async function initEditorPage() {
       setVal("f-cover", record.cover_url || "");
       setVal("f-seotitle", record.seo_title || "");
       setVal("f-seodesc", record.seo_description || "");
+      setVal("f-focus", record.focus_keyword || "");
       setVal("f-pubdate", record.published_at ? dtLocalValue(record.published_at) : "");
     } else if (type === "formation") {
       setVal("f-theme", record.theme || "");
@@ -109,7 +111,7 @@ export async function initEditorPage() {
   });
 
   /* ---------- Éléments d'UI communs ---------- */
-  updateCrumb(); updatePill(); updatePreview(); autoGrow(); updateMeta();
+  updateCrumb(); updatePill(); updatePreview(); autoGrow(); updateMeta(); renderSeo();
 
   titleEl.addEventListener("input", () => {
     autoGrow();
@@ -173,7 +175,7 @@ export async function initEditorPage() {
   function markDirty() {
     dirty = true;
     if (autostate) autostate.textContent = "Modifications non enregistrées";
-    updateCrumb(); updateMeta();
+    updateCrumb(); updateMeta(); renderSeo();
     clearTimeout(saveTimer);
     if (id) saveTimer = setTimeout(() => save(true), 1600); // autosave sur enregistrement existant
   }
@@ -181,6 +183,25 @@ export async function initEditorPage() {
     const meta = $("ed-doc-meta"); if (!meta) return;
     const words = (handle.getHTML().replace(/<[^>]+>/g, " ").match(/\S+/g) || []).length;
     meta.textContent = words ? `${words} mot${words > 1 ? "s" : ""} · ~${Math.max(1, Math.round(words / 200))} min de lecture` : "Commencez à écrire…";
+  }
+  function renderSeo() {
+    const badge = $("ed-seo-badge"); if (!badge) return; // panneau SEO présent uniquement pour les articles
+    const res = analyzeSeo({
+      title: titleEl.value, slug: val("f-slug"), metaTitle: val("f-seotitle"),
+      metaDescription: val("f-seodesc"), excerpt: val("f-excerpt"), html: handle.getHTML(),
+      focusKeyword: val("f-focus"), coverUrl: val("f-cover"),
+    });
+    badge.textContent = res.score + "/100";
+    badge.className = "ed-seo-badge " + res.grade;
+    const put = (id: string, v: string) => { const el = $(id); if (el) el.textContent = v; };
+    put("seo-url", "bwebagence.com › blog › " + (val("f-slug") || "…"));
+    put("seo-title", (val("f-seotitle") || titleEl.value || "Titre de l'article").slice(0, 70));
+    put("seo-desc", (val("f-seodesc") || val("f-excerpt") || "Ajoutez une description méta pour l'aperçu Google…").slice(0, 170));
+    put("seo-title-count", (val("f-seotitle") || titleEl.value).length + " / 60 caractères conseillés");
+    put("seo-desc-count", (val("f-seodesc") || val("f-excerpt")).length + " / 156 caractères conseillés");
+    const list = $("ed-seo-checks");
+    if (list) list.innerHTML = res.checks
+      .map((c) => `<div class="ed-seo-check ${c.status}"><span class="dot"></span><span>${esc(c.label)}</span></div>`).join("");
   }
   function setSaved() {
     dirty = false;
@@ -292,6 +313,7 @@ export async function initEditorPage() {
         cover_url: val("f-cover").trim() || null,
         seo_title: val("f-seotitle").trim() || null,
         seo_description: val("f-seodesc").trim() || null,
+        focus_keyword: val("f-focus").trim() || null,
         status, published_at: publishedAt,
       });
     } else if (type === "formation") {

@@ -218,6 +218,9 @@
   margin-top: 1.4em;
   color: var(--c-ink);
 }
+.article-prose h1 { font-family: var(--f-display); font-weight: 800; font-size: var(--fs-h2); letter-spacing: -0.02em; margin-top: 1.6em; color: var(--c-ink); line-height: 1.2; }
+.article-prose h4 { font-family: var(--f-display); font-weight: 700; font-size: 1.12rem; margin-top: 1.2em; color: var(--c-ink); }
+.article-prose h5 { font-family: var(--f-display); font-weight: 700; font-size: 1rem; margin-top: 1.1em; color: var(--c-ink); }
 .article-prose ul,
 .article-prose ol { padding-left: 1.2em; color: var(--c-gray-700); line-height: 1.7; }
 .article-prose li + li { margin-top: 0.35em; }
