@@ -219,7 +219,10 @@
 .sess-prose h2 { font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; color: var(--c-ink); margin-top: 1.2em; }
 .sess-prose ul { padding-left: 1.15em; color: var(--c-gray-700); line-height: 1.6; font-size: 0.92rem; }
 .sess-prose li + li { margin-top: 0.3em; }
+.sess-prose h1 { font-family: var(--f-display); font-weight: 800; font-size: 1.25rem; color: var(--c-ink); margin-top: 1.2em; line-height: 1.2; }
 .sess-prose h3 { font-family: var(--f-display); font-weight: 700; font-size: 0.98rem; color: var(--c-ink); margin-top: 1em; }
+.sess-prose h4 { font-family: var(--f-display); font-weight: 700; font-size: 0.92rem; color: var(--c-ink); margin-top: 0.9em; }
+.sess-prose h5 { font-family: var(--f-display); font-weight: 700; font-size: 0.88rem; color: var(--c-ink); margin-top: 0.85em; }
 .sess-prose a { color: var(--c-blue); text-underline-offset: 3px; }
 .sess-prose img { border-radius: var(--radius-md); max-width: 100%; height: auto; }
 .sess-prose blockquote { border-left: 3px solid var(--c-blue); padding-left: 1em; color: var(--c-gray-600); font-style: italic; }
