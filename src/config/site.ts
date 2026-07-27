@@ -59,11 +59,23 @@ export const forms = {
   },
 };
 
+/* Services (source unique — utilisée par le menu déroulant du header et le footer) */
+export const services = [
+  { label: "Conseil & stratégie", href: "/services-conseil-strategie" },
+  { label: "Création de sites web", href: "/services-creation-sites-web" },
+  { label: "Marketing digital", href: "/services-marketing-digital" },
+  { label: "Digitalisation", href: "/services-digitalisation" },
+  { label: "Automatisation & IA", href: "/services-automatisation-ia" },
+  { label: "Formation professionnelle", href: "/services-formation" },
+];
+
 /* Navigation principale */
-export const mainNav = [
+type NavLink = { label: string; href: string; children?: typeof services };
+
+export const mainNav: NavLink[] = [
   { label: "Accueil", href: "/" },
   { label: "À propos", href: "/a-propos" },
-  { label: "Services", href: "/services" },
+  { label: "Services", href: "/services", children: services },
   { label: "Réalisations", href: "/realisations" },
   { label: "Formations", href: "/formations" },
   { label: "Blog", href: "/blog" },
@@ -85,14 +97,7 @@ export const footerNav = {
     { label: "Méthodologie", href: "/methodologie" },
     { label: "Contact", href: "/contact" },
   ],
-  services: [
-    { label: "Conseil & stratégie", href: "/services-conseil-strategie" },
-    { label: "Création de sites web", href: "/services-creation-sites-web" },
-    { label: "Marketing digital", href: "/services-marketing-digital" },
-    { label: "Digitalisation", href: "/services-digitalisation" },
-    { label: "Automatisation & IA", href: "/services-automatisation-ia" },
-    { label: "Formation professionnelle", href: "/services-formation" },
-  ],
+  services,
   legal: [
     { label: "Mentions légales", href: "/mentions-legales" },
     { label: "Politique de confidentialité", href: "/politique-confidentialite" },

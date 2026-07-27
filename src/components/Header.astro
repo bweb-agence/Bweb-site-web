@@ -9,7 +9,23 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path === href 
     <a href="/" class="brand" aria-label="Bweb Agence — accueil"><img src="/images/logo.svg" alt="Bweb Agence" width="171" height="40" /></a>
     <nav class="main-nav" aria-label="Navigation principale">
       {mainNav.map((item) => (
-        <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined} class={isActive(item.href) ? "is-active" : undefined}>{item.label}</a>
+        item.children ? (
+          <div class="nav-item has-dropdown">
+            <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined} aria-haspopup="true" class={isActive(item.href) ? "is-active" : undefined}>
+              {item.label}
+              <svg class="nav-item__chevron" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <div class="nav-dropdown">
+              <div class="nav-dropdown__inner" role="menu">
+                {item.children.map((child) => (
+                  <a href={child.href} role="menuitem" class={isActive(child.href) ? "is-active" : undefined}>{child.label}</a>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined} class={isActive(item.href) ? "is-active" : undefined}>{item.label}</a>
+        )
       ))}
     </nav>
     <div class="nav-cta">
