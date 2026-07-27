@@ -43,6 +43,7 @@ mark { background: none; color: var(--c-blue); position: relative; }
 .accent { color: var(--c-blue); }
 .accent-orange { color: var(--c-orange); }
 .accent-yellow { color: var(--c-yellow); }
+.text-gradient-blue { background: var(--g-blue); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .accent-green { color: var(--c-green); }
 
 /* ---------- Layout & grilles ---------- */
