@@ -55,7 +55,7 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path === href 
         <div class="mobile-nav-item">
           <div class="mobile-nav-item__row">
             <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>{item.label}</a>
-            <button type="button" class="mobile-nav-item__toggle" aria-expanded="false" aria-label="Afficher les services">
+            <button type="button" class="mobile-nav-item__toggle" aria-expanded="false" aria-label={`Afficher ${item.label}`}>
               <svg class="mobile-nav-item__chevron" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
           </div>
