@@ -12,6 +12,7 @@ import { initLottie } from "./lottie";
 import { initCosmos } from "./cosmos";
 import { initHeroIllus } from "./heroIllus";
 import { initMotion } from "./motion";
+import { initCookies } from "./cookies";
 
 /* Remplit les liens/affichages de contact depuis la config centrale.
    Permet aux contenus qui utilisent [data-whatsapp-link] etc. de rester
@@ -44,6 +45,7 @@ function hideDecorativeSvg(): void {
 }
 
 function boot(): void {
+  initCookies();
   setYear();
   hideDecorativeSvg();
   initContactLinks();

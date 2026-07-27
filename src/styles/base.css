@@ -26,7 +26,10 @@ body {
   line-height: 1.6;
   font-size: var(--fs-base);
   font-weight: 400;
-  overflow-x: hidden;
+  /* clip (et non hidden) : empêche le débordement horizontal SANS créer de
+     conteneur de défilement — sinon overflow-x:hidden force overflow-y:auto
+     et casse tous les `position: sticky` de la page. */
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
