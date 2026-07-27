@@ -20,6 +20,7 @@ const $ = <T extends HTMLElement = HTMLInputElement>(id: string) => document.get
 const val = (id: string) => ($(id) as HTMLInputElement | null)?.value ?? "";
 const setVal = (id: string, v: any) => { const el = $(id) as HTMLInputElement | null; if (el) el.value = v ?? ""; };
 const mdToHtml = (md: string) => (md ? (marked.parse(md) as string) : "");
+const BADGES: [string, string][] = [["", "— Aucun —"], ["hot", "Forte demande"], ["limited", "Places limitées"], ["ok", "Avantageux"]];
 
 export async function initEditorPage() {
   const root = $("ed-root") as HTMLElement | null;
@@ -84,6 +85,9 @@ export async function initEditorPage() {
       setVal("f-price", record.default_price ?? "");
       setVal("f-summary", record.summary || "");
       setVal("f-image", record.image_url || "");
+      setVal("f-seotitle", record.seo_title || "");
+      setVal("f-seodesc", record.seo_description || "");
+      setVal("f-focus", record.focus_keyword || "");
     } else {
       setVal("f-formation", record.formation_id || "");
       setVal("f-theme", record.theme || "");
@@ -92,6 +96,9 @@ export async function initEditorPage() {
       setVal("f-city", record.city || "Abidjan");
       setVal("f-venue", record.venue || "Espace de formation Bweb · Cocody");
       setVal("f-image", record.image_url || "");
+      setVal("f-seotitle", record.seo_title || "");
+      setVal("f-seodesc", record.seo_description || "");
+      setVal("f-focus", record.focus_keyword || "");
       originalTtIds = (record.ticket_types || []).map((t: any) => t.id);
       (record.ticket_types || []).sort((a: any, b: any) => a.sort - b.sort).forEach((t: any) => addTtRow(t));
     }
@@ -185,20 +192,22 @@ export async function initEditorPage() {
     meta.textContent = words ? `${words} mot${words > 1 ? "s" : ""} · ~${Math.max(1, Math.round(words / 200))} min de lecture` : "Commencez à écrire…";
   }
   function renderSeo() {
-    const badge = $("ed-seo-badge"); if (!badge) return; // panneau SEO présent uniquement pour les articles
+    const badge = $("ed-seo-badge"); if (!badge) return; // panneau SEO présent seulement si activé (article/formation/session)
+    const coverField = type === "article" ? "f-cover" : "f-image";
+    const excerpt = type === "article" ? val("f-excerpt") : type === "formation" ? val("f-summary") : "";
     const res = analyzeSeo({
       title: titleEl.value, slug: val("f-slug"), metaTitle: val("f-seotitle"),
-      metaDescription: val("f-seodesc"), excerpt: val("f-excerpt"), html: handle.getHTML(),
-      focusKeyword: val("f-focus"), coverUrl: val("f-cover"),
+      metaDescription: val("f-seodesc"), excerpt, html: handle.getHTML(),
+      focusKeyword: val("f-focus"), coverUrl: val(coverField),
     });
     badge.textContent = res.score + "/100";
     badge.className = "ed-seo-badge " + res.grade;
     const put = (id: string, v: string) => { const el = $(id); if (el) el.textContent = v; };
-    put("seo-url", "bwebagence.com › blog › " + (val("f-slug") || "…"));
-    put("seo-title", (val("f-seotitle") || titleEl.value || "Titre de l'article").slice(0, 70));
-    put("seo-desc", (val("f-seodesc") || val("f-excerpt") || "Ajoutez une description méta pour l'aperçu Google…").slice(0, 170));
+    put("seo-url", ("bwebagence.com" + base + (val("f-slug") || "…")).split("/").filter(Boolean).join(" › "));
+    put("seo-title", (val("f-seotitle") || titleEl.value || "Titre de la page").slice(0, 70));
+    put("seo-desc", (val("f-seodesc") || excerpt || "Ajoutez une description méta pour l'aperçu Google…").slice(0, 170));
     put("seo-title-count", (val("f-seotitle") || titleEl.value).length + " / 60 caractères conseillés");
-    put("seo-desc-count", (val("f-seodesc") || val("f-excerpt")).length + " / 156 caractères conseillés");
+    put("seo-desc-count", (val("f-seodesc") || excerpt).length + " / 156 caractères conseillés");
     const list = $("ed-seo-checks");
     if (list) list.innerHTML = res.checks
       .map((c) => `<div class="ed-seo-check ${c.status}"><span class="dot"></span><span>${esc(c.label)}</span></div>`).join("");
@@ -209,7 +218,6 @@ export async function initEditorPage() {
   }
 
   /* ---------- Tarifs (session) ---------- */
-  const BADGES: [string, string][] = [["", "— Aucun —"], ["hot", "Forte demande"], ["limited", "Places limitées"], ["ok", "Avantageux"]];
   function addTtRow(tt: any) {
     const list = $("ed-tt-list"); if (!list) return;
     const div = document.createElement("div");
@@ -324,6 +332,9 @@ export async function initEditorPage() {
         default_price: val("f-price") ? parseInt(val("f-price")) : null,
         summary: val("f-summary").trim() || null,
         image_url: val("f-image").trim() || null,
+        seo_title: val("f-seotitle").trim() || null,
+        seo_description: val("f-seodesc").trim() || null,
+        focus_keyword: val("f-focus").trim() || null,
       });
     } else {
       Object.assign(payload, {
@@ -334,6 +345,9 @@ export async function initEditorPage() {
         city: val("f-city").trim() || null,
         venue: val("f-venue").trim() || null,
         image_url: val("f-image").trim() || null,
+        seo_title: val("f-seotitle").trim() || null,
+        seo_description: val("f-seodesc").trim() || null,
+        focus_keyword: val("f-focus").trim() || null,
         status,
       });
     }
