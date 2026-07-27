@@ -112,13 +112,15 @@ import PhoneField from "../components/PhoneField.astro";
               <div class="field"><label for="d-sector">Votre secteur *</label><input id="d-sector" type="text" name="sector" required placeholder="Ex : Commerce, Santé…"></div>
               <div class="field"><label for="d-phone">Téléphone / WhatsApp *</label><PhoneField id="d-phone" /></div>
               <div class="field full"><label for="d-email">Adresse e-mail *</label><input id="d-email" type="email" name="email" autocomplete="email" inputmode="email" required></div>
-              <div class="field full">
+              <div class="field full" data-file-upload>
                 <label>Documents à joindre <span class="opt">(optionnel)</span></label>
                 <label class="file-drop" style="display:block">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
-                  Cahier des charges, logo, exemples…
+                  <span class="file-drop__text">Glissez vos fichiers ici ou <b>cliquez pour parcourir</b><br><small>Cahier des charges, logo, exemples… — PDF, images, Word/Excel, ZIP · 10&nbsp;Mo max/fichier · 10 fichiers</small></span>
                   <input type="file" name="documents" multiple style="display:none">
                 </label>
+                <ul class="file-list" hidden></ul>
+                <p class="file-error" role="alert" hidden></p>
               </div>
             </div>
           </div>

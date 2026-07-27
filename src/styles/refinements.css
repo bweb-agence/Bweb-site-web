@@ -403,3 +403,19 @@ html.wiz-lock .wa-float { opacity: 0; pointer-events: none; }
    ============================================================ */
 .hp-field { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; overflow: hidden; }
 .hp-field input { pointer-events: none; }
+
+/* ============================================================
+   14. Pièces jointes du devis — liste, suppression, glisser-déposer
+   ============================================================ */
+.file-drop__text small { display: block; margin-top: 6px; color: var(--c-gray-500); font-size: .78rem; line-height: 1.5; }
+.file-drop.is-drag { border-color: var(--c-blue); color: var(--c-blue); background: rgba(31, 108, 237, .06); }
+
+.file-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.file-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: #f4f8ff; border: 1px solid rgba(31, 108, 237, .16); border-radius: 10px; font-size: .85rem; }
+.file-item__name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--c-gray-700, #3f4568); font-weight: 600; }
+.file-item__size { flex: 0 0 auto; color: var(--c-gray-500); font-size: .78rem; }
+.file-item__remove { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: none; border-radius: 50%; background: transparent; color: var(--c-gray-500); cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
+.file-item__remove svg { width: 15px; height: 15px; }
+.file-item__remove:hover { background: rgba(192, 38, 64, .1); color: #c02640; }
+.file-error { margin: 8px 0 0; color: #c02640; font-size: .8rem; line-height: 1.5; }
+.file-error[hidden] { display: none; }

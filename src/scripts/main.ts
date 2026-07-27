@@ -7,6 +7,7 @@ import { setYear, initHeaderScroll, initMobileNav, initSectionNav, initAccordion
 import { initForms } from "./forms";
 import { initWizard } from "./wizard";
 import { initPhoneField } from "./phoneField";
+import { initFileUpload } from "./fileUpload";
 import { initLottie } from "./lottie";
 import { initCosmos } from "./cosmos";
 import { initHeroIllus } from "./heroIllus";
@@ -54,6 +55,7 @@ function boot(): void {
   initForms();
   initWizard();
   initPhoneField();
+  initFileUpload();
   initLottie();
   initCosmos();
   initHeroIllus();

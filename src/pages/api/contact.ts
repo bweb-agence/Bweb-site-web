@@ -15,6 +15,8 @@ export const prerender = false;
    ========================================================= */
 import type { APIRoute } from "astro";
 import { sendEmail } from "../../lib/email";
+import { createAdminClient } from "../../lib/supabaseAdmin";
+import { BUCKET, SIGNED_DOWNLOAD_TTL } from "../../lib/uploads";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -79,7 +81,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     // Repli : reconstruire un récap si le client n'a pas fourni `message`.
     if (!summary) {
-      const skip = new Set(["_subject", "subject", "message", "phone_cc", "company_site", "_honey"]);
+      const skip = new Set(["_subject", "subject", "message", "phone_cc", "company_site", "_honey", "attachments"]);
       const parts: string[] = [];
       for (const [k, v] of fd.entries()) {
         if (skip.has(k) || v instanceof File) continue;
@@ -90,6 +92,37 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     const summaryHtml = esc(summary).replace(/\n/g, "<br>");
+
+    // Pièces jointes : le client les a téléversées directement vers Supabase
+    // (URLs signées) et nous transmet la liste des chemins. On regénère des
+    // liens de téléchargement signés (30 j) pour l'e-mail de notification.
+    let attachmentsHtml = "";
+    try {
+      const raw = get("attachments");
+      const list: Array<{ path?: string; name?: string }> = raw ? JSON.parse(raw) : [];
+      const clean = list
+        .filter((a) => a?.path && !a.path.includes("..") && !a.path.startsWith("/"))
+        .slice(0, 20);
+      if (clean.length) {
+        const svcKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (svcKey && svcKey !== "A_COMPLETER") {
+          const admin = createAdminClient();
+          const items: string[] = [];
+          for (const a of clean) {
+            const { data } = await admin.storage.from(BUCKET).createSignedUrl(a.path!, SIGNED_DOWNLOAD_TTL);
+            const label = esc(a.name || a.path!.split("/").pop() || "fichier");
+            items.push(
+              data?.signedUrl
+                ? `<li style="margin:4px 0"><a href="${esc(data.signedUrl)}" style="color:#1f6ced">${label}</a></li>`
+                : `<li style="margin:4px 0">${label} (lien indisponible)</li>`,
+            );
+          }
+          attachmentsHtml = `<div style="font-size:13px;color:#3f4568;margin-top:16px"><b>Pièces jointes (${clean.length}) — liens valables 30&nbsp;jours</b><ul style="margin:6px 0 0;padding-left:18px">${items.join("")}</ul></div>`;
+        } else {
+          attachmentsHtml = `<div style="font-size:13px;color:#b4690e;margin-top:16px">${clean.length} pièce(s) jointe(s) signalée(s) mais stockage non configuré.</div>`;
+        }
+      }
+    } catch { /* pièces jointes best-effort — n'affecte jamais le lead */ }
 
     // 1) Notification de lead vers Bweb (répondre au client via son e-mail affiché).
     const inbox = import.meta.env.BWEB_INBOX || "info@bwebagence.com";
@@ -102,6 +135,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         ${phone ? `<div><b>Téléphone</b> : ${esc(phone)}</div>` : ""}
       </div>
       <div style="font-size:13px;color:#3f4568;line-height:1.7;margin-top:14px">${summaryHtml}</div>
+      ${attachmentsHtml}
     </div>`);
     const notifOk = await sendEmail({ to: inbox, subject: `Lead — ${subject}`, html: notif, text: summary });
 

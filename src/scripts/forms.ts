@@ -14,6 +14,7 @@
 import { contact } from "../config/site";
 
 type FieldEl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+type Attachment = { path: string; name: string };
 
 const wa = (msg: string, number: string = contact.whatsapp.primary) =>
   `https://wa.me/${number}?text=${encodeURIComponent(msg)}`;
@@ -47,7 +48,7 @@ function optionText(control: HTMLInputElement): string {
 }
 
 /* ---------- Composition du message WhatsApp / e-mail ---------- */
-function composeMessage(form: HTMLFormElement): string {
+function composeMessage(form: HTMLFormElement, attachments: { name: string }[] = []): string {
   const title = form.getAttribute("data-form-title") || "Nouvelle demande";
   const lines: string[] = [`*${title}*`, ""];
   const doneCheckboxGroups = new Set<string>();
@@ -84,6 +85,8 @@ function composeMessage(form: HTMLFormElement): string {
     lines.push(`• ${label} : ${out}`);
   });
 
+  if (attachments.length) lines.push(`• Pièces jointes : ${attachments.length} fichier(s) envoyé(s) par e-mail`);
+
   return lines.join("\n");
 }
 
@@ -111,14 +114,15 @@ function setStatus(form: HTMLFormElement, msg: string, kind: "error" | "success"
   if (kind) status.classList.add(kind);
 }
 
-async function sendEmail(form: HTMLFormElement): Promise<boolean> {
+async function sendEmail(form: HTMLFormElement, attachments: Attachment[] = []): Promise<boolean> {
   // Endpoint serveur Bird (route Astro /api/contact). En l'absence de couche
   // serveur (prod statique) ou si Bird n'est pas configuré, l'appel échoue ou
   // renvoie { ok:false } → on bascule proprement sur WhatsApp.
   const endpoint = form.dataset.endpoint || "/api/contact";
   const fd = new FormData(form);
   fd.append("subject", form.getAttribute("data-form-title") || "Nouvelle demande — Bweb");
-  fd.append("message", composeMessage(form)); // récap lisible réutilisé pour l'e-mail
+  fd.append("message", composeMessage(form, attachments)); // récap lisible réutilisé pour l'e-mail
+  if (attachments.length) fd.append("attachments", JSON.stringify(attachments));
   try {
     const res = await fetch(endpoint, {
       method: "POST",
@@ -178,10 +182,19 @@ export function initForms(): void {
       const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
       submitBtn?.classList.add("is-loading");
 
+      // Pièces jointes : upload direct navigateur → Supabase avant l'envoi
+      // (les fichiers ne transitent jamais par la fonction serverless).
+      let attachments: Attachment[] = [];
+      const prep = (form as unknown as { __prepareUploads?: () => Promise<Attachment[]> }).__prepareUploads;
+      if (prep) {
+        setStatus(form, "Envoi des fichiers…", "");
+        try { attachments = await prep(); } catch { attachments = []; }
+      }
+
       // Canal principal = e-mail. WhatsApp devient une option (bouton dans
       // l'écran de succès) pour prévenir/transmettre — plus d'ouverture auto.
-      const waUrl = wa(composeMessage(form));
-      const emailOk = await sendEmail(form);
+      const waUrl = wa(composeMessage(form, attachments));
+      const emailOk = await sendEmail(form, attachments);
       submitBtn?.classList.remove("is-loading");
       setStatus(form, "", "");
       showSuccess(form, waUrl, emailOk);
