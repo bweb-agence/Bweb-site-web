@@ -3,7 +3,7 @@ export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabase";
-import { priceFCFA, frTime, gradClass } from "../../lib/format";
+import { priceFCFA, frTime, gradClass, gradSuffix } from "../../lib/format";
 import "../../styles/formations.css";
 
 type TT = { price: number; capacity: number; sold: number };
@@ -47,6 +47,27 @@ const weekday = (s: string) =>
   new Date(s).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 const posterDate = (s: string) =>
   new Date(s).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }).toUpperCase();
+
+// Données pré-dérivées pour la vue Calendrier (façon Calendly), consommées côté client.
+const calData = sessions.map((s) => {
+  const d = derive(s);
+  return {
+    id: s.id,
+    slug: s.slug,
+    title: s.title,
+    theme: s.theme ?? "",
+    grad: gradSuffix(s.theme),
+    date: dateISO(s.starts_at),
+    time: frTime(s.starts_at),
+    minPrice: d.minPrice,
+    remaining: d.remaining,
+    cap: d.cap,
+    sold: d.sold,
+    full: d.full,
+    level: d.level,
+    venue: s.venue ?? "Espace de formation Bweb · Cocody",
+  };
+});
 ---
 
 <BaseLayout
@@ -79,28 +100,75 @@ const posterDate = (s: string) =>
       ) : (
         <>
           <div class="cal-filters" role="group" aria-label="Filtres">
-            <button type="button" class="fchip is-active" data-theme="all">Tous les thèmes</button>
-            {themes.map((t) => (
-              <button type="button" class="fchip" data-theme={t}>{t}</button>
-            ))}
-            <span class="fchip-sep"></span>
-            <button type="button" class="fchip" id="month-btn" aria-expanded="false">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
-              Mois ▾
+            <div class="view-switch" role="group" aria-label="Choisir la vue">
+              <button type="button" id="view-cards" class="is-on" aria-pressed="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                Cartes
+              </button>
+              <button type="button" id="view-cal" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+                Calendrier
+              </button>
+            </div>
+
+            <button type="button" class="filters-trigger" id="filters-trigger" aria-expanded="false" aria-controls="filters-group">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+              Filtres<span class="fg-badge" id="fg-badge" hidden></span>
             </button>
-            <button type="button" class="fchip" id="dispo-btn"><span class="fchip__knob"></span>Places disponibles</button>
+
+            <div class="filters-group" id="filters-group">
+              <div class="fg-head">
+                <span class="fg-title">Filtres</span>
+                <button type="button" class="fg-close" id="fg-close" aria-label="Fermer les filtres">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+              </div>
+
+              <div class="fg-section">
+                <span class="fg-label">Thème</span>
+                <div class="filter-themes">
+                  <button type="button" class="fchip is-active" data-theme="all">Tous les thèmes</button>
+                  {themes.map((t) => (
+                    <button type="button" class="fchip" data-theme={t}>{t}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div class="fg-section" id="fg-date-section">
+                <span class="fg-label">Date</span>
+                <div class="month-anchor" id="month-anchor">
+                  <button type="button" class="fchip" id="month-btn" aria-expanded="false">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+                    Mois ▾
+                  </button>
+                  <div class="month-pop" id="month-pop" aria-label="Choisir une date">
+                    <div class="mp-head">
+                      <button type="button" class="mp-nav" id="mp-prev" aria-label="Mois précédent">‹</button>
+                      <span id="mp-label">—</span>
+                      <button type="button" class="mp-nav" id="mp-next" aria-label="Mois suivant">›</button>
+                    </div>
+                    <div class="mp-dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+                    <div class="mp-days" id="mp-days"></div>
+                    <button type="button" class="mp-reset" id="mp-reset">Toutes les dates</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fg-section fg-section--row">
+                <span class="fg-label">Disponibilité</span>
+                <button type="button" class="fchip" id="dispo-btn"><span class="fchip__knob"></span>Places disponibles</button>
+              </div>
+
+              <div class="fg-foot">
+                <button type="button" class="fg-reset" id="fg-reset">Réinitialiser</button>
+                <button type="button" class="fg-apply" id="fg-apply">Voir les résultats</button>
+              </div>
+            </div>
+
+            <div class="fg-backdrop" id="fg-backdrop" hidden></div>
           </div>
 
-          <div class="month-pop" id="month-pop" aria-label="Choisir une date">
-            <div class="mp-head">
-              <button type="button" class="mp-nav" id="mp-prev" aria-label="Mois précédent">‹</button>
-              <span id="mp-label">—</span>
-              <button type="button" class="mp-nav" id="mp-next" aria-label="Mois suivant">›</button>
-            </div>
-            <div class="mp-dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
-            <div class="mp-days" id="mp-days"></div>
-            <button type="button" class="mp-reset" id="mp-reset">Toutes les dates</button>
-          </div>
+          <script type="application/json" id="cal-data" set:html={JSON.stringify(calData)}></script>
 
           <div class="ev-grid" id="ev-grid">
             {sessions.map((s) => {
@@ -149,6 +217,38 @@ const posterDate = (s: string) =>
             })}
           </div>
           <p class="cal-empty" id="no-result" style="display:none;margin-top:16px">Aucune session ne correspond à ces filtres. <button type="button" class="mp-reset" id="clear-all">Réinitialiser</button></p>
+
+          <!-- ===== Vue Calendrier (façon Calendly) ===== -->
+          <div class="cal-view" id="cal-view" hidden>
+            <div class="cal-main">
+              <div class="cal-panel">
+                <div class="cal-topbar">
+                  <div class="cal-month" id="big-month">—</div>
+                  <div class="cal-navs">
+                    <button type="button" class="cal-today" id="big-today">Aujourd'hui</button>
+                    <button type="button" class="mp-nav" id="big-prev" aria-label="Mois précédent">‹</button>
+                    <button type="button" class="mp-nav" id="big-next" aria-label="Mois suivant">›</button>
+                  </div>
+                </div>
+                <div class="big-dow"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
+                <div class="big-grid" id="big-grid"></div>
+              </div>
+              <div class="cal-legend">
+                <span><i class="grad--blue"></i> IA</span>
+                <span><i class="grad--warm"></i> Marketing</span>
+                <span><i class="grad--navy"></i> Vente en ligne</span>
+                <span><i class="grad--muted"></i> Complet</span>
+              </div>
+            </div>
+
+            <div class="cal-panel day-panel">
+              <div class="dp-head">
+                <div class="dp-kicker">Sessions du jour</div>
+                <div class="dp-date" id="dp-date">Sélectionnez une date</div>
+              </div>
+              <div class="dp-body" id="dp-body"></div>
+            </div>
+          </div>
         </>
       )}
     </div>
@@ -162,9 +262,22 @@ const posterDate = (s: string) =>
   const grid = document.getElementById("ev-grid");
   if (grid) {
     const cards = Array.from(grid.querySelectorAll<HTMLElement>(".ev-card"));
-    const state = { theme: "all", date: "", dispo: false };
+    const state = { theme: "all", date: "", dispo: false, view: "cards" as "cards" | "cal" };
 
-    // ---- Filtres combinés ----
+    type Ev = {
+      id: string; slug: string; title: string; theme: string; grad: string;
+      date: string; time: string; minPrice: number | null; remaining: number;
+      cap: number; sold: number; full: boolean; level: string; venue: string;
+    };
+    const EV: Ev[] = JSON.parse(document.getElementById("cal-data")?.textContent || "[]");
+    const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+    const JOURS = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+    const isoOf = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+    const todayISO = isoOf(new Date());
+    // Filtres thème + dispo (hors date) — utilisés par la vue Calendrier.
+    const passTd = (e: Ev) => (state.theme === "all" || e.theme === state.theme) && (!state.dispo || !e.full);
+
+    // ---- Filtres combinés (vue Cartes) ----
     function apply() {
       let visible = 0;
       cards.forEach((c) => {
@@ -179,13 +292,28 @@ const posterDate = (s: string) =>
       if (nr) nr.style.display = visible === 0 ? "block" : "none";
     }
 
+    // ---- Rafraîchit la vue active ----
+    function refresh() {
+      if (state.view === "cards") apply();
+      else { renderBig(); renderDayPanel(); }
+    }
+
+    // ---- Sélection d'une date (partagée mini-cal ⇄ grande grille) ----
+    function setDate(iso: string) {
+      state.date = state.date === iso ? "" : iso;
+      renderCal();
+      refresh();
+      updateBadge();
+    }
+
     // ---- Thèmes ----
     document.querySelectorAll<HTMLElement>(".fchip[data-theme]").forEach((chip) => {
       chip.addEventListener("click", () => {
         document.querySelectorAll(".fchip[data-theme]").forEach((c) => c.classList.remove("is-active"));
         chip.classList.add("is-active");
         state.theme = chip.dataset.theme || "all";
-        apply();
+        refresh();
+        updateBadge();
       });
     });
 
@@ -194,16 +322,17 @@ const posterDate = (s: string) =>
     dispoBtn?.addEventListener("click", () => {
       state.dispo = !state.dispo;
       dispoBtn.classList.toggle("is-on", state.dispo);
-      apply();
+      refresh();
+      updateBadge();
     });
 
-    // ---- Calendrier (popover sous « Mois ») ----
+    // ---- Popover « Mois » (mini-calendrier flottant) ----
     const pop = document.getElementById("month-pop");
     const monthBtn = document.getElementById("month-btn");
     const label = document.getElementById("mp-label");
     const daysEl = document.getElementById("mp-days");
     const eventDates = new Set(cards.map((c) => c.dataset.date));
-    const firstDate = cards.map((c) => c.dataset.date || "").filter(Boolean).sort()[0];
+    const firstDate = EV.map((e) => e.date).filter(Boolean).sort()[0];
     let cursor = firstDate ? new Date(firstDate + "T00:00:00") : new Date();
     cursor = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
 
@@ -211,8 +340,7 @@ const posterDate = (s: string) =>
       if (!label || !daysEl) return;
       label.textContent = cursor.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
       const y = cursor.getFullYear(), m = cursor.getMonth();
-      const first = new Date(y, m, 1);
-      const startDow = (first.getDay() + 6) % 7; // lundi = 0
+      const startDow = (new Date(y, m, 1).getDay() + 6) % 7; // lundi = 0
       const nbDays = new Date(y, m + 1, 0).getDate();
       let html = "";
       for (let i = 0; i < startDow; i++) html += `<button class="mut" disabled></button>`;
@@ -224,28 +352,174 @@ const posterDate = (s: string) =>
       }
       daysEl.innerHTML = html;
       daysEl.querySelectorAll<HTMLElement>("button[data-iso]").forEach((b) => {
-        b.addEventListener("click", () => {
-          const iso = b.dataset.iso || "";
-          state.date = state.date === iso ? "" : iso;
-          renderCal();
-          apply();
-        });
+        b.addEventListener("click", () => setDate(b.dataset.iso || ""));
       });
     }
     renderCal();
 
-    monthBtn?.addEventListener("click", () => {
+    monthBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
       const open = pop?.classList.toggle("is-open");
       monthBtn.setAttribute("aria-expanded", open ? "true" : "false");
     });
+    // Fermeture au clic extérieur / Échap
+    document.addEventListener("click", (e) => {
+      if (pop?.classList.contains("is-open") && !pop.contains(e.target as Node) && e.target !== monthBtn) {
+        pop.classList.remove("is-open");
+        monthBtn?.setAttribute("aria-expanded", "false");
+      }
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        pop?.classList.remove("is-open"); monthBtn?.setAttribute("aria-expanded", "false");
+        if (filtersGroup?.classList.contains("is-open")) closeSheet();
+      }
+    });
     document.getElementById("mp-prev")?.addEventListener("click", () => { cursor = new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1); renderCal(); });
     document.getElementById("mp-next")?.addEventListener("click", () => { cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1); renderCal(); });
-    document.getElementById("mp-reset")?.addEventListener("click", () => { state.date = ""; renderCal(); apply(); });
+    document.getElementById("mp-reset")?.addEventListener("click", () => { state.date = ""; renderCal(); refresh(); updateBadge(); });
     document.getElementById("clear-all")?.addEventListener("click", () => {
       state.theme = "all"; state.date = ""; state.dispo = false;
       document.querySelectorAll(".fchip[data-theme]").forEach((c) => c.classList.toggle("is-active", (c as HTMLElement).dataset.theme === "all"));
       dispoBtn?.classList.remove("is-on");
-      renderCal(); apply();
+      renderCal(); refresh(); updateBadge();
+    });
+
+    // ---- Grande vue Calendrier (façon Calendly) ----
+    const bigGrid = document.getElementById("big-grid");
+    const bigMonth = document.getElementById("big-month");
+    let bigCursor = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+
+    function renderBig() {
+      if (!bigGrid || !bigMonth) return;
+      const y = bigCursor.getFullYear(), m = bigCursor.getMonth();
+      bigMonth.textContent = `${MOIS[m]} ${y}`;
+      const startDow = (new Date(y, m, 1).getDay() + 6) % 7;
+      const nbDays = new Date(y, m + 1, 0).getDate();
+      const prevNb = new Date(y, m, 0).getDate();
+      const cells: { d: number; out: boolean; iso: string }[] = [];
+      for (let i = startDow - 1; i >= 0; i--) { const dt = new Date(y, m - 1, prevNb - i); cells.push({ d: dt.getDate(), out: true, iso: isoOf(dt) }); }
+      for (let d = 1; d <= nbDays; d++) cells.push({ d, out: false, iso: isoOf(new Date(y, m, d)) });
+      while (cells.length % 7 !== 0 || cells.length < 42) {
+        const last = cells[cells.length - 1].iso.split("-").map(Number);
+        const dt = new Date(last[0], last[1] - 1, last[2] + 1);
+        cells.push({ d: dt.getDate(), out: true, iso: isoOf(dt) });
+        if (cells.length >= 42) break;
+      }
+      bigGrid.innerHTML = cells.map((c) => {
+        const evs = EV.filter((e) => e.date === c.iso && passTd(e));
+        const chips = evs.slice(0, 2).map((e) =>
+          `<span class="chip ${e.full ? "is-full" : ""}"><span class="cdot grad--${e.grad}"></span>${e.title}</span>`
+        ).join("");
+        const more = evs.length > 2 ? `<span class="cell-more">+${evs.length - 2} autre${evs.length - 2 > 1 ? "s" : ""}</span>` : "";
+        const cls = ["big-cell", c.out ? "out" : "", evs.length ? "has" : "", c.iso === todayISO ? "today" : "", state.date === c.iso ? "sel" : ""].filter(Boolean).join(" ");
+        return `<button type="button" class="${cls}" data-iso="${c.iso}" ${evs.length ? "" : 'tabindex="-1" disabled'}>
+          <span class="dnum">${c.d}</span>${chips}${more}
+        </button>`;
+      }).join("");
+      bigGrid.querySelectorAll<HTMLElement>(".big-cell.has").forEach((b) => {
+        b.addEventListener("click", () => { state.date = b.dataset.iso || ""; renderCal(); renderBig(); renderDayPanel(); });
+      });
+    }
+
+    // ---- Panneau détail du jour ----
+    const dpDate = document.getElementById("dp-date");
+    const dpBody = document.getElementById("dp-body");
+    function renderDayPanel() {
+      if (!dpDate || !dpBody) return;
+      if (!state.date) {
+        dpDate.textContent = "Sélectionnez une date";
+        dpBody.innerHTML = `<p class="dp-empty">Cliquez sur un jour surligné pour voir les sessions et réserver.</p>`;
+        return;
+      }
+      const [yy, mm, dd] = state.date.split("-").map(Number);
+      const dt = new Date(yy, mm - 1, dd);
+      const long = `${JOURS[dt.getDay()]} ${dd} ${MOIS[mm - 1]} ${yy}`;
+      dpDate.textContent = long.charAt(0).toUpperCase() + long.slice(1);
+      const evs = EV.filter((e) => e.date === state.date && passTd(e));
+      if (!evs.length) { dpBody.innerHTML = `<p class="dp-empty">Aucune session ce jour-là avec ces filtres.</p>`; return; }
+      dpBody.innerHTML = evs.map((e) => {
+        const price = e.minPrice !== null ? `À partir de ${e.minPrice.toLocaleString("fr-FR")} F CFA` : "";
+        return `<div class="dp-item">
+          <div class="di-top">
+            <span class="di-badge grad--${e.grad}">${e.theme || "Formation"}</span>
+            <span class="di-time">🕘 ${e.time}</span>
+          </div>
+          <h4 class="di-title">${e.title}</h4>
+          <div class="di-meta">${price ? `<span class="price">💵 ${price}</span>` : ""}<span>📍 ${e.venue}</span></div>
+          <div><span class="di-seat ${e.level}">${e.full ? "Session complète" : e.remaining + " places restantes"}</span></div>
+          <a class="btn ${e.full ? "btn-outline" : "btn-primary"} di-btn" href="/formations/session/${e.slug}">${e.full ? "Liste d'attente" : "Réserver"}</a>
+        </div>`;
+      }).join("");
+    }
+    document.getElementById("big-prev")?.addEventListener("click", () => { bigCursor = new Date(bigCursor.getFullYear(), bigCursor.getMonth() - 1, 1); renderBig(); });
+    document.getElementById("big-next")?.addEventListener("click", () => { bigCursor = new Date(bigCursor.getFullYear(), bigCursor.getMonth() + 1, 1); renderBig(); });
+    document.getElementById("big-today")?.addEventListener("click", () => { const n = new Date(); bigCursor = new Date(n.getFullYear(), n.getMonth(), 1); renderBig(); });
+
+    // ---- Bascule Cartes / Calendrier ----
+    const calView = document.getElementById("cal-view");
+    const dateSection = document.getElementById("fg-date-section");
+    const btnCards = document.getElementById("view-cards");
+    const btnCal = document.getElementById("view-cal");
+    function setView(v: "cards" | "cal") {
+      state.view = v;
+      btnCards?.classList.toggle("is-on", v === "cards");
+      btnCal?.classList.toggle("is-on", v === "cal");
+      btnCards?.setAttribute("aria-pressed", String(v === "cards"));
+      btnCal?.setAttribute("aria-pressed", String(v === "cal"));
+      grid.hidden = v !== "cards";
+      if (calView) calView.hidden = v !== "cal";
+      // Le filtre « Date » n'a pas de sens en vue Calendrier (la grille EST un calendrier).
+      if (dateSection) dateSection.hidden = v === "cal";
+      if (v === "cal") { pop?.classList.remove("is-open"); renderBig(); renderDayPanel(); }
+      else apply();
+    }
+    btnCards?.addEventListener("click", () => setView("cards"));
+    btnCal?.addEventListener("click", () => setView("cal"));
+
+    // ---- Panneau de filtres mobile (modal) + badge ----
+    const filtersGroup = document.getElementById("filters-group");
+    const filtersTrigger = document.getElementById("filters-trigger");
+    const fgBackdrop = document.getElementById("fg-backdrop");
+    const fgBadge = document.getElementById("fg-badge");
+    const fgApply = document.getElementById("fg-apply");
+
+    function activeCount() {
+      return (state.theme !== "all" ? 1 : 0) + (state.date ? 1 : 0) + (state.dispo ? 1 : 0);
+    }
+    function resultCount() {
+      return EV.filter((e) => passTd(e) && (!state.date || e.date === state.date)).length;
+    }
+    function updateBadge() {
+      const n = activeCount();
+      if (fgBadge) { fgBadge.textContent = String(n); fgBadge.hidden = n === 0; }
+      filtersTrigger?.classList.toggle("has-filters", n > 0);
+      const rc = resultCount();
+      if (fgApply) fgApply.textContent = `Voir ${rc} résultat${rc > 1 ? "s" : ""}`;
+    }
+
+    function openSheet() {
+      filtersGroup?.classList.add("is-open");
+      if (fgBackdrop) { fgBackdrop.hidden = false; requestAnimationFrame(() => fgBackdrop.classList.add("is-open")); }
+      filtersTrigger?.setAttribute("aria-expanded", "true");
+      document.body.style.overflow = "hidden";
+    }
+    function closeSheet() {
+      filtersGroup?.classList.remove("is-open");
+      fgBackdrop?.classList.remove("is-open");
+      filtersTrigger?.setAttribute("aria-expanded", "false");
+      document.body.style.overflow = "";
+      window.setTimeout(() => { if (fgBackdrop && !fgBackdrop.classList.contains("is-open")) fgBackdrop.hidden = true; }, 340);
+    }
+    filtersTrigger?.addEventListener("click", openSheet);
+    document.getElementById("fg-close")?.addEventListener("click", closeSheet);
+    fgBackdrop?.addEventListener("click", closeSheet);
+    fgApply?.addEventListener("click", closeSheet);
+    document.getElementById("fg-reset")?.addEventListener("click", () => {
+      state.theme = "all"; state.date = ""; state.dispo = false;
+      document.querySelectorAll(".fchip[data-theme]").forEach((c) => c.classList.toggle("is-active", (c as HTMLElement).dataset.theme === "all"));
+      dispoBtn?.classList.remove("is-on");
+      renderCal(); refresh(); updateBadge();
     });
 
     // ---- Favoris ----
@@ -273,5 +547,8 @@ const posterDate = (s: string) =>
         } catch {}
       });
     });
+
+    // ---- Init ----
+    updateBadge();
   }
 </script>
