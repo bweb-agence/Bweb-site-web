@@ -136,8 +136,10 @@
 /* ---------------------------------------------------------
    7. Responsive — bonnes pratiques (petits écrans)
    --------------------------------------------------------- */
-/* Jamais de débordement horizontal */
-html, body { max-width: 100%; overflow-x: hidden; }
+/* Jamais de débordement horizontal.
+   overflow-x: clip (et non hidden) : clippe l'horizontal sans créer de conteneur
+   de défilement — hidden forcerait overflow-y:auto et casserait `position: sticky`. */
+html, body { max-width: 100%; overflow-x: clip; }
 :where(img, svg, video) { max-width: 100%; }
 
 /* Gouttières de conteneur qui rétrécissent proprement */

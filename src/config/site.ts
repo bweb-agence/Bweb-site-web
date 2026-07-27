@@ -67,6 +67,7 @@ export const services = [
   { label: "Digitalisation", href: "/services-digitalisation" },
   { label: "Automatisation & IA", href: "/services-automatisation-ia" },
   { label: "Formation professionnelle", href: "/services-formation" },
+  { label: "Location de salle", href: "/services-location-salle" },
 ];
 
 /* Navigation principale */

@@ -1,0 +1,38 @@
+/* =========================================================
+   Thème du bandeau cookies (vanilla-cookieconsent) aux couleurs Bweb.
+   Les variables sont exposées par la librairie sous #cc-main.
+   ========================================================= */
+#cc-main {
+  --cc-font-family: var(--f-body);
+  --cc-bg: #ffffff;
+  --cc-primary-color: var(--c-ink);
+  --cc-secondary-color: var(--c-gray-600);
+  --cc-btn-primary-bg: var(--c-blue);
+  --cc-btn-primary-color: #fff;
+  --cc-btn-primary-hover-bg: var(--c-blue-dark);
+  --cc-btn-primary-border-color: var(--c-blue);
+  --cc-btn-primary-hover-border-color: var(--c-blue-dark);
+  --cc-btn-secondary-bg: var(--c-gray-100);
+  --cc-btn-secondary-color: var(--c-navy);
+  --cc-btn-secondary-hover-bg: #e2e7f3;
+  --cc-toggle-on-bg: var(--c-blue);
+  --cc-cookie-category-block-bg: #f6f8ff;
+  --cc-cookie-category-block-bg-hover: #eef2ff;
+  --cc-link-color: var(--c-blue-dark);
+  --cc-modal-border-radius: 20px;
+  --cc-btn-border-radius: 999px;
+  --cc-modal-box-shadow: var(--shadow-lg);
+}
+
+/* Bouton “Gérer les cookies” du footer (aligné sur les liens légaux). */
+.footer-cookies-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.footer-cookies-btn:hover {
+  text-decoration: underline;
+}

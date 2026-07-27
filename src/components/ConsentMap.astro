@@ -1,0 +1,61 @@
+---
+/* Carte Google Maps conditionnée au consentement cookies (catégorie « contenus
+   externes »). Tant que le consentement n'est pas donné, un placeholder est
+   affiché ; l'iframe n'est injectée qu'après accord (classe `consent-externes`
+   posée sur <html> + événement `bweb:consent`, gérés par src/scripts/cookies.ts).
+   Réutilisable : page location de salle, page contact, etc. */
+interface Props {
+  /** Requête Google Maps déjà encodée (ex. plus code "83JG%2BHH4%20Abidjan"). */
+  query: string;
+  /** Titre accessible de l'iframe. */
+  title: string;
+  /** Niveau de zoom Google Maps. */
+  zoom?: number;
+}
+const { query, title, zoom = 16 } = Astro.props;
+const src = `https://maps.google.com/maps?q=${query}&z=${zoom}&output=embed`;
+---
+
+<div class="consent-map" data-map>
+  <template data-map-embed>
+    <iframe src={src} title={title} loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+  </template>
+  <div class="consent-map-placeholder" data-map-placeholder>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg>
+    <p>La carte Google Maps est masquée tant que vous n'avez pas accepté les contenus externes.</p>
+    <button type="button" class="btn btn-primary btn-sm" data-map-allow>Afficher la carte</button>
+  </div>
+</div>
+
+<style is:global>
+  .consent-map {
+    position: relative; min-height: 340px; border-radius: var(--radius-lg); overflow: hidden;
+    border: 1px solid var(--c-border-soft); box-shadow: var(--shadow-sm); background: var(--c-gray-100);
+  }
+  .consent-map iframe { width: 100%; height: 100%; min-height: 340px; border: 0; display: block; }
+  .consent-map-placeholder {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    text-align: center; padding: 28px; min-height: 340px; height: 100%; color: var(--c-gray-600);
+    background: linear-gradient(135deg, #eaf1ff 0%, #e2f6f0 100%);
+  }
+  .consent-map-placeholder svg { width: 42px; height: 42px; color: var(--c-blue); }
+  .consent-map-placeholder p { font-size: .92rem; max-width: 34ch; margin: 0; }
+</style>
+
+<script>
+  // Gère toutes les cartes de la page (querySelectorAll : plusieurs instances possibles).
+  document.querySelectorAll<HTMLElement>("[data-map]").forEach((mapWrap) => {
+    const tpl = mapWrap.querySelector<HTMLTemplateElement>("[data-map-embed]");
+    const renderMap = () => {
+      if (!document.documentElement.classList.contains("consent-externes")) return;
+      if (mapWrap.querySelector("iframe") || !tpl) return;
+      mapWrap.querySelector("[data-map-placeholder]")?.remove();
+      mapWrap.appendChild(tpl.content.cloneNode(true));
+    };
+    renderMap();
+    window.addEventListener("bweb:consent", renderMap);
+    mapWrap.querySelector("[data-map-allow]")?.addEventListener("click", () => {
+      (window as unknown as { bwebCookies?: { acceptExternes: () => void } }).bwebCookies?.acceptExternes();
+    });
+  });
+</script>

@@ -1,0 +1,1070 @@
+---
+export const prerender = false; // SSR : la disponibilité est lue à chaque requête.
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { contact } from "../config/site";
+import { supabase } from "../lib/supabase";
+
+const wa = contact.whatsapp.primary;
+
+/* Vraie disponibilité (Supabase). On lit la table publique `salle_indisponibilites`
+   (aucune donnée personnelle) et on étend chaque plage [date_debut..date_fin] en
+   jours "YYYY-MM-DD" injectés dans le calendrier. En cas d'erreur/inaccessibilité,
+   on retombe proprement sur « aucune date bloquée » (le simulateur reste utilisable). */
+const toKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+let unavailableDates: string[] = [];
+try {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const { data, error } = await supabase
+    .from("salle_indisponibilites")
+    .select("date_debut,date_fin")
+    .gte("date_fin", toKey(today));
+  if (!error && data) {
+    const set = new Set<string>();
+    for (const row of data as { date_debut: string; date_fin: string }[]) {
+      const end = new Date(`${row.date_fin}T00:00:00`);
+      for (let d = new Date(`${row.date_debut}T00:00:00`); d <= end; d.setDate(d.getDate() + 1)) {
+        set.add(toKey(d));
+      }
+    }
+    unavailableDates = [...set];
+  }
+} catch {
+  unavailableDates = [];
+}
+---
+
+<BaseLayout
+  title="Louer une salle de formation à Abidjan (70 places) | Bweb Agence"
+  description="Louez une salle de formation moderne de 70 places à Abidjan : climatisée, Wi-Fi fibre, sonorisation, micro et écran inclus. Choisissez votre date, simulez votre devis en temps réel et réservez en quelques minutes."
+>
+  <!-- ============================================================= -->
+  <!-- 1. HERO                                                       -->
+  <!-- ============================================================= -->
+  <section class="page-hero" data-nav-section="Présentation">
+    <div class="mesh-bg"></div>
+    <div class="grid-lines"></div>
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/">Accueil</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
+        <a href="/services">Services</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
+        <span>Location de salle</span>
+      </div>
+      <div class="page-hero-grid">
+        <div class="text-white" data-hero-in>
+          <div class="eyebrow on-dark">Location de salle de formation</div>
+          <h1>Louez une salle de formation moderne de 70 places à Abidjan</h1>
+          <p class="lead text-white" style="margin:20px 0 0">
+            Organisez vos formations, séminaires, conférences et ateliers dans une salle climatisée,
+            entièrement équipée et prête à accueillir vos participants.
+          </p>
+          <div class="hero-actions" style="margin-top:32px;margin-bottom:0">
+            <a href="#simulateur" class="btn btn-warm">Simuler mon devis</a>
+            <a href={`https://wa.me/${wa}?text=${encodeURIComponent("Bonjour Bweb Agence, je souhaite réserver la salle de formation.")}`} class="btn btn-outline-light">Réserver maintenant</a>
+          </div>
+        </div>
+        <div class="visual" data-hero-in>
+          <div class="salle-hero-photo">
+            <img src="/images/salle/salle-hero.jpg" alt="Salle de formation Bweb à Abidjan — vue générale avec grand écran et sièges" width="1800" height="1350" fetchpriority="high" />
+            <ul class="salle-hero-badges">
+              <li>70 places</li>
+              <li>Climatisation</li>
+              <li>Wi-Fi inclus</li>
+              <li>Sonorisation</li>
+              <li>Micro inclus</li>
+              <li>Écran de projection</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 2. CHIFFRES CLÉS                                              -->
+  <!-- ============================================================= -->
+  <section class="section section-sm" data-nav-section="Chiffres clés">
+    <div class="container">
+      <div class="grid grid-4" data-stagger>
+        <div class="card stat-block">
+          <div class="stat-num"><span class="js-counter" data-count="70">70</span></div>
+          <div class="stat-label">Places assises</div>
+        </div>
+        <div class="card stat-block">
+          <div class="stat-num"><span class="js-counter" data-count="100">100</span><span class="suffix">%</span></div>
+          <div class="stat-label">Climatisée</div>
+        </div>
+        <div class="card stat-block">
+          <div class="stat-num" style="font-size:clamp(1.8rem,1.4rem+1.4vw,2.6rem)">Fibre</div>
+          <div class="stat-label">Wi-Fi haut débit</div>
+        </div>
+        <div class="card stat-block">
+          <div class="stat-num"><span class="js-counter" data-count="7">7</span><span class="suffix">j/7</span></div>
+          <div class="stat-label">Disponible</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 3. GALERIE                                                    -->
+  <!-- ============================================================= -->
+  <section class="section section-gray" data-nav-section="Galerie">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">La salle en images</div>
+        <h2>Un espace pensé pour vos événements professionnels</h2>
+      </div>
+      <div class="salle-gallery" data-stagger>
+        <figure class="salle-shot salle-shot--wide"><img src="/images/salle/salle-vue-generale.jpg" alt="Vue générale de la salle de formation" loading="lazy" width="1400" height="1050" /><figcaption>Vue générale</figcaption></figure>
+        <figure class="salle-shot"><img src="/images/salle/salle-conference.jpg" alt="Salle disposée en configuration conférence" loading="lazy" width="1400" height="1050" /><figcaption>Disposition conférence</figcaption></figure>
+        <figure class="salle-shot"><img src="/images/salle/salle-ecran.jpg" alt="Grand écran de projection sur pied" loading="lazy" width="1400" height="1050" /><figcaption>Écran de projection</figcaption></figure>
+        <figure class="salle-shot"><img src="/images/salle/salle-accueil.jpg" alt="Espace accueil à l'entrée de la salle de formation" loading="lazy" width="1400" height="1050" /><figcaption>Espace accueil</figcaption></figure>
+        <figure class="salle-shot"><img src="/images/salle/salle-facade.jpg" alt="Façade du bâtiment abritant la salle" loading="lazy" width="1400" height="1050" /><figcaption>Façade du bâtiment</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 4. ÉQUIPEMENTS INCLUS                                         -->
+  <!-- ============================================================= -->
+  <section class="section salle-equip" data-nav-section="Équipements">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Tout est compris</div>
+        <h2>Les équipements inclus dans chaque réservation</h2>
+        <p class="lead" style="margin:16px auto 0;max-width:52ch">
+          Aucun supplément caché : votre salle arrive prête à l'emploi, propre et opérationnelle.
+        </p>
+      </div>
+      <ul class="salle-equip-grid reveal">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7" /></svg>Climatisation</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7" /></svg>Wi-Fi haut débit</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7" /></svg>Sonorisation</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7" /></svg>Micro HF</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7" /></svg>Grand écran</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7" /></svg>Chaises avec support d'ordinateur</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7" /></svg>Prises électriques</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7" /></svg>Éclairage professionnel</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7" /></svg>Nettoyage avant chaque réservation</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 5. SIMULATEUR DE DEVIS                                        -->
+  <!-- ============================================================= -->
+  <section class="section section-cream" id="simulateur" data-nav-section="Simulateur">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Configurateur en temps réel</div>
+        <h2>Choisissez votre date, composez votre réservation</h2>
+        <p class="lead" style="margin:16px auto 0;max-width:56ch">
+          Sélectionnez la date de votre événement — le tarif week-end s'applique automatiquement le
+          samedi et le dimanche — puis ajoutez vos options : le devis se met à jour instantanément.
+        </p>
+      </div>
+
+      <div class="sim" data-sim data-wa={wa} data-unavailable={JSON.stringify(unavailableDates)}>
+        <!-- Colonne gauche : configuration -->
+        <div class="sim-config">
+          <!-- Étape 1 : date -->
+          <div class="sim-step">
+            <div class="sim-step-head"><span class="sim-step-num">1</span> Date de l'événement</div>
+            <div class="cal-head">
+              <div class="cal-title" data-cal-title>—</div>
+              <div class="cal-nav">
+                <button type="button" data-cal-prev aria-label="Mois précédent">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <button type="button" data-cal-next aria-label="Mois suivant">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
+              </div>
+            </div>
+            <div class="cal-grid" data-cal-dow></div>
+            <div class="cal-grid" data-cal-grid style="margin-top:5px"></div>
+            <div class="cal-legend">
+              <span><span class="cal-dot" style="background:var(--c-gray-100)"></span>Semaine</span>
+              <span><span class="cal-dot cal-dot--we"></span>Week-end (tarif majoré)</span>
+              <span><span class="cal-dot cal-dot--un"></span>Indisponible</span>
+            </div>
+            <div data-tariff></div>
+          </div>
+
+          <!-- Étape 2 : durée -->
+          <div class="sim-step">
+            <div class="sim-step-head"><span class="sim-step-num">2</span> Durée de location</div>
+            <div class="sim-durations" data-durations></div>
+            <div class="sim-slots" data-slots hidden>
+              <button type="button" class="sim-slot is-active" data-slot="matin">Matin · 9h–12h30</button>
+              <button type="button" class="sim-slot" data-slot="aprem">Après-midi · 13h30–17h30</button>
+            </div>
+          </div>
+
+          <!-- Étape 3 : services inclus -->
+          <div class="sim-step">
+            <div class="sim-step-head"><span class="sim-step-num">3</span> Services inclus</div>
+            <p class="sim-hint">Toujours compris dans le prix, sans supplément.</p>
+            <div class="sim-inc-list">
+              <span class="sim-inc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="5 13 10 18 19 7" /></svg>Climatisation</span>
+              <span class="sim-inc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="5 13 10 18 19 7" /></svg>Wi-Fi</span>
+              <span class="sim-inc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="5 13 10 18 19 7" /></svg>Sonorisation</span>
+              <span class="sim-inc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="5 13 10 18 19 7" /></svg>Micro</span>
+              <span class="sim-inc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="5 13 10 18 19 7" /></svg>Écran</span>
+            </div>
+          </div>
+
+          <!-- Étape 4 : participants & options -->
+          <div class="sim-step">
+            <div class="sim-step-head"><span class="sim-step-num">4</span> Participants &amp; options</div>
+            <div class="sim-pax">
+              <input type="range" min="1" max="70" value="45" step="1" data-pax-range aria-label="Nombre de participants" />
+              <input type="number" min="1" max="70" value="45" data-pax-num aria-label="Nombre de participants" />
+              <span class="sim-pax-suffix">/ 70 places</span>
+            </div>
+            <div class="sim-divider"></div>
+            <div class="sim-opts-label">Options complémentaires</div>
+            <div class="sim-options" data-options></div>
+          </div>
+        </div>
+
+        <!-- Colonne droite : récapitulatif sticky -->
+        <aside class="sim-recap">
+          <div class="sim-recap-card">
+            <div class="sim-recap-head">
+              <span class="eyebrow" style="margin:0">Votre devis</span>
+              <span class="sim-recap-pax" data-recap-pax>45 participants</span>
+            </div>
+            <div class="sim-recap-date">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+              <span>Événement le&nbsp;<b data-recap-date>—</b></span>
+            </div>
+            <ul class="sim-recap-lines" data-recap-lines></ul>
+            <div class="sim-total">
+              <span>Total estimé</span>
+              <strong data-total>—</strong>
+            </div>
+            <div class="sim-actions">
+              <button type="button" class="btn btn-warm btn-block" data-action="reserver">Réserver cette date</button>
+              <button type="button" class="btn btn-outline btn-block" data-action="pdf">Télécharger le devis PDF</button>
+              <button type="button" class="btn btn-whatsapp btn-block" data-action="whatsapp">Recevoir sur WhatsApp</button>
+            </div>
+            <p class="sim-recap-note">Devis indicatif. La disponibilité de la date est confirmée par notre équipe sous quelques heures.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 6. CONFIGURATIONS POPULAIRES                                  -->
+  <!-- ============================================================= -->
+  <section class="section" data-nav-section="Formules">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Prêtes à l'emploi</div>
+        <h2>Formules populaires</h2>
+        <p class="lead" style="margin:16px auto 0;max-width:52ch">
+          Des formules accessibles, de la réunion express à la journée complète.
+          Choisissez-en une : elle se charge dans le simulateur, prête à ajuster.
+        </p>
+      </div>
+      <div class="preset-grid" data-presets>
+        <!-- Séminaire demi-journée -->
+        <div class="card preset-card">
+          <span class="badge">Format demi-journée</span>
+          <h3>Séminaire demi-journée</h3>
+          <ul class="preset-list">
+            <li>50 participants</li>
+            <li>Demi-journée (matin ou après-midi)</li>
+            <li>Climatisation, Wi-Fi &amp; sonorisation</li>
+            <li>Micro HF &amp; grand écran inclus</li>
+            <li>Pause café incluse</li>
+            <li>Eau minérale pour chaque participant</li>
+          </ul>
+          <div class="preset-price">à partir de <strong data-preset-total="demi">—</strong> FCFA</div>
+          <button type="button" class="btn btn-outline btn-block" data-preset="demi">Choisir cette formule</button>
+        </div>
+        <!-- Journée complète — vedette premium, au centre -->
+        <div class="card preset-card preset-card--featured">
+          <span class="badge badge-green">★ Le plus complet</span>
+          <h3>Journée complète</h3>
+          <ul class="preset-list">
+            <li>70 participants (salle pleine)</li>
+            <li>Journée complète · en semaine</li>
+            <li>Tous les équipements inclus</li>
+            <li>Pause café + eau minérale</li>
+            <li>Paperboard</li>
+            <li>Accueil &amp; émargement</li>
+            <li>Captation photo de l'événement</li>
+          </ul>
+          <div class="preset-price"><strong data-preset-total="complete">—</strong> FCFA</div>
+          <button type="button" class="btn btn-light btn-block" data-preset="complete">Choisir cette formule</button>
+        </div>
+        <!-- Conférence -->
+        <div class="card preset-card">
+          <span class="badge badge-orange">Grand format</span>
+          <h3>Conférence</h3>
+          <ul class="preset-list">
+            <li>60 participants</li>
+            <li>Journée complète · semaine</li>
+            <li>Équipements professionnels inclus</li>
+            <li>Captation vidéo</li>
+            <li>Live streaming</li>
+            <li>Technicien audiovisuel</li>
+          </ul>
+          <div class="preset-price"><strong data-preset-total="conference">—</strong> FCFA</div>
+          <button type="button" class="btn btn-outline btn-block" data-preset="conference">Choisir cette formule</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 7. POURQUOI CHOISIR NOTRE SALLE                               -->
+  <!-- ============================================================= -->
+  <section class="section section-gray" data-nav-section="Pourquoi nous">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Nos atouts</div>
+        <h2>Pourquoi choisir notre salle</h2>
+      </div>
+      <div class="grid grid-4" data-stagger>
+        <div class="card">
+          <div class="salle-why-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg></div>
+          <h4>Adresse repère à Cocody</h4>
+          <p style="margin-top:8px">Au carrefour Miami Beach : une adresse connue, facile à trouver et rapidement accessible en taxi ou VTC.</p>
+        </div>
+        <div class="card">
+          <div class="salle-why-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2" /><rect x="3" y="7" width="18" height="12" rx="2" /><path d="M8 12h8" /></svg></div>
+          <h4>Équipements professionnels</h4>
+          <p style="margin-top:8px">Sonorisation, écran, micro et Wi-Fi fibre prêts à l'emploi.</p>
+        </div>
+        <div class="card">
+          <div class="salle-why-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4c0 2 4 6 4 6s4-4 4-6a4 4 0 0 0-4-4Z" /><path d="M5 21c0-4 3-6 7-6s7 2 7 6" /></svg></div>
+          <h4>Confort optimal</h4>
+          <p style="margin-top:8px">Climatisation puissante, éclairage soigné et espace aéré.</p>
+        </div>
+        <div class="card">
+          <div class="salle-why-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="9" /></svg></div>
+          <h4>Accompagnement personnalisé</h4>
+          <p style="margin-top:8px">Une équipe dédiée pour préparer et réussir votre événement.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 7b. LOCALISATION & CONTACT                                    -->
+  <!-- ============================================================= -->
+  <section class="section" data-nav-section="Localisation">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Nous trouver</div>
+        <h2>Localisation &amp; contact</h2>
+        <p class="lead" style="margin:16px auto 0;max-width:52ch">
+          Une adresse repère au cœur de Cocody, facile à trouver et rapide d'accès.
+        </p>
+      </div>
+      <div class="salle-loc">
+        <div class="loc-info reveal">
+          <div class="loc-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg>
+            <div><strong>Carrefour Miami Beach</strong><br />Faya Abatta — Cocody, Abidjan</div>
+          </div>
+          <div class="loc-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v4l3 2" /></svg>
+            <div>Une adresse connue de tous, impossible à manquer — rapidement accessible en taxi ou VTC depuis tout Abidjan.</div>
+          </div>
+          <div class="loc-contacts">
+            <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2Zm5.8 14.03c-.24.68-1.42 1.3-1.95 1.35-.5.05-1.13.07-1.83-.11-.42-.13-.96-.31-1.66-.61-2.92-1.26-4.83-4.2-4.98-4.4-.14-.2-1.18-1.57-1.18-2.99s.75-2.12 1.01-2.41c.26-.29.57-.36.76-.36.19 0 .38 0 .55.01.18.01.42-.07.65.5.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.2-.15.31-.29.48-.14.17-.3.38-.43.51-.14.14-.29.29-.13.57.17.29.74 1.22 1.59 1.98 1.09.97 2.01 1.27 2.3 1.42.29.14.46.12.63-.07.17-.2.72-.85.91-1.13.19-.29.39-.24.65-.14.26.09 1.68.79 1.96.94.29.14.48.22.55.34.07.12.07.7-.17 1.38Z" /></svg>
+              <span>WhatsApp — {contact.phoneDisplay}</span>
+            </a>
+            <a href={`tel:+${wa}`}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z" /></svg>
+              <span>{contact.phoneDisplay}</span>
+            </a>
+            <a href={`mailto:${contact.email}`}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" /></svg>
+              <span>{contact.email}</span>
+            </a>
+            <div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+              <span>{contact.address.hours}</span>
+            </div>
+          </div>
+          <div class="hero-actions" style="margin:0">
+            <a href="https://www.google.com/maps/dir/?api=1&destination=83JG%2BHH4%20Abidjan" target="_blank" rel="noopener" class="btn btn-warm">Voir l'itinéraire</a>
+            <a href={`https://wa.me/${wa}?text=${encodeURIComponent("Bonjour Bweb Agence, je souhaite visiter la salle de formation.")}`} target="_blank" rel="noopener" class="btn btn-outline">Demander une visite</a>
+          </div>
+        </div>
+
+        <div class="loc-map reveal" data-map>
+          <template data-map-embed>
+            <iframe
+              src="https://maps.google.com/maps?q=83JG%2BHH4%20Abidjan&z=16&output=embed"
+              title="Carte — Carrefour Miami Beach, Cocody (Abidjan)"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allowfullscreen></iframe>
+          </template>
+          <div class="loc-map-consent" data-map-placeholder>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg>
+            <p>La carte Google Maps est masquée tant que vous n'avez pas accepté les contenus externes.</p>
+            <button type="button" class="btn btn-primary btn-sm" data-map-allow>Afficher la carte</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 8. FAQ                                                        -->
+  <!-- ============================================================= -->
+  <section class="section" data-nav-section="FAQ">
+    <div class="container" style="max-width:var(--container-narrow)">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Questions fréquentes</div>
+        <h2>Vous vous demandez peut-être…</h2>
+      </div>
+      <div class="salle-faq reveal">
+        <div class="accordion-item">
+          <button type="button" aria-expanded="false">Comment réserver la salle ?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
+          <div class="accordion-panel"><div class="inner">Choisissez votre date et configurez votre devis dans le simulateur, puis cliquez sur « Réserver cette date » ou envoyez-le nous sur WhatsApp. Nous confirmons la disponibilité de votre date sous quelques heures.</div></div>
+        </div>
+        <div class="accordion-item">
+          <button type="button" aria-expanded="false">Comment payer ?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
+          <div class="accordion-panel"><div class="inner">Le règlement s'effectue par Mobile Money, virement ou espèces. Un acompte confirme la réservation, le solde est réglé avant l'événement.</div></div>
+        </div>
+        <div class="accordion-item">
+          <button type="button" aria-expanded="false">Puis-je visiter la salle avant de réserver ?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
+          <div class="accordion-panel"><div class="inner">Oui. Contactez-nous pour convenir d'un créneau de visite sur place, sans engagement.</div></div>
+        </div>
+        <div class="accordion-item">
+          <button type="button" aria-expanded="false">Puis-je apporter mon traiteur ?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
+          <div class="accordion-panel"><div class="inner">Bien sûr. Vous pouvez faire appel à votre propre traiteur, ou choisir nos options pause café et eau minérale directement dans le simulateur.</div></div>
+        </div>
+        <div class="accordion-item">
+          <button type="button" aria-expanded="false">Où se situe exactement la salle ?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
+          <div class="accordion-panel"><div class="inner">Au carrefour Miami Beach, à Faya Abatta (Cocody, Abidjan) — une adresse repère facile à trouver, rapidement accessible en taxi ou VTC. Vous retrouvez l'itinéraire dans la section « Localisation &amp; contact » ci-dessus.</div></div>
+        </div>
+        <div class="accordion-item">
+          <button type="button" aria-expanded="false">Les annulations sont-elles possibles ?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
+          <div class="accordion-panel"><div class="inner">Oui, selon nos conditions. Une annulation anticipée permet le remboursement ou le report de l'acompte. Contactez-nous pour connaître le détail.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 9. CTA FINAL                                                  -->
+  <!-- ============================================================= -->
+  <section class="section" data-nav-section="Réserver">
+    <div class="container">
+      <div class="cta-band reveal-scale">
+        <div class="mesh-bg"></div>
+        <div class="grid-lines"></div>
+        <div style="position:relative;z-index:2">
+          <h2 class="text-white">Prêt à réserver votre salle ?</h2>
+          <p class="lead text-white">
+            Choisissez votre date, obtenez votre devis instantanément et réservez en quelques minutes.
+          </p>
+          <div class="hero-actions">
+            <a href="#simulateur" class="btn btn-warm">Choisir ma date</a>
+            <a href={`https://wa.me/${wa}?text=${encodeURIComponent("Bonjour Bweb Agence, je souhaite des informations sur la location de salle.")}`} class="btn btn-outline-light">Nous écrire sur WhatsApp</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Zone d'impression du devis (masquée à l'écran) -->
+  <div id="devis-print" aria-hidden="true"></div>
+</BaseLayout>
+
+<!-- Styles globaux : les contrôles du simulateur (calendrier, durées, options,
+     lignes du récapitulatif) sont injectés via innerHTML au runtime — les styles
+     *scoped* d'Astro ne les atteindraient pas. Toutes les classes sont préfixées
+     (sim-/cal-/salle-/preset-/dp-) pour éviter toute fuite entre pages. -->
+<style is:global>
+  /* ---------- Hero : bloc photo + badges ---------- */
+  .salle-hero-photo {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    padding: 18px;
+  }
+  .salle-hero-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .salle-hero-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(2, 11, 80, 0) 40%, rgba(2, 11, 80, .62) 100%); }
+  .salle-hero-badges { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; }
+  .salle-hero-badges li {
+    display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 700;
+    color: var(--c-navy); background: #fff; padding: 7px 13px; border-radius: var(--radius-pill); box-shadow: var(--shadow-sm);
+  }
+  .salle-hero-badges li::before { content: "✓"; color: var(--c-green); font-weight: 900; }
+
+  /* ---------- Galerie ---------- */
+  .salle-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .salle-shot {
+    position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-md);
+    border: 1px solid var(--c-border-soft); overflow: hidden; margin: 0;
+  }
+  .salle-shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform var(--dur-slow) var(--ease); }
+  .salle-shot:hover img { transform: scale(1.05); }
+  .salle-shot--wide { grid-column: span 2; aspect-ratio: 8 / 3; }
+  .salle-shot figcaption {
+    position: absolute; left: 14px; bottom: 14px; z-index: 2; font-weight: 700; font-size: .9rem; color: var(--c-navy);
+    background: rgba(255, 255, 255, .9); padding: 6px 12px; border-radius: var(--radius-pill); box-shadow: var(--shadow-sm);
+  }
+
+  /* ---------- Équipements ---------- */
+  .salle-equip { background: linear-gradient(180deg, #f4fbf8 0%, #ffffff 100%); }
+  .salle-equip-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px 28px; max-width: 900px; margin: 0 auto;
+  }
+  .salle-equip-grid li {
+    display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--c-gray-800);
+    background: #fff; border: 1px solid var(--c-border-soft); border-radius: var(--radius-md);
+    padding: 14px 18px; box-shadow: var(--shadow-sm);
+  }
+  .salle-equip-grid li svg { width: 20px; height: 20px; flex: none; color: var(--c-green); }
+
+  /* ---------- Simulateur : structure ---------- */
+  .sim { display: grid; grid-template-columns: 1.4fr 1fr; gap: 32px; align-items: start; }
+  .sim-config { display: flex; flex-direction: column; gap: 20px; }
+  .sim-step {
+    background: #fff; border: 1px solid var(--c-border-soft); border-radius: var(--radius-lg);
+    padding: 24px 24px 26px; box-shadow: var(--shadow-sm);
+  }
+  .sim-step-head {
+    display: flex; align-items: center; gap: 12px; font-family: var(--f-display);
+    font-weight: 700; font-size: 1.06rem; color: var(--c-navy); margin-bottom: 16px;
+  }
+  .sim-step-num {
+    display: grid; place-items: center; width: 29px; height: 29px; flex: none; border-radius: 50%;
+    background: var(--c-blue); color: #fff; font-size: .88rem; font-weight: 800;
+  }
+  .sim-hint { font-size: .87rem; color: var(--c-gray-600); margin: -6px 0 15px; }
+
+  /* ---------- Calendrier ---------- */
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .cal-title { font-family: var(--f-display); font-weight: 800; color: var(--c-navy); font-size: 1rem; text-transform: capitalize; }
+  .cal-nav { display: flex; gap: 6px; }
+  .cal-nav button {
+    width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid var(--c-border); background: #fff;
+    cursor: pointer; display: grid; place-items: center; color: var(--c-navy); transition: var(--dur-fast) var(--ease);
+  }
+  .cal-nav button svg { width: 18px; height: 18px; }
+  .cal-nav button:hover:not(:disabled) { border-color: var(--c-blue); color: var(--c-blue); }
+  .cal-nav button:disabled { opacity: .35; cursor: not-allowed; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .cal-dow { text-align: center; font-size: .7rem; font-weight: 700; color: var(--c-gray-500); padding-bottom: 4px; text-transform: uppercase; }
+  .cal-day {
+    aspect-ratio: 1; border: 1.5px solid transparent; border-radius: 10px; background: var(--c-gray-100);
+    font-family: var(--f-body); font-weight: 700; font-size: .88rem; color: var(--c-gray-800);
+    cursor: pointer; display: grid; place-items: center; transition: var(--dur-fast) var(--ease);
+  }
+  .cal-day:hover:not(:disabled) { border-color: var(--c-blue); transform: translateY(-1px); }
+  .cal-day.is-weekend { background: #ffe7dd; color: #c24e2c; }
+  .cal-day.is-selected { background: var(--c-blue); color: #fff; border-color: var(--c-blue); }
+  .cal-day.is-selected.is-weekend { background: var(--c-orange); border-color: var(--c-orange); color: #fff; }
+  .cal-day:disabled { cursor: not-allowed; }
+  .cal-day.is-past { background: transparent; color: var(--c-gray-300); }
+  .cal-day.is-unavailable {
+    background: repeating-linear-gradient(45deg, #f4e2e2, #f4e2e2 4px, #fbeeee 4px, #fbeeee 8px);
+    color: #b98a8a; text-decoration: line-through;
+  }
+  .cal-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; font-size: .78rem; color: var(--c-gray-600); }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .cal-dot { width: 12px; height: 12px; border-radius: 4px; flex: none; border: 1px solid var(--c-border-soft); }
+  .cal-dot--we { background: #ffe7dd; border-color: transparent; }
+  .cal-dot--un { background: repeating-linear-gradient(45deg, #f4e2e2, #f4e2e2 2px, #fbeeee 2px, #fbeeee 5px); border-color: transparent; }
+  .cal-tariff { margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; font-size: .86rem; font-weight: 700; padding: 9px 15px; border-radius: var(--radius-pill); }
+  .cal-tariff--wk { background: var(--c-skyblue); color: var(--c-blue-dark); }
+  .cal-tariff--we { background: #ffe7dd; color: #c24e2c; }
+
+  /* ---------- Durées ---------- */
+  .sim-durations { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .sim-duration {
+    position: relative; text-align: left; background: #fff; border: 1.5px solid var(--c-border);
+    border-radius: var(--radius-md); padding: 15px 16px; cursor: pointer; transition: var(--dur-fast) var(--ease); font-family: var(--f-body);
+  }
+  .sim-duration:hover { border-color: var(--c-blue); transform: translateY(-2px); }
+  .sim-duration.is-active { border-color: var(--c-blue); background: #f2f7ff; box-shadow: 0 0 0 3px rgba(31, 108, 237, .12); }
+  .sim-duration .sd-label { display: block; font-weight: 700; color: var(--c-navy); font-size: .93rem; margin-bottom: 5px; }
+  .sim-duration .sd-price { display: block; font-weight: 800; color: var(--c-gray-600); font-size: .9rem; font-variant-numeric: tabular-nums; }
+  .sim-duration.is-active .sd-price { color: var(--c-blue); }
+  .sim-slots { display: flex; gap: 8px; margin-top: 12px; }
+  .sim-slots[hidden] { display: none; }
+  .sim-slot {
+    flex: 1; font-family: var(--f-body); text-align: center; font-size: .82rem; font-weight: 600; color: var(--c-gray-700);
+    background: var(--c-gray-100); border: 1.5px solid transparent; border-radius: 11px; padding: 10px 6px; cursor: pointer; transition: var(--dur-fast) var(--ease);
+  }
+  .sim-slot.is-active { background: var(--c-skyblue); border-color: var(--c-blue); color: var(--c-blue-dark); }
+
+  /* ---------- Services inclus (liste compacte) ---------- */
+  .sim-inc-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sim-inc {
+    display: inline-flex; align-items: center; gap: 7px; font-size: .87rem; font-weight: 600;
+    color: var(--c-success); background: var(--c-success-bg); padding: 8px 14px; border-radius: var(--radius-pill);
+  }
+  .sim-inc svg { width: 15px; height: 15px; flex: none; }
+
+  /* ---------- Participants ---------- */
+  .sim-pax { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  .sim-pax input[type="range"] {
+    flex: 1; -webkit-appearance: none; appearance: none; height: 8px; border-radius: var(--radius-pill);
+    background: linear-gradient(90deg, var(--c-blue) var(--pax-fill, 63%), var(--c-gray-100) var(--pax-fill, 63%)); cursor: pointer;
+  }
+  .sim-pax input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 26px; height: 26px; border-radius: 50%;
+    background: #fff; border: 4px solid var(--c-blue); box-shadow: var(--shadow-md); cursor: grab;
+  }
+  .sim-pax input[type="range"]::-moz-range-thumb {
+    width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 4px solid var(--c-blue); box-shadow: var(--shadow-md); cursor: grab;
+  }
+  .sim-pax input[type="number"] {
+    width: 84px; font-family: var(--f-display); font-weight: 800; font-size: 1.35rem; color: var(--c-navy);
+    text-align: center; padding: 9px; border: 1.5px solid var(--c-border); border-radius: 12px;
+  }
+  .sim-pax input[type="number"]:focus { outline: none; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31, 108, 237, .12); }
+  .sim-pax-suffix { font-size: .84rem; font-weight: 600; color: var(--c-gray-600); white-space: nowrap; }
+  .sim-divider { height: 1px; background: var(--c-border-soft); margin: 6px 0 16px; }
+  .sim-opts-label { font-size: .82rem; font-weight: 700; color: var(--c-gray-700); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 12px; }
+
+  /* ---------- Options (grille compacte) ---------- */
+  .sim-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sim-opt {
+    display: flex; align-items: center; gap: 9px; padding: 10px 12px; border: 1.5px solid var(--c-border);
+    border-radius: 11px; cursor: pointer; transition: var(--dur-fast) var(--ease); font-size: .86rem;
+  }
+  .sim-opt:hover { border-color: var(--c-blue); }
+  .sim-opt.is-active { border-color: var(--c-blue); background: #f2f7ff; }
+  .sim-opt .so-box { width: 18px; height: 18px; flex: none; border-radius: 5px; border: 1.5px solid var(--c-gray-500); display: grid; place-items: center; transition: var(--dur-fast) var(--ease); }
+  .sim-opt.is-active .so-box { background: var(--c-blue); border-color: var(--c-blue); }
+  .sim-opt .so-box svg { width: 11px; height: 11px; color: #fff; opacity: 0; }
+  .sim-opt.is-active .so-box svg { opacity: 1; }
+  .sim-opt .so-label { flex: 1; font-weight: 600; color: var(--c-gray-800); }
+  .sim-opt .so-price { font-weight: 700; color: var(--c-gray-600); font-size: .78rem; white-space: nowrap; }
+  .sim-opt.is-active .so-price { color: var(--c-blue); }
+
+  /* ---------- Récapitulatif sticky ---------- */
+  .sim-recap { position: sticky; top: calc(var(--header-h) + 16px); }
+  .sim-recap-card { background: #fff; border: 1px solid var(--c-border-soft); border-radius: var(--radius-lg); padding: 26px 24px; box-shadow: var(--shadow-lg); }
+  .sim-recap-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .sim-recap-pax { font-size: .8rem; font-weight: 700; color: var(--c-blue-dark); background: var(--c-skyblue); padding: 5px 12px; border-radius: var(--radius-pill); }
+  .sim-recap-date { display: flex; align-items: center; gap: 9px; background: var(--c-gray-100); border-radius: 12px; padding: 12px 15px; margin-bottom: 16px; font-size: .92rem; }
+  .sim-recap-date svg { width: 18px; height: 18px; color: var(--c-blue); flex: none; }
+  .sim-recap-date b { color: var(--c-navy); font-weight: 800; text-transform: capitalize; }
+  .sim-recap-lines { display: flex; flex-direction: column; }
+  .sim-recap-lines li {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+    padding: 11px 0; border-bottom: 1px dashed var(--c-border-soft); font-size: .92rem;
+  }
+  .sim-recap-lines .rl-label { color: var(--c-gray-700); font-weight: 600; }
+  .sim-recap-lines .rl-sub { display: block; font-size: .78rem; font-weight: 500; color: var(--c-gray-500); }
+  .sim-recap-lines .rl-val { font-weight: 700; color: var(--c-navy); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .sim-recap-lines .rl-inc .rl-val { color: var(--c-success); }
+  .sim-total { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 20px 0 22px; padding-top: 18px; border-top: 2px solid var(--c-navy); }
+  .sim-total span { font-weight: 700; color: var(--c-navy); }
+  .sim-total strong {
+    font-family: var(--f-display); font-weight: 800; font-size: clamp(1.6rem, 1.25rem + 1.5vw, 2.2rem);
+    color: var(--c-navy); line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .sim-actions { display: flex; flex-direction: column; gap: 10px; }
+  .sim-recap-note { font-size: .78rem; color: var(--c-gray-500); margin-top: 16px; line-height: 1.5; }
+
+  /* ---------- Configurations populaires ---------- */
+  .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: center; }
+  .preset-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .preset-card h3 { margin: 14px 0 4px; font-size: 1.3rem; }
+  .preset-list { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 4px; width: 100%; }
+  .preset-list li { position: relative; padding-left: 24px; font-size: .92rem; color: var(--c-gray-700); }
+  .preset-list li::before { content: "✓"; position: absolute; left: 0; color: var(--c-green); font-weight: 900; }
+  .preset-price { font-family: var(--f-display); font-weight: 700; color: var(--c-gray-600); font-size: 1rem; margin: 16px 0 18px; }
+  .preset-price strong { display: block; font-size: 1.7rem; font-weight: 800; color: var(--c-navy); font-variant-numeric: tabular-nums; }
+  .preset-card .btn { margin-top: auto; }
+
+  /* offre vedette — au centre, surélevée */
+  .preset-card--featured {
+    background: var(--g-navy);
+    border: 2px solid var(--c-blue); transform: scale(1.08); box-shadow: var(--shadow-xl); z-index: 2;
+  }
+  .preset-card--featured:hover { transform: scale(1.08) translateY(-4px); }
+  .preset-card--featured h3, .preset-card--featured .preset-price strong { color: #fff; }
+  .preset-card--featured .preset-list li { color: rgba(255, 255, 255, .86); }
+  .preset-card--featured .preset-price { color: rgba(255, 255, 255, .7); }
+  .preset-card--featured .badge-green { background: var(--c-green); color: #04322a; }
+
+  /* ---------- Pourquoi nous : icônes ---------- */
+  .salle-why-icon { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--c-skyblue); color: var(--c-blue); margin-bottom: 18px; }
+  .salle-why-icon svg { width: 26px; height: 26px; }
+
+  /* ---------- Localisation & contact ---------- */
+  .salle-loc { display: grid; grid-template-columns: 1fr 1.05fr; gap: 28px; align-items: stretch; }
+  .loc-info {
+    background: #fff; border: 1px solid var(--c-border-soft); border-radius: var(--radius-lg);
+    padding: 32px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 22px;
+  }
+  .loc-row { display: flex; gap: 14px; align-items: flex-start; color: var(--c-gray-700); font-size: .96rem; }
+  .loc-row > svg { width: 22px; height: 22px; color: var(--c-blue); flex: none; margin-top: 2px; }
+  .loc-row strong { color: var(--c-navy); font-family: var(--f-display); font-size: 1.05rem; }
+  .loc-contacts { display: flex; flex-direction: column; gap: 14px; border-top: 1px solid var(--c-border-soft); padding-top: 22px; }
+  .loc-contacts a, .loc-contacts div { display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--c-gray-800); font-size: .94rem; transition: color var(--dur-fast) var(--ease); }
+  .loc-contacts a:hover { color: var(--c-blue); }
+  .loc-contacts svg { width: 20px; height: 20px; color: var(--c-blue); flex: none; }
+
+  .loc-map {
+    min-height: 360px; border-radius: var(--radius-lg); overflow: hidden;
+    border: 1px solid var(--c-border-soft); box-shadow: var(--shadow-sm); background: var(--c-gray-100);
+  }
+  .loc-map iframe { width: 100%; height: 100%; min-height: 360px; border: 0; display: block; }
+  .loc-map-consent {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    text-align: center; padding: 28px; min-height: 360px; height: 100%; color: var(--c-gray-600);
+    background: linear-gradient(135deg, #eaf1ff 0%, #e2f6f0 100%);
+  }
+  .loc-map-consent svg { width: 42px; height: 42px; color: var(--c-blue); }
+  .loc-map-consent p { font-size: .92rem; max-width: 34ch; margin: 0; }
+  @media (max-width: 780px) { .salle-loc { grid-template-columns: 1fr; } }
+
+  /* ---------- FAQ ---------- */
+  .salle-faq { background: #fff; border: 1px solid var(--c-border-soft); border-radius: var(--radius-lg); padding: 4px 30px; box-shadow: var(--shadow-sm); }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 960px) {
+    .sim { grid-template-columns: 1fr; }
+    .sim-recap { position: static; }
+    .salle-shot--wide { grid-column: span 3; }
+    .preset-grid { grid-template-columns: 1fr; }
+    .preset-card--featured { transform: none; order: -1; }
+    .preset-card--featured:hover { transform: translateY(-4px); }
+  }
+  @media (max-width: 640px) {
+    .sim-durations { grid-template-columns: 1fr; }
+    .sim-options { grid-template-columns: 1fr; }
+    .sim-slots { flex-direction: column; }
+    .salle-gallery { grid-template-columns: repeat(2, 1fr); }
+    .salle-shot--wide { grid-column: span 2; aspect-ratio: 4 / 3; }
+  }
+
+  /* ---------- Impression du devis ---------- */
+  #devis-print { display: none; }
+  @media print {
+    body > *:not(main) { display: none !important; }
+    main > section { display: none !important; }
+    #devis-print { display: block !important; padding: 24px; font-family: var(--f-body); color: #000; }
+    #devis-print h2 { font-size: 20px; margin-bottom: 4px; }
+    #devis-print .dp-meta { color: #444; font-size: 13px; margin-bottom: 18px; }
+    #devis-print table { width: 100%; border-collapse: collapse; }
+    #devis-print td { padding: 8px 0; border-bottom: 1px solid #ddd; font-size: 14px; vertical-align: top; }
+    #devis-print td:last-child { text-align: right; white-space: nowrap; font-weight: 700; }
+    #devis-print .dp-total td { border-top: 2px solid #000; border-bottom: none; font-size: 18px; font-weight: 800; padding-top: 12px; }
+    #devis-print .dp-note { margin-top: 20px; font-size: 11px; color: #666; }
+  }
+</style>
+
+<script>
+  type Opt = { id: string; label: string; price: number; perPax: boolean };
+
+  const PRICES: Record<string, Record<string, number>> = {
+    semaine: { heure: 40000, demi: 120000, journee: 200000 },
+    weekend: { heure: 52000, demi: 160000, journee: 240000 },
+  };
+  const DUR_LABELS: Record<string, string> = { heure: "Location à l'heure", demi: "Demi-journée", journee: "Journée complète" };
+  const SLOT_LABELS: Record<string, string> = { matin: "matin, 9h–12h30", aprem: "après-midi, 13h30–17h30" };
+
+  const OPTIONS: Opt[] = [
+    { id: "paperboard", label: "Paperboard", price: 10000, perPax: false },
+    { id: "cafe", label: "Pause café", price: 2000, perPax: true },
+    { id: "eau", label: "Eau minérale", price: 300, perPax: true },
+    { id: "photo", label: "Captation photo", price: 50000, perPax: false },
+    { id: "video", label: "Captation vidéo", price: 50000, perPax: false },
+    { id: "live", label: "Live streaming", price: 35000, perPax: false },
+    { id: "technicien", label: "Technicien audiovisuel", price: 20000, perPax: false },
+    { id: "impression", label: "Impression supports", price: 5000, perPax: false },
+    { id: "accueil", label: "Accueil & émargement", price: 15000, perPax: false },
+  ];
+  const INCLUDED = ["Climatisation", "Wi-Fi", "Sonorisation", "Micro", "Écran"];
+
+  const PRESETS: Record<string, { dur: string; pax: number; slot: string; options: string[] }> = {
+    demi: { dur: "demi", pax: 50, slot: "matin", options: ["cafe", "eau"] },
+    complete: { dur: "journee", pax: 70, slot: "matin", options: ["cafe", "eau", "paperboard", "accueil", "photo"] },
+    conference: { dur: "journee", pax: 60, slot: "matin", options: ["video", "live", "technicien"] },
+  };
+
+  const nf = new Intl.NumberFormat("fr-FR");
+  const fcfa = (n: number) => `${nf.format(Math.round(n))} FCFA`;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const keyOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const isWeekend = (d: Date) => d.getDay() === 0 || d.getDay() === 6;
+
+  const root = document.querySelector<HTMLElement>("[data-sim]");
+  if (root) {
+    const wa = root.dataset.wa || "";
+    const UNAVAILABLE = new Set<string>(JSON.parse(root.dataset.unavailable || "[]"));
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const firstAvailable = (weekdayOnly = false) => {
+      const d = new Date(today);
+      for (let i = 0; i < 120; i++) {
+        if (!UNAVAILABLE.has(keyOf(d)) && !(weekdayOnly && isWeekend(d))) return new Date(d);
+        d.setDate(d.getDate() + 1);
+      }
+      return new Date(today);
+    };
+
+    const state = { date: firstAvailable(), dur: "journee", slot: "matin", pax: 45, opts: new Set<string>() };
+    let viewY = state.date.getFullYear();
+    let viewM = state.date.getMonth();
+
+    const period = () => (isWeekend(state.date) ? "weekend" : "semaine");
+    const base = () => PRICES[period()][state.dur];
+    const check = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="5 13 10 18 19 7"/></svg>';
+
+    function computeTotal(s: { date: Date; dur: string; pax: number; opts: Set<string> }) {
+      let t = PRICES[isWeekend(s.date) ? "weekend" : "semaine"][s.dur];
+      for (const o of OPTIONS) if (s.opts.has(o.id)) t += o.perPax ? o.price * s.pax : o.price;
+      return t;
+    }
+
+    const q = <T extends HTMLElement = HTMLElement>(sel: string) => root!.querySelector<T>(sel)!;
+    const calTitle = q("[data-cal-title]");
+    const calDow = q("[data-cal-dow]");
+    const calGrid = q("[data-cal-grid]");
+    const tariffEl = q("[data-tariff]");
+    const durWrap = q("[data-durations]");
+    const slotsEl = q("[data-slots]");
+    const optWrap = q("[data-options]");
+    const rangeEl = q<HTMLInputElement>("[data-pax-range]");
+    const numEl = q<HTMLInputElement>("[data-pax-num]");
+    const linesEl = q("[data-recap-lines]");
+    const totalEl = q("[data-total]");
+    const recapPaxEl = q("[data-recap-pax]");
+    const recapDateEl = q("[data-recap-date]");
+
+    calDow.innerHTML = ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"].map((d) => `<div class="cal-dow">${d}</div>`).join("");
+    optWrap.innerHTML = OPTIONS.map(
+      (o) => `<label class="sim-opt" data-opt="${o.id}"><span class="so-box">${check}</span><span class="so-label">${o.label}</span><span class="so-price">+${nf.format(o.price)}${o.perPax ? "/pers." : ""}</span></label>`
+    ).join("");
+
+    function renderCalendar() {
+      const first = new Date(viewY, viewM, 1);
+      calTitle.textContent = first.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+      const startDow = (first.getDay() + 6) % 7;
+      const days = new Date(viewY, viewM + 1, 0).getDate();
+      let html = "";
+      for (let i = 0; i < startDow; i++) html += "<div></div>";
+      for (let day = 1; day <= days; day++) {
+        const d = new Date(viewY, viewM, day);
+        d.setHours(0, 0, 0, 0);
+        const k = keyOf(d);
+        const past = d < today;
+        const wk = isWeekend(d);
+        const un = UNAVAILABLE.has(k);
+        const sel = keyOf(state.date) === k;
+        const cls = ["cal-day", past ? "is-past" : "", wk ? "is-weekend" : "", un ? "is-unavailable" : "", sel ? "is-selected" : ""].filter(Boolean).join(" ");
+        const label = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+        html += `<button type="button" class="${cls}" ${past || un ? "disabled" : ""} data-day="${day}" aria-label="${label}">${day}</button>`;
+      }
+      calGrid.innerHTML = html;
+      const prevBtn = q<HTMLButtonElement>("[data-cal-prev]");
+      prevBtn.disabled = viewY < today.getFullYear() || (viewY === today.getFullYear() && viewM <= today.getMonth());
+    }
+
+    let lastTotal = -1;
+    function render() {
+      renderCalendar();
+      const p = period();
+      tariffEl.innerHTML = p === "weekend"
+        ? '<span class="cal-tariff cal-tariff--we">Tarif week-end appliqué (samedi/dimanche)</span>'
+        : '<span class="cal-tariff cal-tariff--wk">Tarif semaine appliqué</span>';
+
+      durWrap.innerHTML = ["heure", "demi", "journee"].map(
+        (id) => `<button type="button" class="sim-duration ${id === state.dur ? "is-active" : ""}" data-dur="${id}"><span class="sd-label">${DUR_LABELS[id]}</span><span class="sd-price">${fcfa(PRICES[p][id])}</span></button>`
+      ).join("");
+      slotsEl.hidden = state.dur !== "demi";
+      slotsEl.querySelectorAll<HTMLElement>("[data-slot]").forEach((s) => s.classList.toggle("is-active", s.dataset.slot === state.slot));
+      optWrap.querySelectorAll<HTMLElement>(".sim-opt").forEach((o) => o.classList.toggle("is-active", state.opts.has(o.dataset.opt!)));
+
+      recapPaxEl.textContent = `${state.pax} participant${state.pax > 1 ? "s" : ""}`;
+      recapDateEl.textContent = state.date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+      const durSub = `${p === "weekend" ? "tarif week-end" : "tarif semaine"}${state.dur === "demi" ? " · " + (state.slot === "matin" ? "matin" : "après-midi") : ""}`;
+      let rows = `<li><span class="rl-label">${DUR_LABELS[state.dur]}<span class="rl-sub">${durSub}</span></span><span class="rl-val">${fcfa(base())}</span></li>`;
+      for (const name of INCLUDED) rows += `<li class="rl-inc"><span class="rl-label">${name}</span><span class="rl-val">Inclus</span></li>`;
+      for (const o of OPTIONS) {
+        if (!state.opts.has(o.id)) continue;
+        if (o.perPax) rows += `<li><span class="rl-label">${o.label}<span class="rl-sub">${state.pax} × ${nf.format(o.price)}</span></span><span class="rl-val">${fcfa(o.price * state.pax)}</span></li>`;
+        else rows += `<li><span class="rl-label">${o.label}</span><span class="rl-val">${fcfa(o.price)}</span></li>`;
+      }
+      linesEl.innerHTML = rows;
+
+      const total = computeTotal(state);
+      totalEl.textContent = fcfa(total);
+      if (total !== lastTotal && lastTotal !== -1) {
+        totalEl.animate(
+          [{ transform: "scale(1)" }, { transform: "scale(1.08)", color: "#1f6ced" }, { transform: "scale(1)" }],
+          { duration: 340, easing: "cubic-bezier(0.34,1.56,0.64,1)" }
+        );
+      }
+      lastTotal = total;
+      rangeEl.style.setProperty("--pax-fill", `${((state.pax - 1) / 69) * 100}%`);
+    }
+
+    // ---- Écouteurs ----
+    q("[data-cal-prev]").addEventListener("click", () => { if (viewM === 0) { viewM = 11; viewY--; } else viewM--; renderCalendar(); });
+    q("[data-cal-next]").addEventListener("click", () => { if (viewM === 11) { viewM = 0; viewY++; } else viewM++; renderCalendar(); });
+    calGrid.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-day]");
+      if (!b || b.disabled) return;
+      state.date = new Date(viewY, viewM, Number(b.dataset.day));
+      state.date.setHours(0, 0, 0, 0);
+      render();
+    });
+    durWrap.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-dur]");
+      if (!b) return;
+      state.dur = b.dataset.dur!;
+      render();
+    });
+    slotsEl.addEventListener("click", (e) => {
+      const s = (e.target as HTMLElement).closest<HTMLElement>("[data-slot]");
+      if (!s) return;
+      state.slot = s.dataset.slot!;
+      render();
+    });
+    optWrap.addEventListener("click", (e) => {
+      const l = (e.target as HTMLElement).closest<HTMLElement>("[data-opt]");
+      if (!l) return;
+      const id = l.dataset.opt!;
+      state.opts.has(id) ? state.opts.delete(id) : state.opts.add(id);
+      render();
+    });
+    function setPax(v: number) {
+      state.pax = Math.max(1, Math.min(70, Math.round(v || 1)));
+      rangeEl.value = String(state.pax);
+      numEl.value = String(state.pax);
+      render();
+    }
+    rangeEl.addEventListener("input", () => setPax(Number(rangeEl.value)));
+    numEl.addEventListener("input", () => setPax(Number(numEl.value)));
+
+    // ---- Résumé texte (WhatsApp / PDF) ----
+    function summaryLines() {
+      const p = period();
+      const items: string[] = [];
+      const dateStr = state.date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      items.push(`Date : ${dateStr} (${p === "weekend" ? "tarif week-end" : "tarif semaine"})`);
+      const durLine = state.dur === "demi" ? `${DUR_LABELS[state.dur]} (${SLOT_LABELS[state.slot]})` : DUR_LABELS[state.dur];
+      items.push(`Durée : ${durLine} — ${fcfa(base())}`);
+      items.push(`Participants : ${state.pax}`);
+      items.push(`Inclus : ${INCLUDED.join(", ")}`);
+      const opts = OPTIONS.filter((o) => state.opts.has(o.id));
+      if (opts.length) {
+        items.push("Options :");
+        for (const o of opts) {
+          if (o.perPax) items.push(`  - ${o.label} : ${state.pax} × ${nf.format(o.price)} = ${fcfa(o.price * state.pax)}`);
+          else items.push(`  - ${o.label} : ${fcfa(o.price)}`);
+        }
+      }
+      return items;
+    }
+    function whatsappUrl(intro: string) {
+      const msg = ["Bonjour Bweb Agence 👋", intro, "", ...summaryLines(), "", `Total estimé : ${fcfa(computeTotal(state))}`].join("\n");
+      return `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;
+    }
+
+    q('[data-action="reserver"]').addEventListener("click", () => window.open(whatsappUrl("Je souhaite RÉSERVER la salle à cette date :"), "_blank"));
+    q('[data-action="whatsapp"]').addEventListener("click", () => window.open(whatsappUrl("Je souhaite recevoir ce devis pour la location de salle :"), "_blank"));
+    q('[data-action="pdf"]').addEventListener("click", () => {
+      const p = period();
+      const printEl = document.getElementById("devis-print")!;
+      const dateStr = state.date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      const durLine = state.dur === "demi" ? `${DUR_LABELS[state.dur]} (${SLOT_LABELS[state.slot]})` : DUR_LABELS[state.dur];
+      let rows = `<tr><td>${durLine}<br><span style="color:#666;font-size:12px">${p === "weekend" ? "tarif week-end" : "tarif semaine"}</span></td><td>${fcfa(base())}</td></tr>`;
+      for (const name of INCLUDED) rows += `<tr><td>${name}</td><td>Inclus</td></tr>`;
+      for (const o of OPTIONS) {
+        if (!state.opts.has(o.id)) continue;
+        if (o.perPax) rows += `<tr><td>${o.label} (${state.pax} × ${nf.format(o.price)})</td><td>${fcfa(o.price * state.pax)}</td></tr>`;
+        else rows += `<tr><td>${o.label}</td><td>${fcfa(o.price)}</td></tr>`;
+      }
+      printEl.innerHTML = `
+        <h2>Devis — Location de salle de formation</h2>
+        <div class="dp-meta">Bweb Agence · Abidjan · Événement le ${dateStr} · ${state.pax} participants</div>
+        <table>
+          ${rows}
+          <tr class="dp-total"><td>Total estimé</td><td>${fcfa(computeTotal(state))}</td></tr>
+        </table>
+        <p class="dp-note">Devis indicatif. La disponibilité de la date est confirmée par notre équipe.</p>`;
+      window.print();
+    });
+
+    // ---- Formules populaires ----
+    function applyPreset(key: string) {
+      const p = PRESETS[key];
+      if (!p) return;
+      // les formules sont libellées « semaine » → on cale sur le prochain jour de semaine libre
+      state.date = firstAvailable(true);
+      viewY = state.date.getFullYear();
+      viewM = state.date.getMonth();
+      state.dur = p.dur;
+      state.pax = p.pax;
+      state.slot = p.slot;
+      state.opts = new Set(p.options);
+      rangeEl.value = String(p.pax);
+      numEl.value = String(p.pax);
+      render();
+      document.getElementById("simulateur")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    document.querySelectorAll<HTMLButtonElement>("[data-preset]").forEach((btn) => btn.addEventListener("click", () => applyPreset(btn.dataset.preset!)));
+
+    // Totaux affichés sur les cartes (mêmes prix — période semaine)
+    const weekday = firstAvailable(true);
+    document.querySelectorAll<HTMLElement>("[data-preset-total]").forEach((el) => {
+      const p = PRESETS[el.dataset.presetTotal!];
+      if (p) el.textContent = nf.format(computeTotal({ date: weekday, dur: p.dur, pax: p.pax, opts: new Set(p.options) }));
+    });
+
+    render();
+
+    // Le simulateur a injecté beaucoup de DOM : la hauteur de page a changé.
+    // On force le recalcul des positions de ScrollTrigger (écouté via "resize")
+    // pour que les révélations au scroll des sections suivantes se déclenchent au bon endroit.
+    requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+  }
+
+  // ---- Carte Google Maps conditionnée au consentement cookies ----
+  // Tant que la catégorie « contenus externes » n'est pas acceptée, on affiche
+  // un placeholder ; l'iframe n'est injectée qu'après consentement (classe
+  // `consent-externes` posée par le script cookies + événement `bweb:consent`).
+  const mapWrap = document.querySelector<HTMLElement>("[data-map]");
+  if (mapWrap) {
+    const tpl = mapWrap.querySelector<HTMLTemplateElement>("[data-map-embed]");
+    const renderMap = () => {
+      if (!document.documentElement.classList.contains("consent-externes")) return;
+      if (mapWrap.querySelector("iframe") || !tpl) return;
+      mapWrap.querySelector("[data-map-placeholder]")?.remove();
+      mapWrap.appendChild(tpl.content.cloneNode(true));
+    };
+    renderMap();
+    window.addEventListener("bweb:consent", renderMap);
+    mapWrap.querySelector("[data-map-allow]")?.addEventListener("click", () => {
+      (window as unknown as { bwebCookies?: { acceptExternes: () => void } }).bwebCookies?.acceptExternes();
+    });
+  }
+</script>
