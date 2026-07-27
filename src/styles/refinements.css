@@ -419,3 +419,19 @@ html.wiz-lock .wa-float { opacity: 0; pointer-events: none; }
 .file-item__remove:hover { background: rgba(192, 38, 64, .1); color: #c02640; }
 .file-error { margin: 8px 0 0; color: #c02640; font-size: .8rem; line-height: 1.5; }
 .file-error[hidden] { display: none; }
+
+/* ---------------------------------------------------------
+   Logos partenaires sous les stats du hero
+   --------------------------------------------------------- */
+.hero-logos { margin-top: 36px; }
+.hero-logos .cap { font-size: .7rem; text-transform: uppercase; letter-spacing: .16em; font-weight: 700; color: rgba(255, 255, 255, .5); margin-bottom: 16px; }
+.hero-logos .row { display: flex; align-items: center; gap: 34px; flex-wrap: wrap; }
+.hero-logo { display: inline-flex; align-items: center; gap: 9px; color: rgba(255, 255, 255, .6); transition: color var(--dur, .3s) var(--ease, ease); }
+.hero-logo:hover { color: rgba(255, 255, 255, .9); }
+.hero-logo svg { width: 24px; height: 24px; flex: none; }
+.hero-logo span { font-family: var(--f-display); font-weight: 800; font-size: 1.04rem; letter-spacing: -.02em; }
+@media (max-width: 640px) {
+  .hero-logos .row { gap: 22px; }
+  .hero-logo svg { width: 20px; height: 20px; }
+  .hero-logo span { font-size: .9rem; }
+}
