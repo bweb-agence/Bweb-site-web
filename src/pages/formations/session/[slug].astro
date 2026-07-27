@@ -13,7 +13,7 @@ const { slug } = Astro.params;
 
 const { data: session } = await supabase
   .from("sessions")
-  .select("*, formations(slug,title,summary,description_md,description_html,duration,level), ticket_types(id,name,price,capacity,sold,badge,sales_end,sort)")
+  .select("*, formations(slug,title,summary,description_md,description_html,duration,level), ticket_types(id,name,price,compare_at_price,capacity,sold,badge,sales_end,sort)")
   .eq("slug", slug)
   .in("status", ["published", "full"])
   .maybeSingle();
@@ -41,7 +41,13 @@ const totalCap = tickets.reduce((s: number, t: any) => s + t.capacity, 0);
 const totalSold = tickets.reduce((s: number, t: any) => s + t.sold, 0);
 const totalRemaining = Math.max(0, totalCap - totalSold);
 const isFull = session?.status === "full" || totalRemaining <= 0;
-const minPrice = tickets.length ? Math.min(...tickets.map((t: any) => t.price)) : null;
+const cheapest = tickets.length ? tickets.reduce((a: any, t: any) => (t.price < a.price ? t : a)) : null;
+const minPrice = cheapest ? cheapest.price : null;
+const minCompareAt = cheapest && cheapest.compare_at_price && cheapest.compare_at_price > cheapest.price ? cheapest.compare_at_price : null;
+const minDiscountPct = minCompareAt && minPrice ? Math.round((1 - minPrice / minCompareAt) * 100) : 0;
+const ttPromo = (t: any) => (t.compare_at_price && t.compare_at_price > t.price
+  ? { compareAt: t.compare_at_price, pct: Math.round((1 - t.price / t.compare_at_price) * 100) }
+  : null);
 
 // Découpe la description en intro + éléments « Au programme »
 const desc = formation?.description_md ?? "";
@@ -164,7 +170,10 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
               </div>
               <div class="buy-card__pad">
                 {minPrice !== null && (
-                  <div class="buy-card__price">À partir de <b>{priceFCFA(minPrice)}</b></div>
+                  <div class={`buy-card__price ${minCompareAt ? "has-promo" : ""}`}>
+                    <span class="bcp-line">À partir de <b>{priceFCFA(minPrice)}</b>{minCompareAt && <span class="bcp-off">−{minDiscountPct}%</span>}</span>
+                    {minCompareAt && <span class="bcp-was">{priceFCFA(minCompareAt)}</span>}
+                  </div>
                 )}
                 {!isFull && <p class="buy-card__note">💺 Plus que <strong>{totalRemaining}</strong> places pour cette session.</p>}
                 {isFull ? (
@@ -212,10 +221,14 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
                 {tickets.map((t: any) => {
                   const remaining = Math.max(0, t.capacity - t.sold);
                   const bi = badgeInfo(t.badge, t.sales_end);
+                  const promo = ttPromo(t);
                   return (
                     <div class="ticket" data-ticket data-id={t.id} data-name={t.name} data-price={t.price} data-remaining={remaining}>
                       <div class="th">
-                        <div><div class="tn">{t.name}</div><div class="tp">{priceFCFA(t.price)}</div></div>
+                        <div>
+                          <div class="tn">{t.name}</div>
+                          <div class={`tp ${promo ? "has-promo" : ""}`}>{priceFCFA(t.price)}{promo && <span class="tp-was">{priceFCFA(promo.compareAt)}</span>}{promo && <span class="tp-off">−{promo.pct}%</span>}</div>
+                        </div>
                         {bi && <span class={`t-badge ${bi.cls}`}>{bi.label}</span>}
                       </div>
                       {remaining <= 0 ? <span class="t-soldout">Épuisé</span> : (

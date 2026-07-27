@@ -264,6 +264,13 @@
   font-weight: 800; font-size: 0.64rem; letter-spacing: 0.04em; padding: 5px 11px; border-radius: var(--radius-pill);
   box-shadow: 0 6px 16px -6px rgba(226, 37, 31, 0.6);
 }
+.ev-promo {
+  position: absolute; z-index: 2; right: 14px; bottom: 15px;
+  display: inline-flex; align-items: center; gap: 4px;
+  background: linear-gradient(135deg, #ff4d57, #e2251f); color: #fff;
+  font-weight: 800; font-size: 0.74rem; letter-spacing: 0.02em; padding: 6px 12px; border-radius: var(--radius-pill);
+  box-shadow: 0 8px 18px -6px rgba(226, 37, 31, 0.6);
+}
 
 /* --- Perforation « billet » --- */
 .ev-fold { position: relative; height: 14px; }
@@ -282,10 +289,16 @@
 .ev-meta .r { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--c-gray-600); font-weight: 500; }
 .ev-meta .ico { width: 15px; height: 15px; flex: none; color: var(--c-gray-400); }
 
-.ev-price { display: flex; align-items: baseline; gap: 6px; padding-top: 10px; border-top: 1px solid var(--c-border-soft); }
+.ev-price { display: flex; flex-direction: column; gap: 4px; padding-top: 10px; border-top: 1px solid var(--c-border-soft); }
+.ev-price .pr-line { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
 .ev-price .lbl { font-size: 0.72rem; color: var(--c-gray-500); font-weight: 600; }
 .ev-price .val { font-family: var(--f-display); font-weight: 800; font-size: 1.22rem; color: var(--c-ink); letter-spacing: -0.01em; }
+.ev-price.has-promo .val { color: #cf1f1a; }
 .ev-price .cur { font-size: 0.78rem; font-weight: 700; color: var(--c-gray-600); }
+.ev-price .off { margin-left: auto; background: #e2251f; color: #fff; font-size: 0.72rem; font-weight: 800; padding: 3px 9px; border-radius: var(--radius-pill); letter-spacing: 0.02em; box-shadow: 0 5px 14px -6px rgba(226, 37, 31, 0.55); }
+.ev-price .pr-promo { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
+.ev-price .was { font-size: 0.82rem; color: var(--c-gray-500); font-weight: 600; text-decoration: line-through; text-decoration-color: rgba(226, 37, 31, 0.55); }
+.ev-price .save { font-size: 0.72rem; font-weight: 800; color: #058a70; }
 
 .ev-avail { display: flex; flex-direction: column; gap: 6px; }
 .ev-avail .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.8rem; font-weight: 600; color: var(--c-gray-700); }
@@ -344,7 +357,10 @@
 .ticket { border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 14px; background: #fff; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 10px; }
 .ticket .th { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .ticket .tn { font-family: var(--f-display); font-weight: 800; font-size: 0.94rem; color: var(--c-ink); }
-.ticket .tp { font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; color: var(--c-navy); margin-top: 4px; }
+.ticket .tp { font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; color: var(--c-navy); margin-top: 4px; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
+.ticket .tp.has-promo { color: #cf1f1a; }
+.ticket .tp .tp-was { font-family: var(--f-body); font-weight: 600; font-size: 0.82rem; color: var(--c-gray-500); text-decoration: line-through; text-decoration-color: rgba(226, 37, 31, 0.55); }
+.ticket .tp .tp-off { font-family: var(--f-body); font-weight: 800; font-size: 0.66rem; color: #fff; background: #e2251f; padding: 2px 7px; border-radius: var(--radius-pill); }
 .t-badge { font-size: 0.68rem; font-weight: 700; padding: 4px 9px; border-radius: var(--radius-pill); white-space: nowrap; }
 .t-badge.hot { background: #fbe7e7; color: #c02b2b; }
 .t-badge.limited { background: #fbf1d6; color: #8a6400; }
@@ -465,6 +481,10 @@
 .buy-card__pad { padding: 18px; }
 .buy-card__price { font-size: 0.85rem; color: var(--c-gray-600); margin-bottom: 4px; }
 .buy-card__price b { font-family: var(--f-display); font-weight: 800; font-size: 1.7rem; color: var(--c-navy); display: block; }
+.buy-card__price.has-promo b { color: #cf1f1a; display: inline; }
+.buy-card__price .bcp-line { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.buy-card__price .bcp-off { font-family: var(--f-body); font-size: 0.78rem; font-weight: 800; color: #fff; background: #e2251f; padding: 3px 9px; border-radius: var(--radius-pill); align-self: center; box-shadow: 0 5px 14px -6px rgba(226, 37, 31, 0.55); }
+.buy-card__price .bcp-was { display: block; margin-top: 2px; font-size: 0.9rem; font-weight: 600; color: var(--c-gray-500); text-decoration: line-through; text-decoration-color: rgba(226, 37, 31, 0.55); }
 .buy-card__note { font-size: 0.75rem; color: var(--c-gray-500); margin: 4px 0 14px; }
 .buy-includes-title { font-weight: 800; font-size: 0.9rem; color: var(--c-ink); margin: 16px 0 10px; }
 .buy-includes { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -612,8 +632,12 @@ body.rz-lock { overflow: hidden; }
 .di-badge { font-size: 0.64rem; font-weight: 800; color: #fff; padding: 3px 10px; border-radius: var(--radius-pill); }
 .di-time { font-size: 0.76rem; font-weight: 700; color: var(--c-gray-600); margin-left: auto; }
 .di-title { font-family: var(--f-display); font-weight: 800; font-size: 1rem; margin: 0; }
-.di-meta { font-size: 0.8rem; color: var(--c-gray-600); display: flex; flex-wrap: wrap; gap: 4px 12px; }
-.di-meta .price { color: var(--c-green); font-weight: 700; }
+.di-meta { font-size: 0.8rem; color: var(--c-gray-600); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.di-price { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+.di-price .now { color: var(--c-green); font-weight: 700; }
+.di-price .was { color: var(--c-gray-500); font-weight: 600; text-decoration: line-through; text-decoration-color: rgba(226, 37, 31, 0.55); font-size: 0.76rem; }
+.di-price .off { background: #e2251f; color: #fff; font-weight: 800; font-size: 0.64rem; padding: 2px 7px; border-radius: var(--radius-pill); }
+.di-loc { display: inline-flex; align-items: center; }
 .di-seat { font-size: 0.76rem; font-weight: 700; padding: 3px 10px; border-radius: var(--radius-pill); }
 .di-seat.ok { background: rgba(0, 200, 158, 0.12); color: #058a70; }
 .di-seat.warn { background: rgba(245, 158, 11, 0.14); color: #b46a05; }

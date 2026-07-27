@@ -6,7 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { priceFCFA, frTime, gradClass, gradSuffix } from "../../lib/format";
 import "../../styles/formations.css";
 
-type TT = { price: number; capacity: number; sold: number };
+type TT = { price: number; capacity: number; sold: number; compare_at_price: number | null };
 type Session = {
   id: string;
   slug: string;
@@ -23,7 +23,7 @@ type Session = {
 
 const { data } = await supabase
   .from("sessions")
-  .select("id,slug,title,theme,city,venue,image_url,starts_at,status,likes_count,ticket_types(price,capacity,sold)")
+  .select("id,slug,title,theme,city,venue,image_url,starts_at,status,likes_count,ticket_types(price,capacity,sold,compare_at_price)")
   .in("status", ["published", "full"])
   .order("starts_at", { ascending: true });
 
@@ -34,11 +34,18 @@ function derive(s: Session) {
   const cap = tts.reduce((a, t) => a + t.capacity, 0);
   const sold = tts.reduce((a, t) => a + t.sold, 0);
   const remaining = Math.max(0, cap - sold);
-  const minPrice = tts.length ? Math.min(...tts.map((t) => t.price)) : null;
+  const cheapest = tts.length ? tts.reduce((a, t) => (t.price < a.price ? t : a)) : null;
+  const minPrice = cheapest ? cheapest.price : null;
+  const compareAt =
+    cheapest && cheapest.compare_at_price && cheapest.compare_at_price > cheapest.price
+      ? cheapest.compare_at_price
+      : null;
+  const discountPct = compareAt && minPrice ? Math.round((1 - minPrice / compareAt) * 100) : 0;
+  const savings = compareAt && minPrice ? compareAt - minPrice : 0;
   const pct = cap > 0 ? Math.round((sold / cap) * 100) : 0;
   const full = s.status === "full" || remaining <= 0;
   const level = full ? "full" : pct >= 80 ? "warn" : "ok";
-  return { cap, sold, remaining, minPrice, pct, full, level };
+  return { cap, sold, remaining, minPrice, compareAt, discountPct, savings, pct, full, level };
 }
 
 const themes = [...new Set(sessions.map((s) => s.theme).filter(Boolean))] as string[];
@@ -70,6 +77,8 @@ const calData = sessions.map((s) => {
     date: dateISO(s.starts_at),
     time: frTime(s.starts_at),
     minPrice: d.minPrice,
+    compareAt: d.compareAt,
+    discountPct: d.discountPct,
     remaining: d.remaining,
     cap: d.cap,
     sold: d.sold,
@@ -200,7 +209,11 @@ const calData = sessions.map((s) => {
                       <span class="fav-count">{s.likes_count}</span>
                     </button>
                     <div class="ev-date"><span class="d">{dayNum(s.starts_at)}</span><span class="m">{monthShort(s.starts_at)}</span></div>
-                    {d.full && <span class="ev-sold">Complet</span>}
+                    {d.full ? (
+                      <span class="ev-sold">Complet</span>
+                    ) : d.compareAt && (
+                      <span class="ev-promo">−{d.discountPct}%</span>
+                    )}
                   </div>
 
                   <div class="ev-fold"><span class="dash"></span></div>
@@ -219,7 +232,20 @@ const calData = sessions.map((s) => {
                     </div>
 
                     {d.minPrice !== null && (
-                      <div class="ev-price"><span class="lbl">À partir de</span><span class="val">{d.minPrice.toLocaleString("fr-FR")}</span><span class="cur">F CFA</span></div>
+                      <div class={`ev-price ${d.compareAt ? "has-promo" : ""}`}>
+                        <div class="pr-line">
+                          <span class="lbl">À partir de</span>
+                          <span class="val">{d.minPrice.toLocaleString("fr-FR")}</span>
+                          <span class="cur">F CFA</span>
+                          {d.compareAt && <span class="off">−{d.discountPct}%</span>}
+                        </div>
+                        {d.compareAt && (
+                          <div class="pr-promo">
+                            <span class="was">{d.compareAt.toLocaleString("fr-FR")} F CFA</span>
+                            <span class="save">Économisez {d.savings.toLocaleString("fr-FR")} F CFA</span>
+                          </div>
+                        )}
+                      </div>
                     )}
 
                     <div class={`ev-avail ${d.level}`}>
@@ -293,7 +319,8 @@ const calData = sessions.map((s) => {
 
     type Ev = {
       id: string; slug: string; title: string; theme: string; grad: string;
-      date: string; time: string; minPrice: number | null; remaining: number;
+      date: string; time: string; minPrice: number | null;
+      compareAt: number | null; discountPct: number; remaining: number;
       cap: number; sold: number; full: boolean; level: string; venue: string;
     };
     const EV: Ev[] = JSON.parse(document.getElementById("cal-data")?.textContent || "[]");
@@ -466,14 +493,19 @@ const calData = sessions.map((s) => {
       const evs = EV.filter((e) => e.date === state.date && passTd(e));
       if (!evs.length) { dpBody.innerHTML = `<p class="dp-empty">Aucune session ce jour-là avec ces filtres.</p>`; return; }
       dpBody.innerHTML = evs.map((e) => {
-        const price = e.minPrice !== null ? `À partir de ${e.minPrice.toLocaleString("fr-FR")} F CFA` : "";
+        const priceHtml = e.minPrice !== null
+          ? `<span class="di-price">
+               <span class="now">À partir de ${e.minPrice.toLocaleString("fr-FR")} F CFA</span>
+               ${e.compareAt ? `<span class="was">${e.compareAt.toLocaleString("fr-FR")} F CFA</span><span class="off">−${e.discountPct}%</span>` : ""}
+             </span>`
+          : "";
         return `<div class="dp-item">
           <div class="di-top">
             <span class="di-badge grad--${e.grad}">${e.theme || "Formation"}</span>
             <span class="di-time">🕘 ${e.time}</span>
           </div>
           <h4 class="di-title">${e.title}</h4>
-          <div class="di-meta">${price ? `<span class="price">💵 ${price}</span>` : ""}<span>📍 ${e.venue}</span></div>
+          <div class="di-meta">${priceHtml}<span class="di-loc">📍 ${e.venue}</span></div>
           <div><span class="di-seat ${e.level}">${e.full ? "Session complète" : e.remaining + " places restantes"}</span></div>
           <a class="btn ${e.full ? "btn-outline" : "btn-primary"} di-btn" href="/formations/session/${e.slug}">${e.full ? "Liste d'attente" : "Réserver"}</a>
         </div>`;
