@@ -13,7 +13,7 @@ const { slug } = Astro.params;
 
 const { data: session } = await supabase
   .from("sessions")
-  .select("*, formations(slug,title,summary,description_md,description_html,duration,level), ticket_types(id,name,price,compare_at_price,capacity,sold,badge,sales_end,sort)")
+  .select("*, formations(slug,title,summary,description_md,description_html,duration,level,audience,prerequisites,instructor_name,instructor_role), ticket_types(id,name,price,compare_at_price,capacity,sold,badge,sales_end,sort)")
   .eq("slug", slug)
   .in("status", ["published", "full"])
   .maybeSingle();
@@ -33,7 +33,12 @@ if (session) {
 }
 
 const formation = session?.formations as
-  | { title: string; summary: string | null; description_md: string | null; description_html: string | null; duration: string | null; level: string | null }
+  | {
+      title: string; summary: string | null; description_md: string | null; description_html: string | null;
+      duration: string | null; level: string | null;
+      audience: string | null; prerequisites: string | null;
+      instructor_name: string | null; instructor_role: string | null;
+    }
   | null;
 
 const tickets = (session?.ticket_types ?? []).slice().sort((a: any, b: any) => a.sort - b.sort);
@@ -203,11 +208,31 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
               </>
             )}
 
+            {(formation?.audience || formation?.prerequisites) && (
+              <>
+                <h2 class="sectitle">À qui s'adresse cette formation</h2>
+                <div class="audience-grid">
+                  {formation?.audience && (
+                    <div class="ag-card">
+                      <div class="ag-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M22 20a6.5 6.5 0 0 0-4-6"/></svg>Public visé</div>
+                      <p>{formation.audience}</p>
+                    </div>
+                  )}
+                  {formation?.prerequisites && (
+                    <div class="ag-card">
+                      <div class="ag-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Prérequis</div>
+                      <p>{formation.prerequisites}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
             <h2 class="sectitle">Infos pratiques</h2>
             <div class="info-grid">
               <div class="c"><div class="k">Durée</div><div class="v">{formation?.duration ?? "—"}</div></div>
               <div class="c"><div class="k">Niveau</div><div class="v">{formation?.level ?? "Tous niveaux"}</div></div>
-              <div class="c"><div class="k">Formateur</div><div class="v">Expert Bweb</div></div>
+              <div class="c"><div class="k">Formateur</div><div class="v">{formation?.instructor_name ?? "Expert Bweb"}{formation?.instructor_role && <span class="isub">{formation.instructor_role}</span>}</div></div>
               <div class="c"><div class="k">Langue</div><div class="v">Français</div></div>
               <div class="c"><div class="k">Format</div><div class="v">Présentiel</div></div>
               <div class="c"><div class="k">Places</div><div class="v">{totalCap} max.</div></div>

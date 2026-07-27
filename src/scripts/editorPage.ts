@@ -84,6 +84,10 @@ export async function initEditorPage() {
       setVal("f-duration", record.duration || "");
       setVal("f-price", record.default_price ?? "");
       setVal("f-summary", record.summary || "");
+      setVal("f-instructor", record.instructor_name || "");
+      setVal("f-instructor-role", record.instructor_role || "");
+      setVal("f-audience", record.audience || "");
+      setVal("f-prerequis", record.prerequisites || "");
       setVal("f-image", record.image_url || "");
       setVal("f-seotitle", record.seo_title || "");
       setVal("f-seodesc", record.seo_description || "");
@@ -336,6 +340,10 @@ export async function initEditorPage() {
         duration: val("f-duration").trim() || null,
         default_price: val("f-price") ? parseInt(val("f-price")) : null,
         summary: val("f-summary").trim() || null,
+        instructor_name: val("f-instructor").trim() || null,
+        instructor_role: val("f-instructor-role").trim() || null,
+        audience: val("f-audience").trim() || null,
+        prerequisites: val("f-prerequis").trim() || null,
         image_url: val("f-image").trim() || null,
         seo_title: val("f-seotitle").trim() || null,
         seo_description: val("f-seodesc").trim() || null,

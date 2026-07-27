@@ -413,6 +413,15 @@
 .info-grid .c { background: #fff; padding: 10px 12px; }
 .info-grid .k { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--c-gray-500); font-weight: 700; }
 .info-grid .v { font-size: 0.85rem; color: var(--c-ink); font-weight: 600; margin-top: 2px; }
+.info-grid .v .isub { display: block; font-size: 0.72rem; color: var(--c-gray-500); font-weight: 600; margin-top: 2px; }
+
+/* À qui s'adresse / prérequis */
+.audience-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 620px) { .audience-grid { grid-template-columns: 1fr 1fr; } }
+.ag-card { border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 16px 18px; background: #fff; }
+.ag-card .ag-h { display: flex; align-items: center; gap: 8px; font-family: var(--f-display); font-weight: 800; font-size: 0.92rem; color: var(--c-ink); margin-bottom: 8px; }
+.ag-card .ag-h svg { flex: none; color: var(--c-blue); }
+.ag-card p { margin: 0; font-size: 0.88rem; color: var(--c-gray-700); line-height: 1.55; white-space: pre-line; }
 
 /* carte */
 .map-embed { border: 0; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); width: 100%; height: 320px; display: block; }
