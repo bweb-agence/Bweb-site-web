@@ -196,7 +196,9 @@ export function initReservation() {
   // pas d'étape justificatif → le bouton « Continuer » devient « Payer ».
   function updateNextLabel() {
     if (step !== 3) return;
-    nextBtn.textContent = method === "money_fusion" ? "Payer l'acompte ›" : "Continuer ›";
+    nextBtn.textContent = method === "money_fusion" ? "Payer en ligne ›"
+      : method === "money_fusion_acompte" ? "Payer l'acompte ›"
+      : "Continuer ›";
   }
   function renderPayNote() {
     const note = $("pm-note")!;
@@ -204,7 +206,8 @@ export function initReservation() {
     const deposit = Math.max(1, Math.ceil(total / 2));
     const solde = total - deposit;
     const map: Record<string, string> = {
-      money_fusion: `Réglez l'acompte de <b>${fmt(deposit)}</b> (50 %) en ligne pour bloquer votre place. Le solde de <b>${fmt(solde)}</b> se paie <b>sur place</b> le jour J. Paiement sécurisé (Mobile Money · Wave · carte) ; place confirmée automatiquement.`,
+      money_fusion: `Réglez la <b>totalité</b> (<b>${fmt(total)}</b>) en ligne. Paiement sécurisé (Mobile Money · Wave · carte) ; votre place est confirmée automatiquement.`,
+      money_fusion_acompte: `Réglez l'acompte de <b>${fmt(deposit)}</b> (50 %) en ligne pour bloquer votre place. Le solde de <b>${fmt(solde)}</b> se paie <b>sur place</b> le jour J.`,
     };
     note.innerHTML = map[method] || "";
     note.style.display = method ? "block" : "none";
@@ -286,7 +289,7 @@ export function initReservation() {
   nextBtn.addEventListener("click", async () => {
     if (!validate(step)) return;
     // Paiement en ligne : on règle dès l'étape 3 (pas de justificatif).
-    if (step === 3 && method === "money_fusion") { await submitOnline(); return; }
+    if (step === 3 && (method === "money_fusion" || method === "money_fusion_acompte")) { await submitOnline(); return; }
     if (step < FORM_STEPS) { show(step + 1); return; }
     await submit();
   });
@@ -339,7 +342,7 @@ export function initReservation() {
 
   // ---------- Paiement en ligne (Money Fusion) ----------
   async function submitOnline() {
-    const resetBtn = () => { nextBtn.removeAttribute("disabled"); nextBtn.textContent = "Payer l'acompte ›"; };
+    const resetBtn = () => { nextBtn.removeAttribute("disabled"); nextBtn.textContent = method === "money_fusion_acompte" ? "Payer l'acompte ›" : "Payer en ligne ›"; };
     nextBtn.setAttribute("disabled", "true");
     nextBtn.textContent = "Redirection…";
     errEl.textContent = "";
@@ -354,8 +357,9 @@ export function initReservation() {
       const phone = phoneVal ? (phoneCc ? `${phoneCc} ${phoneVal}` : phoneVal) : "";
       // Numéro LOCAL (chiffres) transmis à Money Fusion = numéro à débiter pour valider.
       const numeroSend = phoneVal.replace(/\D/g, "");
-      // Acompte 50 % réglé en ligne ; le solde se paie sur place le jour J.
-      const deposit = Math.max(1, Math.ceil(total / 2));
+      // Total, ou acompte 50 % (le solde se paie alors sur place le jour J).
+      const isDeposit = method === "money_fusion_acompte";
+      const amount = isDeposit ? Math.max(1, Math.ceil(total / 2)) : total;
       saveInfos();
 
       if (!PAY_API) { errEl.textContent = "Le paiement en ligne est momentanément indisponible."; return; }
@@ -369,7 +373,7 @@ export function initReservation() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            montant: deposit,
+            montant: amount,
             nom: name,
             telephone: numeroSend,
             article: overlay.dataset.title || "Formation Bweb",
@@ -396,7 +400,7 @@ export function initReservation() {
       fd.append("company", ($("rz-company") as HTMLInputElement).value.trim());
       fd.append("payment_method", "money_fusion");
       fd.append("payment_reference", token);
-      fd.append("is_deposit", "1");
+      fd.append("is_deposit", isDeposit ? "1" : "0");
       if (isHybrid && attendance) fd.append("attendance_mode", attendance);
 
       let json: any = null;
