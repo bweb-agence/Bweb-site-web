@@ -5,7 +5,7 @@
    Le contenu rédactionnel + SEO + affiche restent dans l'éditeur détaillé.
    ========================================================= */
 import { supabaseBrowser } from "../lib/supabaseBrowser";
-import { slugify, dtLocalValue, toast, esc } from "./adminUtils";
+import { slugify, dtLocalValue, toast, esc, confirmModal } from "./adminUtils";
 
 const BADGES: [string, string][] = [
   ["", "— Aucun badge —"], ["hot", "Forte demande"], ["limited", "Places limitées"],
@@ -362,7 +362,7 @@ export async function initFormationSessions(
 
     async function deleteCard() {
       if (!sessionId) { card.remove(); return; }
-      if (!window.confirm(`Supprimer cette date « ${fieldVal("title")} » et ses tarifs ? (Impossible s'il existe des réservations.)`)) return;
+      if (!(await confirmModal({ title: "Supprimer la date", message: `Supprimer cette date « ${fieldVal("title")} » et ses tarifs ?\nImpossible s'il existe des réservations.`, danger: true, confirmLabel: "Supprimer" }))) return;
       const { error } = await supabaseBrowser.from("sessions").delete().eq("id", sessionId);
       if (error) { toast("Suppression impossible (réservations existantes ?).", "err"); return; }
       toast("Date supprimée."); card.remove();

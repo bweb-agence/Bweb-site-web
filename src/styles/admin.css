@@ -143,3 +143,17 @@
 
 /* Chargement de contenu de page */
 .a-loading-row td { text-align: center; color: var(--c-gray-500); padding: 26px; }
+
+/* Modale de confirmation (adminUtils.confirmModal) — remplace window.confirm */
+.cm-overlay { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 20px;
+  background: rgba(6, 11, 40, 0.55); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  opacity: 0; transition: opacity 0.16s ease; }
+.cm-overlay.show { opacity: 1; }
+.cm-dialog { width: 100%; max-width: 430px; background: #fff; border-radius: 16px; padding: 22px 22px 18px;
+  box-shadow: 0 24px 60px -12px rgba(2, 11, 80, 0.4); transform: translateY(10px) scale(0.98); transition: transform 0.16s ease; }
+.cm-overlay.show .cm-dialog { transform: none; }
+.cm-title { margin: 0 0 8px; font-size: 1.05rem; font-weight: 800; color: var(--c-navy, #0b1e5b); }
+.cm-msg { margin: 0 0 18px; color: var(--c-gray-700, #374151); font-size: 0.92rem; line-height: 1.5; }
+.cm-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.cm-danger { background: var(--c-danger); border-color: var(--c-danger); color: #fff; }
+.cm-danger:hover { filter: brightness(1.07); color: #fff; border-color: var(--c-danger); }

@@ -44,7 +44,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { slugify, esc, fmtFCFA, toast } from "../../scripts/adminUtils";
+  import { slugify, esc, fmtFCFA, toast, confirmModal } from "../../scripts/adminUtils";
 
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
@@ -113,7 +113,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       }
     }
     const suffix = sessionIds.length ? ` et ses ${sessionIds.length} date(s)` : "";
-    if (!window.confirm(`Supprimer « ${f?.title} »${suffix} ? Action irréversible.`)) return;
+    if (!(await confirmModal({ title: "Supprimer la formation", message: `Supprimer « ${f?.title} »${suffix} ?\nAction irréversible.`, danger: true, confirmLabel: "Supprimer" }))) return;
     if (sessionIds.length) {
       const { error: se } = await supabaseBrowser.from("sessions").delete().eq("formation_id", id);
       if (se) { toast("Suppression des dates impossible.", "err"); return; }
