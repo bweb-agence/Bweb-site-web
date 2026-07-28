@@ -196,6 +196,15 @@ const DEFAULT_ADDRESS = "83JG+HH4, Unnamed Road, Abidjan";
 const venueAddress = ((session as any)?.address || "").trim() || DEFAULT_ADDRESS;
 const mapQuery = `${venueAddress}, Côte d'Ivoire`;
 const mapEmbed = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`;
+// Itinéraire : Google Maps (résout l'adresse / plus code) + Yango (VTC, coordonnées).
+// Coordonnées décodées du plus code 83JG+HH4 de l'espace Bweb ; Yango n'est proposé
+// que pour le lieu par défaut (adresse personnalisée → seul l'itinéraire Maps s'affiche).
+const isDefaultVenue = venueAddress === DEFAULT_ADDRESS;
+const VENUE_GEO = { lat: 5.331438, lon: -3.923563 };
+const mapsDirUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQuery)}`;
+const yangoUrl = isDefaultVenue
+  ? `https://yango.go.link/route?end-lat=${VENUE_GEO.lat}&end-lon=${VENUE_GEO.lon}&level=50&lang=fr&ref=bweb&adj_t=vokme8e_nd9s9z9&adj_fallback=${encodeURIComponent(`https://yango.com/en_int/order/?gto=${VENUE_GEO.lon},${VENUE_GEO.lat}`)}`
+  : null;
 const shareUrl = Astro.url.href;
 
 // Données structurées Schema.org — rich results Google (date, lieu, prix, disponibilité).
@@ -456,7 +465,19 @@ const sessCrumbs = session
                       <div class="mf-city">{session.city ?? "Abidjan"}, Côte d'Ivoire</div>
                     </div>
                   </div>
-                  <button type="button" class="btn btn-outline map-facade__btn" id="map-load">Afficher la carte</button>
+                  <div class="map-facade__actions">
+                    <button type="button" class="btn btn-outline map-facade__btn" id="map-load">Afficher la carte</button>
+                    <a class="btn btn-outline mf-dir" href={mapsDirUrl} target="_blank" rel="noopener">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                      Itinéraire
+                    </a>
+                    {yangoUrl && (
+                      <a class="btn mf-yango" href={yangoUrl} target="_blank" rel="noopener">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M6 17l1.5-5h9L18 17M7.5 12l1-3.5A2 2 0 0 1 10.4 7h3.2a2 2 0 0 1 1.9 1.5l1 3.5"/><circle cx="8" cy="17.5" r="1.5"/><circle cx="16" cy="17.5" r="1.5"/></svg>
+                        Y aller en Yango
+                      </a>
+                    )}
+                  </div>
                   <p class="map-facade__note">La carte est fournie par Google Maps. En l'affichant, vous acceptez le dépôt de cookies Google.</p>
                 </div>
               </>
@@ -820,6 +841,15 @@ const sessCrumbs = session
           </div>
         </div>
       </div>
+
+      {!isPast && !isFull && (
+        <div class="sess-stickycta is-hidden" id="sess-stickycta">
+          <div class="ssc-price">
+            {minPrice !== null ? (<><span class="ssc-from">À partir de</span><b>{priceFCFA(minPrice)}</b></>) : <b>Réservation</b>}
+          </div>
+          <button type="button" class="btn btn-primary btn-lg ssc-btn" data-rz-open>Réserver ma place</button>
+        </div>
+      )}
     </article>
   </BaseLayout>
 ) : (
@@ -838,6 +868,20 @@ const sessCrumbs = session
 <script>
   import { initReservation } from "../../../scripts/reservation";
   initReservation();
+
+  // CTA collant (mobile) : visible seulement quand le bouton principal « Réserver »
+  // n'est plus à l'écran — évite le doublon et pousse la conversion en bas de page.
+  const stickyCta = document.getElementById("sess-stickycta");
+  const mainCta = document.getElementById("open-rz");
+  if (stickyCta && mainCta && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver(
+      ([e]) => stickyCta.classList.toggle("is-hidden", e.isIntersecting),
+      { rootMargin: "0px 0px -40px 0px" },
+    );
+    io.observe(mainCta);
+  } else if (stickyCta) {
+    stickyCta.classList.remove("is-hidden");
+  }
 
   // Carte Google Maps chargée au clic (RGPD : pas de cookie tiers avant consentement).
   const mf = document.getElementById("map-facade");

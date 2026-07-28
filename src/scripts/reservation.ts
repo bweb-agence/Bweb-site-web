@@ -523,6 +523,8 @@ export function initReservation() {
     lastFocused?.focus(); // rend le focus au bouton déclencheur
   }
   $("open-rz")?.addEventListener("click", open);
+  // Déclencheurs additionnels (ex. CTA collant en bas de page sur mobile).
+  document.querySelectorAll<HTMLElement>("[data-rz-open]").forEach((b) => b.addEventListener("click", open));
   $("rz-close")?.addEventListener("click", close);
 
   // Retour visuel en direct : on lève le drapeau (et l'erreur) dès que le champ redevient valide,
