@@ -23,7 +23,7 @@ type TtOption = { id: string; sessionId: string; label: string };
 export async function initFormationSessions(
   root: HTMLElement,
   formationId: string,
-  defaults: { theme?: string; title?: string },
+  defaults: { theme?: string | null; theme_id?: string | null; title?: string },
 ) {
   const listEl = root.querySelector<HTMLElement>("#ed-fsessions-inline");
   const addBtn = root.querySelector<HTMLButtonElement>("#ed-fsession-add");
@@ -256,7 +256,7 @@ export async function initFormationSessions(
         } else {
           const slug = `${slugify(title)}-${start.slice(0, 10)}`;
           const { data, error } = await supabaseBrowser.from("sessions")
-            .insert({ ...fields, slug, theme: defaults.theme || null })
+            .insert({ ...fields, slug, theme: defaults.theme || null, theme_id: defaults.theme_id || null })
             .select("id").single();
           if (error) throw error;
           sessionId = data.id;

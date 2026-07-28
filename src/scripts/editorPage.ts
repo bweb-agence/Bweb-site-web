@@ -81,6 +81,25 @@ export async function initEditorPage() {
     }
   }
 
+  /* ---------- Thèmes (liste partagée, réutilisable) ---------- */
+  const { data: themesData } = await supabaseBrowser
+    .from("themes").select("id,name,slug,color").order("sort_order").order("name");
+  const themes: any[] = themesData || [];
+  const themeSelId = type === "article" ? "f-category" : "f-theme";
+  function fillThemeSelect(selectedId: string) {
+    const el = $(themeSelId) as HTMLSelectElement | null;
+    if (!el) return;
+    el.innerHTML = '<option value="">— Aucun —</option>' +
+      themes.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+    el.value = selectedId || "";
+  }
+  const selectedTheme = () => {
+    const tid = val(themeSelId) || null;
+    const t = themes.find((x) => x.id === tid);
+    return { theme_id: (tid || null) as string | null, name: (t?.name ?? null) as string | null };
+  };
+  fillThemeSelect(record?.theme_id || "");
+
   /* ---------- Pré-remplissage des champs ---------- */
   if (record) {
     titleEl.value = record.title || "";
@@ -89,7 +108,6 @@ export async function initEditorPage() {
     if (type !== "formation") status = record.status || "draft";
 
     if (type === "article") {
-      setVal("f-category", record.category || "");
       setVal("f-author", record.author || "Équipe Bweb");
       setVal("f-reading", record.reading_minutes || "");
       setVal("f-excerpt", record.excerpt || "");
@@ -99,7 +117,6 @@ export async function initEditorPage() {
       setVal("f-focus", record.focus_keyword || "");
       setVal("f-pubdate", record.published_at ? dtLocalValue(record.published_at) : "");
     } else if (type === "formation") {
-      setVal("f-theme", record.theme || "");
       setVal("f-level", record.level || "");
       setVal("f-duration", record.duration || "");
       setVal("f-price", record.default_price ?? "");
@@ -117,7 +134,6 @@ export async function initEditorPage() {
       setVal("f-focus", record.focus_keyword || "");
     } else {
       setVal("f-formation", record.formation_id || "");
-      setVal("f-theme", record.theme || "");
       setVal("f-level", record.level || "");
       setVal("f-mode", record.mode || "presentiel");
       setVal("f-start", record.starts_at ? dtLocalValue(record.starts_at) : "");
@@ -152,7 +168,7 @@ export async function initEditorPage() {
   /* ---------- Éléments d'UI communs ---------- */
   updateCrumb(); updatePill(); updatePreview(); autoGrow(); updateMeta(); renderSeo();
   if (type === "session") setupModeToggle();
-  if (type === "formation") { setupFormationTabs(); initFormationSessions(root, id, { theme: val("f-theme") }); }
+  if (type === "formation") { setupFormationTabs(); initFormationSessions(root, id, { theme: selectedTheme().name, theme_id: selectedTheme().theme_id }); }
 
   titleEl.addEventListener("input", () => {
     autoGrow();
@@ -425,12 +441,16 @@ export async function initEditorPage() {
     const html = handle.getHTML();
     const payload: any = { title, slug };
     payload[HTMLCOL[type]] = html || null;
+    // Thème : on enregistre la liaison (theme_id) ET le nom texte (colonne historique
+    // encore lue par certaines pages publiques) pour rester cohérent pendant la bascule.
+    const th = selectedTheme();
 
     if (type === "article") {
       let publishedAt = val("f-pubdate") ? new Date(val("f-pubdate")).toISOString() : (record?.published_at || null);
       if (status === "published" && !publishedAt) publishedAt = new Date().toISOString();
       Object.assign(payload, {
-        category: val("f-category").trim() || null,
+        category: th.name,
+        theme_id: th.theme_id,
         author: val("f-author").trim() || "Équipe Bweb",
         reading_minutes: val("f-reading") ? parseInt(val("f-reading")) : estimateReading(html),
         excerpt: val("f-excerpt").trim() || null,
@@ -442,7 +462,8 @@ export async function initEditorPage() {
       });
     } else if (type === "formation") {
       Object.assign(payload, {
-        theme: val("f-theme").trim() || null,
+        theme: th.name,
+        theme_id: th.theme_id,
         level: val("f-level").trim() || null,
         duration: val("f-duration").trim() || null,
         default_price: val("f-price") ? parseInt(val("f-price")) : null,
@@ -462,7 +483,8 @@ export async function initEditorPage() {
     } else {
       Object.assign(payload, {
         formation_id: val("f-formation") || null,
-        theme: val("f-theme").trim() || null,
+        theme: th.name,
+        theme_id: th.theme_id,
         level: val("f-level") || null,
         mode: val("f-mode") || "presentiel",
         starts_at: new Date(val("f-start")).toISOString(),
@@ -493,7 +515,7 @@ export async function initEditorPage() {
         const { data, error } = await supabaseBrowser.from(TABLE[type]).insert(payload).select("id").single(); if (error) throw error;
         id = data.id; root.dataset.id = id;
         history.replaceState(null, "", `/admin/editeur/${type}/${id}`);
-        if (type === "formation") initFormationSessions(root, id, { theme: val("f-theme") });
+        if (type === "formation") initFormationSessions(root, id, { theme: selectedTheme().name, theme_id: selectedTheme().theme_id });
       }
       if (type === "session") { await syncTickets(id); await syncBumps(id); }
       setSaved();
