@@ -17,7 +17,7 @@ const { data: nextSessions } = await supabase
 const sessions = nextSessions ?? [];
 ---
 
-<BaseLayout title="Formations IA & digital pour entreprises | Bweb" description="Formations en IA, marketing digital, vente en ligne et productivité : Bweb rend vos équipes autonomes sur les nouvelles technologies.">
+<BaseLayout title="Formations IA & digital pour entreprises | Bweb" description="Formations en IA, marketing digital, vente en ligne et productivité : Bweb rend vos équipes autonomes sur les nouvelles technologies." breadcrumbs={[{ name: "Accueil", path: "/" }, { name: "Formations", path: "/formations" }]}>
 <section class="page-hero" data-nav-section="Formations">
   <div class="mesh-bg"></div>
   <div class="grid-lines"></div>
