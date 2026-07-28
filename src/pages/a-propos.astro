@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import IllusApropos from "../components/illus/IllusApropos.astro";
+import TeamAvatar from "../components/TeamAvatar.astro";
 
 // Photos d'équipe : dépose le fichier dans public/images/ au nom indiqué,
 // il est utilisé automatiquement dès qu'il existe (sinon on retombe sur les initiales).
@@ -140,14 +141,18 @@ const mediaBuyer = teamPhoto("media-buyer.png");
         <div class="team-tier__label">Direction</div>
         <div class="team-org__pair reveal">
           <div class="team-card card">
-            <span class="avatar-badge">{godwin.exists ? <img src={godwin.src} alt="Godwin Soola" /> : "GS"}</span>
+            <span class="avatar-badge">{godwin.exists ? (
+              <button type="button" class="avatar-badge__zoom" data-lightbox-src={godwin.src} data-lightbox-alt="Godwin Soola">
+                <img src={godwin.src} alt="Godwin Soola" />
+              </button>
+            ) : "GS"}</span>
             <h4>Godwin Soola</h4>
             <div class="role">CEO &amp; Fondateur</div>
             <p>Pilote la vision, la stratégie et incarne la marque Bweb Agence.</p>
           </div>
           <div class="team-org__connector team-org__connector--h" aria-hidden="true"></div>
           <div class="team-card card">
-            <span class:list={["avatar-badge", { "is-placeholder": !opsManager.exists }]}>{opsManager.exists ? <img src={opsManager.src} alt="Ops Manager" /> : "?"}</span>
+            <TeamAvatar photo={opsManager} name="Ops Manager" />
             <h4>Ops Manager</h4>
             <div class="role is-placeholder">Chef d'orchestre</div>
             <p>Coordonne les six pôles de l'équipe et pilote l'exécution au quotidien.</p>
@@ -161,7 +166,7 @@ const mediaBuyer = teamPhoto("media-buyer.png");
         <div class="team-tier__label">Pôles opérationnels</div>
         <div class="grid grid-3" data-stagger>
           <div class="team-card card">
-            <span class:list={["avatar-badge", { "is-placeholder": !mediaBuyer.exists }]}>{mediaBuyer.exists ? <img src={mediaBuyer.src} alt="Media Buyer" /> : "?"}</span>
+            <TeamAvatar photo={mediaBuyer} name="Media Buyer" />
             <h4>Media Buyer</h4>
             <div class="role is-placeholder">Acquisition payante</div>
             <p>Pilote les campagnes Meta, le tracking et le budget publicitaire.</p>
@@ -262,4 +267,17 @@ const mediaBuyer = teamPhoto("media-buyer.png");
     </div>
   </div>
 </section>
+
+<!-- ===== Lightbox photo équipe ===== -->
+<div class="photo-lightbox" id="photo-lightbox" role="dialog" aria-modal="true" aria-label="Photo agrandie">
+  <button type="button" class="photo-lightbox__close" aria-label="Fermer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+  </button>
+  <img class="photo-lightbox__img" src="" alt="" />
+</div>
 </BaseLayout>
+
+<script>
+  import { initTeamLightbox } from "../scripts/teamLightbox";
+  initTeamLightbox();
+</script>
