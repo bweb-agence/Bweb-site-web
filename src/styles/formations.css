@@ -840,6 +840,12 @@ body.rz-lock { overflow: hidden; }
 /* pied de modale — sous le contenu de l'étape (boutons proches des champs) */
 .rz-foot { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--c-border); }
 
+/* Desktop : « Continuer » (action principale) à droite, « Précédent » à gauche. */
+@media (min-width: 641px) {
+  .rz-foot #rz-next, .rz-foot #rz-done { margin-left: auto; }
+  .rz-foot .rz-err { flex: 1 0 100%; }
+}
+
 /* Mobile : barre d'action collée au bas de l'écran (toujours visible). */
 @media (max-width: 640px) {
   .rz-container { padding-bottom: 0; }
