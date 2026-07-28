@@ -17,6 +17,13 @@ const MODES: [string, string][] = [
 const STATUSES: [string, string][] = [
   ["draft", "Brouillon"], ["published", "Publiée"], ["full", "Complète"], ["cancelled", "Annulée"],
 ];
+// Apparence de la pastille d'état (visible sur l'en-tête de chaque date).
+const STATUS_META: Record<string, { label: string; bg: string; fg: string }> = {
+  draft:     { label: "Brouillon", bg: "#fef3c7", fg: "#92400e" },
+  published: { label: "En ligne",  bg: "#dcfce7", fg: "#166534" },
+  full:      { label: "Complète",  bg: "#e0e7ff", fg: "#3730a3" },
+  cancelled: { label: "Annulée",   bg: "#fee2e2", fg: "#991b1b" },
+};
 
 type TtOption = { id: string; sessionId: string; label: string };
 
@@ -74,6 +81,7 @@ export async function initFormationSessions(
   /* ---------------- Construction d'une carte session ---------------- */
   function buildCard(s: any | null, collapsed: boolean): HTMLElement {
     let sessionId: string = s?.id || "";
+    let currentStatus: string = s?.status || "draft";
     let originalTtIds: string[] = (s?.ticket_types || []).map((t: any) => t.id).filter(Boolean);
     let originalObIds: string[] = (s?.order_bumps || []).map((o: any) => o.id).filter(Boolean);
 
@@ -102,6 +110,8 @@ export async function initFormationSessions(
             <span data-sub style="font-size:.72rem;opacity:.6">${esc(subLabel)}</span>
           </span>
         </button>
+        <button type="button" data-act="pub-toggle" data-status-pill
+          style="border:0;cursor:pointer;padding:4px 10px;margin-right:2px;border-radius:999px;font:inherit;font-size:.7rem;font-weight:700;line-height:1.5;white-space:nowrap" ${sessionId ? "" : "hidden"}></button>
         <button type="button" class="ed-fscard-dup" data-act="duplicate" title="Dupliquer cette date"
           aria-label="Dupliquer cette date"
           style="border:0;background:transparent;cursor:pointer;padding:9px 12px;opacity:.55;font-size:1.05rem;line-height:1" ${sessionId ? "" : "hidden"}>⧉</button>
@@ -182,8 +192,41 @@ export async function initFormationSessions(
     q('[data-act="save"]').addEventListener("click", () => saveCard());
     q('[data-act="delete"]').addEventListener("click", () => deleteCard());
     q('[data-act="duplicate"]').addEventListener("click", () => duplicateCard());
+    q('[data-act="pub-toggle"]').addEventListener("click", () => pubToggle());
+    renderPill();
 
     return card;
+
+    /* ----- pastille d'état + publication rapide (en-tête) ----- */
+    function renderPill() {
+      const pill = card.querySelector<HTMLButtonElement>("[data-status-pill]");
+      if (!pill) return;
+      const meta = STATUS_META[currentStatus] || STATUS_META.draft;
+      const online = currentStatus === "published" || currentStatus === "full";
+      pill.textContent = online ? "● " + meta.label : "Publier";
+      pill.style.background = online ? meta.bg : "var(--c-primary,#1f6ced)";
+      pill.style.color = online ? meta.fg : "#fff";
+      pill.title = online ? "Visible sur le site — cliquer pour retirer" : "Mettre cette date en ligne sur le site";
+    }
+
+    async function pubToggle() {
+      if (!sessionId) { toast("Enregistrez d’abord cette date.", "err"); return; }
+      const isOnline = currentStatus === "published" || currentStatus === "full";
+      const next = isOnline ? "draft" : "published";
+      if (next === "draft" && !(await confirmModal({
+        title: "Retirer du site", message: "Retirer cette date du site (repasser en brouillon) ?", confirmLabel: "Retirer",
+      }))) return;
+      const pill = card.querySelector<HTMLButtonElement>("[data-status-pill]");
+      pill?.setAttribute("disabled", "true");
+      const { error } = await supabaseBrowser.from("sessions").update({ status: next }).eq("id", sessionId);
+      pill?.removeAttribute("disabled");
+      if (error) { toast("Publication impossible.", "err"); return; }
+      currentStatus = next;
+      const sel = card.querySelector<HTMLSelectElement>('[data-field="status"]');
+      if (sel) sel.value = next;
+      renderPill();
+      toast(next === "published" ? "Date mise en ligne. ✅" : "Date retirée du site.");
+    }
 
     /* ----- lignes tarif / order bump (fond doux, sans bordure) ----- */
     function ttRow(t: any): HTMLElement {
@@ -271,6 +314,9 @@ export async function initFormationSessions(
         q("[data-summary]").textContent = title;
         q('[data-act="delete"]').removeAttribute("hidden");
         card.querySelector('[data-act="duplicate"]')?.removeAttribute("hidden");
+        currentStatus = fields.status;
+        card.querySelector('[data-status-pill]')?.removeAttribute("hidden");
+        renderPill();
         toast("Date enregistrée. ✅");
       } catch (e: any) {
         const m = String(e?.message || "");
