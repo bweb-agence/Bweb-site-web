@@ -3,7 +3,7 @@ export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabase";
-import { priceFCFA, frTime, gradClass, gradSuffix } from "../../lib/format";
+import { priceFCFA, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid } from "../../lib/format";
 import "../../styles/formations.css";
 
 type TT = { price: number; capacity: number; sold: number; compare_at_price: number | null };
@@ -18,16 +18,34 @@ type Session = {
   starts_at: string;
   status: string;
   likes_count: number;
+  formation_id: string | null;
+  level: string | null;
+  mode: string | null;
+  created_at: string;
   ticket_types: TT[];
 };
 
 const { data } = await supabase
   .from("sessions")
-  .select("id,slug,title,theme,city,venue,image_url,starts_at,status,likes_count,ticket_types(price,capacity,sold,compare_at_price)")
+  .select("id,slug,title,theme,city,venue,image_url,starts_at,status,likes_count,formation_id,level,mode,created_at,ticket_types(price,capacity,sold,compare_at_price)")
   .in("status", ["published", "full"])
   .order("starts_at", { ascending: true });
 
 const sessions: Session[] = data ?? [];
+
+// Notes moyennes par formation (pour le tri « Mieux notées »).
+const { data: rv } = await supabase.from("reviews").select("formation_id,rating").eq("status", "approved");
+const ratingMap = new Map<string, { sum: number; n: number }>();
+(rv ?? []).forEach((r: any) => {
+  if (!r.formation_id) return;
+  const m = ratingMap.get(r.formation_id) ?? { sum: 0, n: 0 };
+  m.sum += r.rating; m.n += 1;
+  ratingMap.set(r.formation_id, m);
+});
+const ratingOf = (fid: string | null): { avg: number; n: number } => {
+  const m = fid ? ratingMap.get(fid) : null;
+  return m ? { avg: m.sum / m.n, n: m.n } : { avg: 0, n: 0 };
+};
 
 function derive(s: Session) {
   const tts = s.ticket_types ?? [];
@@ -84,6 +102,8 @@ const calData = sessions.map((s) => {
     sold: d.sold,
     full: d.full,
     level: d.level,
+    diff: s.level ?? "",
+    mode: s.mode ?? "presentiel",
     venue: s.venue ?? "Espace de formation Bweb · Cocody",
   };
 });
@@ -118,7 +138,7 @@ const calData = sessions.map((s) => {
         <p class="cal-empty">Aucune session programmée pour le moment. Revenez bientôt, ou <a href="/devis">demandez le catalogue</a>.</p>
       ) : (
         <>
-          <div class="cal-filters" role="group" aria-label="Filtres">
+          <div class="cal-filters" role="group" aria-label="Filtres et tri">
             <div class="view-switch" role="group" aria-label="Choisir la vue">
               <button type="button" id="view-cards" class="is-on" aria-pressed="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
@@ -130,58 +150,96 @@ const calData = sessions.map((s) => {
               </button>
             </div>
 
-            <button type="button" class="filters-trigger" id="filters-trigger" aria-expanded="false" aria-controls="filters-group">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-              Filtres<span class="fg-badge" id="fg-badge" hidden></span>
-            </button>
+            <div class="filters-anchor" id="filters-anchor">
+              <button type="button" class="filters-trigger" id="filters-trigger" aria-expanded="false" aria-controls="filters-group">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+                Filtres<span class="fg-badge" id="fg-badge" hidden></span>
+              </button>
 
-            <div class="filters-group" id="filters-group">
-              <div class="fg-head">
-                <span class="fg-title">Filtres</span>
-                <button type="button" class="fg-close" id="fg-close" aria-label="Fermer les filtres">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-                </button>
-              </div>
-
-              <div class="fg-section">
-                <span class="fg-label">Thème</span>
-                <div class="filter-themes">
-                  <button type="button" class="fchip is-active" data-theme="all">Tous les thèmes</button>
-                  {themes.map((t) => (
-                    <button type="button" class="fchip" data-theme={t}>{t}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div class="fg-section" id="fg-date-section">
-                <span class="fg-label">Date</span>
-                <div class="month-anchor" id="month-anchor">
-                  <button type="button" class="fchip" id="month-btn" aria-expanded="false">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
-                    Mois ▾
+              <div class="filters-group" id="filters-group">
+                <div class="fg-head">
+                  <span class="fg-title">Filtres</span>
+                  <button type="button" class="fg-close" id="fg-close" aria-label="Fermer les filtres">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                   </button>
-                  <div class="month-pop" id="month-pop" aria-label="Choisir une date">
-                    <div class="mp-head">
-                      <button type="button" class="mp-nav" id="mp-prev" aria-label="Mois précédent">‹</button>
-                      <span id="mp-label">—</span>
-                      <button type="button" class="mp-nav" id="mp-next" aria-label="Mois suivant">›</button>
+                </div>
+
+                <div class="fg-body">
+                  <div class="fg-section">
+                    <span class="fg-label">Thème</span>
+                    <select class="fg-select" id="theme-select" aria-label="Filtrer par thème">
+                      <option value="all">Tous les thèmes</option>
+                      {themes.map((t) => (
+                        <option value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div class="fg-section">
+                    <span class="fg-label">Niveau</span>
+                    <div class="filter-levels chip-scroll">
+                      <button type="button" class="fchip is-active" data-level="all">Tous</button>
+                      <button type="button" class="fchip" data-level="debutant">Débutant</button>
+                      <button type="button" class="fchip" data-level="intermediaire">Intermédiaire</button>
+                      <button type="button" class="fchip" data-level="avance">Avancé</button>
                     </div>
-                    <div class="mp-dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
-                    <div class="mp-days" id="mp-days"></div>
-                    <button type="button" class="mp-reset" id="mp-reset">Toutes les dates</button>
+                  </div>
+
+                  <div class="fg-section">
+                    <span class="fg-label">Format</span>
+                    <div class="filter-modes chip-scroll">
+                      <button type="button" class="fchip is-active" data-mode="all">Tous</button>
+                      <button type="button" class="fchip" data-mode="presentiel">Présentiel</button>
+                      <button type="button" class="fchip" data-mode="en_ligne">En ligne</button>
+                    </div>
+                  </div>
+
+                  <div class="fg-section" id="fg-date-section">
+                    <span class="fg-label">Date</span>
+                    <div class="month-anchor" id="month-anchor">
+                      <button type="button" class="fg-datebtn" id="month-btn" aria-expanded="false" aria-haspopup="dialog">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+                        <span id="date-btn-label">Toutes les dates</span>
+                        <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
+                      <div class="month-pop" id="month-pop" role="dialog" aria-label="Choisir une date" hidden>
+                        <div class="mp-head">
+                          <button type="button" class="mp-nav" id="mp-prev" aria-label="Mois précédent">‹</button>
+                          <span id="mp-label">—</span>
+                          <button type="button" class="mp-nav" id="mp-next" aria-label="Mois suivant">›</button>
+                        </div>
+                        <div class="mp-dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+                        <div class="mp-days" id="mp-days"></div>
+                        <button type="button" class="mp-reset" id="mp-reset">Toutes les dates</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="fg-section fg-section--row fg-section--wide">
+                    <span class="fg-label">Disponibilité</span>
+                    <button type="button" class="fchip" id="dispo-btn"><span class="fchip__knob"></span>Places disponibles</button>
                   </div>
                 </div>
-              </div>
 
-              <div class="fg-section fg-section--row">
-                <span class="fg-label">Disponibilité</span>
-                <button type="button" class="fchip" id="dispo-btn"><span class="fchip__knob"></span>Places disponibles</button>
+                <div class="fg-foot">
+                  <button type="button" class="fg-reset" id="fg-reset">Réinitialiser</button>
+                  <button type="button" class="fg-apply" id="fg-apply">Voir les résultats</button>
+                </div>
               </div>
+            </div>
 
-              <div class="fg-foot">
-                <button type="button" class="fg-reset" id="fg-reset">Réinitialiser</button>
-                <button type="button" class="fg-apply" id="fg-apply">Voir les résultats</button>
-              </div>
+            <div class="cal-toolbar-right" id="cal-sort-wrap">
+              <label class="sort-field" for="sort-select">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h12M3 12h9M3 18h6M17 5v14M17 19l3-3M17 19l-3-3"/></svg>
+                <span class="sort-lbl">Trier</span>
+                <select id="sort-select" class="sort-select" aria-label="Trier les sessions">
+                  <option value="date">Date : plus proche</option>
+                  <option value="new">Nouveautés</option>
+                  <option value="price-asc">Prix croissant</option>
+                  <option value="price-desc">Prix décroissant</option>
+                  <option value="rating">Mieux notées</option>
+                </select>
+              </label>
             </div>
 
             <div class="fg-backdrop" id="fg-backdrop" hidden></div>
@@ -190,8 +248,9 @@ const calData = sessions.map((s) => {
           <script type="application/json" id="cal-data" set:html={JSON.stringify(calData)}></script>
 
           <div class="ev-grid" id="ev-grid">
-            {sessions.map((s) => {
+            {sessions.map((s, i) => {
               const d = derive(s);
+              const rt = ratingOf(s.formation_id);
               return (
                 <article
                   class="ev-card"
@@ -199,11 +258,21 @@ const calData = sessions.map((s) => {
                   data-grad={gradSuffix(s.theme)}
                   data-date={dateISO(s.starts_at)}
                   data-full={d.full ? "1" : "0"}
+                  data-level={s.level ?? ""}
+                  data-mode={s.mode ?? "presentiel"}
+                  data-idx={i}
+                  data-price={d.minPrice ?? ""}
+                  data-created={s.created_at}
+                  data-rating={rt.avg}
+                  data-reviews={rt.n}
                 >
                   <div class={`ev-media ${gradClass(s.theme)}`}>
                     {s.image_url && <img src={s.image_url} alt="" loading="lazy" />}
                     <span class="ev-scrim"></span>
-                    {s.theme && <span class="ev-theme"><span class="dot"></span>{s.theme}</span>}
+                    <div class="ev-tags">
+                      {s.theme && <span class="ev-theme"><span class="dot"></span>{s.theme}</span>}
+                      {levelLabel(s.level) && <span class={`ev-level ${s.level}`}>{levelLabel(s.level)}</span>}
+                    </div>
                     <button type="button" class="ev-fav" data-session-id={s.id} aria-label="Ajouter aux favoris">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.6-9.5-9C.7 8.4 2.4 5 5.8 5c2 0 3.3 1.1 4.2 2.4C11 6.1 12.2 5 14.2 5c3.4 0 5.1 3.4 3.3 7-2.5 4.4-9.5 9-9.5 9z"/></svg>
                       <span class="fav-count">{s.likes_count}</span>
@@ -226,8 +295,22 @@ const calData = sessions.map((s) => {
                         {weekdayLine(s.starts_at)} · {frTime(s.starts_at)}
                       </div>
                       <div class="r">
-                        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
-                        {s.venue ?? "Espace de formation Bweb · Cocody"}
+                        {isOnline(s.mode) ? (
+                          <>
+                            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="15" height="13" rx="2"/><path d="M17 9l5-3v11l-5-3z"/></svg>
+                            En ligne · Visioconférence
+                          </>
+                        ) : isHybrid(s.mode) ? (
+                          <>
+                            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="15" height="13" rx="2"/><path d="M17 9l5-3v11l-5-3z"/></svg>
+                            Présentiel &amp; en ligne
+                          </>
+                        ) : (
+                          <>
+                            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
+                            {s.venue ?? "Espace de formation Bweb · Cocody"}
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -315,35 +398,75 @@ const calData = sessions.map((s) => {
   const grid = document.getElementById("ev-grid");
   if (grid) {
     const cards = Array.from(grid.querySelectorAll<HTMLElement>(".ev-card"));
-    const state = { theme: "all", date: "", dispo: false, view: "cards" as "cards" | "cal" };
+    const state = { theme: "all", level: "all", mode: "all", date: "", dispo: false, sort: "date", view: "cards" as "cards" | "cal" };
 
     type Ev = {
       id: string; slug: string; title: string; theme: string; grad: string;
       date: string; time: string; minPrice: number | null;
       compareAt: number | null; discountPct: number; remaining: number;
-      cap: number; sold: number; full: boolean; level: string; venue: string;
+      cap: number; sold: number; full: boolean; level: string; diff: string; mode: string; venue: string;
     };
     const EV: Ev[] = JSON.parse(document.getElementById("cal-data")?.textContent || "[]");
     const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
     const JOURS = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
     const isoOf = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
     const todayISO = isoOf(new Date());
-    // Filtres thème + dispo (hors date) — utilisés par la vue Calendrier.
-    const passTd = (e: Ev) => (state.theme === "all" || e.theme === state.theme) && (!state.dispo || !e.full);
+    // Filtres hors date (thème / niveau / format / dispo) — partagés avec la vue Calendrier.
+    const passTd = (e: Ev) =>
+      (state.theme === "all" || e.theme === state.theme) &&
+      (state.level === "all" || e.diff === state.level) &&
+      (state.mode === "all" || e.mode === "hybride" || (e.mode || "presentiel") === state.mode) &&
+      (!state.dispo || !e.full);
 
     // ---- Filtres combinés (vue Cartes) ----
     function apply() {
       let visible = 0;
       cards.forEach((c) => {
         const okTheme = state.theme === "all" || c.dataset.theme === state.theme;
+        const okLevel = state.level === "all" || c.dataset.level === state.level;
+        const okMode = state.mode === "all" || c.dataset.mode === "hybride" || (c.dataset.mode || "presentiel") === state.mode;
         const okDate = !state.date || c.dataset.date === state.date;
         const okDispo = !state.dispo || c.dataset.full === "0";
-        const show = okTheme && okDate && okDispo;
+        const show = okTheme && okLevel && okMode && okDate && okDispo;
         c.classList.toggle("is-hidden", !show);
         if (show) visible++;
       });
       const nr = document.getElementById("no-result");
       if (nr) nr.style.display = visible === 0 ? "block" : "none";
+    }
+
+    // ---- Tri (vue Cartes) : réordonne les cartes dans le DOM ----
+    const byIdx = (a: HTMLElement, b: HTMLElement) => Number(a.dataset.idx) - Number(b.dataset.idx);
+    const numAttr = (el: HTMLElement, attr: string) => {
+      const v = el.dataset[attr];
+      return v === "" || v == null ? NaN : Number(v);
+    };
+    function sortCards() {
+      const arr = cards.slice();
+      arr.sort((a, b) => {
+        switch (state.sort) {
+          case "price-asc":
+          case "price-desc": {
+            const pa = numAttr(a, "price"), pb = numAttr(b, "price");
+            if (isNaN(pa) && isNaN(pb)) return byIdx(a, b);
+            if (isNaN(pa)) return 1;      // prix inconnu en dernier
+            if (isNaN(pb)) return -1;
+            return (state.sort === "price-asc" ? pa - pb : pb - pa) || byIdx(a, b);
+          }
+          case "new":
+            return (b.dataset.created || "").localeCompare(a.dataset.created || "") || byIdx(a, b);
+          case "rating": {
+            const ra = numAttr(a, "rating") || 0, rb = numAttr(b, "rating") || 0;
+            if (rb !== ra) return rb - ra;
+            const na = numAttr(a, "reviews") || 0, nb = numAttr(b, "reviews") || 0;
+            return (nb - na) || byIdx(a, b);
+          }
+          case "date":
+          default:
+            return (a.dataset.date || "").localeCompare(b.dataset.date || "") || byIdx(a, b);
+        }
+      });
+      arr.forEach((c) => grid!.appendChild(c));
     }
 
     // ---- Rafraîchit la vue active ----
@@ -352,47 +475,28 @@ const calData = sessions.map((s) => {
       else { renderBig(); renderDayPanel(); }
     }
 
-    // ---- Sélection d'une date (partagée mini-cal ⇄ grande grille) ----
-    function setDate(iso: string) {
-      state.date = state.date === iso ? "" : iso;
-      renderCal();
-      refresh();
-      updateBadge();
-    }
-
-    // ---- Thèmes ----
-    document.querySelectorAll<HTMLElement>(".fchip[data-theme]").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        document.querySelectorAll(".fchip[data-theme]").forEach((c) => c.classList.remove("is-active"));
-        chip.classList.add("is-active");
-        state.theme = chip.dataset.theme || "all";
-        refresh();
-        updateBadge();
-      });
-    });
-
-    // ---- Places disponibles ----
-    const dispoBtn = document.getElementById("dispo-btn");
-    dispoBtn?.addEventListener("click", () => {
-      state.dispo = !state.dispo;
-      dispoBtn.classList.toggle("is-on", state.dispo);
-      refresh();
-      updateBadge();
-    });
-
-    // ---- Popover « Mois » (mini-calendrier flottant) ----
-    const pop = document.getElementById("month-pop");
+    // ---- Sélecteur de date : bouton compact ⇄ calendrier (jours à événements colorés) ----
+    const monthPop = document.getElementById("month-pop");
     const monthBtn = document.getElementById("month-btn");
-    const label = document.getElementById("mp-label");
-    const daysEl = document.getElementById("mp-days");
+    const dateBtnLabel = document.getElementById("date-btn-label");
+    const mpLabel = document.getElementById("mp-label");
+    const mpDays = document.getElementById("mp-days");
     const eventDates = new Set(cards.map((c) => c.dataset.date));
     const firstDate = EV.map((e) => e.date).filter(Boolean).sort()[0];
     let cursor = firstDate ? new Date(firstDate + "T00:00:00") : new Date();
     cursor = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
 
+    const frDateBtn = (iso: string) => {
+      const [y, m, d] = iso.split("-").map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+    };
+    function updateDateBtn() {
+      if (dateBtnLabel) dateBtnLabel.textContent = state.date ? frDateBtn(state.date) : "Toutes les dates";
+      monthBtn?.classList.toggle("has-value", !!state.date);
+    }
     function renderCal() {
-      if (!label || !daysEl) return;
-      label.textContent = cursor.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+      if (!mpLabel || !mpDays) return;
+      mpLabel.textContent = cursor.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
       const y = cursor.getFullYear(), m = cursor.getMonth();
       const startDow = (new Date(y, m, 1).getDay() + 6) % 7; // lundi = 0
       const nbDays = new Date(y, m + 1, 0).getDate();
@@ -404,45 +508,84 @@ const calData = sessions.map((s) => {
         const sel = state.date === iso;
         html += `<button data-iso="${iso}" class="${has ? "has" : ""} ${sel ? "sel" : ""}" ${has ? "" : "disabled"}>${d}</button>`;
       }
-      daysEl.innerHTML = html;
-      daysEl.querySelectorAll<HTMLElement>("button[data-iso]").forEach((b) => {
-        b.addEventListener("click", () => setDate(b.dataset.iso || ""));
-      });
+      mpDays.innerHTML = html;
+      mpDays.querySelectorAll<HTMLElement>("button[data-iso]").forEach((b) =>
+        b.addEventListener("click", () => { setDate(b.dataset.iso || ""); closeMonthPop(); }));
     }
-    renderCal();
-
-    monthBtn?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const open = pop?.classList.toggle("is-open");
-      monthBtn.setAttribute("aria-expanded", open ? "true" : "false");
-    });
-    // Fermeture au clic extérieur / Échap
+    function setDate(iso: string) {
+      state.date = state.date === iso ? "" : iso;
+      updateDateBtn();
+      renderCal();
+      refresh();
+      updateBadge();
+    }
+    function openMonthPop() { if (monthPop) { monthPop.hidden = false; monthBtn?.setAttribute("aria-expanded", "true"); renderCal(); } }
+    function closeMonthPop() { if (monthPop) { monthPop.hidden = true; monthBtn?.setAttribute("aria-expanded", "false"); } }
+    monthBtn?.addEventListener("click", (e) => { e.stopPropagation(); if (monthPop?.hidden) openMonthPop(); else closeMonthPop(); });
+    // Ferme le calendrier au clic en dehors (sans fermer le panneau de filtres)
     document.addEventListener("click", (e) => {
-      if (pop?.classList.contains("is-open") && !pop.contains(e.target as Node) && e.target !== monthBtn) {
-        pop.classList.remove("is-open");
-        monthBtn?.setAttribute("aria-expanded", "false");
-      }
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        pop?.classList.remove("is-open"); monthBtn?.setAttribute("aria-expanded", "false");
-        if (filtersGroup?.classList.contains("is-open")) closeSheet();
+      if (monthPop && !monthPop.hidden) {
+        const anchor = document.getElementById("month-anchor");
+        if (anchor && !anchor.contains(e.target as Node)) closeMonthPop();
       }
     });
     document.getElementById("mp-prev")?.addEventListener("click", () => { cursor = new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1); renderCal(); });
     document.getElementById("mp-next")?.addEventListener("click", () => { cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1); renderCal(); });
-    document.getElementById("mp-reset")?.addEventListener("click", () => { state.date = ""; renderCal(); refresh(); updateBadge(); });
-    document.getElementById("clear-all")?.addEventListener("click", () => {
-      state.theme = "all"; state.date = ""; state.dispo = false;
-      document.querySelectorAll(".fchip[data-theme]").forEach((c) => c.classList.toggle("is-active", (c as HTMLElement).dataset.theme === "all"));
+    document.getElementById("mp-reset")?.addEventListener("click", () => { state.date = ""; updateDateBtn(); renderCal(); refresh(); updateBadge(); closeMonthPop(); });
+    renderCal();
+    updateDateBtn();
+
+    // ---- Thème (liste déroulante, extensible) ----
+    const themeSelect = document.getElementById("theme-select") as HTMLSelectElement | null;
+    themeSelect?.addEventListener("change", () => { state.theme = themeSelect.value || "all"; refresh(); updateBadge(); });
+
+    // ---- Chips à sélection unique (niveau / format) ----
+    function wireChips(attr: "level" | "mode") {
+      const sel = `.fchip[data-${attr}]`;
+      document.querySelectorAll<HTMLElement>(sel).forEach((chip) => {
+        chip.addEventListener("click", () => {
+          document.querySelectorAll(sel).forEach((c) => c.classList.remove("is-active"));
+          chip.classList.add("is-active");
+          state[attr] = chip.dataset[attr] || "all";
+          refresh();
+          updateBadge();
+        });
+      });
+    }
+    wireChips("level");
+    wireChips("mode");
+
+    // ---- Places disponibles ----
+    const dispoBtn = document.getElementById("dispo-btn");
+    dispoBtn?.addEventListener("click", () => {
+      state.dispo = !state.dispo;
+      dispoBtn.classList.toggle("is-on", state.dispo);
+      refresh();
+      updateBadge();
+    });
+
+    // ---- Réinitialisation complète des filtres ----
+    function resetFilters() {
+      state.theme = "all"; state.level = "all"; state.mode = "all"; state.date = ""; state.dispo = false;
+      if (themeSelect) themeSelect.value = "all";
+      (["level", "mode"] as const).forEach((attr) =>
+        document.querySelectorAll<HTMLElement>(`.fchip[data-${attr}]`).forEach((c) =>
+          c.classList.toggle("is-active", c.dataset[attr] === "all")));
       dispoBtn?.classList.remove("is-on");
-      renderCal(); refresh(); updateBadge();
+      updateDateBtn(); renderCal(); closeMonthPop();
+      refresh();
+      updateBadge();
+    }
+    document.getElementById("clear-all")?.addEventListener("click", resetFilters);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && filtersGroup?.classList.contains("is-open")) closeSheet();
     });
 
     // ---- Grande vue Calendrier (façon Calendly) ----
     const bigGrid = document.getElementById("big-grid");
     const bigMonth = document.getElementById("big-month");
-    let bigCursor = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+    const startCursor = firstDate ? new Date(firstDate + "T00:00:00") : new Date();
+    let bigCursor = new Date(startCursor.getFullYear(), startCursor.getMonth(), 1);
 
     function renderBig() {
       if (!bigGrid || !bigMonth) return;
@@ -472,7 +615,7 @@ const calData = sessions.map((s) => {
         </button>`;
       }).join("");
       bigGrid.querySelectorAll<HTMLElement>(".big-cell.has").forEach((b) => {
-        b.addEventListener("click", () => { state.date = b.dataset.iso || ""; renderCal(); renderBig(); renderDayPanel(); });
+        b.addEventListener("click", () => { state.date = b.dataset.iso || ""; updateDateBtn(); renderCal(); renderBig(); renderDayPanel(); });
       });
     }
 
@@ -518,6 +661,7 @@ const calData = sessions.map((s) => {
     // ---- Bascule Cartes / Calendrier ----
     const calView = document.getElementById("cal-view");
     const dateSection = document.getElementById("fg-date-section");
+    const sortWrap = document.getElementById("cal-sort-wrap");
     const btnCards = document.getElementById("view-cards");
     const btnCal = document.getElementById("view-cal");
     function setView(v: "cards" | "cal") {
@@ -530,11 +674,17 @@ const calData = sessions.map((s) => {
       if (calView) calView.hidden = v !== "cal";
       // Le filtre « Date » n'a pas de sens en vue Calendrier (la grille EST un calendrier).
       if (dateSection) dateSection.hidden = v === "cal";
-      if (v === "cal") { pop?.classList.remove("is-open"); renderBig(); renderDayPanel(); }
+      // Le tri ne s'applique qu'aux cartes (la vue Calendrier est ordonnée par date).
+      if (sortWrap) sortWrap.style.display = v === "cal" ? "none" : "";
+      if (v === "cal") { renderBig(); renderDayPanel(); }
       else apply();
     }
     btnCards?.addEventListener("click", () => setView("cards"));
     btnCal?.addEventListener("click", () => setView("cal"));
+
+    // ---- Tri ----
+    const sortSelect = document.getElementById("sort-select") as HTMLSelectElement | null;
+    sortSelect?.addEventListener("change", () => { state.sort = sortSelect.value; sortCards(); });
 
     // ---- Panneau de filtres mobile (modal) + badge ----
     const filtersGroup = document.getElementById("filters-group");
@@ -544,7 +694,8 @@ const calData = sessions.map((s) => {
     const fgApply = document.getElementById("fg-apply");
 
     function activeCount() {
-      return (state.theme !== "all" ? 1 : 0) + (state.date ? 1 : 0) + (state.dispo ? 1 : 0);
+      return (state.theme !== "all" ? 1 : 0) + (state.level !== "all" ? 1 : 0) +
+             (state.mode !== "all" ? 1 : 0) + (state.date ? 1 : 0) + (state.dispo ? 1 : 0);
     }
     function resultCount() {
       return EV.filter((e) => passTd(e) && (!state.date || e.date === state.date)).length;
@@ -557,11 +708,15 @@ const calData = sessions.map((s) => {
       if (fgApply) fgApply.textContent = `Voir ${rc} résultat${rc > 1 ? "s" : ""}`;
     }
 
+    // Mobile : feuille modale (backdrop + verrou de défilement). Desktop : dropdown ancré.
+    const mqMobile = window.matchMedia("(max-width: 640px)");
     function openSheet() {
       filtersGroup?.classList.add("is-open");
-      if (fgBackdrop) { fgBackdrop.hidden = false; requestAnimationFrame(() => fgBackdrop.classList.add("is-open")); }
       filtersTrigger?.setAttribute("aria-expanded", "true");
-      document.body.style.overflow = "hidden";
+      if (mqMobile.matches) {
+        if (fgBackdrop) { fgBackdrop.hidden = false; requestAnimationFrame(() => fgBackdrop.classList.add("is-open")); }
+        document.body.style.overflow = "hidden";
+      }
     }
     function closeSheet() {
       filtersGroup?.classList.remove("is-open");
@@ -570,16 +725,20 @@ const calData = sessions.map((s) => {
       document.body.style.overflow = "";
       window.setTimeout(() => { if (fgBackdrop && !fgBackdrop.classList.contains("is-open")) fgBackdrop.hidden = true; }, 340);
     }
-    filtersTrigger?.addEventListener("click", openSheet);
+    filtersTrigger?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (filtersGroup?.classList.contains("is-open")) closeSheet(); else openSheet();
+    });
     document.getElementById("fg-close")?.addEventListener("click", closeSheet);
     fgBackdrop?.addEventListener("click", closeSheet);
     fgApply?.addEventListener("click", closeSheet);
-    document.getElementById("fg-reset")?.addEventListener("click", () => {
-      state.theme = "all"; state.date = ""; state.dispo = false;
-      document.querySelectorAll(".fchip[data-theme]").forEach((c) => c.classList.toggle("is-active", (c as HTMLElement).dataset.theme === "all"));
-      dispoBtn?.classList.remove("is-on");
-      renderCal(); refresh(); updateBadge();
+    // Desktop : fermer au clic à l'extérieur du panneau (le mobile utilise le backdrop).
+    document.addEventListener("click", (e) => {
+      if (mqMobile.matches || !filtersGroup?.classList.contains("is-open")) return;
+      const anchor = document.getElementById("filters-anchor");
+      if (anchor && !anchor.contains(e.target as Node)) closeSheet();
     });
+    document.getElementById("fg-reset")?.addEventListener("click", resetFilters);
 
     // ---- Favoris ----
     let anon = localStorage.getItem("bweb_anon");

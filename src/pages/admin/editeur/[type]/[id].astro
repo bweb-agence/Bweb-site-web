@@ -200,22 +200,53 @@ const isNew = id === "nouveau";
             <section class="ed-panel"><h4>Adresse (URL)</h4>
               <div class="ed-field"><div class="ed-slugbox"><span class="pre">/…/session/</span><input id="f-slug" aria-label="Slug" /></div></div>
             </section>
-            <section class="ed-panel"><h4>Quand &amp; où</h4>
+            <section class="ed-panel"><h4>Détails</h4>
               <div class="ed-field"><label for="f-formation">Formation liée</label><select class="ed-sel" id="f-formation"><option value="">— Aucune —</option></select></div>
               <div class="ed-field"><label for="f-theme">Thème</label><input class="ed-inp" id="f-theme" list="th-list" />
                 <datalist id="th-list"><option value="IA"></option><option value="Marketing"></option><option value="Vente en ligne"></option><option value="Automatisation"></option></datalist></div>
+              <div class="ed-row2">
+                <div class="ed-field"><label for="f-level">Niveau</label>
+                  <select class="ed-sel" id="f-level">
+                    <option value="">— Non précisé —</option>
+                    <option value="debutant">Débutant</option>
+                    <option value="intermediaire">Intermédiaire</option>
+                    <option value="avance">Avancé</option>
+                  </select>
+                </div>
+                <div class="ed-field"><label for="f-mode">Format</label>
+                  <select class="ed-sel" id="f-mode">
+                    <option value="presentiel">Présentiel</option>
+                    <option value="en_ligne">En ligne (visio)</option>
+                    <option value="hybride">Les deux (présentiel + en ligne)</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+            <section class="ed-panel"><h4>Quand</h4>
               <div class="ed-field"><label for="f-start">Début *</label><input class="ed-inp" id="f-start" type="datetime-local" /></div>
               <div class="ed-field"><label for="f-end">Fin</label><input class="ed-inp" id="f-end" type="datetime-local" /></div>
+            </section>
+            <section class="ed-panel" data-mode-presentiel><h4>Où (présentiel)</h4>
               <div class="ed-row2">
                 <div class="ed-field"><label for="f-city">Ville</label><input class="ed-inp" id="f-city" value="Abidjan" /></div>
                 <div class="ed-field"><label for="f-venue">Lieu</label><input class="ed-inp" id="f-venue" value="Espace de formation Bweb · Cocody" /></div>
               </div>
               <div class="ed-field"><label for="f-address">Adresse précise / accès (optionnel)</label><input class="ed-inp" id="f-address" placeholder="Rue, repère, étage, indications…" /></div>
             </section>
+            <section class="ed-panel" data-mode-enligne hidden><h4>Visioconférence (en ligne)</h4>
+              <div class="ed-field"><label for="f-meeting-url">Lien de connexion</label><input class="ed-inp" id="f-meeting-url" placeholder="https://meet… / zoom… / teams…" />
+                <div class="ed-help">Affiché comme bouton « Rejoindre ». Laissez vide pour l'envoyer par e-mail après inscription.</div></div>
+              <div class="ed-field"><label for="f-meeting-info">Consignes de connexion</label><textarea class="ed-ta" id="f-meeting-info" rows="3" placeholder="Plateforme, code d'accès, à quelle heure se connecter, prérequis techniques…"></textarea></div>
+            </section>
             <section class="ed-panel"><h4>Billetterie</h4>
               <div class="ed-tt-list" id="ed-tt-list"></div>
               <button type="button" class="ed-addline" id="ed-tt-add">+ Ajouter un tarif</button>
               <div class="ed-help" style="margin-top:8px">Chaque tarif a sa propre capacité (anti‑surbooking).</div>
+            </section>
+            <section class="ed-panel"><h4>Order bumps</h4>
+              <div class="ed-tt-list" id="ed-ob-list"></div>
+              <button type="button" class="ed-addline" id="ed-ob-add">+ Ajouter un order bump</button>
+              <div class="ed-help" style="margin-top:8px">Offres complémentaires proposées pendant la réservation (2 max). Choisissez le tarif d'une autre formation à ajouter au panier.</div>
             </section>
             <section class="ed-panel"><h4>Affiche (16/9)</h4>
               <div class="ed-cover" id="ed-cover" data-target="f-image"></div>

@@ -42,6 +42,33 @@ export function gradClass(theme?: string | null): string {
   return "grad grad-mesh grad--" + gradSuffix(theme);
 }
 
+/** Libellé lisible du niveau : « debutant » → « Débutant ». */
+export function levelLabel(level?: string | null): string | null {
+  switch (level) {
+    case "debutant": return "Débutant";
+    case "intermediaire": return "Intermédiaire";
+    case "avance": return "Avancé";
+    default: return null;
+  }
+}
+
+/** Session en ligne (visioconférence) plutôt qu'en présentiel. */
+export function isOnline(mode?: string | null): boolean {
+  return mode === "en_ligne";
+}
+
+/** Session hybride : à la fois en présentiel et en ligne. */
+export function isHybrid(mode?: string | null): boolean {
+  return mode === "hybride";
+}
+
+/** Libellé lisible du mode de session. */
+export function modeLabel(mode?: string | null): string {
+  if (mode === "en_ligne") return "En ligne";
+  if (mode === "hybride") return "Présentiel & en ligne";
+  return "Présentiel";
+}
+
 export function gradSuffix(t?: string | null): string {
   const c = (t || "").toLowerCase();
   if (c.includes("ia") || c.includes("intelligence")) return "blue";

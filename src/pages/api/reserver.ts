@@ -24,6 +24,8 @@ export const POST: APIRoute = async ({ request }) => {
     const method = (fd.get("payment_method") as string) || null;
     const reference = (fd.get("payment_reference") as string) || null;
     const isDeposit = fd.get("is_deposit") === "1";
+    const attendanceRaw = (fd.get("attendance_mode") as string) || "";
+    const attendanceMode = ["presentiel", "en_ligne"].includes(attendanceRaw) ? attendanceRaw : null;
     const proof = fd.get("proof") as File | null;
 
     if (!name || !email || !phone || !Array.isArray(lines) || lines.length === 0) {
@@ -58,6 +60,7 @@ export const POST: APIRoute = async ({ request }) => {
         p_payment_reference: reference,
         p_payment_proof_url: proofUrl,
         p_is_deposit: isDeposit,
+        p_attendance_mode: attendanceMode,
       });
       if (error) return json({ ok: false, error: "server" }, 500);
       if (!data?.ok) return json({ ok: false, error: data?.error || "server", remaining: data?.remaining });
