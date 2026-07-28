@@ -1,0 +1,175 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Importer une formation" active="formations">
+  <div class="admin-toolbar">
+    <div class="left"><a class="abtn" href="/admin/formations">← Formations</a></div>
+    <a class="abtn" href="/formation-template.json" download>⬇ Modèle JSON</a>
+  </div>
+
+  <div class="panel" style="padding:18px 20px">
+    <h2 style="margin:0 0 6px;font-size:1.05rem">Import en masse (JSON)</h2>
+    <p class="hint" style="margin:0 0 14px">
+      Collez ou chargez un fichier JSON décrivant une formation (détails, session, tarifs, FAQ).
+      Tout est créé <strong>en brouillon</strong> : la session est en <code>draft</code> (donc invisible au public),
+      la formation reste à relire puis à publier. Le thème est réutilisé s'il existe, sinon créé.
+    </p>
+
+    <div class="a-field">
+      <label for="imp-file">Charger un fichier .json</label>
+      <input class="a-input" id="imp-file" type="file" accept="application/json,.json" />
+    </div>
+    <div class="a-field">
+      <label for="imp-json">…ou coller le JSON</label>
+      <textarea class="a-textarea code" id="imp-json" rows="16" placeholder='{ "formation": { "title": "…", "slug": "…" }, "sessions": [ … ], "faqs": [ … ] }'></textarea>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="abtn primary" id="imp-run">Importer en brouillon</button>
+      <span class="hint" id="imp-status"></span>
+    </div>
+
+    <div id="imp-report" style="margin-top:16px"></div>
+  </div>
+</AdminLayout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+  import { slugify, esc, toast } from "../../scripts/adminUtils";
+  import { gradSuffix } from "../../lib/format";
+
+  const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+  const status = (t: string) => { const el = document.getElementById("imp-status"); if (el) el.textContent = t; };
+  const report = document.getElementById("imp-report")!;
+
+  // Charger un fichier -> textarea
+  $("imp-file").addEventListener("change", async () => {
+    const f = ($("imp-file") as HTMLInputElement).files?.[0];
+    if (!f) return;
+    ($("imp-json") as HTMLTextAreaElement).value = await f.text();
+    toast("Fichier chargé — vérifiez puis importez.");
+  });
+
+  const BADGES = ["", "hot", "limited", "ok", "popular"];
+  const MODES = ["presentiel", "en_ligne", "hybride"];
+
+  async function resolveThemeId(name?: string | null): Promise<{ id: string | null; label: string }> {
+    const n = (name || "").trim();
+    if (!n) return { id: null, label: "— aucun —" };
+    const { data: existing } = await supabaseBrowser.from("themes").select("id,name").ilike("name", n).limit(1);
+    if (existing && existing.length) return { id: existing[0].id, label: existing[0].name + " (existant)" };
+    const { data, error } = await supabaseBrowser.from("themes")
+      .insert({ name: n, slug: slugify(n), color: gradSuffix(n) }).select("id,name").single();
+    if (error) throw new Error(`Thème « ${n} » : ${error.message}`);
+    return { id: data.id, label: data.name + " (créé)" };
+  }
+
+  async function run() {
+    report.innerHTML = "";
+    let payload: any;
+    try { payload = JSON.parse(($("imp-json") as HTMLTextAreaElement).value); }
+    catch (e: any) { toast("JSON invalide : " + e.message, "err"); return; }
+
+    const f = payload?.formation;
+    if (!f?.title || !f?.slug) { toast("« formation.title » et « formation.slug » sont obligatoires.", "err"); return; }
+    const fslug = slugify(f.slug);
+
+    const btn = $("imp-run"); btn.setAttribute("disabled", "true"); status("Import en cours…");
+    const done: string[] = [];
+    try {
+      // 0) Anti-doublon
+      const { data: dup } = await supabaseBrowser.from("formations").select("id").eq("slug", fslug).limit(1);
+      if (dup && dup.length) throw new Error(`Une formation existe déjà avec le slug « ${fslug} ».`);
+
+      // 1) Thème
+      const theme = await resolveThemeId(f.theme);
+      done.push(`Thème : ${theme.label}`);
+
+      // 2) Formation
+      const fPayload: any = {
+        title: String(f.title).trim(), slug: fslug, theme_id: theme.id, theme: (f.theme || null),
+        level: f.level || null, duration: f.duration || null,
+        default_price: f.default_price != null ? parseInt(f.default_price) : null,
+        summary: f.summary || null, description_md: f.description_md || null, description_html: f.description_html || null,
+        instructor_name: f.instructor_name || null, instructor_role: f.instructor_role || null,
+        instructor_photo_url: f.instructor_photo_url || null, instructor_bio: f.instructor_bio || null,
+        audience: f.audience || null, prerequisites: f.prerequisites || null, included_extra: f.included_extra || null,
+        image_url: f.image_url || null,
+        seo_title: f.seo_title || null, seo_description: f.seo_description || null, focus_keyword: f.focus_keyword || null,
+      };
+      const { data: fRow, error: fErr } = await supabaseBrowser.from("formations").insert(fPayload).select("id").single();
+      if (fErr) throw new Error("Formation : " + fErr.message);
+      const formationId = fRow.id;
+      done.push(`Formation « ${esc(f.title)} » créée`);
+
+      // 3) Sessions (forcées en brouillon) + tarifs + order bumps
+      let nSessions = 0, nTickets = 0;
+      for (const s of (payload.sessions || [])) {
+        const start = s.starts_at ? new Date(s.starts_at) : null;
+        if (!start || isNaN(+start)) throw new Error("Une session a un « starts_at » invalide (ISO attendu).");
+        const sSlug = slugify(s.slug || `${f.slug}-${s.starts_at.slice(0, 10)}`);
+        const sPayload: any = {
+          formation_id: formationId, slug: sSlug, title: s.title || f.title,
+          status: "draft", // toujours brouillon pour review
+          mode: MODES.includes(s.mode) ? s.mode : "presentiel",
+          level: s.level || null,
+          theme: f.theme || null, theme_id: theme.id,
+          starts_at: start.toISOString(), ends_at: s.ends_at ? new Date(s.ends_at).toISOString() : null,
+          city: s.city || "Abidjan", venue: s.venue || "Espace de formation Bweb · Cocody", address: s.address || null,
+          meeting_url: s.meeting_url || null, meeting_info: s.meeting_info || null, image_url: s.image_url || f.image_url || null,
+        };
+        const { data: sRow, error: sErr } = await supabaseBrowser.from("sessions").insert(sPayload).select("id").single();
+        if (sErr) throw new Error(`Session « ${esc(s.title || sSlug)} » : ${sErr.message}`);
+        nSessions++;
+        let sort = 0;
+        for (const t of (s.tickets || [])) {
+          if (!t?.name) continue;
+          const { error: tErr } = await supabaseBrowser.from("ticket_types").insert({
+            session_id: sRow.id, name: String(t.name).trim(),
+            price: parseInt(t.price) || 0, capacity: parseInt(t.capacity) || 0,
+            compare_at_price: t.compare_at_price != null ? parseInt(t.compare_at_price) : null,
+            badge: BADGES.includes(t.badge) ? (t.badge || null) : null,
+            sales_end: t.sales_end ? new Date(t.sales_end).toISOString() : null, sort: sort++,
+          });
+          if (tErr) throw new Error(`Tarif « ${esc(t.name)} » : ${tErr.message}`);
+          nTickets++;
+        }
+      }
+      if (nSessions) done.push(`${nSessions} session(s) en brouillon · ${nTickets} tarif(s)`);
+
+      // 4) FAQ
+      const faqs = (payload.faqs || []).filter((q: any) => q?.question && q?.answer_md)
+        .map((q: any, i: number) => ({ formation_id: formationId, question: q.question, answer_md: q.answer_md, sort: q.sort ?? i + 1 }));
+      if (faqs.length) {
+        const { error: qErr } = await supabaseBrowser.from("faqs").insert(faqs);
+        if (qErr) throw new Error("FAQ : " + qErr.message);
+        done.push(`${faqs.length} FAQ`);
+      }
+
+      report.innerHTML = `<div style="padding:14px 16px;border:1px solid var(--c-success);background:var(--c-success-bg);border-radius:10px">
+        <strong style="color:var(--c-success)">Import réussi (brouillon) ✅</strong>
+        <ul style="margin:8px 0 0;padding-left:18px">${done.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>
+        <p style="margin:10px 0 0"><a class="abtn primary" href="/admin/editeur/formation/${formationId}">Relire la formation →</a></p>
+        <p class="hint" style="margin:8px 0 0">Les sessions sont en brouillon : relisez, puis passez-les en « Publiée » quand tout est bon.</p>
+      </div>`;
+      toast("Import réussi — en brouillon.");
+      status("");
+    } catch (e: any) {
+      report.innerHTML = `<div style="padding:14px 16px;border:1px solid var(--c-danger);background:var(--c-danger-bg);border-radius:10px">
+        <strong style="color:var(--c-danger)">Import interrompu</strong>
+        <p style="margin:8px 0 0">${esc(e.message || String(e))}</p>
+        ${done.length ? `<p class="hint" style="margin:8px 0 0">Déjà créé avant l'erreur : ${done.map(esc).join(" · ")}. Vérifiez dans Formations et corrigez/supprimez si besoin.</p>` : ""}
+      </div>`;
+      toast("Import interrompu — voir le détail.", "err");
+      status("");
+    } finally {
+      btn.removeAttribute("disabled");
+    }
+  }
+
+  $("imp-run").addEventListener("click", run);
+
+  (async () => { const { data: { session } } = await supabaseBrowser.auth.getSession(); if (!session) return; })();
+</script>
