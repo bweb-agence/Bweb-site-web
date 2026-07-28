@@ -6,7 +6,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "crons": [
-    { "path": "/api/reconcile-paiements", "schedule": "0 * * * *" }
+    { "path": "/api/reconcile-paiements", "schedule": "0 3 * * *" }
   ],
   "redirects": [
     { "source": "/index.html", "destination": "/", "permanent": true },
