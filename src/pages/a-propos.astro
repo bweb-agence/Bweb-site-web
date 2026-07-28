@@ -4,12 +4,15 @@ import path from "node:path";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import IllusApropos from "../components/illus/IllusApropos.astro";
 
-// Photos d'équipe : dépose le fichier dans public/images/ au chemin indiqué,
+// Photos d'équipe : dépose le fichier dans public/images/ au nom indiqué,
 // il est utilisé automatiquement dès qu'il existe (sinon on retombe sur les initiales).
-const godwinPhoto = "/images/godwin-soola.png";
-const godwinPhotoExists = existsSync(path.join(process.cwd(), "public", godwinPhoto));
-const opsManagerPhoto = "/images/ops-manager.png";
-const opsManagerPhotoExists = existsSync(path.join(process.cwd(), "public", opsManagerPhoto));
+function teamPhoto(filename: string) {
+  const src = `/images/${filename}`;
+  return { src, exists: existsSync(path.join(process.cwd(), "public", src)) };
+}
+const godwin = teamPhoto("godwin-soola.png");
+const opsManager = teamPhoto("ops-manager.png");
+const mediaBuyer = teamPhoto("media-buyer.png");
 ---
 
 <BaseLayout title="À propos — Cabinet conseil, formation & IA | Bweb" description="Bweb est un cabinet de conseil, de formation et d'accompagnement en IA et nouvelles technologies, fondé par Godwin Soola pour faire avancer les entreprises." breadcrumbs={[{ name: "Accueil", path: "/" }, { name: "À propos", path: "/a-propos" }]}>
@@ -62,8 +65,8 @@ const opsManagerPhotoExists = existsSync(path.join(process.cwd(), "public", opsM
       </div>
       <div class="visual reveal" data-delay=".15">
         <div class="card" style="padding:0;overflow:hidden">
-          {godwinPhotoExists ? (
-            <img src={godwinPhoto} alt="Godwin Soola" style="width:100%;display:block;aspect-ratio:1/1;object-fit:cover" />
+          {godwin.exists ? (
+            <img src={godwin.src} alt="Godwin Soola" style="width:100%;display:block;aspect-ratio:1/1;object-fit:cover" />
           ) : (
             <div style="background:var(--g-navy);padding:48px 32px 0;text-align:center">
               <span class="avatar-badge" style="width:96px;height:96px;font-size:1.9rem;margin:0 auto 20px;background:#fff;color:var(--c-navy)">GS</span>
@@ -137,14 +140,14 @@ const opsManagerPhotoExists = existsSync(path.join(process.cwd(), "public", opsM
         <div class="team-tier__label">Direction</div>
         <div class="team-org__pair reveal">
           <div class="team-card card">
-            <span class="avatar-badge">{godwinPhotoExists ? <img src={godwinPhoto} alt="Godwin Soola" /> : "GS"}</span>
+            <span class="avatar-badge">{godwin.exists ? <img src={godwin.src} alt="Godwin Soola" /> : "GS"}</span>
             <h4>Godwin Soola</h4>
             <div class="role">CEO &amp; Fondateur</div>
             <p>Pilote la vision, la stratégie et incarne la marque Bweb Agence.</p>
           </div>
           <div class="team-org__connector team-org__connector--h" aria-hidden="true"></div>
           <div class="team-card card">
-            <span class:list={["avatar-badge", { "is-placeholder": !opsManagerPhotoExists }]}>{opsManagerPhotoExists ? <img src={opsManagerPhoto} alt="Ops Manager" /> : "?"}</span>
+            <span class:list={["avatar-badge", { "is-placeholder": !opsManager.exists }]}>{opsManager.exists ? <img src={opsManager.src} alt="Ops Manager" /> : "?"}</span>
             <h4>Ops Manager</h4>
             <div class="role is-placeholder">Chef d'orchestre</div>
             <p>Coordonne les six pôles de l'équipe et pilote l'exécution au quotidien.</p>
@@ -158,7 +161,7 @@ const opsManagerPhotoExists = existsSync(path.join(process.cwd(), "public", opsM
         <div class="team-tier__label">Pôles opérationnels</div>
         <div class="grid grid-3" data-stagger>
           <div class="team-card card">
-            <span class="avatar-badge is-placeholder">?</span>
+            <span class:list={["avatar-badge", { "is-placeholder": !mediaBuyer.exists }]}>{mediaBuyer.exists ? <img src={mediaBuyer.src} alt="Media Buyer" /> : "?"}</span>
             <h4>Media Buyer</h4>
             <div class="role is-placeholder">Acquisition payante</div>
             <p>Pilote les campagnes Meta, le tracking et le budget publicitaire.</p>
