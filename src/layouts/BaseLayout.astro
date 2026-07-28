@@ -21,11 +21,14 @@ interface Props {
   breadcrumbs?: { name: string; path: string }[];
   /* Données structurées additionnelles propres à la page (JSON-LD). */
   schemas?: Record<string, any>[];
+  /* Masque le bouton WhatsApp flottant (ex. pages de présentation de formation
+     où un CTA collant occupe déjà le bas de l'écran ; WhatsApp reste dans la navbar). */
+  hideWhatsApp?: boolean;
 }
 
 const {
   title, description = site.description, image = site.ogImage, noindex = false,
-  ogType = "website", organization = false, breadcrumbs, schemas = [],
+  ogType = "website", organization = false, breadcrumbs, schemas = [], hideWhatsApp = false,
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, site.url).href.replace(/\/$/, "") || site.url;
 const ogImageUrl = new URL(image, site.url).href;
@@ -137,7 +140,7 @@ const breadcrumbLd = breadcrumbs?.length
       <slot />
     </main>
     <Footer />
-    <WhatsAppFloat />
+    {!hideWhatsApp && <WhatsAppFloat />}
     <script>
       import "../scripts/main.ts";
     </script>

@@ -1,5 +1,6 @@
 ---
-import { mainNav, navCta } from "../config/site";
+import { mainNav, navCta, whatsappLink } from "../config/site";
+const waHref = whatsappLink();
 const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
 const isActive = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(href + "/"));
 ---
@@ -37,6 +38,9 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path === href 
       ))}
     </nav>
     <div class="nav-cta">
+      <a href={waHref} class="nav-wa" target="_blank" rel="noopener" aria-label="Discuter sur WhatsApp" title="Discuter sur WhatsApp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z"/><path d="M8.5 8.3c.2-.5.4-.5.7-.5h.5c.2 0 .4 0 .6.4.2.5.7 1.6.7 1.7.1.1.1.3 0 .4-.1.2-.2.3-.3.4-.1.1-.3.3-.4.4-.1.1-.3.3-.1.6.2.4.9 1.4 1.9 2.2 1.3 1 2.3 1.3 2.7 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1 .2-.2.4-.2.6-.1l1.7.8c.2.1.4.2.4.3.1.2.1.9-.2 1.5-.3.6-1.5 1.2-2.1 1.2-.6 0-1.3.1-4.3-1.4-3.1-1.6-4.9-4.6-5-4.8-.1-.2-.9-1.2-.9-2.3 0-1.1.6-1.6.8-1.9z" fill="currentColor" stroke="none"/></svg>
+      </a>
       {navCta.map((cta) => (
         <a href={cta.href} class={`btn ${cta.variant} btn-sm`}>{cta.label}</a>
       ))}
@@ -84,5 +88,22 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path === href 
     {navCta.map((cta) => (
       <a href={cta.href} class={`btn ${cta.variant === "btn-primary" ? "btn-primary" : "btn-outline-light"} btn-block`}>{cta.label}</a>
     ))}
+    <a href={waHref} class="btn mobile-nav-wa btn-block" data-nav-wa target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z"/><path d="M8.5 8.3c.2-.5.4-.5.7-.5h.5c.2 0 .4 0 .6.4.2.5.7 1.6.7 1.7.1.1.1.3 0 .4-.1.2-.2.3-.3.4-.1.1-.3.3-.4.4-.1.1-.3.3-.1.6.2.4.9 1.4 1.9 2.2 1.3 1 2.3 1.3 2.7 1.5.3.1.5.1.6-.1.2-.2.7-.8.9-1 .2-.2.4-.2.6-.1l1.7.8c.2.1.4.2.4.3.1.2.1.9-.2 1.5-.3.6-1.5 1.2-2.1 1.2-.6 0-1.3.1-4.3-1.4-3.1-1.6-4.9-4.6-5-4.8-.1-.2-.9-1.2-.9-2.3 0-1.1.6-1.6.8-1.9z" fill="currentColor" stroke="none"/></svg>
+      Discuter sur WhatsApp
+    </a>
   </div>
 </div>
+
+<style>
+  /* WhatsApp dans la navbar (remplace le bouton flottant sur les pages formation). */
+  .nav-wa { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px;
+    border-radius: 50%; color: #fff; background: #25d366; flex: none; margin-right: 4px;
+    transition: transform .15s ease, background .15s ease, box-shadow .15s ease; box-shadow: 0 6px 16px -8px rgba(37, 211, 102, .7); }
+  .nav-wa:hover { background: #1fbe5b; transform: translateY(-1px); }
+  .nav-wa svg { width: 20px; height: 20px; }
+  .mobile-nav-wa { background: #25d366; border-color: #25d366; color: #fff; display: inline-flex;
+    align-items: center; justify-content: center; gap: 8px; }
+  .mobile-nav-wa:hover { background: #1fbe5b; border-color: #1fbe5b; color: #fff; }
+  .mobile-nav-wa svg { flex: none; }
+</style>
