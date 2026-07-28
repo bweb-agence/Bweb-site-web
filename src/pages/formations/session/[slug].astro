@@ -50,6 +50,7 @@ const formation = session?.formations as
 // Titre affiché : le nom de la formation prime (édité dans l'éditeur de formation),
 // sinon le titre propre de la date. La date/lieu restent affichés dans les méta.
 const displayTitle = formation?.title || session?.title || "";
+const formationSlug = (session?.formations as any)?.slug || null;
 // Visuel : image propre de la date, sinon le visuel 16/9 de la formation.
 const coverImage = ((session as any)?.image_url as string | null) || formation?.image_url || null;
 
@@ -353,6 +354,12 @@ const sessCrumbs = session
             </div>
             <h1 style="font-family:var(--f-display);font-weight:800;font-size:var(--fs-h1);line-height:1.08;letter-spacing:-.02em;margin:8px 0 10px;color:var(--c-ink)">{displayTitle}</h1>
             {formation?.summary && <p class="sess-desc" style="max-width:60ch">{formation.summary}</p>}
+            {formationSlug && (
+              <a class="sess-formation-link" href={`/formations/${formationSlug}`}>
+                Voir la formation &amp; toutes ses dates
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+            )}
 
             <div class="sess-meta">
               <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>{frDateLong(session.starts_at)} · {frTime(session.starts_at)}</span>

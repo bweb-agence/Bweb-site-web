@@ -17,6 +17,15 @@ const { data: nextSessions } = await supabase
   .limit(3);
 const sessions = nextSessions ?? [];
 
+// Formations « bientôt » (à venir) — visibles même sans date publiée.
+const { data: soonData } = await supabase
+  .from("formations")
+  .select("slug,title,summary,theme")
+  .eq("coming_soon", true)
+  .order("created_at", { ascending: false })
+  .limit(6);
+const comingSoon = soonData ?? [];
+
 // Couleurs des thèmes (source de vérité) pour des badges/dégradés uniformes.
 const { data: themesData } = await supabase.from("themes").select("name,color");
 const tmap = themeColorMap(themesData);
@@ -77,6 +86,31 @@ const tmap = themeColorMap(themesData);
     )}
   </div>
 </section>
+
+{comingSoon.length > 0 && (
+  <section class="section section-gray" data-nav-section="Bientôt">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Bientôt</div>
+        <h2>Des formations qui arrivent.</h2>
+        <p class="lead" style="margin-top:14px">Découvrez-les et soyez prévenu·e dès l'ouverture des dates.</p>
+      </div>
+      <div class="grid grid-3" style="margin-top:var(--space-lg)">
+        {comingSoon.map((f) => (
+          <a class="soon-card" href={`/formations/${f.slug}`}>
+            <span class="soon-card__badge">● Bientôt</span>
+            {f.theme && <span class="soon-card__theme">{f.theme}</span>}
+            <h3>{f.title}</h3>
+            {f.summary && <p>{f.summary}</p>}
+            <span class="soon-card__go">Voir la formation
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
 
 <div class="ticker-band alt">
   <div class="marquee-track">
@@ -221,4 +255,16 @@ const tmap = themeColorMap(themesData);
     </div>
   </div>
 </section>
+
+<style>
+  .soon-card { position: relative; display: flex; flex-direction: column; gap: 8px; background: #fff;
+    border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: 22px 20px; text-decoration: none;
+    box-shadow: var(--shadow-sm); transition: transform .15s var(--ease), box-shadow .15s var(--ease), border-color .15s; }
+  .soon-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--c-blue) 35%, var(--c-border)); }
+  .soon-card__badge { align-self: flex-start; font-size: .7rem; font-weight: 800; color: #8a5a00; background: #fff2d6; padding: 4px 10px; border-radius: var(--radius-pill); }
+  .soon-card__theme { font-size: .74rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--c-blue); }
+  .soon-card h3 { font-family: var(--f-display); font-weight: 800; font-size: 1.12rem; line-height: 1.15; color: var(--c-ink); margin: 2px 0 0; }
+  .soon-card p { margin: 0; font-size: .88rem; color: var(--c-gray-600); line-height: 1.5; }
+  .soon-card__go { margin-top: auto; padding-top: 8px; display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: .86rem; color: var(--c-blue); }
+</style>
 </BaseLayout>
