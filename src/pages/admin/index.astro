@@ -38,7 +38,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { confirmBooking } from "../../scripts/adminUtils";
+  import { confirmBooking, confirmModal } from "../../scripts/adminUtils";
 
   const fmt = (n: number) => (n || 0).toLocaleString("fr-FR") + " F CFA";
   const dshort = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
@@ -95,7 +95,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       await refresh();
     }));
     tb.querySelectorAll<HTMLElement>("[data-cancel]").forEach((el) => el.addEventListener("click", async () => {
-      if (!window.confirm("Refuser cette réservation ? La place sera libérée.")) return;
+      if (!(await confirmModal({ title: "Refuser la réservation", message: "La place réservée sera libérée. Confirmer le refus ?", danger: true, confirmLabel: "Refuser" }))) return;
       await supabaseBrowser.rpc("cancel_booking", { p_booking_id: el.dataset.cancel });
       await refresh();
     }));

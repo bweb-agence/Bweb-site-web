@@ -59,7 +59,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { slugify, esc, dshort, dtLocalValue, toast } from "../../scripts/adminUtils";
+  import { slugify, esc, dshort, dtLocalValue, toast, confirmModal } from "../../scripts/adminUtils";
   import { analyzeSeo } from "../../scripts/editor/seo";
   import { marked } from "marked";
 
@@ -136,7 +136,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
   async function del(id: string) {
     const p = all.find((x) => x.id === id);
-    if (!window.confirm(`Supprimer « ${p?.title} » ? Cette action est irréversible.`)) return;
+    if (!(await confirmModal({ title: "Supprimer l'article", message: `Supprimer « ${p?.title} » ?\nCette action est irréversible.`, danger: true, confirmLabel: "Supprimer" }))) return;
     const { error } = await supabaseBrowser.from("posts").delete().eq("id", id);
     if (error) { toast("Suppression impossible.", "err"); return; }
     toast("Article supprimé.");

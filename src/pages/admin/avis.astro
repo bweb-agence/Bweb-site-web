@@ -27,7 +27,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { esc, dshort, toast } from "../../scripts/adminUtils";
+  import { esc, dshort, toast, confirmModal } from "../../scripts/adminUtils";
 
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
@@ -47,7 +47,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     await load();
   }
   async function remove(id: string) {
-    if (!window.confirm("Supprimer définitivement cet avis ?")) return;
+    if (!(await confirmModal({ title: "Supprimer l'avis", message: "Supprimer définitivement cet avis ?", danger: true, confirmLabel: "Supprimer" }))) return;
     const { error } = await supabaseBrowser.from("reviews").delete().eq("id", id);
     if (error) { toast("Suppression impossible.", "err"); return; }
     toast("Avis supprimé."); await load();

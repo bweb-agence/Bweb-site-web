@@ -25,7 +25,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { esc, fmtFCFA, dshort, toast, confirmBooking } from "../../scripts/adminUtils";
+  import { esc, fmtFCFA, dshort, toast, confirmBooking, confirmModal } from "../../scripts/adminUtils";
 
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
@@ -70,7 +70,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       toast("Réservation confirmée — e-mail envoyé. ✓"); await load();
     }));
     rows.querySelectorAll<HTMLElement>("[data-cancel]").forEach((el) => el.addEventListener("click", async () => {
-      if (!window.confirm("Annuler cette réservation ? La place sera libérée.")) return;
+      if (!(await confirmModal({ title: "Annuler la réservation", message: "La place réservée sera libérée. Confirmer l'annulation ?", danger: true, confirmLabel: "Oui, annuler" }))) return;
       const { error } = await supabaseBrowser.rpc("cancel_booking", { p_booking_id: el.dataset.cancel });
       if (error) { toast("Action impossible.", "err"); return; }
       toast("Réservation annulée."); await load();

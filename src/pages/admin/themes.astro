@@ -45,7 +45,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { slugify, esc, toast } from "../../scripts/adminUtils";
+  import { slugify, esc, toast, confirmModal } from "../../scripts/adminUtils";
   import { THEME_COLORS, themeSwatchStyle } from "../../lib/themes";
 
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
@@ -129,7 +129,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     const t = all.find((x) => x.id === id);
     const n = usage[id] || 0;
     const warn = n ? `\n\n${n} contenu(s) y sont rattachés : ils perdront ce thème (le contenu reste, mais sans thème).` : "";
-    if (!window.confirm(`Supprimer le thème « ${t?.name} » ?${warn}`)) return;
+    if (!(await confirmModal({ title: "Supprimer le thème", message: `Supprimer le thème « ${t?.name} » ?${warn}`, danger: true, confirmLabel: "Supprimer" }))) return;
     const { error } = await supabaseBrowser.from("themes").delete().eq("id", id);
     if (error) { toast("Suppression impossible.", "err"); return; }
     toast("Thème supprimé.");
