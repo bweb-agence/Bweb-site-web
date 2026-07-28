@@ -4,7 +4,7 @@ export const prerender = false;
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { supabase } from "../../../lib/supabase";
 import { site, contact } from "../../../config/site";
-import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix } from "../../../lib/format";
+import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, modeLabel } from "../../../lib/format";
 import { marked } from "marked";
 import PhoneField from "../../../components/PhoneField.astro";
 import "../../../styles/formations.css";
@@ -55,6 +55,20 @@ const ttPromo = (t: any) => (t.compare_at_price && t.compare_at_price > t.price
   ? { compareAt: t.compare_at_price, pct: Math.round((1 - t.price / t.compare_at_price) * 100) }
   : null);
 
+// Mode (présentiel / en ligne / hybride) + niveau — pilotent l'affichage de la page.
+const sessMode = (session as any)?.mode as string | null;
+const online = isOnline(sessMode);        // 100 % en ligne
+const hybrid = isHybrid(sessMode);        // présentiel ET en ligne
+const showVenue = sessMode !== "en_ligne"; // présentiel ou hybride → lieu + carte
+const showOnline = sessMode !== "presentiel"; // en ligne ou hybride → infos visio
+const sessModeLabel = modeLabel(sessMode);
+const sessLevel = levelLabel((session as any)?.level);
+const levelSlug = ((session as any)?.level || "") as string;
+// Libellé du niveau : badge session prioritaire, sinon champ libre de la formation.
+const levelText = sessLevel || formation?.level || "Tous niveaux";
+const meetingUrl = ((session as any)?.meeting_url as string | null) || null;
+const meetingInfo = ((session as any)?.meeting_info as string | null) || null;
+
 // Session déjà passée ? (garde-fou : plus réservable, non indexable)
 const isPast = session ? new Date(session.starts_at).getTime() < Date.now() : false;
 
@@ -94,6 +108,40 @@ if (session?.formation_id) {
 const reviewCount = reviews.length;
 const reviewAvg = reviewCount ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviewCount) * 10) / 10 : 0;
 const stars = (n: number) => "★★★★★".slice(0, Math.round(n)) + "☆☆☆☆☆".slice(0, 5 - Math.round(n));
+
+// Order bumps : offres complémentaires proposées pendant la réservation (max 2).
+let orderBumps: {
+  ticketTypeId: string; headline: string | null; description: string | null; badge: string | null;
+  name: string; ticketName: string; price: number; compareAt: number | null; image: string | null;
+}[] = [];
+if (session && !isPast && !isFull) {
+  const { data: obs } = await supabase
+    .from("order_bumps")
+    .select("id, headline, description, badge, ticket_type_id, ticket_types(name, price, compare_at_price, capacity, sold, sessions(title, image_url))")
+    .eq("session_id", session.id)
+    .order("sort", { ascending: true });
+  orderBumps = (obs ?? [])
+    .map((o: any) => {
+      const tt = o.ticket_types;
+      if (!tt) return null;
+      if (Math.max(0, (tt.capacity ?? 0) - (tt.sold ?? 0)) <= 0) return null; // complet → on masque
+      const sess = tt.sessions;
+      return {
+        ticketTypeId: o.ticket_type_id,
+        headline: o.headline,
+        description: o.description,
+        badge: o.badge,
+        name: sess?.title || tt.name,
+        ticketName: tt.name,
+        price: tt.price,
+        compareAt: tt.compare_at_price && tt.compare_at_price > tt.price ? tt.compare_at_price : null,
+        image: sess?.image_url ?? null,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 2) as typeof orderBumps;
+}
+const bumpPct = (price: number, was: number) => Math.round((1 - price / was) * 100);
 
 // Découpe la description en intro + éléments « Au programme »
 const desc = formation?.description_md ?? "";
@@ -136,20 +184,29 @@ const eventLd = session
       name: session.title,
       description:
         session.seo_description || formation?.summary ||
-        `Formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`,
+        (online
+          ? `Formation en ligne (visioconférence) le ${frDateLong(session.starts_at)}.`
+          : hybrid
+          ? `Formation en présentiel à Abidjan et en ligne le ${frDateLong(session.starts_at)}.`
+          : `Formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`),
       startDate: session.starts_at,
-      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      eventAttendanceMode: online
+        ? "https://schema.org/OnlineEventAttendanceMode"
+        : hybrid
+        ? "https://schema.org/MixedEventAttendanceMode"
+        : "https://schema.org/OfflineEventAttendanceMode",
       eventStatus: "https://schema.org/EventScheduled",
       ...(session.image_url ? { image: [session.image_url] } : {}),
-      location: {
-        "@type": "Place",
-        name: session.venue || "Espace de formation Bweb",
-        address: {
-          "@type": "PostalAddress",
-          addressLocality: session.city || "Abidjan",
-          addressCountry: "CI",
-        },
-      },
+      location: online
+        ? { "@type": "VirtualLocation", url: shareUrl }
+        : (() => {
+            const place = {
+              "@type": "Place",
+              name: session.venue || "Espace de formation Bweb",
+              address: { "@type": "PostalAddress", addressLocality: session.city || "Abidjan", addressCountry: "CI" },
+            };
+            return hybrid ? [place, { "@type": "VirtualLocation", url: shareUrl }] : place;
+          })(),
       organizer: { "@type": "Organization", name: site.name, url: site.url },
       ...(minPrice !== null
         ? {
@@ -186,13 +243,15 @@ const courseLd = session && reviewCount
       },
       hasCourseInstance: {
         "@type": "CourseInstance",
-        courseMode: "Onsite",
+        courseMode: online ? "Online" : hybrid ? "Blended" : "Onsite",
         startDate: session.starts_at,
-        location: {
-          "@type": "Place",
-          name: session.venue || "Espace de formation Bweb",
-          address: { "@type": "PostalAddress", addressLocality: session.city || "Abidjan", addressCountry: "CI" },
-        },
+        location: online
+          ? { "@type": "VirtualLocation", url: shareUrl }
+          : {
+              "@type": "Place",
+              name: session.venue || "Espace de formation Bweb",
+              address: { "@type": "PostalAddress", addressLocality: session.city || "Abidjan", addressCountry: "CI" },
+            },
         ...(minPrice !== null
           ? { offers: { "@type": "Offer", price: minPrice, priceCurrency: "XOF", availability: isFull ? "https://schema.org/SoldOut" : "https://schema.org/InStock", url: shareUrl } }
           : {}),
@@ -205,7 +264,7 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
 {session ? (
   <BaseLayout
     title={session.seo_title || `${session.title} — ${frDateShort(session.starts_at)} | Formations Bweb`}
-    description={session.seo_description || formation?.summary || `Session de formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`}
+    description={session.seo_description || formation?.summary || (online ? `Formation en ligne (visioconférence) le ${frDateLong(session.starts_at)}.` : hybrid ? `Formation en présentiel à Abidjan et en ligne le ${frDateLong(session.starts_at)}.` : `Session de formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`)}
     image={session.image_url || undefined}
     noindex={isPast}
   >
@@ -228,14 +287,22 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
         <div class="sess-layout">
           <!-- ===== Titre (col. gauche, ligne 1) ===== -->
           <div class="sess-head">
-            {session.theme && <div class="eyebrow">{session.theme} · Présentiel</div>}
+            <div class="sess-eyebrows">
+              {session.theme && <span class="eyebrow">{session.theme} · {sessModeLabel}</span>}
+              {sessLevel && <span class={`sess-level ${levelSlug}`}>{sessLevel}</span>}
+            </div>
             <h1 style="font-family:var(--f-display);font-weight:800;font-size:var(--fs-h1);line-height:1.08;letter-spacing:-.02em;margin:8px 0 10px;color:var(--c-ink)">{session.title}</h1>
             {formation?.summary && <p class="sess-desc" style="max-width:60ch">{formation.summary}</p>}
 
             <div class="sess-meta">
               <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>{frDateLong(session.starts_at)} · {frTime(session.starts_at)}</span>
               <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg>{isPast ? "Session passée" : isFull ? "Session complète" : `${totalRemaining} places restantes`}</span>
-              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>{session.venue ?? "Espace Bweb · Cocody"}, {session.city ?? "Abidjan"}</span>
+              {showVenue && (
+                <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>{session.venue ?? "Espace Bweb · Cocody"}, {session.city ?? "Abidjan"}</span>
+              )}
+              {showOnline && (
+                <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="15" height="13" rx="2"/><path d="M17 9l5-3v11l-5-3z"/></svg>En ligne · Visioconférence</span>
+              )}
             </div>
           </div>
 
@@ -296,26 +363,54 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
             <h2 class="sectitle">Infos pratiques</h2>
             <div class="info-grid">
               <div class="c"><div class="k">Durée</div><div class="v">{formation?.duration ?? "—"}</div></div>
-              <div class="c"><div class="k">Niveau</div><div class="v">{formation?.level ?? "Tous niveaux"}</div></div>
+              <div class="c"><div class="k">Niveau</div><div class="v">{levelText}</div></div>
               <div class="c"><div class="k">Formateur</div><div class="v">{formation?.instructor_name ?? "Expert Bweb"}{formation?.instructor_role && <span class="isub">{formation.instructor_role}</span>}</div></div>
               <div class="c"><div class="k">Langue</div><div class="v">Français</div></div>
-              <div class="c"><div class="k">Format</div><div class="v">Présentiel</div></div>
+              <div class="c"><div class="k">Format</div><div class="v">{sessModeLabel}</div></div>
               <div class="c"><div class="k">Places</div><div class="v">{totalCap} max.</div></div>
             </div>
 
-            <h2 class="sectitle">Lieu sur carte</h2>
-            <div class="map-facade" id="map-facade" data-src={mapEmbed} data-title="Lieu de la formation">
-              <div class="map-facade__info">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
-                <div>
-                  <div class="mf-place">{session.venue ?? "Espace de formation Bweb · Cocody"}</div>
-                  {(session as any).address && <div class="mf-addr">{(session as any).address}</div>}
-                  <div class="mf-city">{session.city ?? "Abidjan"}, Côte d'Ivoire</div>
+            {showOnline && (
+              <>
+                <h2 class="sectitle">Se connecter à la session</h2>
+                <div class="meet-box">
+                  <div class="meet-box__head">
+                    <span class="meet-box__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="15" height="13" rx="2"/><path d="M17 9l5-3v11l-5-3z"/></svg></span>
+                    <div>
+                      <div class="meet-box__title">Formation en visioconférence</div>
+                      <div class="meet-box__sub">Suivez la session en direct, où que vous soyez.</div>
+                    </div>
+                  </div>
+                  {meetingInfo && <p class="meet-box__info">{meetingInfo}</p>}
+                  {meetingUrl ? (
+                    <a class="btn btn-primary" href={meetingUrl} target="_blank" rel="noopener">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="15" height="13" rx="2"/><path d="M17 9l5-3v11l-5-3z"/></svg>
+                      Rejoindre la visioconférence
+                    </a>
+                  ) : (
+                    <p class="meet-box__note">🔗 Le lien de connexion vous sera envoyé par e-mail et WhatsApp après votre inscription.</p>
+                  )}
                 </div>
-              </div>
-              <button type="button" class="btn btn-outline map-facade__btn" id="map-load">Afficher la carte</button>
-              <p class="map-facade__note">La carte est fournie par Google Maps. En l'affichant, vous acceptez le dépôt de cookies Google.</p>
-            </div>
+              </>
+            )}
+
+            {showVenue && (
+              <>
+                <h2 class="sectitle">Lieu sur carte</h2>
+                <div class="map-facade" id="map-facade" data-src={mapEmbed} data-title="Lieu de la formation">
+                  <div class="map-facade__info">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
+                    <div>
+                      <div class="mf-place">{session.venue ?? "Espace de formation Bweb · Cocody"}</div>
+                      {(session as any).address && <div class="mf-addr">{(session as any).address}</div>}
+                      <div class="mf-city">{session.city ?? "Abidjan"}, Côte d'Ivoire</div>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-outline map-facade__btn" id="map-load">Afficher la carte</button>
+                  <p class="map-facade__note">La carte est fournie par Google Maps. En l'affichant, vous acceptez le dépôt de cookies Google.</p>
+                </div>
+              </>
+            )}
 
             {session.formation_id && (
               <>
@@ -458,11 +553,11 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
                 ) : isFull ? (
                   <a class="btn btn-outline btn-block btn-lg" href={`https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("Bonjour, je souhaite être sur la liste d'attente pour « " + session.title + " » du " + frDateLong(session.starts_at) + ".")}`} target="_blank" rel="noopener">Rejoindre la liste d'attente</a>
                 ) : (
-                  <button type="button" class="btn btn-primary btn-block btn-lg" id="open-rz">Réserver ma place</button>
+                  <button type="button" class="btn btn-primary btn-block btn-lg btn-shine" id="open-rz"><span class="btn-shine__label">Réserver ma place</span></button>
                 )}
                 <div class="buy-includes-title">Cette formation comprend :</div>
                 <ul class="buy-includes">
-                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span><b>{formation?.duration ?? "Session"}</b> en présentiel</span></li>
+                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span><b>{formation?.duration ?? "Session"}</b> {online ? "en visioconférence" : hybrid ? "en présentiel ou en ligne" : "en présentiel"}</span></li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Groupe limité à <b>{totalCap} participants</b></li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.5 13.5L7 22l5-3 5 3-1.5-8.5"/></svg><b>Attestation</b> de fin de formation</li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12H4z"/><path d="M8 9h6M8 13h8M8 17h5"/></svg><b>Support</b> de formation fourni</li>
@@ -484,10 +579,13 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
       <!-- ===================== MODALE RÉSERVATION ===================== -->
       <div class="rz-overlay" id="rz" role="dialog" aria-modal="true" aria-label="Réserver votre place"
         data-wa={contact.whatsapp.primary} data-phone={contact.phoneDisplay}
-        data-title={session.title} data-date={frDateLong(session.starts_at)} data-session={session.id}>
+        data-title={session.title} data-date={frDateLong(session.starts_at)} data-session={session.id}
+        data-mode={sessMode ?? "presentiel"} data-pay-api={import.meta.env.PAYMENT_API_URL}>
         <div class="rz-top">
-          <span class="rz-brand"><span class="m">B</span>Bweb Agence</span>
-          <span class="rz-title">{session.title} · {frDateShort(session.starts_at)}</span>
+          <div class="rz-top-brand">
+            <img class="rz-logo" src="/images/logo.svg" alt="Bweb Agence" width="120" height="28" />
+            <span class="rz-title">{session.title} · {frDateShort(session.starts_at)}</span>
+          </div>
           <button type="button" class="rz-close" id="rz-close" aria-label="Fermer">✕</button>
         </div>
         <div class="rz-progress" id="rz-progress">
@@ -501,33 +599,82 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
           <div class="rz-container">
             <!-- Étape 1 : tarifs -->
             <section class="rz-step active" data-step="1">
-              <h2 class="rz-h">Choisissez votre tarif</h2>
+              {hybrid && (
+                <div class="rz-attend" id="rz-attend">
+                  <h2 class="rz-h">Comment souhaitez-vous participer ?</h2>
+                  <p class="rz-sub">Cette session se tient en présentiel et en ligne — choisissez votre mode.</p>
+                  <div class="rz-attend-grid" role="radiogroup" aria-label="Mode de participation">
+                    <button type="button" class="rz-attend-opt" data-attend="presentiel" aria-pressed="false">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
+                      <span class="rz-attend-txt"><span class="rz-attend-t">Sur place</span><span class="rz-attend-s">{session.venue ?? "Espace Bweb · Cocody"}</span></span>
+                    </button>
+                    <button type="button" class="rz-attend-opt" data-attend="en_ligne" aria-pressed="false">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="15" height="13" rx="2"/><path d="M17 9l5-3v11l-5-3z"/></svg>
+                      <span class="rz-attend-txt"><span class="rz-attend-t">En ligne</span><span class="rz-attend-s">Visioconférence en direct</span></span>
+                    </button>
+                  </div>
+                </div>
+              )}
+              <h2 class="rz-h">Réservez une place</h2>
               <p class="rz-sub">Sélectionnez le nombre de places par tarif.</p>
               <div class="ticket-grid" style="grid-template-columns:1fr">
                 {tickets.map((t: any) => {
                   const remaining = Math.max(0, t.capacity - t.sold);
+                  const featured = t.badge === "popular";
                   const bi = badgeInfo(t.badge, t.sales_end);
                   const promo = ttPromo(t);
                   return (
-                    <div class="ticket" data-ticket data-id={t.id} data-name={t.name} data-price={t.price} data-remaining={remaining}>
-                      <div class="th">
-                        <div>
-                          <div class="tn">{t.name}</div>
+                    <div class={`ticket ${featured ? "featured" : ""}`} data-ticket data-id={t.id} data-name={t.name} data-price={t.price} data-remaining={remaining}>
+                      {featured && <span class="t-ribbon"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.7L12 17.3 5.8 20.8l1.6-6.7L2.2 8.9l6.9-.6z"/></svg>Le plus choisi</span>}
+                      <div class="t-row">
+                        <div class="t-info">
+                          <div class="t-name-row">
+                            <span class="tn">{t.name}</span>
+                            {bi && <span class={`t-badge ${bi.cls}`}>{bi.label}</span>}
+                            {remaining > 0 && remaining <= 3 && <span class="t-left">🔥 Plus que {remaining}</span>}
+                          </div>
                           <div class={`tp ${promo ? "has-promo" : ""}`}>{priceFCFA(t.price)}{promo && <span class="tp-was">{priceFCFA(promo.compareAt)}</span>}{promo && <span class="tp-off">−{promo.pct}%</span>}</div>
                         </div>
-                        {bi && <span class={`t-badge ${bi.cls}`}>{bi.label}</span>}
+                        {remaining <= 0 ? <span class="t-soldout">Épuisé</span> : (
+                          <div class="stepper" data-stepper>
+                            <button type="button" data-dec aria-label="Retirer">−</button>
+                            <span class="val" data-val>0</span>
+                            <button type="button" data-inc aria-label="Ajouter">+</button>
+                          </div>
+                        )}
                       </div>
-                      {remaining <= 0 ? <span class="t-soldout">Épuisé</span> : (
-                        <div class="stepper" data-stepper>
-                          <button type="button" data-dec aria-label="Retirer">−</button>
-                          <span class="val" data-val>0</span>
-                          <button type="button" data-inc aria-label="Ajouter">+</button>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
               </div>
+
+              {orderBumps.length > 0 && (
+                <div class="rz-bumps" id="rz-bumps">
+                  <div class="rz-bumps-lead"><span class="ob-spark" aria-hidden="true">✨</span> Complétez votre parcours — offre spéciale</div>
+                  {orderBumps.map((b) => (
+                    <label class="ob-card" data-bump data-id={b.ticketTypeId} data-price={b.price} data-name={b.ticketName}>
+                      <input type="checkbox" class="ob-check" aria-label={`Ajouter ${b.name}`} />
+                      <span class="ob-box" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+                      {b.image && <img class="ob-thumb" src={b.image} alt="" loading="lazy" />}
+                      <span class="ob-main">
+                        <span class="ob-head">
+                          {b.badge && <span class="ob-badge">{b.badge}</span>}
+                          {b.headline && <span class="ob-kicker">{b.headline}</span>}
+                        </span>
+                        <span class="ob-title">{b.name}</span>
+                        {b.description && <span class="ob-desc">{b.description}</span>}
+                        <span class="ob-price">
+                          <span class="ob-add">+ {priceFCFA(b.price)}</span>
+                          {b.compareAt && <s class="ob-was">{priceFCFA(b.compareAt)}</s>}
+                          {b.compareAt && <span class="ob-off">−{bumpPct(b.price, b.compareAt)}%</span>}
+                        </span>
+                      </span>
+                      <span class="ob-cta" aria-hidden="true">Ajouter</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
               <div class="rz-summary">
                 <div id="rz-lines"><div class="row muted"><span>Aucune place sélectionnée</span></div></div>
                 <div class="row tot"><span>Total</span><b id="rz-total">0 F CFA</b></div>
@@ -551,9 +698,13 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
               <h2 class="rz-h">Moyen de paiement</h2>
               <p class="rz-sub">Choisissez comment régler votre inscription.</p>
               <div class="pm-grid" id="pm-grid">
-                <button type="button" class="pm" data-method="wave"><span class="lg wave">Wave</span><span>Wave</span></button>
-                <button type="button" class="pm" data-method="orange_money"><span class="lg om">OM</span><span>Orange Money</span></button>
-                <button type="button" class="pm" data-method="mobile_money"><span class="lg momo">MoMo</span><span>Mobile Money<span class="sub">MTN · Moov</span></span></button>
+                <button type="button" class="pm pm-online sel" data-method="money_fusion" style="grid-column:1/-1;border-color:var(--c-green,#00c89e)">
+                  <span class="lg" style="background:var(--c-green,#00c89e);color:#fff">🔒</span>
+                  <span>Payer en ligne<span class="sub">Mobile Money · Wave · carte — confirmation immédiate</span></span>
+                </button>
+                <button type="button" class="pm" data-method="wave"><span class="lg wave">Wave</span><span>Wave<span class="sub">manuel</span></span></button>
+                <button type="button" class="pm" data-method="orange_money"><span class="lg om">OM</span><span>Orange Money<span class="sub">manuel</span></span></button>
+                <button type="button" class="pm" data-method="mobile_money"><span class="lg momo">MoMo</span><span>Mobile Money<span class="sub">MTN · Moov · manuel</span></span></button>
                 <button type="button" class="pm" data-method="sur_place"><span class="lg place">🏢</span><span>Sur place<span class="sub">Acompte 50 %</span></span></button>
               </div>
               <div class="pay-note" id="pm-note" style="display:none"></div>
@@ -586,7 +737,7 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
 
             <div class="rz-foot">
               <button type="button" class="btn btn-ghost" id="rz-prev" style="display:none">‹ Précédent</button>
-              <button type="button" class="btn btn-primary btn-lg" id="rz-next">Continuer ›</button>
+              <button type="button" class="btn btn-primary btn-lg btn-shine" id="rz-next"><span class="btn-shine__label">Continuer ›</span></button>
               <a class="btn btn-primary btn-lg" id="rz-done" href="/formations/calendrier" style="display:none">Terminer</a>
               <span class="rz-err" id="rz-err"></span>
             </div>

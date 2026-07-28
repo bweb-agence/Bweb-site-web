@@ -31,6 +31,11 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   const rows = document.querySelector("[data-rows]")!;
   let all: any[] = [];
   const methodLabel: Record<string, string> = { wave: "Wave", orange_money: "Orange Money", mobile_money: "Mobile Money", sur_place: "Sur place" };
+  const attendPill: Record<string, string> = {
+    presentiel: '<span class="tag-pill pub">🏢 Sur place</span>',
+    en_ligne: '<span class="tag-pill pub">💻 En ligne</span>',
+  };
+  const attendCsv: Record<string, string> = { presentiel: "Sur place", en_ligne: "En ligne" };
   const statusPill: Record<string, string> = {
     pending: '<span class="tag-pill wait">En attente</span>', confirmed: '<span class="tag-pill ok">Confirmée</span>',
     cancelled: '<span class="tag-pill draft">Annulée</span>', waitlist: '<span class="tag-pill pub">Liste d\'attente</span>',
@@ -50,7 +55,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       else if (b.status === "confirmed") actions += ` <button class="abtn sm" data-cancel="${b.id}">Annuler</button>`;
       return `<tr>
         <td><strong>${esc(b.full_name)}</strong><br><span style="color:var(--c-gray-500);font-size:.76rem">${esc(b.reference)} · ${esc(b.email || b.phone || "")}</span></td>
-        <td>${esc(b.sessions?.title || "")}<br><span style="color:var(--c-gray-500);font-size:.76rem">${b.quantity}× ${esc(b.ticket_types?.name || "")} · ${dshort(b.created_at)}</span></td>
+        <td>${esc(b.sessions?.title || "")}${b.attendance_mode ? " " + attendPill[b.attendance_mode] : ""}<br><span style="color:var(--c-gray-500);font-size:.76rem">${b.quantity}× ${esc(b.ticket_types?.name || "")} · ${dshort(b.created_at)}</span></td>
         <td>${esc(methodLabel[b.payment_method] || "—")}${b.is_deposit ? ' <span class="tag-pill wait">acompte</span>' : ""}</td>
         <td style="font-variant-numeric:tabular-nums">${fmtFCFA(due)}</td>
         <td>${statusPill[b.status] || b.status}</td>
@@ -88,8 +93,8 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
   function exportCsv() {
     const list = all;
-    const head = ["Référence", "Date", "Nom", "E-mail", "Téléphone", "Session", "Tarif", "Places", "Moyen", "Montant dû", "Payé", "Statut"];
-    const lines = list.map((b) => [b.reference, new Date(b.created_at).toISOString(), b.full_name, b.email, b.phone, b.sessions?.title, b.ticket_types?.name, b.quantity, methodLabel[b.payment_method] || "", b.amount_due, b.amount_paid, b.status]
+    const head = ["Référence", "Date", "Nom", "E-mail", "Téléphone", "Session", "Participation", "Tarif", "Places", "Moyen", "Montant dû", "Payé", "Statut"];
+    const lines = list.map((b) => [b.reference, new Date(b.created_at).toISOString(), b.full_name, b.email, b.phone, b.sessions?.title, attendCsv[b.attendance_mode] || "", b.ticket_types?.name, b.quantity, methodLabel[b.payment_method] || "", b.amount_due, b.amount_paid, b.status]
       .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","));
     const csv = [head.join(","), ...lines].join("\n");
     const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));

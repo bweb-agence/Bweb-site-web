@@ -1,6 +1,20 @@
 ---
+export const prerender = false;
+
 import BaseLayout from "../layouts/BaseLayout.astro";
 import IllusFormations from "../components/illus/IllusFormations.astro";
+import SessionCard from "../components/SessionCard.astro";
+import { supabase } from "../lib/supabase";
+
+// Les 3 prochaines sessions (à venir), pour un aperçu du calendrier.
+const { data: nextSessions } = await supabase
+  .from("sessions")
+  .select("slug,title,theme,venue,city,image_url,starts_at,status,level,mode,ticket_types(price,capacity,sold,compare_at_price)")
+  .in("status", ["published", "full"])
+  .gte("starts_at", new Date().toISOString())
+  .order("starts_at", { ascending: true })
+  .limit(3);
+const sessions = nextSessions ?? [];
 ---
 
 <BaseLayout title="Formations IA & digital pour entreprises | Bweb" description="Formations en IA, marketing digital, vente en ligne et productivité : Bweb rend vos équipes autonomes sur les nouvelles technologies.">
@@ -29,6 +43,36 @@ import IllusFormations from "../components/illus/IllusFormations.astro";
   </div>
 </section>
 
+<!-- ===== Prochaines sessions (aperçu du calendrier) ===== -->
+<section class="section" data-nav-section="Prochaines sessions">
+  <div class="container">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center">Prochaines sessions</div>
+      <h2>Les prochaines formations au calendrier.</h2>
+      <p class="lead" style="margin-top:16px">Réservez votre place aux sessions en présentiel à venir à Abidjan.</p>
+    </div>
+
+    {sessions.length > 0 ? (
+      <>
+        <div class="ev-grid" style="margin-top:var(--space-lg)">
+          {sessions.map((s) => <SessionCard session={s} />)}
+        </div>
+        <div style="text-align:center;margin-top:var(--space-lg)">
+          <a class="btn btn-outline" href="/formations/calendrier">
+            Voir toutes les sessions
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:8px"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </>
+    ) : (
+      <div style="text-align:center;margin-top:var(--space-lg)">
+        <p class="form-note">Les prochaines sessions seront bientôt annoncées.</p>
+        <a class="btn btn-outline" href="/formations/calendrier" style="margin-top:14px">Voir le calendrier des sessions</a>
+      </div>
+    )}
+  </div>
+</section>
+
 <div class="ticker-band alt">
   <div class="marquee-track">
     <span class="ticker-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.4L20 10l-6.2 1.6L12 18l-1.8-6.4L4 10l6.2-1.6z"/></svg>Stratégie IA</span>
@@ -41,23 +85,98 @@ import IllusFormations from "../components/illus/IllusFormations.astro";
 </div>
 
 
-<!-- ===== Thematiques ===== -->
+<!-- ===== Thematiques (bento créatif) ===== -->
 <section class="section" data-nav-section="Thématiques">
   <div class="container">
-    <div class="section-head reveal">
-      <div class="eyebrow">Thématiques</div>
-      <h2>Neuf thématiques pour couvrir l'essentiel du digital.</h2>
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center">Thématiques</div>
+      <h2>Neuf thématiques pour couvrir <span class="tb-grad">l'essentiel du digital.</span></h2>
+      <p class="lead" style="margin-top:14px">De la stratégie à l'exécution : choisissez le terrain où vous voulez progresser.</p>
     </div>
-    <div class="grid grid-3" data-stagger>
-      <div class="card"><h4>Marketing digital</h4><p style="margin-top:8px;font-size:.9rem">Bases et stratégies de communication en ligne.</p></div>
-      <div class="card"><h4>Publicité Facebook &amp; Instagram</h4><p style="margin-top:8px;font-size:.9rem">Créer et piloter des campagnes rentables.</p></div>
-      <div class="card"><h4>Intelligence artificielle</h4><p style="margin-top:8px;font-size:.9rem">Utiliser l'IA pour gagner en productivité.</p></div>
-      <div class="card"><h4>Création de contenu</h4><p style="margin-top:8px;font-size:.9rem">Produire des contenus qui engagent.</p></div>
-      <div class="card"><h4>Vente en ligne</h4><p style="margin-top:8px;font-size:.9rem">Structurer et développer ses ventes digitales.</p></div>
-      <div class="card"><h4>WhatsApp Business</h4><p style="margin-top:8px;font-size:.9rem">Vendre et fidéliser via WhatsApp.</p></div>
-      <div class="card"><h4>Productivité numérique</h4><p style="margin-top:8px;font-size:.9rem">Mieux s'organiser avec les bons outils.</p></div>
-      <div class="card"><h4>Automatisation</h4><p style="margin-top:8px;font-size:.9rem">Automatiser les tâches répétitives.</p></div>
-      <div class="card"><h4>Produits digitaux</h4><p style="margin-top:8px;font-size:.9rem">Créer et vendre des produits digitaux.</p></div>
+
+    <div class="tb-bento" data-stagger>
+      <!-- Vedette : Intelligence artificielle -->
+      <article class="tb-tile tb-feature" style="--c:#2b7bff">
+        <span class="tb-num">03</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M12 1.5V6M12 18v4.5M1.5 12H6M18 12h4.5M4 4l2.5 2.5M17.5 17.5L20 20M20 4l-2.5 2.5M6.5 17.5L4 20"/></svg></span>
+        <h3>Intelligence artificielle</h3>
+        <p>Le cœur de notre expertise : mettez l'IA au travail pour gagner en productivité, décider plus vite et automatiser l'essentiel.</p>
+        <div class="tb-pills"><span>Prompting</span><span>Agents IA</span><span>Cas d'usage métier</span></div>
+      </article>
+
+      <!-- 01 Marketing digital -->
+      <article class="tb-tile" style="--c:#1f6ced">
+        <span class="tb-num">01</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M3 11l16-7-3 16-4-5-5 5-1-8z"/><path d="M8 13l4 3"/></svg></span>
+        <h3>Marketing digital</h3>
+        <p>Bases et stratégies de communication en ligne.</p>
+        <span class="tb-go">Explorer <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+
+      <!-- 02 Publicité FB & Insta -->
+      <article class="tb-tile" style="--c:#7b5cff">
+        <span class="tb-num">02</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none"/></svg></span>
+        <h3>Publicité Facebook &amp; Instagram</h3>
+        <p>Créer et piloter des campagnes rentables.</p>
+        <span class="tb-go">Explorer <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+
+      <!-- 04 Création de contenu -->
+      <article class="tb-tile" style="--c:#ec4899">
+        <span class="tb-num">04</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l3 3"/></svg></span>
+        <h3>Création de contenu</h3>
+        <p>Produire des contenus qui engagent.</p>
+        <span class="tb-go">Explorer <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+
+      <!-- 05 Vente en ligne -->
+      <article class="tb-tile" style="--c:#0ea5a3">
+        <span class="tb-num">05</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M4 5h2l2 12h9l2-8H7"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="16.5" cy="20" r="1.3"/></svg></span>
+        <h3>Vente en ligne</h3>
+        <p>Structurer et développer ses ventes digitales.</p>
+        <span class="tb-go">Explorer <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+
+      <!-- 06 WhatsApp Business -->
+      <article class="tb-tile" style="--c:#1fb663">
+        <span class="tb-num">06</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-7.7 13.6L3 21l4.6-1.2A9 9 0 1 0 12 3z"/><path d="M8.5 8.6c-.3 0-.6.1-.8.4-.3.3-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.7 2.8 4.3 3.8 2.1.8 2.6.7 3 .6.6-.1 1.3-.6 1.5-1.1.2-.5.2-1 .1-1.1l-1.9-.9c-.2-.1-.4-.1-.6.1l-.6.7c-.1.2-.3.2-.5.1-.3-.1-1.1-.4-1.9-1.2-.7-.6-1.1-1.4-1.3-1.6-.1-.2 0-.4.1-.5l.4-.5c.1-.2.1-.3 0-.5l-.8-1.9c-.2-.4-.4-.4-.6-.4z" fill="currentColor" stroke="none"/></svg></span>
+        <h3>WhatsApp Business</h3>
+        <p>Vendre et fidéliser via WhatsApp.</p>
+        <span class="tb-go">Explorer <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+
+      <!-- 07 Productivité numérique -->
+      <article class="tb-tile" style="--c:#f59e0b">
+        <span class="tb-num">07</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg></span>
+        <h3>Productivité numérique</h3>
+        <p>Mieux s'organiser avec les bons outils.</p>
+        <span class="tb-go">Explorer <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+
+      <!-- 08 Automatisation — large -->
+      <article class="tb-tile tb-wide" style="--c:#06b6d4">
+        <span class="tb-num">08</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg></span>
+        <div class="tb-txt">
+          <h3>Automatisation</h3>
+          <p>Automatiser les tâches répétitives — connectez vos outils et laissez les workflows travailler pour vous.</p>
+        </div>
+        <span class="tb-go">Explorer <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+
+      <!-- 09 Produits digitaux -->
+      <article class="tb-tile" style="--c:#f2971d">
+        <span class="tb-num">09</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></span>
+        <h3>Produits digitaux</h3>
+        <p>Créer et vendre des produits digitaux.</p>
+        <span class="tb-go">Explorer <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
     </div>
   </div>
 </section>
@@ -78,28 +197,6 @@ import IllusFormations from "../components/illus/IllusFormations.astro";
       <div class="audience-pill"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg></div><span>Accompagnement individuel</span></div>
       <div class="audience-pill"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/><circle cx="17" cy="9" r="2.6"/></svg></div><span>Accompagnement en groupe</span></div>
     </div>
-  </div>
-</section>
-
-<!-- ===== Fiche type ===== -->
-<section class="section" data-nav-section="Infos pratiques">
-  <div class="container">
-    <div class="section-head center reveal">
-      <div class="eyebrow" style="justify-content:center">Pour chaque formation</div>
-      <h2>Toutes les informations utiles, avant de vous inscrire.</h2>
-      <p class="lead" style="margin-top:16px">Voici les informations que vous retrouverez sur chaque fiche formation.</p>
-    </div>
-    <div class="info-table reveal">
-      <div class="cell"><div class="k">Objectifs</div><div class="v">Précisés pour chaque formation</div></div>
-      <div class="cell"><div class="k">Public concerné</div><div class="v">Entrepreneurs, équipes, associations…</div></div>
-      <div class="cell"><div class="k">Programme</div><div class="v">Détail des modules abordés</div></div>
-      <div class="cell"><div class="k">Durée</div><div class="v">Selon le format choisi</div></div>
-      <div class="cell"><div class="k">Format</div><div class="v">Présentiel, en ligne ou hybride</div></div>
-      <div class="cell"><div class="k">Formateur</div><div class="v">Expert Bweb Agence dédié</div></div>
-      <div class="cell"><div class="k">Tarif</div><div class="v">Sur demande, selon le format</div></div>
-      <div class="cell"><div class="k">Prochaine date</div><div class="v">Communiquée sur demande</div></div>
-    </div>
-    <p class="form-note" style="text-align:center;margin-top:16px">Modalités d'inscription communiquées avec le catalogue complet.</p>
   </div>
 </section>
 

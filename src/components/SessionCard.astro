@@ -1,0 +1,115 @@
+---
+/* Carte de session « billet » — réutilisable (page Formations, etc.).
+   Réutilise les styles .ev-card de formations.css. */
+import { priceFCFA, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid } from "../lib/format";
+import "../styles/formations.css";
+
+type TT = { price: number; capacity: number; sold: number; compare_at_price: number | null };
+interface Props {
+  session: {
+    slug: string; title: string; theme: string | null; venue: string | null;
+    image_url: string | null; starts_at: string; status: string; ticket_types: TT[];
+    level?: string | null; mode?: string | null;
+  };
+}
+const { session: s } = Astro.props;
+const lvl = levelLabel(s.level);
+const online = isOnline(s.mode);
+const hybrid = isHybrid(s.mode);
+
+const tts = s.ticket_types ?? [];
+const cap = tts.reduce((a, t) => a + t.capacity, 0);
+const sold = tts.reduce((a, t) => a + t.sold, 0);
+const remaining = Math.max(0, cap - sold);
+const cheapest = tts.length ? tts.reduce((a, t) => (t.price < a.price ? t : a)) : null;
+const minPrice = cheapest ? cheapest.price : null;
+const compareAt = cheapest && cheapest.compare_at_price && cheapest.compare_at_price > cheapest.price ? cheapest.compare_at_price : null;
+const discountPct = compareAt && minPrice ? Math.round((1 - minPrice / compareAt) * 100) : 0;
+const pct = cap > 0 ? Math.round((sold / cap) * 100) : 0;
+const full = s.status === "full" || remaining <= 0;
+const level = full ? "full" : pct >= 80 ? "warn" : "ok";
+const availLabel = full ? "Complet" : level === "warn" ? "Bientôt complet" : "Disponible";
+
+const d = new Date(s.starts_at);
+const dayNum = d.getDate();
+const monthShort = (() => { const m = d.toLocaleDateString("fr-FR", { month: "short" }).replace(".", ""); return m.charAt(0).toUpperCase() + m.slice(1); })();
+const weekdayLine = (() => { const w = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" }).replace(".", ""); return w.charAt(0).toUpperCase() + w.slice(1); })();
+---
+
+<article class="ev-card" data-grad={gradSuffix(s.theme)}>
+  <div class={`ev-media ${gradClass(s.theme)}`}>
+    {s.image_url && <img src={s.image_url} alt="" loading="lazy" />}
+    <span class="ev-scrim"></span>
+    <div class="ev-tags">
+      {s.theme && <span class="ev-theme"><span class="dot"></span>{s.theme}</span>}
+      {lvl && <span class={`ev-level ${s.level}`}>{lvl}</span>}
+    </div>
+    <div class="ev-date"><span class="d">{dayNum}</span><span class="m">{monthShort}</span></div>
+    {full ? (
+      <span class="ev-sold">Complet</span>
+    ) : compareAt && (
+      <span class="ev-promo">−{discountPct}%</span>
+    )}
+  </div>
+
+  <div class="ev-fold"><span class="dash"></span></div>
+
+  <div class="ev-body">
+    <h3 class="ev-title">{s.title}</h3>
+    <div class="ev-meta">
+      <div class="r">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        {weekdayLine} · {frTime(s.starts_at)}
+      </div>
+      <div class="r">
+        {online ? (
+          <>
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="15" height="13" rx="2"/><path d="M17 9l5-3v11l-5-3z"/></svg>
+            En ligne · Visioconférence
+          </>
+        ) : hybrid ? (
+          <>
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="15" height="13" rx="2"/><path d="M17 9l5-3v11l-5-3z"/></svg>
+            Présentiel &amp; en ligne
+          </>
+        ) : (
+          <>
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
+            {s.venue ?? "Espace de formation Bweb · Cocody"}
+          </>
+        )}
+      </div>
+    </div>
+
+    {minPrice !== null && (
+      <div class={`ev-price ${compareAt ? "has-promo" : ""}`}>
+        <div class="pr-line">
+          <span class="lbl">À partir de</span>
+          <span class="val">{minPrice.toLocaleString("fr-FR")}</span>
+          <span class="cur">F CFA</span>
+          {compareAt && <span class="off">−{discountPct}%</span>}
+        </div>
+        {compareAt && (
+          <div class="pr-promo"><span class="was">{priceFCFA(compareAt)}</span></div>
+        )}
+      </div>
+    )}
+
+    <div class={`ev-avail ${level}`}>
+      <div class="top">
+        <span class="cnt">{full ? "Session complète" : (<><b>{remaining}</b> places restantes</>)}</span>
+        <span class="st">{availLabel}</span>
+      </div>
+      <div class="track"><i style={`width:${cap ? Math.round((sold / cap) * 100) : 100}%`}></i></div>
+    </div>
+
+    {full ? (
+      <a class="btn btn-outline btn-block" href={`/formations/session/${s.slug}`}>Rejoindre la liste d'attente</a>
+    ) : (
+      <a class="btn btn-primary btn-block" href={`/formations/session/${s.slug}`}>
+        Réserver ma place
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    )}
+  </div>
+</article>

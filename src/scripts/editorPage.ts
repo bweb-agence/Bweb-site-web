@@ -20,7 +20,7 @@ const $ = <T extends HTMLElement = HTMLInputElement>(id: string) => document.get
 const val = (id: string) => ($(id) as HTMLInputElement | null)?.value ?? "";
 const setVal = (id: string, v: any) => { const el = $(id) as HTMLInputElement | null; if (el) el.value = v ?? ""; };
 const mdToHtml = (md: string) => (md ? (marked.parse(md) as string) : "");
-const BADGES: [string, string][] = [["", "— Aucun —"], ["hot", "Forte demande"], ["limited", "Places limitées"], ["ok", "Avantageux"]];
+const BADGES: [string, string][] = [["", "— Aucun —"], ["hot", "Forte demande"], ["limited", "Places limitées"], ["ok", "Avantageux"], ["popular", "★ Le plus choisi (ruban)"]];
 
 export async function initEditorPage() {
   const root = $("ed-root") as HTMLElement | null;
@@ -54,11 +54,30 @@ export async function initEditorPage() {
   }
 
   /* ---------- Formations (pour le select de session) ---------- */
+  let ttOptions: { id: string; label: string }[] = [];
+  let originalBumpIds: string[] = [];
   if (type === "session") {
     const { data: fs } = await supabaseBrowser.from("formations").select("id,title,theme").order("title");
     const sel = $("f-formation") as HTMLSelectElement | null;
     if (sel) sel.innerHTML = '<option value="">— Aucune —</option>' +
       (fs || []).map((f: any) => `<option value="${f.id}">${esc(f.title)}</option>`).join("");
+
+    // Tarifs des AUTRES sessions (cibles possibles d'un order bump).
+    const { data: tts } = await supabaseBrowser
+      .from("ticket_types")
+      .select("id,name,price,session_id,sessions(title,starts_at)")
+      .order("name");
+    ttOptions = (tts || [])
+      .filter((t: any) => t.session_id !== id)
+      .map((t: any) => ({ id: t.id, label: `${(t.sessions?.title || "Session")} — ${t.name} (${(t.price ?? 0).toLocaleString("fr-FR")} F)` }));
+
+    // Order bumps existants de cette session.
+    if (id) {
+      const { data: obs } = await supabaseBrowser
+        .from("order_bumps").select("*").eq("session_id", id).order("sort");
+      originalBumpIds = (obs || []).map((o: any) => o.id);
+      (obs || []).forEach((o: any) => addObRow(o));
+    }
   }
 
   /* ---------- Pré-remplissage des champs ---------- */
@@ -98,11 +117,15 @@ export async function initEditorPage() {
     } else {
       setVal("f-formation", record.formation_id || "");
       setVal("f-theme", record.theme || "");
+      setVal("f-level", record.level || "");
+      setVal("f-mode", record.mode || "presentiel");
       setVal("f-start", record.starts_at ? dtLocalValue(record.starts_at) : "");
       setVal("f-end", record.ends_at ? dtLocalValue(record.ends_at) : "");
       setVal("f-city", record.city || "Abidjan");
       setVal("f-venue", record.venue || "Espace de formation Bweb · Cocody");
       setVal("f-address", record.address || "");
+      setVal("f-meeting-url", record.meeting_url || "");
+      setVal("f-meeting-info", record.meeting_info || "");
       setVal("f-image", record.image_url || "");
       setVal("f-seotitle", record.seo_title || "");
       setVal("f-seodesc", record.seo_description || "");
@@ -127,6 +150,7 @@ export async function initEditorPage() {
 
   /* ---------- Éléments d'UI communs ---------- */
   updateCrumb(); updatePill(); updatePreview(); autoGrow(); updateMeta(); renderSeo();
+  if (type === "session") setupModeToggle();
 
   titleEl.addEventListener("input", () => {
     autoGrow();
@@ -146,6 +170,12 @@ export async function initEditorPage() {
 
   // Tarifs (session)
   $("ed-tt-add")?.addEventListener("click", () => addTtRow(null));
+  // Order bumps (session) — 2 max
+  $("ed-ob-add")?.addEventListener("click", () => {
+    const list = $("ed-ob-list");
+    if (list && list.querySelectorAll(".ed-tt").length >= 2) { toast("2 order bumps maximum.", "err"); return; }
+    addObRow(null);
+  });
 
   // Couverture / visuel
   setupCover();
@@ -277,6 +307,65 @@ export async function initEditorPage() {
     originalTtIds = keptIds;
   }
 
+  /* ---------- Order bumps (session) ---------- */
+  function addObRow(ob: any) {
+    const list = $("ed-ob-list"); if (!list) return;
+    const opts = '<option value="">— Choisir un tarif à ajouter —</option>' +
+      ttOptions.map((o) => `<option value="${o.id}" ${ob?.ticket_type_id === o.id ? "selected" : ""}>${esc(o.label)}</option>`).join("");
+    const div = document.createElement("div");
+    div.className = "ed-tt";
+    div.dataset.obId = ob?.id || "";
+    div.innerHTML = `
+      <div class="ed-tt-head"><span>Order bump</span>
+        <button type="button" class="ed-tt-del" title="Retirer">✕</button></div>
+      <select class="ed-sel" data-ob-tt>${opts}</select>
+      <div class="ed-help" style="margin-top:6px">Le <b>titre affiché</b> = le nom de la formation choisie ci-dessus.</div>
+      <input class="ed-inp" data-ob-badge placeholder="Badge (ex. Recommandé, −20 %)" value="${esc(ob?.badge || "")}" style="margin-top:8px" />
+      <input class="ed-inp" data-ob-headline placeholder="Petite accroche au-dessus du titre (optionnel, ex. Complétez votre parcours)" value="${esc(ob?.headline || "")}" style="margin-top:8px" />
+      <textarea class="ed-ta" data-ob-desc rows="3" placeholder="Description vendeuse : bénéfices concrets + pourquoi la prendre maintenant…" style="margin-top:8px">${esc(ob?.description || "")}</textarea>`;
+    div.querySelector(".ed-tt-del")!.addEventListener("click", () => { div.remove(); markDirty(); });
+    div.querySelectorAll("input,select,textarea").forEach((el) => el.addEventListener("input", markDirty));
+    list.appendChild(div);
+  }
+  async function syncBumps(sessionId: string) {
+    const listEl = $("ed-ob-list"); if (!listEl) return;
+    const items = Array.from(listEl.querySelectorAll<HTMLElement>(".ed-tt"));
+    const keptIds: string[] = [];
+    let sort = 0;
+    for (const it of items) {
+      const ttId = (it.querySelector("[data-ob-tt]") as HTMLSelectElement).value;
+      if (!ttId) continue; // ligne incomplète → ignorée
+      const payload: any = {
+        session_id: sessionId,
+        ticket_type_id: ttId,
+        headline: (it.querySelector("[data-ob-headline]") as HTMLInputElement).value.trim() || null,
+        description: (it.querySelector("[data-ob-desc]") as HTMLTextAreaElement).value.trim() || null,
+        badge: (it.querySelector("[data-ob-badge]") as HTMLInputElement).value.trim() || null,
+        sort: sort++,
+      };
+      const obId = it.dataset.obId;
+      if (obId) { keptIds.push(obId); const { error } = await supabaseBrowser.from("order_bumps").update(payload).eq("id", obId); if (error) throw error; }
+      else { const { data, error } = await supabaseBrowser.from("order_bumps").insert(payload).select("id").single(); if (error) throw error; it.dataset.obId = data.id; keptIds.push(data.id); }
+    }
+    const toDelete = originalBumpIds.filter((x) => !keptIds.includes(x));
+    if (toDelete.length) { const { error } = await supabaseBrowser.from("order_bumps").delete().in("id", toDelete); if (error) throw error; }
+    originalBumpIds = keptIds;
+  }
+
+  /* ---------- Mode présentiel / en ligne (session) ---------- */
+  function setupModeToggle() {
+    const sel = $("f-mode") as HTMLSelectElement | null;
+    if (!sel) return;
+    const apply = () => {
+      const v = sel.value; // 'presentiel' | 'en_ligne' | 'hybride'
+      // Hybride → on montre les deux panneaux (présentiel ET en ligne).
+      root.querySelectorAll<HTMLElement>("[data-mode-presentiel]").forEach((el) => { el.hidden = v === "en_ligne"; });
+      root.querySelectorAll<HTMLElement>("[data-mode-enligne]").forEach((el) => { el.hidden = v === "presentiel"; });
+    };
+    sel.addEventListener("change", () => { apply(); markDirty(); });
+    apply();
+  }
+
   /* ---------- Couverture / visuel ---------- */
   function setupCover() {
     const box = $("ed-cover") as HTMLElement | null; if (!box) return;
@@ -360,11 +449,15 @@ export async function initEditorPage() {
       Object.assign(payload, {
         formation_id: val("f-formation") || null,
         theme: val("f-theme").trim() || null,
+        level: val("f-level") || null,
+        mode: val("f-mode") || "presentiel",
         starts_at: new Date(val("f-start")).toISOString(),
         ends_at: val("f-end") ? new Date(val("f-end")).toISOString() : null,
         city: val("f-city").trim() || null,
         venue: val("f-venue").trim() || null,
         address: val("f-address").trim() || null,
+        meeting_url: val("f-meeting-url").trim() || null,
+        meeting_info: val("f-meeting-info").trim() || null,
         image_url: val("f-image").trim() || null,
         seo_title: val("f-seotitle").trim() || null,
         seo_description: val("f-seodesc").trim() || null,
@@ -387,7 +480,7 @@ export async function initEditorPage() {
         id = data.id; root.dataset.id = id;
         history.replaceState(null, "", `/admin/editeur/${type}/${id}`);
       }
-      if (type === "session") await syncTickets(id);
+      if (type === "session") { await syncTickets(id); await syncBumps(id); }
       setSaved();
       updatePreview();
       if (!silent) toast(record ? "Modifications enregistrées." : "Créé avec succès. ✅");
