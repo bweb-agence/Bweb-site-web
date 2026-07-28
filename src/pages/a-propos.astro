@@ -4,10 +4,12 @@ import path from "node:path";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import IllusApropos from "../components/illus/IllusApropos.astro";
 
-// Photos d'équipe : dépose le fichier dans public/images/team/ au chemin indiqué,
+// Photos d'équipe : dépose le fichier dans public/images/ au chemin indiqué,
 // il est utilisé automatiquement dès qu'il existe (sinon on retombe sur les initiales).
 const godwinPhoto = "/images/godwin-soola.png";
 const godwinPhotoExists = existsSync(path.join(process.cwd(), "public", godwinPhoto));
+const opsManagerPhoto = "/images/ops-manager.png";
+const opsManagerPhotoExists = existsSync(path.join(process.cwd(), "public", opsManagerPhoto));
 ---
 
 <BaseLayout title="À propos — Cabinet conseil, formation & IA | Bweb" description="Bweb est un cabinet de conseil, de formation et d'accompagnement en IA et nouvelles technologies, fondé par Godwin Soola pour faire avancer les entreprises." breadcrumbs={[{ name: "Accueil", path: "/" }, { name: "À propos", path: "/a-propos" }]}>
@@ -142,7 +144,7 @@ const godwinPhotoExists = existsSync(path.join(process.cwd(), "public", godwinPh
           </div>
           <div class="team-org__connector team-org__connector--h" aria-hidden="true"></div>
           <div class="team-card card">
-            <span class="avatar-badge is-placeholder">?</span>
+            <span class:list={["avatar-badge", { "is-placeholder": !opsManagerPhotoExists }]}>{opsManagerPhotoExists ? <img src={opsManagerPhoto} alt="Ops Manager" /> : "?"}</span>
             <h4>Ops Manager</h4>
             <div class="role is-placeholder">Chef d'orchestre</div>
             <p>Coordonne les six pôles de l'équipe et pilote l'exécution au quotidien.</p>
