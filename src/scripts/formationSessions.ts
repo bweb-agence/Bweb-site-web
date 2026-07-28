@@ -130,11 +130,12 @@ export async function initFormationSessions(
         <div data-ob-list></div>
         <button type="button" class="ed-addline" data-act="ob-add">+ Ajouter un order bump</button>
 
-        <div class="ed-fscard-foot" style="display:flex;gap:8px;align-items:center;margin-top:14px">
-          <a data-detail style="font-size:.78rem;opacity:.75" ${sessionId ? `href="/admin/editeur/session/${esc(sessionId)}"` : "hidden"}>Édition détaillée →</a>
-          <span style="flex:1"></span>
-          <button type="button" class="ed-btn ghost" data-act="delete" ${sessionId ? "" : "hidden"}>Supprimer</button>
-          <button type="button" class="ed-btn primary" data-act="save">Enregistrer cette date</button>
+        <div class="ed-fscard-foot" style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+          <button type="button" class="ed-btn primary" data-act="save" style="width:100%;padding:10px">Enregistrer cette date</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <a data-detail style="font-size:.78rem;opacity:.75" ${sessionId ? `href="/admin/editeur/session/${esc(sessionId)}"` : "hidden"}>Édition détaillée →</a>
+            <button type="button" class="ed-btn ghost" data-act="delete" style="font-size:.8rem" ${sessionId ? "" : "hidden"}>Supprimer</button>
+          </div>
         </div>
       </div>`;
 
