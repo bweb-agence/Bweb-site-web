@@ -96,6 +96,8 @@ export function initWizard(): void {
   // Zone défilable centrée (contient les étapes)
   const scroll = document.createElement("div");
   scroll.className = "wiz-scroll";
+  // Laisse la molette/trackpad scroller ce conteneur au lieu d'être capturée par Lenis (page publique).
+  scroll.setAttribute("data-lenis-prevent", "");
   const inner = document.createElement("div");
   inner.className = "wiz-scroll__inner";
   steps.forEach((s) => inner.appendChild(s));

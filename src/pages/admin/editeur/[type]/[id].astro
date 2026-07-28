@@ -32,7 +32,7 @@ const isNew = id === "nouveau";
 
     <div class="ed-layout">
       <!-- ============ Zone d'édition ============ -->
-      <main class="ed-main">
+      <main class="ed-main" data-lenis-prevent>
         <div class="ed-toolbar" id="ed-toolbar" role="toolbar" aria-label="Mise en forme">
           <div class="ed-style" data-style></div>
           <span class="ed-sep"></span>
@@ -77,7 +77,7 @@ const isNew = id === "nouveau";
       </main>
 
       <!-- ============ Réglages ============ -->
-      <aside class="ed-aside" id="ed-aside">
+      <aside class="ed-aside" id="ed-aside" data-lenis-prevent>
 
         {type !== "formation" && (
           <section class="ed-panel">
