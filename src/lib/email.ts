@@ -54,6 +54,7 @@ type BookingEmail = {
   ticket_name?: string | null;
   quantity?: number;
   amount?: number;
+  balance?: number;
 };
 
 const firstName = (n: string) => (n || "").trim().split(" ")[0] || n;
@@ -91,9 +92,10 @@ export function confirmationEmail(b: BookingEmail) {
         ${b.session_date ? row("Date", b.session_date) : ""}
         ${b.session_venue ? row("Lieu", b.session_venue) : ""}
         ${b.ticket_name ? row("Tarif", `${b.quantity || 1}× ${b.ticket_name}`) : ""}
-        ${b.amount ? row("Montant réglé", fmt(b.amount)) : ""}
+        ${b.amount ? row(b.balance ? "Acompte réglé (50 %)" : "Montant réglé", fmt(b.amount)) : ""}
+        ${b.balance ? row("Solde à régler sur place", fmt(b.balance)) : ""}
       </div>
-      <p style="font-size:12px;color:#8b91ae;line-height:1.5;margin:14px 0 0">Présentez ce code à l'accueil le jour J. Un rappel vous sera envoyé la veille.</p>
+      <p style="font-size:12px;color:#8b91ae;line-height:1.5;margin:14px 0 0">${b.balance ? `Le solde de <b>${fmt(b.balance)}</b> se règle sur place le jour J. ` : ""}Présentez ce code à l'accueil le jour J. Un rappel vous sera envoyé la veille.</p>
     </div>`),
   };
 }
