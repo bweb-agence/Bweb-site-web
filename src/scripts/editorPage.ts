@@ -169,6 +169,7 @@ export async function initEditorPage() {
       setVal("f-prerequis", record.prerequisites || "");
       setVal("f-included", record.included_extra || "");
       setVal("f-image", record.image_url || "");
+      { const cs = $<HTMLInputElement>("f-coming-soon"); if (cs) cs.checked = !!record.coming_soon; }
       setVal("f-seotitle", record.seo_title || "");
       setVal("f-seodesc", record.seo_description || "");
       setVal("f-focus", record.focus_keyword || "");
@@ -552,6 +553,7 @@ export async function initEditorPage() {
         prerequisites: val("f-prerequis").trim() || null,
         included_extra: val("f-included").trim() || null,
         image_url: val("f-image").trim() || null,
+        coming_soon: ($<HTMLInputElement>("f-coming-soon")?.checked) || false,
         seo_title: val("f-seotitle").trim() || null,
         seo_description: val("f-seodesc").trim() || null,
         focus_keyword: val("f-focus").trim() || null,

@@ -153,7 +153,12 @@ const isNew = id === "nouveau";
             <div data-ftab-pane="details">
             <section class="ed-panel"><h4>Adresse (URL)</h4>
               <div class="ed-field"><div class="ed-slugbox"><span class="pre">/formations/</span><input id="f-slug" aria-label="Slug" /></div></div>
-              <div class="ed-help" style="margin-top:2px">Les formations sont toujours visibles dans le catalogue.</div>
+              <label class="ed-check" style="display:flex;align-items:flex-start;gap:9px;margin-top:12px;cursor:pointer">
+                <input type="checkbox" id="f-coming-soon" style="margin-top:3px" />
+                <span><strong style="font-size:.9rem">Bientôt (à venir)</strong>
+                  <span class="ed-help" style="display:block;margin-top:2px">Affiche la formation au catalogue même sans date publiée, avec un bouton « Être prévenu ». Décocher dès qu'une date est en ligne.</span>
+                </span>
+              </label>
             </section>
             <section class="ed-panel"><h4>Détails</h4>
               <div class="ed-field"><label for="f-theme">Thème</label><select class="ed-sel" id="f-theme"><option value="">— Aucun —</option></select>
