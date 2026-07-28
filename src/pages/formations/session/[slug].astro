@@ -73,10 +73,18 @@ const hybrid = isHybrid(sessMode);        // présentiel ET en ligne
 const showVenue = sessMode !== "en_ligne"; // présentiel ou hybride → lieu + carte
 const showOnline = sessMode !== "presentiel"; // en ligne ou hybride → infos visio
 const sessModeLabel = modeLabel(sessMode);
-const sessLevel = levelLabel((session as any)?.level);
-const levelSlug = ((session as any)?.level || "") as string;
-// Libellé du niveau : badge session prioritaire, sinon champ libre de la formation.
-const levelText = sessLevel || formation?.level || "Tous niveaux";
+// Niveau : priorité au niveau défini sur la FORMATION (champ « Niveau » de l'admin,
+// ex. « Tous niveaux », « Débutant accepté »…), sinon le niveau propre de la date.
+// Le badge et « Infos pratiques » affichent exactement la même valeur.
+const levelText = (formation?.level || levelLabel((session as any)?.level) || "Tous niveaux").trim();
+const levelSlug = (() => {
+  const l = levelText.toLowerCase();
+  if (l.includes("débutant") || l.includes("debutant")) return "debutant";
+  if (l.includes("intermédiaire") || l.includes("intermediaire")) return "intermediaire";
+  if (l.includes("avancé") || l.includes("avance")) return "avance";
+  if (l.includes("prérequis") || l.includes("prerequis")) return "prerequis";
+  return "tous";
+})();
 const meetingUrl = ((session as any)?.meeting_url as string | null) || null;
 const meetingInfo = ((session as any)?.meeting_info as string | null) || null;
 
@@ -331,7 +339,7 @@ const sessCrumbs = session
           <div class="sess-head">
             <div class="sess-eyebrows">
               {session.theme && <span class="eyebrow">{session.theme} · {sessModeLabel}</span>}
-              {sessLevel && <span class={`sess-level ${levelSlug}`}>{sessLevel}</span>}
+              {levelText && <span class={`sess-level ${levelSlug}`}>{levelText}</span>}
             </div>
             <h1 style="font-family:var(--f-display);font-weight:800;font-size:var(--fs-h1);line-height:1.08;letter-spacing:-.02em;margin:8px 0 10px;color:var(--c-ink)">{displayTitle}</h1>
             {formation?.summary && <p class="sess-desc" style="max-width:60ch">{formation.summary}</p>}
