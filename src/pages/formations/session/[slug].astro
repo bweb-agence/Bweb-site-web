@@ -263,14 +263,41 @@ const courseLd = session && reviewCount
     }
   : null;
 const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+// FAQPage (rich result) — à partir des questions fréquentes de la session.
+const faqLd = session && faqs.length
+  ? {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqs.map((f) => ({
+        "@type": "Question",
+        name: f.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: (marked.parse(f.answer_md, { async: false }) as string).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+        },
+      })),
+    }
+  : null;
+// Fil d'Ariane de la page de session.
+const sessCrumbs = session
+  ? [
+      { name: "Accueil", path: "/" },
+      { name: "Formations", path: "/formations" },
+      { name: "Calendrier", path: "/formations/calendrier" },
+      { name: session.title, path: `/formations/session/${session.slug}` },
+    ]
+  : undefined;
 ---
 
 {session ? (
   <BaseLayout
     title={session.seo_title || `${session.title} — ${frDateShort(session.starts_at)} | Formations Bweb`}
     description={session.seo_description || formation?.summary || (online ? `Formation en ligne (visioconférence) le ${frDateLong(session.starts_at)}.` : hybrid ? `Formation en présentiel à Abidjan et en ligne le ${frDateLong(session.starts_at)}.` : `Session de formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`)}
-    image={session.image_url || undefined}
+    image={`/og/session/${session.slug}.png`}
     noindex={isPast}
+    breadcrumbs={sessCrumbs}
+    schemas={faqLd ? [faqLd] : []}
   >
     {eventLd && <script type="application/ld+json" slot="head" is:inline set:html={JSON.stringify(eventLd)} />}
     {courseLd && <script type="application/ld+json" slot="head" is:inline set:html={JSON.stringify(courseLd)} />}
@@ -694,24 +721,26 @@ const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="
                 <div class="rz-field"><label for="rz-email">E-mail *</label><input class="rz-input" id="rz-email" name="email" type="email" autocomplete="email" required /></div>
                 <div class="rz-field"><label for="rz-phone">Téléphone / WhatsApp *</label><PhoneField id="rz-phone" /></div>
               </div>
+              <div class="rz-note-pay" style="font-size:.82rem;color:#7a5200;background:#fff8ea;border:1px solid #ffe1a3;border-radius:10px;padding:9px 12px;margin:2px 0 10px">📱 Le <b>numéro de téléphone</b> ci-dessus est celui qui servira à <b>valider votre paiement Mobile Money</b>. Indiquez bien le numéro depuis lequel vous réglerez.</div>
               <div class="rz-field"><label for="rz-company">Entreprise / organisation (optionnel)</label><input class="rz-input" id="rz-company" name="company" /></div>
             </section>
 
             <!-- Étape 3 : paiement -->
             <section class="rz-step" data-step="3">
               <h2 class="rz-h">Moyen de paiement</h2>
-              <p class="rz-sub">Choisissez comment régler votre inscription.</p>
+              <p class="rz-sub">Payez en totalité, ou réglez un acompte de 50 % (le solde sur place).</p>
               <div class="pm-grid" id="pm-grid">
                 <button type="button" class="pm pm-online sel" data-method="money_fusion" style="grid-column:1/-1;border-color:var(--c-green,#00c89e)">
                   <span class="lg" style="background:var(--c-green,#00c89e);color:#fff">🔒</span>
-                  <span>Payer en ligne<span class="sub">Mobile Money · Wave · carte — confirmation immédiate</span></span>
+                  <span>Payer en ligne (total)<span class="sub">Mobile Money · Wave · carte — confirmation immédiate</span></span>
                 </button>
-                <button type="button" class="pm" data-method="wave"><span class="lg wave">Wave</span><span>Wave<span class="sub">manuel</span></span></button>
-                <button type="button" class="pm" data-method="orange_money"><span class="lg om">OM</span><span>Orange Money<span class="sub">manuel</span></span></button>
-                <button type="button" class="pm" data-method="mobile_money"><span class="lg momo">MoMo</span><span>Mobile Money<span class="sub">MTN · Moov · manuel</span></span></button>
-                <button type="button" class="pm" data-method="sur_place"><span class="lg place">🏢</span><span>Sur place<span class="sub">Acompte 50 %</span></span></button>
+                <button type="button" class="pm" data-method="money_fusion_acompte" style="grid-column:1/-1">
+                  <span class="lg" style="background:#f0a500;color:#fff">½</span>
+                  <span>Acompte 50 % en ligne<span class="sub">Le solde se paie sur place le jour J</span></span>
+                </button>
               </div>
               <div class="pay-note" id="pm-note" style="display:none"></div>
+              <div class="rz-note-pay" style="font-size:.82rem;color:#7a2e00;background:#fff2ea;border:1px solid #ffcbb0;border-radius:10px;padding:9px 12px;margin-top:10px">⚠️ Au moment de payer, <b>ressaisissez votre numéro Mobile Money</b> sur la page Money Fusion. Ne tenez pas compte du numéro pré-affiché : c'est un exemple, le champ est à remplir vous-même.</div>
             </section>
 
             <!-- Étape 4 : justificatif -->

@@ -4,6 +4,7 @@ export const prerender = false;
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabase";
 import { frDateLong, coverClass, themeColorMap } from "../../lib/format";
+import { site } from "../../config/site";
 import { marked } from "marked";
 import "../../styles/blog.css";
 
@@ -56,12 +57,46 @@ const initials = (name?: string | null) =>
 
 const shareUrl = Astro.url.href;
 const shareText = post?.title ?? "";
+
+// Données structurées : article + fil d'Ariane.
+const canonicalUrl = post ? new URL(`/blog/${post.slug}`, site.url).href : site.url;
+const blogPostingLd = post
+  ? {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: post.title,
+      description: post.seo_description || post.excerpt || undefined,
+      ...(post.cover_url ? { image: [new URL(post.cover_url, site.url).href] } : {}),
+      datePublished: post.published_at || undefined,
+      dateModified: post.updated_at || post.published_at || undefined,
+      author: { "@type": "Person", name: post.author || "Équipe Bweb" },
+      publisher: {
+        "@type": "Organization",
+        name: site.name,
+        logo: { "@type": "ImageObject", url: new URL("/images/favicon.svg", site.url).href },
+      },
+      mainEntityOfPage: canonicalUrl,
+      ...(post.category ? { articleSection: post.category } : {}),
+      inLanguage: "fr-FR",
+    }
+  : null;
+const blogCrumbs = post
+  ? [
+      { name: "Accueil", path: "/" },
+      { name: "Blog", path: "/blog" },
+      { name: post.title, path: `/blog/${post.slug}` },
+    ]
+  : undefined;
 ---
 
 {post ? (
   <BaseLayout
     title={`${post.seo_title || post.title} | Blog Bweb Agence`}
     description={post.seo_description || post.excerpt || undefined}
+    image={`/og/article/${post.slug}.png`}
+    ogType="article"
+    breadcrumbs={blogCrumbs}
+    schemas={blogPostingLd ? [blogPostingLd] : []}
   >
     <article class="section" style="padding-top:calc(var(--header-h) + var(--space-lg))">
       <div class="container">
