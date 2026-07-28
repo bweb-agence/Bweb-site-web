@@ -1,0 +1,322 @@
+/* =========================================================
+   BWEB — Édition imbriquée des sessions dans la fiche formation.
+   Chaque session = une "carte" éditable (format, dates, lieu/visio,
+   tarifs, order bumps) enregistrable indépendamment. Le contenu
+   rédactionnel + SEO + affiche restent dans l'éditeur de session détaillé.
+   ========================================================= */
+import { supabaseBrowser } from "../lib/supabaseBrowser";
+import { slugify, dtLocalValue, toast, esc } from "./adminUtils";
+
+const BADGES: [string, string][] = [
+  ["", "— Aucun badge —"], ["hot", "Forte demande"], ["limited", "Places limitées"],
+  ["ok", "Avantageux"], ["popular", "★ Le plus choisi (ruban)"],
+];
+const MODES: [string, string][] = [
+  ["presentiel", "Présentiel"], ["en_ligne", "En ligne (visio)"], ["hybride", "Les deux (présentiel + en ligne)"],
+];
+const STATUSES: [string, string][] = [
+  ["draft", "Brouillon"], ["published", "Publiée"], ["full", "Complète"], ["cancelled", "Annulée"],
+];
+
+type TtOption = { id: string; sessionId: string; label: string };
+
+export async function initFormationSessions(
+  root: HTMLElement,
+  formationId: string,
+  defaults: { theme?: string; title?: string },
+) {
+  const listEl = root.querySelector<HTMLElement>("#ed-fsessions-inline");
+  const addBtn = root.querySelector<HTMLButtonElement>("#ed-fsession-add");
+  if (!listEl) return;
+
+  if (!formationId) {
+    listEl.innerHTML = '<div class="ed-help">Enregistrez d’abord la formation (bouton « Enregistrer » en haut) pour lui ajouter des dates.</div>';
+    addBtn?.setAttribute("hidden", "");
+    return;
+  }
+  addBtn?.removeAttribute("hidden");
+
+  // Tarifs de toutes les sessions (cibles possibles des order bumps).
+  const { data: tts } = await supabaseBrowser
+    .from("ticket_types")
+    .select("id,name,price,session_id,sessions(title)")
+    .order("name");
+  const allTtOptions: TtOption[] = (tts || []).map((t: any) => ({
+    id: t.id,
+    sessionId: t.session_id,
+    label: `${t.sessions?.title || "Session"} — ${t.name} (${(t.price ?? 0).toLocaleString("fr-FR")} F)`,
+  }));
+
+  // Sessions de cette formation (avec tarifs + order bumps imbriqués).
+  const { data: sessions } = await supabaseBrowser
+    .from("sessions")
+    .select("*, ticket_types(id,name,price,compare_at_price,capacity,sold,badge,sales_end,sort), order_bumps(id,ticket_type_id,headline,description,badge,sort)")
+    .eq("formation_id", formationId)
+    .order("starts_at", { ascending: false });
+
+  listEl.innerHTML = "";
+  const list = sessions || [];
+  if (!list.length) {
+    listEl.insertAdjacentHTML("beforeend",
+      '<div class="ed-help" data-empty>Aucune date pour cette formation. Cliquez sur « + Ajouter une date ».</div>');
+  }
+  list.forEach((s: any) => listEl.appendChild(buildCard(s)));
+
+  addBtn?.addEventListener("click", () => {
+    listEl.querySelector("[data-empty]")?.remove();
+    const card = buildCard(null);
+    listEl.appendChild(card);
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.querySelector<HTMLInputElement>('[data-field="title"]')?.focus();
+  });
+
+  /* ---------------- Construction d'une carte session ---------------- */
+  function buildCard(s: any | null): HTMLElement {
+    let sessionId: string = s?.id || "";
+    let originalTtIds: string[] = (s?.ticket_types || []).map((t: any) => t.id);
+    let originalObIds: string[] = (s?.order_bumps || []).map((o: any) => o.id);
+
+    const card = document.createElement("div");
+    card.className = "ed-fscard";
+    card.style.cssText = "border:1px solid var(--ed-line,#e5e7eb);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--ed-panel,#fff)";
+
+    const optionTags = (opts: [string, string][], sel: string) =>
+      opts.map(([v, l]) => `<option value="${v}"${v === sel ? " selected" : ""}>${l}</option>`).join("");
+
+    const dateLabel = s?.starts_at
+      ? new Date(s.starts_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
+      : "Nouvelle date";
+
+    card.innerHTML = `
+      <div class="ed-fscard-head" style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <strong style="flex:1;font-size:.9rem" data-summary>${esc(s?.title || dateLabel)}</strong>
+        <select class="ed-sel" data-field="status" style="width:auto">${optionTags(STATUSES, s?.status || "draft")}</select>
+      </div>
+      <div class="ed-field"><label>Titre de la date</label>
+        <input class="ed-inp" data-field="title" placeholder="Ex. IA · Abidjan · 29 juillet" value="${esc(s?.title || "")}" /></div>
+      <div class="ed-field"><label>Format</label>
+        <select class="ed-sel" data-field="mode">${optionTags(MODES, s?.mode || "presentiel")}</select></div>
+      <div class="ed-row2">
+        <div class="ed-field"><label>Début *</label><input class="ed-inp" data-field="start" type="datetime-local" value="${s?.starts_at ? dtLocalValue(s.starts_at) : ""}" /></div>
+        <div class="ed-field"><label>Fin</label><input class="ed-inp" data-field="end" type="datetime-local" value="${s?.ends_at ? dtLocalValue(s.ends_at) : ""}" /></div>
+      </div>
+      <div data-mode-presentiel>
+        <div class="ed-row2">
+          <div class="ed-field"><label>Ville</label><input class="ed-inp" data-field="city" value="${esc(s?.city ?? "Abidjan")}" /></div>
+          <div class="ed-field"><label>Lieu</label><input class="ed-inp" data-field="venue" value="${esc(s?.venue ?? "Espace de formation Bweb · Cocody")}" /></div>
+        </div>
+        <div class="ed-field"><label>Adresse / accès (optionnel)</label><input class="ed-inp" data-field="address" value="${esc(s?.address || "")}" /></div>
+      </div>
+      <div data-mode-enligne hidden>
+        <div class="ed-field"><label>Lien de connexion (visio)</label><input class="ed-inp" data-field="meeting_url" placeholder="https://meet… / zoom… / teams…" value="${esc(s?.meeting_url || "")}" /></div>
+        <div class="ed-field"><label>Consignes de connexion</label><textarea class="ed-ta" data-field="meeting_info" rows="2">${esc(s?.meeting_info || "")}</textarea></div>
+      </div>
+
+      <div class="ed-fs-sub" style="font-weight:600;font-size:.8rem;margin:12px 0 6px">Tarifs / billets</div>
+      <div data-tt-list></div>
+      <button type="button" class="ed-addline" data-act="tt-add">+ Ajouter un tarif</button>
+
+      <div class="ed-fs-sub" style="font-weight:600;font-size:.8rem;margin:14px 0 6px">Order bumps</div>
+      <div data-ob-list></div>
+      <button type="button" class="ed-addline" data-act="ob-add">+ Ajouter un order bump</button>
+
+      <div class="ed-fscard-foot" style="display:flex;gap:8px;align-items:center;margin-top:14px">
+        <a data-detail style="font-size:.78rem;opacity:.75" ${sessionId ? `href="/admin/editeur/session/${esc(sessionId)}"` : 'hidden'}>Édition détaillée (contenu, SEO, affiche) →</a>
+        <span style="flex:1"></span>
+        <button type="button" class="ed-btn ghost" data-act="delete" ${sessionId ? "" : "hidden"}>Supprimer</button>
+        <button type="button" class="ed-btn primary" data-act="save">Enregistrer cette date</button>
+      </div>`;
+
+    const q = <T extends HTMLElement = HTMLElement>(sel: string) => card.querySelector<T>(sel)!;
+    const fieldVal = (name: string) => (card.querySelector<HTMLInputElement>(`[data-field="${name}"]`)?.value ?? "").trim();
+    const ttList = q("[data-tt-list]");
+    const obList = q("[data-ob-list]");
+
+    // Mode → afficher/masquer présentiel / en ligne
+    const applyMode = () => {
+      const v = fieldVal("mode");
+      card.querySelector<HTMLElement>("[data-mode-presentiel]")!.hidden = v === "en_ligne";
+      card.querySelector<HTMLElement>("[data-mode-enligne]")!.hidden = v === "presentiel";
+    };
+    q('[data-field="mode"]').addEventListener("change", applyMode);
+    applyMode();
+
+    // Tarifs
+    (s?.ticket_types || []).slice().sort((a: any, b: any) => a.sort - b.sort).forEach((t: any) => ttList.appendChild(ttRow(t)));
+    q('[data-act="tt-add"]').addEventListener("click", () => ttList.appendChild(ttRow(null)));
+
+    // Order bumps
+    (s?.order_bumps || []).slice().sort((a: any, b: any) => a.sort - b.sort).forEach((o: any) => obList.appendChild(obRow(o)));
+    q('[data-act="ob-add"]').addEventListener("click", () => {
+      if (obList.querySelectorAll("[data-ob]").length >= 2) { toast("2 order bumps maximum.", "err"); return; }
+      obList.appendChild(obRow(null));
+    });
+
+    q('[data-act="save"]').addEventListener("click", () => saveCard());
+    q('[data-act="delete"]').addEventListener("click", () => deleteCard());
+
+    return card;
+
+    /* ----- lignes tarif / order bump (scoping local) ----- */
+    function ttRow(t: any): HTMLElement {
+      const div = document.createElement("div");
+      div.dataset.tt = "";
+      div.dataset.ttId = t?.id || "";
+      div.style.cssText = "border:1px solid var(--ed-line,#eee);border-radius:8px;padding:8px;margin-bottom:8px";
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:.78rem;opacity:.7">${t ? "Vendus : " + (t.sold ?? 0) : "Nouveau tarif"}</span>
+          <button type="button" class="ed-tt-del" data-tt-del title="Retirer">✕</button></div>
+        <input class="ed-inp" data-tt-name placeholder="Nom du tarif" value="${esc(t?.name || "")}" />
+        <div class="ed-row2" style="margin-top:8px">
+          <input class="ed-inp" data-tt-price type="number" min="0" placeholder="Prix FCFA" value="${t?.price ?? ""}" />
+          <input class="ed-inp" data-tt-compare type="number" min="0" placeholder="Prix barré (promo)" value="${t?.compare_at_price ?? ""}" />
+        </div>
+        <div class="ed-row2" style="margin-top:8px">
+          <input class="ed-inp" data-tt-cap type="number" min="0" placeholder="Places" value="${t?.capacity ?? ""}" />
+          <input class="ed-inp" data-tt-end type="datetime-local" title="Fin de validité" value="${t?.sales_end ? dtLocalValue(t.sales_end) : ""}" />
+        </div>
+        <select class="ed-sel" data-tt-badge style="margin-top:8px">${BADGES.map(([v, l]) => `<option value="${v}"${t?.badge === v ? " selected" : ""}>${l}</option>`).join("")}</select>`;
+      div.querySelector("[data-tt-del]")!.addEventListener("click", () => div.remove());
+      return div;
+    }
+
+    function obRow(o: any): HTMLElement {
+      const opts = '<option value="">— Choisir un tarif à ajouter —</option>' +
+        allTtOptions.filter((x) => x.sessionId !== sessionId)
+          .map((x) => `<option value="${x.id}"${o?.ticket_type_id === x.id ? " selected" : ""}>${esc(x.label)}</option>`).join("");
+      const div = document.createElement("div");
+      div.dataset.ob = "";
+      div.dataset.obId = o?.id || "";
+      div.style.cssText = "border:1px solid var(--ed-line,#eee);border-radius:8px;padding:8px;margin-bottom:8px";
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:.78rem;opacity:.7">Order bump</span>
+          <button type="button" data-ob-del title="Retirer">✕</button></div>
+        <select class="ed-sel" data-ob-tt>${opts}</select>
+        <input class="ed-inp" data-ob-badge placeholder="Badge (ex. Recommandé)" value="${esc(o?.badge || "")}" style="margin-top:8px" />
+        <input class="ed-inp" data-ob-headline placeholder="Accroche (optionnel)" value="${esc(o?.headline || "")}" style="margin-top:8px" />
+        <textarea class="ed-ta" data-ob-desc rows="2" placeholder="Description vendeuse…" style="margin-top:8px">${esc(o?.description || "")}</textarea>`;
+      div.querySelector("[data-ob-del]")!.addEventListener("click", () => div.remove());
+      return div;
+    }
+
+    /* ----- enregistrement d'une carte ----- */
+    async function saveCard() {
+      const title = fieldVal("title");
+      const start = fieldVal("start");
+      if (!title) { toast("Le titre de la date est obligatoire.", "err"); return; }
+      if (!start) { toast("La date de début est obligatoire.", "err"); return; }
+
+      const saveBtn = q<HTMLButtonElement>('[data-act="save"]');
+      saveBtn.setAttribute("disabled", "true"); saveBtn.textContent = "Enregistrement…";
+      try {
+        // Champs édités inline (partiel : on ne touche pas au contenu/slug/SEO existants).
+        const fields: any = {
+          formation_id: formationId,
+          title,
+          status: fieldVal("status") || "draft",
+          mode: fieldVal("mode") || "presentiel",
+          starts_at: new Date(start).toISOString(),
+          ends_at: fieldVal("end") ? new Date(fieldVal("end")).toISOString() : null,
+          city: fieldVal("city") || null,
+          venue: fieldVal("venue") || null,
+          address: fieldVal("address") || null,
+          meeting_url: fieldVal("meeting_url") || null,
+          meeting_info: fieldVal("meeting_info") || null,
+        };
+
+        if (sessionId) {
+          const { error } = await supabaseBrowser.from("sessions").update(fields).eq("id", sessionId);
+          if (error) throw error;
+        } else {
+          // Nouveau : slug requis unique → dérivé du titre + date.
+          const slug = `${slugify(title)}-${start.slice(0, 10)}`;
+          const { data, error } = await supabaseBrowser.from("sessions")
+            .insert({ ...fields, slug, theme: defaults.theme || null })
+            .select("id").single();
+          if (error) throw error;
+          sessionId = data.id;
+        }
+
+        await syncTickets();
+        await syncBumps();
+
+        // Rafraîchir l'UI de la carte
+        card.querySelector<HTMLElement>("[data-summary]")!.textContent = title;
+        const detail = card.querySelector<HTMLAnchorElement>("[data-detail]")!;
+        detail.href = `/admin/editeur/session/${sessionId}`; detail.removeAttribute("hidden");
+        card.querySelector<HTMLElement>('[data-act="delete"]')!.removeAttribute("hidden");
+        toast("Date enregistrée. ✅");
+      } catch (e: any) {
+        const m = String(e?.message || "");
+        toast(
+          m.includes("duplicate") ? "Ce slug de session existe déjà — modifiez le titre."
+          : m.includes("ticket_sold_within_capacity") ? "Le quota ne peut pas être inférieur au nombre déjà vendu."
+          : m.includes("ticket_compare_gte_price") ? "Le prix barré doit être supérieur au prix de vente."
+          : m.includes("restrict") ? "Un tarif avec des réservations ne peut pas être retiré."
+          : "Enregistrement impossible.", "err");
+      } finally {
+        saveBtn.removeAttribute("disabled"); saveBtn.textContent = "Enregistrer cette date";
+      }
+    }
+
+    async function syncTickets() {
+      const items = Array.from(ttList.querySelectorAll<HTMLElement>("[data-tt]"));
+      const kept: string[] = [];
+      let sort = 0;
+      for (const it of items) {
+        const name = (it.querySelector("[data-tt-name]") as HTMLInputElement).value.trim();
+        if (!name) continue;
+        const payload: any = {
+          session_id: sessionId, name,
+          price: parseInt((it.querySelector("[data-tt-price]") as HTMLInputElement).value || "0"),
+          compare_at_price: (it.querySelector("[data-tt-compare]") as HTMLInputElement).value
+            ? parseInt((it.querySelector("[data-tt-compare]") as HTMLInputElement).value) : null,
+          capacity: parseInt((it.querySelector("[data-tt-cap]") as HTMLInputElement).value || "0"),
+          badge: (it.querySelector("[data-tt-badge]") as HTMLSelectElement).value || null,
+          sales_end: (it.querySelector("[data-tt-end]") as HTMLInputElement).value
+            ? new Date((it.querySelector("[data-tt-end]") as HTMLInputElement).value).toISOString() : null,
+          sort: sort++,
+        };
+        const ttId = it.dataset.ttId;
+        if (ttId) { kept.push(ttId); const { error } = await supabaseBrowser.from("ticket_types").update(payload).eq("id", ttId); if (error) throw error; }
+        else { const { data, error } = await supabaseBrowser.from("ticket_types").insert(payload).select("id").single(); if (error) throw error; it.dataset.ttId = data.id; kept.push(data.id); }
+      }
+      const toDelete = originalTtIds.filter((x) => !kept.includes(x));
+      if (toDelete.length) { const { error } = await supabaseBrowser.from("ticket_types").delete().in("id", toDelete); if (error) throw error; }
+      originalTtIds = kept;
+    }
+
+    async function syncBumps() {
+      const items = Array.from(obList.querySelectorAll<HTMLElement>("[data-ob]"));
+      const kept: string[] = [];
+      let sort = 0;
+      for (const it of items) {
+        const ttId = (it.querySelector("[data-ob-tt]") as HTMLSelectElement).value;
+        if (!ttId) continue;
+        const payload: any = {
+          session_id: sessionId, ticket_type_id: ttId,
+          headline: (it.querySelector("[data-ob-headline]") as HTMLInputElement).value.trim() || null,
+          description: (it.querySelector("[data-ob-desc]") as HTMLTextAreaElement).value.trim() || null,
+          badge: (it.querySelector("[data-ob-badge]") as HTMLInputElement).value.trim() || null,
+          sort: sort++,
+        };
+        const obId = it.dataset.obId;
+        if (obId) { kept.push(obId); const { error } = await supabaseBrowser.from("order_bumps").update(payload).eq("id", obId); if (error) throw error; }
+        else { const { data, error } = await supabaseBrowser.from("order_bumps").insert(payload).select("id").single(); if (error) throw error; it.dataset.obId = data.id; kept.push(data.id); }
+      }
+      const toDelete = originalObIds.filter((x) => !kept.includes(x));
+      if (toDelete.length) { const { error } = await supabaseBrowser.from("order_bumps").delete().in("id", toDelete); if (error) throw error; }
+      originalObIds = kept;
+    }
+
+    async function deleteCard() {
+      if (!sessionId) { card.remove(); return; }
+      if (!window.confirm(`Supprimer cette date « ${fieldVal("title")} » et ses tarifs ? (Impossible s'il existe des réservations.)`)) return;
+      const { error } = await supabaseBrowser.from("sessions").delete().eq("id", sessionId);
+      if (error) { toast("Suppression impossible (réservations existantes ?).", "err"); return; }
+      toast("Date supprimée."); card.remove();
+    }
+  }
+}

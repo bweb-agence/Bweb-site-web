@@ -146,6 +146,11 @@ const isNew = id === "nouveau";
         {/* -------- FORMATION -------- */}
         {type === "formation" && (
           <>
+            <div class="ed-ftabs" role="tablist">
+              <button type="button" class="ed-ftab is-active" data-ftab="details" aria-selected="true">Détails</button>
+              <button type="button" class="ed-ftab" data-ftab="sessions" aria-selected="false">Sessions</button>
+            </div>
+            <div data-ftab-pane="details">
             <section class="ed-panel"><h4>Adresse (URL)</h4>
               <div class="ed-field"><div class="ed-slugbox"><span class="pre">/formations/</span><input id="f-slug" aria-label="Slug" /></div></div>
               <div class="ed-help" style="margin-top:2px">Les formations sont toujours visibles dans le catalogue.</div>
@@ -191,6 +196,13 @@ const isNew = id === "nouveau";
                 <div class="ed-help" id="seo-desc-count"></div></div>
               <div class="ed-seo-checks" id="ed-seo-checks"></div>
             </section>
+            </div>
+            <div data-ftab-pane="sessions" hidden>
+            <section class="ed-panel"><h4>Dates &amp; sessions</h4>
+              <div id="ed-fsessions-inline"><div class="ed-help">Chargement…</div></div>
+              <button type="button" class="ed-addline" id="ed-fsession-add" hidden>+ Ajouter une date</button>
+            </section>
+            </div>
           </>
         )}
 
@@ -277,6 +289,11 @@ const isNew = id === "nouveau";
     </div>
   </div>
 
+  <style>
+    .ed-ftabs { display:flex; gap:6px; margin-bottom:14px; border-bottom:1px solid var(--ed-line,#e5e7eb); }
+    .ed-ftab { flex:1; padding:8px 10px; border:0; background:transparent; font:inherit; font-weight:600; font-size:.85rem; color:var(--c-gray-500,#6b7280); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+    .ed-ftab.is-active { color:var(--c-primary,#1f6ced); border-bottom-color:currentColor; }
+  </style>
   <script>
     import { initEditorPage } from "../../../../scripts/editorPage";
     initEditorPage();
