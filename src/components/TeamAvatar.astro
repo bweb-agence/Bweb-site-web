@@ -1,0 +1,16 @@
+---
+/* Avatar rond d'un membre de l'équipe : photo zoomable au survol,
+   agrandissable au clic (lightbox) — ou "?" tant qu'aucune photo n'est fournie. */
+interface Props {
+  photo: { src: string; exists: boolean };
+  name: string;
+}
+const { photo, name } = Astro.props;
+---
+<span class:list={["avatar-badge", { "is-placeholder": !photo.exists }]}>
+  {photo.exists ? (
+    <button type="button" class="avatar-badge__zoom" data-lightbox-src={photo.src} data-lightbox-alt={name}>
+      <img src={photo.src} alt={name} />
+    </button>
+  ) : "?"}
+</span>
