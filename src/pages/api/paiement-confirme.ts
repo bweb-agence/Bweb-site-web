@@ -3,7 +3,10 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { createAdminClient } from "../../lib/supabaseAdmin";
 import { sendEmail, confirmationEmail } from "../../lib/email";
+import { billetPdfBuffer } from "../../lib/billetPdf";
 import { frDateLong } from "../../lib/format";
+
+const SITE = "https://www.bwebagence.com";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -77,7 +80,8 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (b.email) {
       const s = (b as any).sessions;
-      const c = confirmationEmail({
+      const balance = (b as any).is_deposit ? Math.max(0, due - amountPaid) : 0;
+      const billet = {
         reference: b.reference,
         full_name: b.full_name,
         session_title: s?.title || "",
@@ -85,12 +89,47 @@ export const POST: APIRoute = async ({ request }) => {
         session_venue: s?.venue ? `${s.venue}${s.city ? " · " + s.city : ""}` : null,
         ticket_name: (b as any).ticket_types?.name || null,
         quantity: b.quantity,
+      };
+      const c = confirmationEmail({
+        ...billet,
         amount: amountPaid,
-        balance: (b as any).is_deposit ? Math.max(0, due - amountPaid) : 0,
+        balance,
+        pdf_url: `${SITE}/api/billet?token=${encodeURIComponent(token)}`,
       });
-      await sendEmail({ to: b.email, subject: c.subject, html: c.html });
+      // Billet PDF joint (échec silencieux : l'e-mail part quand même).
+      let attachments;
+      try {
+        const pdf = await billetPdfBuffer({ ...billet, amount_paid: amountPaid, balance, is_deposit: !!(b as any).is_deposit });
+        attachments = [{ filename: `billet-${b.reference}.pdf`, content: pdf.toString("base64"), type: "application/pdf" }];
+      } catch {
+        attachments = undefined;
+      }
+      await sendEmail({ to: b.email, subject: c.subject, html: c.html, attachments });
     }
   }
 
-  return json({ ok: true, statut, montant, confirmed });
+  // Résumé de la réservation pour l'affichage du billet sur la page de retour
+  // (construit indépendamment de la boucle : reste dispo au rafraîchissement,
+  // quand toutes les réservations sont déjà "confirmed").
+  const first: any = (bookings || [])[0];
+  let booking: unknown = null;
+  if (first) {
+    const s = first.sessions;
+    const due = first.amount_due ?? 0;
+    const paid = first.is_deposit ? Math.max(1, Math.ceil(due / 2)) : due;
+    booking = {
+      reference: first.reference,
+      full_name: first.full_name,
+      session_title: s?.title || "",
+      session_date: s?.starts_at ? frDateLong(s.starts_at) : null,
+      session_venue: s?.venue ? `${s.venue}${s.city ? " · " + s.city : ""}` : null,
+      ticket_name: first.ticket_types?.name || null,
+      quantity: first.quantity ?? 1,
+      is_deposit: !!first.is_deposit,
+      amount_paid: paid,
+      balance: first.is_deposit ? Math.max(0, due - paid) : 0,
+    };
+  }
+
+  return json({ ok: true, statut, montant, confirmed, booking });
 };

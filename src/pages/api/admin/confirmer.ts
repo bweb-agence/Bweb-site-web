@@ -3,7 +3,10 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { createAdminClient } from "../../../lib/supabaseAdmin";
 import { sendEmail, confirmationEmail } from "../../../lib/email";
+import { billetPdfBuffer } from "../../../lib/billetPdf";
 import { frDateLong } from "../../../lib/format";
+
+const SITE = "https://www.bwebagence.com";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -41,13 +44,15 @@ export const POST: APIRoute = async ({ request }) => {
   // Détails pour l'e-mail de confirmation
   const { data: b } = await admin
     .from("bookings")
-    .select("reference, full_name, email, quantity, amount_paid, sessions(title, starts_at, venue, city), ticket_types(name)")
+    .select("reference, full_name, email, quantity, amount_due, amount_paid, is_deposit, sessions(title, starts_at, venue, city), ticket_types(name)")
     .eq("id", bookingId)
     .maybeSingle();
 
   if (b?.email) {
     const s = (b as any).sessions;
-    const c = confirmationEmail({
+    const paid = (b as any).amount_paid ?? 0;
+    const balance = (b as any).is_deposit ? Math.max(0, ((b as any).amount_due ?? 0) - paid) : 0;
+    const billet = {
       reference: b.reference,
       full_name: b.full_name,
       session_title: s?.title || "",
@@ -55,9 +60,21 @@ export const POST: APIRoute = async ({ request }) => {
       session_venue: s?.venue ? `${s.venue}${s.city ? " · " + s.city : ""}` : null,
       ticket_name: (b as any).ticket_types?.name || null,
       quantity: b.quantity,
-      amount: b.amount_paid,
+    };
+    const c = confirmationEmail({
+      ...billet,
+      amount: paid,
+      balance,
+      pdf_url: `${SITE}/api/billet?ref=${encodeURIComponent(b.reference)}`,
     });
-    await sendEmail({ to: b.email, subject: c.subject, html: c.html });
+    let attachments;
+    try {
+      const pdf = await billetPdfBuffer({ ...billet, amount_paid: paid, balance, is_deposit: !!(b as any).is_deposit });
+      attachments = [{ filename: `billet-${b.reference}.pdf`, content: pdf.toString("base64"), type: "application/pdf" }];
+    } catch {
+      attachments = undefined;
+    }
+    await sendEmail({ to: b.email, subject: c.subject, html: c.html, attachments });
   }
 
   return json({ ok: true });
