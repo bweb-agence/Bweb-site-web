@@ -64,10 +64,14 @@ export const POST: APIRoute = async ({ request }) => {
     // Acompte 50 % réglé en ligne → amount_paid = moitié ; solde dû sur place.
     const due = (b as any).amount_due ?? 0;
     const amountPaid = (b as any).is_deposit ? Math.max(1, Math.ceil(due / 2)) : due;
-    const { error } = await admin.rpc("confirm_booking", {
-      p_booking_id: b.id,
-      p_amount_paid: amountPaid,
-    });
+    // Mise à jour directe (clé service, contourne le RLS) : la RPC confirm_booking
+    // exige un admin connecté (is_admin) — inadapté à ce flux serveur automatique,
+    // où le paiement a déjà été vérifié auprès de Money Fusion.
+    const { error } = await admin
+      .from("bookings")
+      .update({ status: "confirmed", amount_paid: amountPaid })
+      .eq("id", b.id)
+      .eq("status", "pending");
     if (error) continue;
     confirmed++;
 
