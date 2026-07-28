@@ -326,6 +326,7 @@ const sessCrumbs = session
     noindex={isPast}
     breadcrumbs={sessCrumbs}
     schemas={faqLd ? [faqLd] : []}
+    hideWhatsApp={true}
   >
     {eventLd && <script type="application/ld+json" slot="head" is:inline set:html={JSON.stringify(eventLd)} />}
     {courseLd && <script type="application/ld+json" slot="head" is:inline set:html={JSON.stringify(courseLd)} />}
