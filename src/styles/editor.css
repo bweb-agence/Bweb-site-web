@@ -43,9 +43,13 @@
    la PAGE ne défile pas. Le canevas de gauche reste fixe ; seul le panneau de
    réglages de droite (onglets Détails / Sessions) défile en interne quand son
    contenu dépasse la vue, la barre d'onglets restant épinglée en haut. */
-.ed-layout { display: grid; grid-template-columns: minmax(0,1fr) 348px; height: calc(100vh - 58px); }
-.ed-main { min-width: 0; overflow-y: auto; }
-.ed-aside { border-left: 1px solid var(--c-border); background: var(--surface); overflow-y: auto; }
+.ed-layout { display: grid; grid-template-columns: minmax(0,1fr) 348px;
+  grid-template-rows: minmax(0, 1fr); height: calc(100vh - 58px); min-height: 0; }
+.ed-main { min-width: 0; min-height: 0; overflow-y: auto; }
+/* min-height:0 lève le min-height:auto implicite des items de grille : sans lui, le
+   panneau grandit à la taille de son contenu et le scroll interne ne s'active pas. */
+.ed-aside { border-left: 1px solid var(--c-border); background: var(--surface);
+  height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 24px; }
 /* La barre d'onglets reste en haut du panneau pendant son défilement interne. */
 .ed-ftabs { position: sticky; top: 0; z-index: 2; background: var(--surface); }
 
@@ -236,9 +240,9 @@
 
 @media (max-width: 1000px) {
   /* Mobile : colonnes empilées, la PAGE défile normalement (pas de scroll interne). */
-  .ed-layout { grid-template-columns: 1fr; height: auto; }
+  .ed-layout { grid-template-columns: 1fr; grid-template-rows: none; height: auto; }
   .ed-main { overflow: visible; }
-  .ed-aside { overflow: visible; border-left: 0; border-top: 1px solid var(--c-border); }
+  .ed-aside { height: auto; overflow: visible; border-left: 0; border-top: 1px solid var(--c-border); padding-bottom: 0; }
   .ed-ftabs { position: static; }
   .ed-toolbar { top: 58px; }
   .ed-crumb { display: none; }
