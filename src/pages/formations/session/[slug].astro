@@ -290,7 +290,7 @@ const sessCrumbs = session
   <BaseLayout
     title={session.seo_title || `${session.title} — ${frDateShort(session.starts_at)} | Formations Bweb`}
     description={session.seo_description || formation?.summary || (online ? `Formation en ligne (visioconférence) le ${frDateLong(session.starts_at)}.` : hybrid ? `Formation en présentiel à Abidjan et en ligne le ${frDateLong(session.starts_at)}.` : `Session de formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`)}
-    image={session.image_url || undefined}
+    image={`/og/session/${session.slug}.png`}
     noindex={isPast}
     breadcrumbs={sessCrumbs}
     schemas={faqLd ? [faqLd] : []}
