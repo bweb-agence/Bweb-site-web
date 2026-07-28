@@ -199,6 +199,7 @@ const isNew = id === "nouveau";
             </div>
             <div data-ftab-pane="sessions" hidden>
             <section class="ed-panel"><h4>Dates &amp; sessions</h4>
+              <div class="ed-help" style="margin:0 0 10px">Chaque date s’enregistre séparément avec son propre bouton « Enregistrer cette date ».</div>
               <div id="ed-fsessions-inline"><div class="ed-help">Chargement…</div></div>
               <button type="button" class="ed-addline" id="ed-fsession-add" hidden>+ Ajouter une date</button>
             </section>
@@ -292,7 +293,7 @@ const isNew = id === "nouveau";
   <style>
     .ed-ftabs { display:flex; gap:6px; margin-bottom:14px; border-bottom:1px solid var(--ed-line,#e5e7eb); }
     .ed-ftab { flex:1; padding:8px 10px; border:0; background:transparent; font:inherit; font-weight:600; font-size:.85rem; color:var(--c-gray-500,#6b7280); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
-    .ed-ftab.is-active { color:var(--c-primary,#1f6ced); border-bottom-color:currentColor; }
+    .ed-ftab.is-active { color:var(--c-ink,#0f172a); border-bottom-color:var(--c-primary,#1f6ced); }
   </style>
   <script>
     import { initEditorPage } from "../../../../scripts/editorPage";

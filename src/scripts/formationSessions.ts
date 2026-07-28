@@ -1,8 +1,8 @@
 /* =========================================================
    BWEB — Édition imbriquée des sessions dans la fiche formation.
-   Chaque session = une "carte" éditable (format, dates, lieu/visio,
-   tarifs, order bumps) enregistrable indépendamment. Le contenu
-   rédactionnel + SEO + affiche restent dans l'éditeur de session détaillé.
+   Chaque session = une "carte" repliable et éditable (format, dates,
+   lieu/visio, tarifs, order bumps) enregistrable indépendamment.
+   Le contenu rédactionnel + SEO + affiche restent dans l'éditeur détaillé.
    ========================================================= */
 import { supabaseBrowser } from "../lib/supabaseBrowser";
 import { slugify, dtLocalValue, toast, esc } from "./adminUtils";
@@ -60,77 +60,101 @@ export async function initFormationSessions(
     listEl.insertAdjacentHTML("beforeend",
       '<div class="ed-help" data-empty>Aucune date pour cette formation. Cliquez sur « + Ajouter une date ».</div>');
   }
-  list.forEach((s: any) => listEl.appendChild(buildCard(s)));
+  // Existantes : repliées par défaut (liste compacte).
+  list.forEach((s: any) => listEl.appendChild(buildCard(s, true)));
 
   addBtn?.addEventListener("click", () => {
     listEl.querySelector("[data-empty]")?.remove();
-    const card = buildCard(null);
+    const card = buildCard(null, false); // nouvelle date : dépliée
     listEl.appendChild(card);
     card.scrollIntoView({ behavior: "smooth", block: "center" });
     card.querySelector<HTMLInputElement>('[data-field="title"]')?.focus();
   });
 
   /* ---------------- Construction d'une carte session ---------------- */
-  function buildCard(s: any | null): HTMLElement {
+  function buildCard(s: any | null, collapsed: boolean): HTMLElement {
     let sessionId: string = s?.id || "";
     let originalTtIds: string[] = (s?.ticket_types || []).map((t: any) => t.id);
     let originalObIds: string[] = (s?.order_bumps || []).map((o: any) => o.id);
 
-    const card = document.createElement("div");
-    card.className = "ed-fscard";
-    card.style.cssText = "border:1px solid var(--ed-line,#e5e7eb);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--ed-panel,#fff)";
-
-    const optionTags = (opts: [string, string][], sel: string) =>
-      opts.map(([v, l]) => `<option value="${v}"${v === sel ? " selected" : ""}>${l}</option>`).join("");
-
+    const cap = (s?.ticket_types || []).reduce((a: number, t: any) => a + (t.capacity || 0), 0);
+    const sold = (s?.ticket_types || []).reduce((a: number, t: any) => a + (t.sold || 0), 0);
     const dateLabel = s?.starts_at
       ? new Date(s.starts_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
       : "Nouvelle date";
+    const subLabel = s ? `${dateLabel}${cap ? ` · ${sold}/${cap}` : ""}` : "à compléter";
+
+    const card = document.createElement("div");
+    card.className = "ed-fscard";
+    card.style.cssText = "border:1px solid var(--ed-line,#e5e7eb);border-radius:10px;margin-bottom:10px;overflow:hidden;background:var(--ed-panel,#fff)";
+
+    const optionTags = (opts: [string, string][], sel: string) =>
+      opts.map(([v, l]) => `<option value="${v}"${v === sel ? " selected" : ""}>${l}</option>`).join("");
+    const rowBox = "background:var(--ed-subtle,#f5f6f8);border-radius:8px;padding:8px;margin-bottom:8px";
 
     card.innerHTML = `
-      <div class="ed-fscard-head" style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-        <strong style="flex:1;font-size:.9rem" data-summary>${esc(s?.title || dateLabel)}</strong>
-        <select class="ed-sel" data-field="status" style="width:auto">${optionTags(STATUSES, s?.status || "draft")}</select>
-      </div>
-      <div class="ed-field"><label>Titre de la date</label>
-        <input class="ed-inp" data-field="title" placeholder="Ex. IA · Abidjan · 29 juillet" value="${esc(s?.title || "")}" /></div>
-      <div class="ed-field"><label>Format</label>
-        <select class="ed-sel" data-field="mode">${optionTags(MODES, s?.mode || "presentiel")}</select></div>
-      <div class="ed-row2">
+      <button type="button" class="ed-fscard-head" data-act="toggle"
+        style="display:flex;gap:8px;align-items:center;width:100%;text-align:left;border:0;background:transparent;padding:11px 12px;cursor:pointer;font:inherit">
+        <span data-chevron style="transition:transform .15s;transform:rotate(${collapsed ? -90 : 0}deg);opacity:.6">▾</span>
+        <span style="flex:1;min-width:0">
+          <strong data-summary style="display:block;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s?.title || dateLabel)}</strong>
+          <span data-sub style="font-size:.72rem;opacity:.6">${esc(subLabel)}</span>
+        </span>
+      </button>
+      <div class="ed-fscard-body" style="padding:0 12px 12px" ${collapsed ? "hidden" : ""}>
+        <div class="ed-row2">
+          <div class="ed-field"><label>Format</label><select class="ed-sel" data-field="mode">${optionTags(MODES, s?.mode || "presentiel")}</select></div>
+          <div class="ed-field"><label>Statut</label><select class="ed-sel" data-field="status">${optionTags(STATUSES, s?.status || "draft")}</select></div>
+        </div>
+        <div class="ed-field"><label>Titre de la date</label>
+          <input class="ed-inp" data-field="title" placeholder="Ex. IA · Abidjan · 29 juillet" value="${esc(s?.title || "")}" /></div>
         <div class="ed-field"><label>Début *</label><input class="ed-inp" data-field="start" type="datetime-local" value="${s?.starts_at ? dtLocalValue(s.starts_at) : ""}" /></div>
         <div class="ed-field"><label>Fin</label><input class="ed-inp" data-field="end" type="datetime-local" value="${s?.ends_at ? dtLocalValue(s.ends_at) : ""}" /></div>
-      </div>
-      <div data-mode-presentiel>
-        <div class="ed-row2">
-          <div class="ed-field"><label>Ville</label><input class="ed-inp" data-field="city" value="${esc(s?.city ?? "Abidjan")}" /></div>
-          <div class="ed-field"><label>Lieu</label><input class="ed-inp" data-field="venue" value="${esc(s?.venue ?? "Espace de formation Bweb · Cocody")}" /></div>
+        <div data-mode-presentiel>
+          <div class="ed-row2">
+            <div class="ed-field"><label>Ville</label><input class="ed-inp" data-field="city" value="${esc(s?.city ?? "Abidjan")}" /></div>
+            <div class="ed-field"><label>Lieu</label><input class="ed-inp" data-field="venue" value="${esc(s?.venue ?? "Espace de formation Bweb · Cocody")}" /></div>
+          </div>
+          <div class="ed-field"><label>Adresse / accès (optionnel)</label><input class="ed-inp" data-field="address" value="${esc(s?.address || "")}" /></div>
         </div>
-        <div class="ed-field"><label>Adresse / accès (optionnel)</label><input class="ed-inp" data-field="address" value="${esc(s?.address || "")}" /></div>
-      </div>
-      <div data-mode-enligne hidden>
-        <div class="ed-field"><label>Lien de connexion (visio)</label><input class="ed-inp" data-field="meeting_url" placeholder="https://meet… / zoom… / teams…" value="${esc(s?.meeting_url || "")}" /></div>
-        <div class="ed-field"><label>Consignes de connexion</label><textarea class="ed-ta" data-field="meeting_info" rows="2">${esc(s?.meeting_info || "")}</textarea></div>
-      </div>
+        <div data-mode-enligne hidden>
+          <div class="ed-field"><label>Lien de connexion (visio)</label><input class="ed-inp" data-field="meeting_url" placeholder="https://meet… / zoom… / teams…" value="${esc(s?.meeting_url || "")}" /></div>
+          <div class="ed-field"><label>Consignes de connexion</label><textarea class="ed-ta" data-field="meeting_info" rows="2">${esc(s?.meeting_info || "")}</textarea></div>
+        </div>
 
-      <div class="ed-fs-sub" style="font-weight:600;font-size:.8rem;margin:12px 0 6px">Tarifs / billets</div>
-      <div data-tt-list></div>
-      <button type="button" class="ed-addline" data-act="tt-add">+ Ajouter un tarif</button>
+        <div class="ed-fs-sub" style="font-weight:600;font-size:.8rem;margin:12px 0 6px">Tarifs / billets</div>
+        <div data-tt-list></div>
+        <button type="button" class="ed-addline" data-act="tt-add">+ Ajouter un tarif</button>
 
-      <div class="ed-fs-sub" style="font-weight:600;font-size:.8rem;margin:14px 0 6px">Order bumps</div>
-      <div data-ob-list></div>
-      <button type="button" class="ed-addline" data-act="ob-add">+ Ajouter un order bump</button>
+        <div class="ed-fs-sub" style="font-weight:600;font-size:.8rem;margin:14px 0 6px">Order bumps</div>
+        <div data-ob-list></div>
+        <button type="button" class="ed-addline" data-act="ob-add">+ Ajouter un order bump</button>
 
-      <div class="ed-fscard-foot" style="display:flex;gap:8px;align-items:center;margin-top:14px">
-        <a data-detail style="font-size:.78rem;opacity:.75" ${sessionId ? `href="/admin/editeur/session/${esc(sessionId)}"` : 'hidden'}>Édition détaillée (contenu, SEO, affiche) →</a>
-        <span style="flex:1"></span>
-        <button type="button" class="ed-btn ghost" data-act="delete" ${sessionId ? "" : "hidden"}>Supprimer</button>
-        <button type="button" class="ed-btn primary" data-act="save">Enregistrer cette date</button>
+        <div class="ed-fscard-foot" style="display:flex;gap:8px;align-items:center;margin-top:14px">
+          <a data-detail style="font-size:.78rem;opacity:.75" ${sessionId ? `href="/admin/editeur/session/${esc(sessionId)}"` : "hidden"}>Édition détaillée →</a>
+          <span style="flex:1"></span>
+          <button type="button" class="ed-btn ghost" data-act="delete" ${sessionId ? "" : "hidden"}>Supprimer</button>
+          <button type="button" class="ed-btn primary" data-act="save">Enregistrer cette date</button>
+        </div>
       </div>`;
 
     const q = <T extends HTMLElement = HTMLElement>(sel: string) => card.querySelector<T>(sel)!;
     const fieldVal = (name: string) => (card.querySelector<HTMLInputElement>(`[data-field="${name}"]`)?.value ?? "").trim();
+    const body = q(".ed-fscard-body");
     const ttList = q("[data-tt-list]");
     const obList = q("[data-ob-list]");
+
+    // Repli / dépli
+    q('[data-act="toggle"]').addEventListener("click", () => {
+      const isHidden = body.hasAttribute("hidden");
+      if (isHidden) body.removeAttribute("hidden"); else body.setAttribute("hidden", "");
+      q('[data-chevron]').style.transform = `rotate(${isHidden ? 0 : -90}deg)`;
+    });
+
+    // Résumé live (titre)
+    q('[data-field="title"]').addEventListener("input", () => {
+      q("[data-summary]").textContent = fieldVal("title") || dateLabel;
+    });
 
     // Mode → afficher/masquer présentiel / en ligne
     const applyMode = () => {
@@ -157,26 +181,26 @@ export async function initFormationSessions(
 
     return card;
 
-    /* ----- lignes tarif / order bump (scoping local) ----- */
+    /* ----- lignes tarif / order bump (fond doux, sans bordure) ----- */
     function ttRow(t: any): HTMLElement {
       const div = document.createElement("div");
       div.dataset.tt = "";
       div.dataset.ttId = t?.id || "";
-      div.style.cssText = "border:1px solid var(--ed-line,#eee);border-radius:8px;padding:8px;margin-bottom:8px";
+      div.style.cssText = rowBox;
       div.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:.78rem;opacity:.7">${t ? "Vendus : " + (t.sold ?? 0) : "Nouveau tarif"}</span>
-          <button type="button" class="ed-tt-del" data-tt-del title="Retirer">✕</button></div>
+          <button type="button" data-tt-del title="Retirer" style="border:0;background:transparent;cursor:pointer;opacity:.6">✕</button></div>
         <input class="ed-inp" data-tt-name placeholder="Nom du tarif" value="${esc(t?.name || "")}" />
         <div class="ed-row2" style="margin-top:8px">
           <input class="ed-inp" data-tt-price type="number" min="0" placeholder="Prix FCFA" value="${t?.price ?? ""}" />
           <input class="ed-inp" data-tt-compare type="number" min="0" placeholder="Prix barré (promo)" value="${t?.compare_at_price ?? ""}" />
         </div>
+        <input class="ed-inp" data-tt-cap type="number" min="0" placeholder="Places (capacité)" value="${t?.capacity ?? ""}" style="margin-top:8px" />
         <div class="ed-row2" style="margin-top:8px">
-          <input class="ed-inp" data-tt-cap type="number" min="0" placeholder="Places" value="${t?.capacity ?? ""}" />
-          <input class="ed-inp" data-tt-end type="datetime-local" title="Fin de validité" value="${t?.sales_end ? dtLocalValue(t.sales_end) : ""}" />
-        </div>
-        <select class="ed-sel" data-tt-badge style="margin-top:8px">${BADGES.map(([v, l]) => `<option value="${v}"${t?.badge === v ? " selected" : ""}>${l}</option>`).join("")}</select>`;
+          <select class="ed-sel" data-tt-badge>${BADGES.map(([v, l]) => `<option value="${v}"${t?.badge === v ? " selected" : ""}>${l}</option>`).join("")}</select>
+          <input class="ed-inp" data-tt-end type="datetime-local" title="Fin de validité du tarif" value="${t?.sales_end ? dtLocalValue(t.sales_end) : ""}" />
+        </div>`;
       div.querySelector("[data-tt-del]")!.addEventListener("click", () => div.remove());
       return div;
     }
@@ -188,11 +212,11 @@ export async function initFormationSessions(
       const div = document.createElement("div");
       div.dataset.ob = "";
       div.dataset.obId = o?.id || "";
-      div.style.cssText = "border:1px solid var(--ed-line,#eee);border-radius:8px;padding:8px;margin-bottom:8px";
+      div.style.cssText = rowBox;
       div.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:.78rem;opacity:.7">Order bump</span>
-          <button type="button" data-ob-del title="Retirer">✕</button></div>
+          <button type="button" data-ob-del title="Retirer" style="border:0;background:transparent;cursor:pointer;opacity:.6">✕</button></div>
         <select class="ed-sel" data-ob-tt>${opts}</select>
         <input class="ed-inp" data-ob-badge placeholder="Badge (ex. Recommandé)" value="${esc(o?.badge || "")}" style="margin-top:8px" />
         <input class="ed-inp" data-ob-headline placeholder="Accroche (optionnel)" value="${esc(o?.headline || "")}" style="margin-top:8px" />
@@ -211,7 +235,6 @@ export async function initFormationSessions(
       const saveBtn = q<HTMLButtonElement>('[data-act="save"]');
       saveBtn.setAttribute("disabled", "true"); saveBtn.textContent = "Enregistrement…";
       try {
-        // Champs édités inline (partiel : on ne touche pas au contenu/slug/SEO existants).
         const fields: any = {
           formation_id: formationId,
           title,
@@ -230,7 +253,6 @@ export async function initFormationSessions(
           const { error } = await supabaseBrowser.from("sessions").update(fields).eq("id", sessionId);
           if (error) throw error;
         } else {
-          // Nouveau : slug requis unique → dérivé du titre + date.
           const slug = `${slugify(title)}-${start.slice(0, 10)}`;
           const { data, error } = await supabaseBrowser.from("sessions")
             .insert({ ...fields, slug, theme: defaults.theme || null })
@@ -242,11 +264,10 @@ export async function initFormationSessions(
         await syncTickets();
         await syncBumps();
 
-        // Rafraîchir l'UI de la carte
-        card.querySelector<HTMLElement>("[data-summary]")!.textContent = title;
-        const detail = card.querySelector<HTMLAnchorElement>("[data-detail]")!;
+        q("[data-summary]").textContent = title;
+        const detail = q<HTMLAnchorElement>("[data-detail]");
         detail.href = `/admin/editeur/session/${sessionId}`; detail.removeAttribute("hidden");
-        card.querySelector<HTMLElement>('[data-act="delete"]')!.removeAttribute("hidden");
+        q('[data-act="delete"]').removeAttribute("hidden");
         toast("Date enregistrée. ✅");
       } catch (e: any) {
         const m = String(e?.message || "");
