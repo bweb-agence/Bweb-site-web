@@ -3,7 +3,7 @@ export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabase";
-import { frDateShort, coverClass } from "../../lib/format";
+import { frDateShort, coverClass, themeColorMap } from "../../lib/format";
 import "../../styles/blog.css";
 
 type Post = {
@@ -36,6 +36,10 @@ try {
 }
 
 const posts: Post[] = data ?? [];
+
+// Couleurs des thèmes (source de vérité) pour des couvertures uniformes.
+const { data: themesData } = await supabase.from("themes").select("name,color");
+const tmap = themeColorMap(themesData);
 
 // Liste des thèmes disponibles (à partir des articles publiés)
 const categories = [...new Set(posts.map((p) => p.category).filter(Boolean))] as string[];
@@ -93,7 +97,7 @@ const initials = (name?: string | null) =>
 
       {featured && (
         <a class="blog-featured card" href={`/blog/${featured.slug}`} style="text-decoration:none;color:inherit">
-          <div class={`cover ${coverClass(featured.category)}`}>
+          <div class={`cover ${coverClass(featured.category, tmap)}`}>
             {featured.cover_url && <img src={featured.cover_url} alt="" loading="lazy" />}
             {featured.category && <span class="cover-kat">{featured.category}</span>}
           </div>
@@ -116,7 +120,7 @@ const initials = (name?: string | null) =>
         <div class="blog-grid">
           {rest.map((post) => (
             <a class="post-card" href={`/blog/${post.slug}`}>
-              <div class={`cover ${coverClass(post.category)}`}>
+              <div class={`cover ${coverClass(post.category, tmap)}`}>
                 {post.cover_url && <img src={post.cover_url} alt="" loading="lazy" />}
                 {post.category && <span class="cover-kat">{post.category}</span>}
               </div>

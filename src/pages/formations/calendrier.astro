@@ -3,7 +3,7 @@ export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabase";
-import { priceFCFA, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid } from "../../lib/format";
+import { priceFCFA, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, themeColorMap } from "../../lib/format";
 import "../../styles/formations.css";
 
 type TT = { price: number; capacity: number; sold: number; compare_at_price: number | null };
@@ -32,6 +32,10 @@ const { data } = await supabase
   .order("starts_at", { ascending: true });
 
 const sessions: Session[] = data ?? [];
+
+// Couleurs des thèmes (source de vérité) pour des dégradés uniformes.
+const { data: themesData } = await supabase.from("themes").select("name,color");
+const tmap = themeColorMap(themesData);
 
 // Notes moyennes par formation (pour le tri « Mieux notées »).
 const { data: rv } = await supabase.from("reviews").select("formation_id,rating").eq("status", "approved");
@@ -91,7 +95,7 @@ const calData = sessions.map((s) => {
     slug: s.slug,
     title: s.title,
     theme: s.theme ?? "",
-    grad: gradSuffix(s.theme),
+    grad: gradSuffix(s.theme, tmap),
     date: dateISO(s.starts_at),
     time: frTime(s.starts_at),
     minPrice: d.minPrice,
@@ -255,7 +259,7 @@ const calData = sessions.map((s) => {
                 <article
                   class="ev-card"
                   data-theme={s.theme ?? ""}
-                  data-grad={gradSuffix(s.theme)}
+                  data-grad={gradSuffix(s.theme, tmap)}
                   data-date={dateISO(s.starts_at)}
                   data-full={d.full ? "1" : "0"}
                   data-level={s.level ?? ""}
@@ -266,7 +270,7 @@ const calData = sessions.map((s) => {
                   data-rating={rt.avg}
                   data-reviews={rt.n}
                 >
-                  <div class={`ev-media ${gradClass(s.theme)}`}>
+                  <div class={`ev-media ${gradClass(s.theme, tmap)}`}>
                     {s.image_url && <img src={s.image_url} alt="" loading="lazy" />}
                     <span class="ev-scrim"></span>
                     <div class="ev-tags">

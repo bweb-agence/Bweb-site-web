@@ -3,7 +3,7 @@ export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabase";
-import { frDateLong, coverClass } from "../../lib/format";
+import { frDateLong, coverClass, themeColorMap } from "../../lib/format";
 import { marked } from "marked";
 import "../../styles/blog.css";
 
@@ -26,6 +26,10 @@ try {
 if (!post) {
   Astro.response.status = 404;
 }
+
+// Couleurs des thèmes (source de vérité) pour une couverture uniforme.
+const { data: themesData } = await supabase.from("themes").select("name,color");
+const tmap = themeColorMap(themesData);
 
 // Articles liés (même thème)
 let related: { slug: string; title: string }[] = [];
@@ -67,7 +71,7 @@ const shareText = post?.title ?? "";
           <a href="/blog">Blog</a>
         </div>
 
-        <div class={`article-hero ${coverClass(post.category)}`}>
+        <div class={`article-hero ${coverClass(post.category, tmap)}`}>
           {post.cover_url && <img src={post.cover_url} alt="" class="cover-img-abs" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" />}
           <div class="article-hero__inner">
             {post.category && <span class="cover-kat">{post.category}</span>}

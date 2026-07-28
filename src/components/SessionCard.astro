@@ -1,7 +1,7 @@
 ---
 /* Carte de session « billet » — réutilisable (page Formations, etc.).
    Réutilise les styles .ev-card de formations.css. */
-import { priceFCFA, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid } from "../lib/format";
+import { priceFCFA, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, type ThemeColorMap } from "../lib/format";
 import "../styles/formations.css";
 
 type TT = { price: number; capacity: number; sold: number; compare_at_price: number | null };
@@ -11,8 +11,9 @@ interface Props {
     image_url: string | null; starts_at: string; status: string; ticket_types: TT[];
     level?: string | null; mode?: string | null;
   };
+  map?: ThemeColorMap;
 }
-const { session: s } = Astro.props;
+const { session: s, map } = Astro.props;
 const lvl = levelLabel(s.level);
 const online = isOnline(s.mode);
 const hybrid = isHybrid(s.mode);
@@ -36,8 +37,8 @@ const monthShort = (() => { const m = d.toLocaleDateString("fr-FR", { month: "sh
 const weekdayLine = (() => { const w = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" }).replace(".", ""); return w.charAt(0).toUpperCase() + w.slice(1); })();
 ---
 
-<article class="ev-card" data-grad={gradSuffix(s.theme)}>
-  <div class={`ev-media ${gradClass(s.theme)}`}>
+<article class="ev-card" data-grad={gradSuffix(s.theme, map)}>
+  <div class={`ev-media ${gradClass(s.theme, map)}`}>
     {s.image_url && <img src={s.image_url} alt="" loading="lazy" />}
     <span class="ev-scrim"></span>
     <div class="ev-tags">

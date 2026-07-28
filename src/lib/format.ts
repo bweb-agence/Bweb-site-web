@@ -32,14 +32,17 @@ export function priceFCFA(n: number): string {
   return `${n.toLocaleString("fr-FR")} F CFA`;
 }
 
+/** Table de correspondance nom de thème (minuscule) -> couleur, issue de la table `themes`. */
+export type ThemeColorMap = Record<string, string>;
+
 /** Classe de dégradé de couverture (blog) selon la catégorie/thème. */
-export function coverClass(category?: string | null): string {
-  return "cover--" + gradSuffix(category);
+export function coverClass(category?: string | null, map?: ThemeColorMap): string {
+  return "cover--" + gradSuffix(category, map);
 }
 
 /** Classe de dégradé (formations) selon le thème. */
-export function gradClass(theme?: string | null): string {
-  return "grad grad-mesh grad--" + gradSuffix(theme);
+export function gradClass(theme?: string | null, map?: ThemeColorMap): string {
+  return "grad grad-mesh grad--" + gradSuffix(theme, map);
 }
 
 /** Libellé lisible du niveau : « debutant » → « Débutant ». */
@@ -69,7 +72,11 @@ export function modeLabel(mode?: string | null): string {
   return "Présentiel";
 }
 
-export function gradSuffix(t?: string | null): string {
+export function gradSuffix(t?: string | null, map?: ThemeColorMap): string {
+  const key = (t || "").toLowerCase().trim();
+  // Source de vérité : couleur du thème géré (table themes) si connue…
+  if (map && key && map[key]) return map[key];
+  // …sinon repli sur l'ancienne heuristique (thèmes non encore migrés).
   const c = (t || "").toLowerCase();
   if (c.includes("ia") || c.includes("intelligence")) return "blue";
   if (c.includes("market") || c.includes("publicit")) return "warm";
@@ -77,4 +84,14 @@ export function gradSuffix(t?: string | null): string {
   if (c.includes("vente")) return "navy";
   if (c.includes("cas")) return "green";
   return "blue";
+}
+
+/** Construit la table nom(minuscule) -> couleur depuis les lignes de la table `themes`. */
+export function themeColorMap(themes?: { name?: string | null; color?: string | null }[] | null): ThemeColorMap {
+  const m: ThemeColorMap = {};
+  for (const t of themes || []) {
+    const k = (t?.name || "").toLowerCase().trim();
+    if (k && t?.color) m[k] = t.color;
+  }
+  return m;
 }

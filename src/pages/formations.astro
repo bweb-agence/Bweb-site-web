@@ -5,6 +5,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import IllusFormations from "../components/illus/IllusFormations.astro";
 import SessionCard from "../components/SessionCard.astro";
 import { supabase } from "../lib/supabase";
+import { themeColorMap } from "../lib/format";
 
 // Les 3 prochaines sessions (à venir), pour un aperçu du calendrier.
 const { data: nextSessions } = await supabase
@@ -15,6 +16,10 @@ const { data: nextSessions } = await supabase
   .order("starts_at", { ascending: true })
   .limit(3);
 const sessions = nextSessions ?? [];
+
+// Couleurs des thèmes (source de vérité) pour des badges/dégradés uniformes.
+const { data: themesData } = await supabase.from("themes").select("name,color");
+const tmap = themeColorMap(themesData);
 ---
 
 <BaseLayout title="Formations IA & digital pour entreprises | Bweb" description="Formations en IA, marketing digital, vente en ligne et productivité : Bweb rend vos équipes autonomes sur les nouvelles technologies.">
@@ -55,7 +60,7 @@ const sessions = nextSessions ?? [];
     {sessions.length > 0 ? (
       <>
         <div class="ev-grid" style="margin-top:var(--space-lg)">
-          {sessions.map((s) => <SessionCard session={s} />)}
+          {sessions.map((s) => <SessionCard session={s} map={tmap} />)}
         </div>
         <div style="text-align:center;margin-top:var(--space-lg)">
           <a class="btn btn-outline" href="/formations/calendrier">
