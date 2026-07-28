@@ -543,8 +543,10 @@
 
 /* partage */
 .share-row { display: flex; flex-wrap: wrap; gap: 8px; }
-.share-row a { display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: var(--radius-sm); color: #fff; font-weight: 700; font-size: 0.82rem; text-decoration: none; }
-.share-wa { background: #25d366; } .share-fb { background: #1877f2; } .share-x { background: #000; } .share-in { background: #0a66c2; } .share-tg { background: #229ed9; }
+/* Boutons « outline » : fond transparent, bordure + texte à la couleur de la marque. */
+.share-row a { display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: var(--radius-sm); background: transparent; border: 1.5px solid var(--c-border); color: var(--c-ink); font-weight: 700; font-size: 0.82rem; text-decoration: none; transition: border-color .15s, color .15s, background .15s; }
+.share-row a:hover { border-color: currentColor; background: color-mix(in srgb, currentColor 8%, transparent); }
+.share-wa { color: #128c3e; } .share-fb { color: #1877f2; } .share-x { color: #111; } .share-in { color: #0a66c2; } .share-tg { color: #1c88bd; }
 
 /* =========================================================
    MISE EN PAGE FICHE (façon Udemy) : contenu + carte d'achat collante
@@ -645,6 +647,10 @@
 .ask-box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; background: linear-gradient(120deg, rgba(31, 108, 237, 0.06), rgba(0, 200, 158, 0.06)); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 18px 20px; }
 .ask-box p { margin: 0; font-size: 0.9rem; color: var(--c-gray-700); max-width: 52ch; }
 .ask-box .btn { width: auto; gap: 8px; }
+/* Bouton « Poser ma question » — vert WhatsApp. */
+.btn-wa { background: #25d366; border-color: #25d366; color: #fff; }
+.btn-wa:hover { background: #1fbe5b; border-color: #1fbe5b; color: #fff; }
+.btn-wa svg { color: #fff; }
 
 /* Autres dates de la même formation */
 .next-list { display: flex; flex-direction: column; gap: 10px; }
@@ -854,18 +860,22 @@ body.rz-lock { overflow: hidden; }
   .rz-foot .rz-err { flex: 1 0 100%; }
 }
 
-/* Mobile : barre d'action collée au bas de l'écran (toujours visible). */
+/* Mobile : barre d'action collée au bas de l'écran (toujours visible).
+   Empilée : « Continuer » en haut (action principale), « Précédent » en dessous.
+   Marge basse généreuse pour ne pas être masqué par la barre Safari iPhone. */
 @media (max-width: 640px) {
   .rz-container { padding-bottom: 0; }
   .rz-foot {
     position: sticky; bottom: 0; z-index: 5; margin-top: var(--space-md);
+    display: flex; flex-direction: column; align-items: stretch; gap: 8px;
     margin-left: calc(-1 * clamp(16px, 5vw, 40px)); margin-right: calc(-1 * clamp(16px, 5vw, 40px));
-    padding: 12px clamp(16px, 5vw, 40px) calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 12px clamp(16px, 5vw, 40px) calc(22px + env(safe-area-inset-bottom, 0px));
     background: #fff; border-top: 1px solid var(--c-border);
     box-shadow: 0 -8px 22px -14px rgba(2, 11, 80, 0.3);
   }
-  .rz-foot .btn-lg { flex: 1; justify-content: center; }
-  .rz-foot #rz-prev { flex: 0 0 auto; }
+  .rz-foot #rz-next, .rz-foot #rz-done { order: 1; width: 100%; justify-content: center; }
+  .rz-foot #rz-prev { order: 2; width: 100%; justify-content: center; }
+  .rz-foot .rz-err { order: 3; }
   .rz-err { flex: 1 0 100%; }
 }
 .rz-err { color: var(--c-danger); font-size: 0.82rem; font-weight: 600; flex-basis: 100%; }
