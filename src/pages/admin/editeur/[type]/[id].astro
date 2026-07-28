@@ -159,7 +159,15 @@ const isNew = id === "nouveau";
               <div class="ed-field"><label for="f-theme">Thème</label><select class="ed-sel" id="f-theme"><option value="">— Aucun —</option></select>
                 <div class="ed-help">Gérez la liste dans <a href="/admin/themes" target="_blank" style="color:var(--c-blue);font-weight:600">Thèmes</a>.</div></div>
               <div class="ed-row2">
-                <div class="ed-field"><label for="f-level">Niveau</label><input class="ed-inp" id="f-level" placeholder="Débutant accepté" /></div>
+                <div class="ed-field"><label for="f-level">Niveau</label>
+                  <select class="ed-sel" id="f-level">
+                    <option value="">— Non précisé —</option>
+                    <option value="Débutant accepté">Débutant accepté</option>
+                    <option value="Tous niveaux">Tous niveaux</option>
+                    <option value="Intermédiaire">Intermédiaire</option>
+                    <option value="Avancé">Avancé</option>
+                    <option value="Prérequis nécessaires">Prérequis nécessaires</option>
+                  </select></div>
                 <div class="ed-field"><label for="f-duration">Durée</label><input class="ed-inp" id="f-duration" placeholder="2 jours (14 h)" /></div>
               </div>
               <div class="ed-field"><label for="f-price">Prix indicatif (FCFA)</label><input class="ed-inp" id="f-price" type="number" min="0" /></div>

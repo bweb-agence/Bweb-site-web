@@ -155,6 +155,13 @@
 /* ---------- Réglages (aside) ---------- */
 .ed-panel { padding: 18px 20px; border-bottom: 1px solid var(--c-border-soft); }
 .ed-panel h4 { margin: 0 0 14px; font-size: 11.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--c-gray-400); }
+/* En-tête de section cliquable (accordéon pliable/dépliable) */
+.ed-panel > h4 { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; transition: color var(--dur-fast); }
+.ed-panel > h4::after { content: "▾"; margin-left: auto; font-size: 1.1em; opacity: .5; transition: transform var(--dur-fast); }
+.ed-panel > h4:hover { color: var(--c-blue); }
+.ed-panel.is-collapsed > h4 { margin-bottom: 0; }
+.ed-panel.is-collapsed > h4::after { transform: rotate(-90deg); }
+.ed-panel.is-collapsed > *:not(h4) { display: none !important; }
 .ed-field { margin-bottom: 14px; }
 .ed-field:last-child { margin-bottom: 0; }
 .ed-field > label { display: block; font-size: 12.5px; font-weight: 600; color: var(--c-gray-600); margin-bottom: 6px; }

@@ -117,7 +117,9 @@ export async function initEditorPage() {
       setVal("f-focus", record.focus_keyword || "");
       setVal("f-pubdate", record.published_at ? dtLocalValue(record.published_at) : "");
     } else if (type === "formation") {
-      setVal("f-level", record.level || "");
+      const _lv = $<HTMLSelectElement>("f-level"); const _lvVal = record.level || "";
+      if (_lv && _lvVal && ![..._lv.options].some((o) => o.value === _lvVal)) _lv.add(new Option(_lvVal, _lvVal));
+      setVal("f-level", _lvVal);
       setVal("f-duration", record.duration || "");
       setVal("f-price", record.default_price ?? "");
       setVal("f-summary", record.summary || "");
@@ -134,7 +136,9 @@ export async function initEditorPage() {
       setVal("f-focus", record.focus_keyword || "");
     } else {
       setVal("f-formation", record.formation_id || "");
-      setVal("f-level", record.level || "");
+      const _lv = $<HTMLSelectElement>("f-level"); const _lvVal = record.level || "";
+      if (_lv && _lvVal && ![..._lv.options].some((o) => o.value === _lvVal)) _lv.add(new Option(_lvVal, _lvVal));
+      setVal("f-level", _lvVal);
       setVal("f-mode", record.mode || "presentiel");
       setVal("f-start", record.starts_at ? dtLocalValue(record.starts_at) : "");
       setVal("f-end", record.ends_at ? dtLocalValue(record.ends_at) : "");
@@ -169,6 +173,37 @@ export async function initEditorPage() {
   updateCrumb(); updatePill(); updatePreview(); autoGrow(); updateMeta(); renderSeo();
   if (type === "session") setupModeToggle();
   if (type === "formation") { setupFormationTabs(); initFormationSessions(root, id, { theme: selectedTheme().name, theme_id: selectedTheme().theme_id }); }
+
+  // Panneaux de réglages pliables (accordéon) — confort sur les longs panneaux.
+  // L'état plié/déplié est mémorisé par section (localStorage).
+  (function setupCollapsiblePanels() {
+    const KEY = "ed-collapsed-panels";
+    let saved: string[] = [];
+    try { saved = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { /* ignore */ }
+    root.querySelectorAll<HTMLElement>(".ed-aside .ed-panel").forEach((panel) => {
+      const h = panel.querySelector("h4");
+      if (!h) return;
+      const key = (h.childNodes[0]?.textContent || h.textContent || "").trim();
+      if (saved.includes(key)) panel.classList.add("is-collapsed");
+      h.setAttribute("role", "button");
+      h.setAttribute("tabindex", "0");
+      h.setAttribute("aria-expanded", panel.classList.contains("is-collapsed") ? "false" : "true");
+      const toggle = () => {
+        panel.classList.toggle("is-collapsed");
+        const collapsed = panel.classList.contains("is-collapsed");
+        h.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        const set = new Set(saved);
+        if (collapsed) set.add(key); else set.delete(key);
+        saved = [...set];
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch { /* ignore */ }
+      };
+      h.addEventListener("click", toggle);
+      h.addEventListener("keydown", (e) => {
+        const k = (e as KeyboardEvent).key;
+        if (k === "Enter" || k === " ") { e.preventDefault(); toggle(); }
+      });
+    });
+  })();
 
   titleEl.addEventListener("input", () => {
     autoGrow();

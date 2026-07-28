@@ -74,8 +74,8 @@ export async function initFormationSessions(
   /* ---------------- Construction d'une carte session ---------------- */
   function buildCard(s: any | null, collapsed: boolean): HTMLElement {
     let sessionId: string = s?.id || "";
-    let originalTtIds: string[] = (s?.ticket_types || []).map((t: any) => t.id);
-    let originalObIds: string[] = (s?.order_bumps || []).map((o: any) => o.id);
+    let originalTtIds: string[] = (s?.ticket_types || []).map((t: any) => t.id).filter(Boolean);
+    let originalObIds: string[] = (s?.order_bumps || []).map((o: any) => o.id).filter(Boolean);
 
     const cap = (s?.ticket_types || []).reduce((a: number, t: any) => a + (t.capacity || 0), 0);
     const sold = (s?.ticket_types || []).reduce((a: number, t: any) => a + (t.sold || 0), 0);
@@ -134,7 +134,10 @@ export async function initFormationSessions(
           <button type="button" class="ed-btn primary" data-act="save" style="width:100%;padding:10px">Enregistrer cette date</button>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
             <a data-detail style="font-size:.78rem;opacity:.75" ${sessionId ? `href="/admin/editeur/session/${esc(sessionId)}"` : "hidden"}>Édition détaillée →</a>
-            <button type="button" class="ed-btn ghost" data-act="delete" style="font-size:.8rem" ${sessionId ? "" : "hidden"}>Supprimer</button>
+            <span style="display:flex;gap:8px">
+              <button type="button" class="ed-btn ghost" data-act="duplicate" style="font-size:.8rem" ${sessionId ? "" : "hidden"}>⧉ Dupliquer</button>
+              <button type="button" class="ed-btn ghost" data-act="delete" style="font-size:.8rem" ${sessionId ? "" : "hidden"}>Supprimer</button>
+            </span>
           </div>
         </div>
       </div>`;
@@ -179,6 +182,7 @@ export async function initFormationSessions(
 
     q('[data-act="save"]').addEventListener("click", () => saveCard());
     q('[data-act="delete"]').addEventListener("click", () => deleteCard());
+    q('[data-act="duplicate"]').addEventListener("click", () => duplicateCard());
 
     return card;
 
@@ -331,6 +335,31 @@ export async function initFormationSessions(
       const toDelete = originalObIds.filter((x) => !kept.includes(x));
       if (toDelete.length) { const { error } = await supabaseBrowser.from("order_bumps").delete().in("id", toDelete); if (error) throw error; }
       originalObIds = kept;
+    }
+
+    /* ----- duplication : nouvelle carte pré-remplie, date à ressaisir ----- */
+    function duplicateCard() {
+      const src: any = s ? JSON.parse(JSON.stringify(s)) : {};
+      const dup: any = {
+        title: (fieldVal("title") || src.title || "") + " (copie)",
+        mode: fieldVal("mode") || src.mode || "presentiel",
+        status: "draft",
+        starts_at: null, ends_at: null, // nouvelle date à saisir
+        city: fieldVal("city") || src.city || null,
+        venue: fieldVal("venue") || src.venue || null,
+        address: fieldVal("address") || src.address || null,
+        meeting_url: fieldVal("meeting_url") || src.meeting_url || null,
+        meeting_info: fieldVal("meeting_info") || src.meeting_info || null,
+        image_url: src.image_url || null,
+        ticket_types: (src.ticket_types || []).map((t: any) => ({ ...t, id: undefined, sold: 0 })),
+        order_bumps: (src.order_bumps || []).map((o: any) => ({ ...o, id: undefined })),
+      };
+      listEl!.querySelector("[data-empty]")?.remove();
+      const nc = buildCard(dup, false);
+      card.after(nc);
+      nc.scrollIntoView({ behavior: "smooth", block: "center" });
+      (nc.querySelector('[data-field="start"]') as HTMLInputElement | null)?.focus();
+      toast("Date dupliquée — choisissez la nouvelle date puis « Enregistrer ».");
     }
 
     async function deleteCard() {
