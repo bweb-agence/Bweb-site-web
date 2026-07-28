@@ -745,19 +745,45 @@ const sessCrumbs = session
             <!-- Étape 3 : paiement -->
             <section class="rz-step" data-step="3">
               <h2 class="rz-h">Moyen de paiement</h2>
-              <p class="rz-sub">Payez en totalité, ou réglez un acompte de 50 % (le solde sur place).</p>
-              <div class="pm-grid" id="pm-grid">
-                <button type="button" class="pm pm-online sel" data-method="money_fusion" style="grid-column:1/-1;border-color:var(--c-green,#00c89e)">
-                  <span class="lg" style="background:var(--c-green,#00c89e);color:#fff">🔒</span>
-                  <span>Payer en ligne (total)<span class="sub">Mobile Money · Wave · carte — confirmation immédiate</span></span>
+              <p class="rz-sub">Choisissez comment régler — le bouton en bas rappelle la somme.</p>
+
+              <div class="rz-payopts" id="pm-grid" role="radiogroup" aria-label="Moyen de paiement">
+                <button type="button" class="rz-payopt sel" data-method="money_fusion" role="radio" aria-checked="true">
+                  <span class="rz-payopt__ic ic-full" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 5.5v5C5 15 8 18 12 20c4-2 7-5 7-9.5v-5z"/><path d="m9.2 12 1.9 1.9L15 9.9"/></svg></span>
+                  <span class="rz-payopt__main">
+                    <span class="rz-payopt__row"><span class="rz-payopt__t">Payer en ligne</span><span class="rz-payopt__tag">Recommandé</span></span>
+                    <span class="rz-payopt__s">Place confirmée automatiquement, tout de suite.</span>
+                  </span>
+                  <span class="rz-payopt__price"><b data-amt-full>—</b><small>en une fois</small></span>
+                  <span class="rz-payopt__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
                 </button>
-                <button type="button" class="pm" data-method="money_fusion_acompte" style="grid-column:1/-1">
-                  <span class="lg" style="background:#f0a500;color:#fff">½</span>
-                  <span>Acompte 50 % en ligne<span class="sub">Le solde se paie sur place le jour J</span></span>
+                <button type="button" class="rz-payopt" data-method="money_fusion_acompte" role="radio" aria-checked="false">
+                  <span class="rz-payopt__ic ic-half" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></span>
+                  <span class="rz-payopt__main">
+                    <span class="rz-payopt__row"><span class="rz-payopt__t">Acompte 50 %</span></span>
+                    <span class="rz-payopt__s">Solde de <b data-amt-solde>—</b> à régler sur place le jour J.</span>
+                  </span>
+                  <span class="rz-payopt__price"><b data-amt-deposit>—</b><small>maintenant</small></span>
+                  <span class="rz-payopt__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
                 </button>
               </div>
-              <div class="pay-note" id="pm-note" style="display:none"></div>
-              <div class="rz-note-pay" style="font-size:.82rem;color:#7a2e00;background:#fff2ea;border:1px solid #ffcbb0;border-radius:10px;padding:9px 12px;margin-top:10px">⚠️ Au moment de payer, <b>ressaisissez votre numéro Mobile Money</b> sur la page Money Fusion. Ne tenez pas compte du numéro pré-affiché : c'est un exemple, le champ est à remplir vous-même.</div>
+
+              <div class="rz-methods">
+                <div class="rz-methods__lab">Réglé en toute sécurité via</div>
+                <div class="rz-methods__row">
+                  <span class="rz-logo"><img src="/images/pay/wave.svg" alt="Wave" loading="lazy" /></span>
+                  <span class="rz-logo"><img src="/images/pay/orange-money.svg" alt="Orange Money" loading="lazy" /></span>
+                  <span class="rz-logo"><img src="/images/pay/mtn-momo.svg" alt="MTN MoMo" loading="lazy" /></span>
+                  <span class="rz-logo"><img src="/images/pay/moov.svg" alt="Moov Money" loading="lazy" /></span>
+                  <span class="rz-logo"><img src="/images/pay/visa.svg" alt="Visa" loading="lazy" /></span>
+                  <span class="rz-logo"><img src="/images/pay/mastercard.svg" alt="Mastercard" loading="lazy" /></span>
+                </div>
+              </div>
+
+              <div class="rz-tip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+                <p>Sur la page de paiement, <b>saisissez vous-même votre numéro Mobile Money</b> — celui d'où partira le règlement. Le numéro déjà affiché n'est qu'un exemple.</p>
+              </div>
             </section>
 
             <!-- Étape 4 : justificatif -->

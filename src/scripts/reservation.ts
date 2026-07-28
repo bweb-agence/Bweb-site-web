@@ -208,37 +208,37 @@ export function initReservation() {
   });
 
   // ---------- Paiement ----------
-  overlay.querySelectorAll<HTMLElement>(".pm").forEach((pm) => {
+  overlay.querySelectorAll<HTMLElement>(".rz-payopt").forEach((pm) => {
     pm.addEventListener("click", () => {
-      overlay.querySelectorAll(".pm").forEach((p) => p.classList.remove("sel"));
+      overlay.querySelectorAll(".rz-payopt").forEach((p) => { p.classList.remove("sel"); p.setAttribute("aria-checked", "false"); });
       pm.classList.add("sel");
+      pm.setAttribute("aria-checked", "true");
       method = pm.dataset.method || "";
-      renderPayNote();
       updateNextLabel();
     });
   });
   // Money Fusion mis en avant : présélectionné par défaut (classe .sel dans le markup).
-  const preselected = overlay.querySelector<HTMLElement>(".pm.sel");
+  const preselected = overlay.querySelector<HTMLElement>(".rz-payopt.sel");
   if (preselected) method = preselected.dataset.method || "";
   // Le paiement en ligne (Money Fusion) se règle directement à l'étape 3 :
-  // pas d'étape justificatif → le bouton « Continuer » devient « Payer ».
+  // pas d'étape justificatif → le bouton « Continuer » devient « Payer <montant> ».
   function updateNextLabel() {
     if (step !== 3) return;
-    nextBtn.textContent = method === "money_fusion" ? "Payer en ligne ›"
-      : method === "money_fusion_acompte" ? "Payer l'acompte ›"
+    const { total } = selection();
+    const deposit = Math.max(1, Math.ceil(total / 2));
+    nextBtn.textContent = method === "money_fusion" ? `Payer ${fmt(total)} ›`
+      : method === "money_fusion_acompte" ? `Payer ${fmt(deposit)} ›`
       : "Continuer ›";
   }
-  function renderPayNote() {
-    const note = $("pm-note")!;
+  // Renseigne le montant porté par chaque option (total / acompte / solde restant).
+  function renderPayAmounts() {
     const { total } = selection();
     const deposit = Math.max(1, Math.ceil(total / 2));
     const solde = total - deposit;
-    const map: Record<string, string> = {
-      money_fusion: `Réglez la <b>totalité</b> (<b>${fmt(total)}</b>) en ligne. Paiement sécurisé (Mobile Money · Wave · carte) ; votre place est confirmée automatiquement.`,
-      money_fusion_acompte: `Réglez l'acompte de <b>${fmt(deposit)}</b> (50 %) en ligne pour bloquer votre place. Le solde de <b>${fmt(solde)}</b> se paie <b>sur place</b> le jour J.`,
-    };
-    note.innerHTML = map[method] || "";
-    note.style.display = method ? "block" : "none";
+    const set = (sel: string, v: string) => { const el = overlay.querySelector(sel); if (el) el.textContent = v; };
+    set("[data-amt-full]", fmt(total));
+    set("[data-amt-deposit]", fmt(deposit));
+    set("[data-amt-solde]", fmt(solde));
   }
 
   // ---------- Justificatif ----------
@@ -279,7 +279,7 @@ export function initReservation() {
     doneBtn.style.display = n > FORM_STEPS ? "inline-flex" : "none";
     nextBtn.textContent = n === FORM_STEPS ? "Valider mon inscription" : "Continuer ›";
     errEl.textContent = "";
-    if (n === 3) { renderPayNote(); updateNextLabel(); }
+    if (n === 3) { renderPayAmounts(); updateNextLabel(); }
     if (n === 4) renderSummary2();
     overlay.querySelector(".rz-scroll")!.scrollTop = 0;
   }
