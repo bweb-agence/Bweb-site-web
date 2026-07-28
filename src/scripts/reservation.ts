@@ -71,6 +71,26 @@ export function initReservation() {
   // URL du relais paiement (Hostinger, IP fixe) — injectée côté serveur.
   const PAY_API = (overlay.dataset.payApi || "").replace(/\/+$/, "");
 
+  // Mémorisation locale des coordonnées → pré-remplissage aux visites suivantes.
+  const INFO_KEY = "bweb_resa_infos";
+  function saveInfos() {
+    try {
+      localStorage.setItem(INFO_KEY, JSON.stringify({
+        name: ($("rz-name") as HTMLInputElement | null)?.value.trim() || "",
+        email: ($("rz-email") as HTMLInputElement | null)?.value.trim() || "",
+        phone: ($("rz-phone") as HTMLInputElement | null)?.value.trim() || "",
+        company: ($("rz-company") as HTMLInputElement | null)?.value.trim() || "",
+      }));
+    } catch {}
+  }
+  function loadInfos() {
+    try {
+      const d = JSON.parse(localStorage.getItem(INFO_KEY) || "{}");
+      const set = (id: string, v: string) => { const el = $(id) as HTMLInputElement | null; if (el && v && !el.value) el.value = v; };
+      set("rz-name", d.name); set("rz-email", d.email); set("rz-phone", d.phone); set("rz-company", d.company);
+    } catch {}
+  }
+
   // ---------- Mode de participation (sessions hybrides) ----------
   const isHybrid = overlay.dataset.mode === "hybride";
   let attendance = "";
@@ -280,6 +300,7 @@ export function initReservation() {
   async function submit() {
     nextBtn.setAttribute("disabled", "true");
     nextBtn.textContent = "Envoi…";
+    saveInfos(); // mémorise les coordonnées pour la prochaine fois
     const { lines, total } = selection();
     const fd = new FormData();
     fd.append("session_id", overlay.dataset.session!);
@@ -322,66 +343,83 @@ export function initReservation() {
 
   // ---------- Paiement en ligne (Money Fusion) ----------
   async function submitOnline() {
+    const resetBtn = () => { nextBtn.removeAttribute("disabled"); nextBtn.textContent = "Payer maintenant ›"; };
     nextBtn.setAttribute("disabled", "true");
     nextBtn.textContent = "Redirection…";
-    const { lines, total } = selection();
-    const name = ($("rz-name") as HTMLInputElement).value.trim();
-    const email = ($("rz-email") as HTMLInputElement).value.trim();
-    const phoneEl = $("rz-phone") as HTMLInputElement;
-    const phoneCc = (phoneEl.closest(".phone-field")?.querySelector('[name="phone_cc"]') as HTMLSelectElement | null)?.value || "";
-    const phoneVal = phoneEl.value.trim();
-    const phone = phoneVal ? (phoneCc ? `${phoneCc} ${phoneVal}` : phoneVal) : "";
-
-    const resetBtn = () => { nextBtn.removeAttribute("disabled"); nextBtn.textContent = "Payer maintenant ›"; };
-
-    // 1) Créer les réservations (statut « en attente »).
-    const fd = new FormData();
-    fd.append("session_id", overlay.dataset.session!);
-    fd.append("lines", JSON.stringify(lines.map((l) => ({ ticket_type_id: l.id, quantity: l.qty }))));
-    fd.append("name", name);
-    fd.append("email", email);
-    fd.append("phone", phone);
-    fd.append("company", ($("rz-company") as HTMLInputElement).value.trim());
-    fd.append("payment_method", "money_fusion");
-    fd.append("is_deposit", "0");
-    if (isHybrid && attendance) fd.append("attendance_mode", attendance);
-
-    let json: any = null;
+    errEl.textContent = "";
+    let redirecting = false;
     try {
-      const res = await fetch("/api/reserver", { method: "POST", body: fd });
-      json = await res.json();
-    } catch { json = { ok: false, error: "network" }; }
+      const { lines, total } = selection();
+      const name = ($("rz-name") as HTMLInputElement).value.trim();
+      const email = ($("rz-email") as HTMLInputElement).value.trim();
+      const phoneEl = $("rz-phone") as HTMLInputElement;
+      const phoneCc = (phoneEl.closest(".phone-field")?.querySelector('[name="phone_cc"]') as HTMLSelectElement | null)?.value || "";
+      const phoneVal = phoneEl.value.trim();
+      const phone = phoneVal ? (phoneCc ? `${phoneCc} ${phoneVal}` : phoneVal) : "";
+      saveInfos();
 
-    if (!json?.ok) {
-      resetBtn();
-      if (json?.error === "not_configured") { whatsappFallback(lines, total); success(null, true); }
-      else if (json?.error === "sold_out") { errEl.textContent = "Désolé, il ne reste plus assez de places pour ce tarif."; show(1); }
-      else errEl.textContent = "Une erreur est survenue. Réessayez ou finalisez sur WhatsApp.";
-      return;
-    }
+      if (!PAY_API) { errEl.textContent = "Le paiement en ligne est momentanément indisponible."; return; }
 
-    const refs: string[] = json.references || (json.reference ? [json.reference] : []);
+      // 1) Créer le paiement Money Fusion D'ABORD. Aucune réservation n'est créée
+      //    tant que le paiement n'est pas accepté → plus de réservation « fantôme ».
+      let token = "";
+      let payUrl = "";
+      try {
+        const pres = await fetch(`${PAY_API}/pay.php`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            montant: total,
+            nom: name,
+            telephone: phone,
+            article: overlay.dataset.title || "Formation Bweb",
+            meta: { session_id: overlay.dataset.session, email },
+          }),
+        });
+        const pj = await pres.json();
+        if (!pj?.ok || !pj?.url) throw new Error("no_url");
+        token = pj.token || "";
+        payUrl = pj.url;
+      } catch {
+        errEl.textContent = "Le paiement en ligne n'a pas pu démarrer. Réessayez ou finalisez sur WhatsApp.";
+        return;
+      }
 
-    // 2) Créer le paiement Money Fusion via le relais (IP fixe).
-    if (!PAY_API) { errEl.textContent = "Le paiement en ligne est momentanément indisponible."; resetBtn(); return; }
-    try {
-      const pres = await fetch(`${PAY_API}/pay.php`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          montant: total,
-          nom: name,
-          telephone: phone,
-          article: overlay.dataset.title || "Formation Bweb",
-          meta: { refs, session_id: overlay.dataset.session, email },
-        }),
-      });
-      const pj = await pres.json();
-      if (pj?.ok && pj?.url) { window.location.href = pj.url; return; }
-      throw new Error("no_url");
+      // 2) Paiement accepté → créer la (les) réservation(s) « en attente », en stockant
+      //    le jeton Money Fusion comme référence (sert à confirmer au retour du paiement).
+      const fd = new FormData();
+      fd.append("session_id", overlay.dataset.session!);
+      fd.append("lines", JSON.stringify(lines.map((l) => ({ ticket_type_id: l.id, quantity: l.qty }))));
+      fd.append("name", name);
+      fd.append("email", email);
+      fd.append("phone", phone);
+      fd.append("company", ($("rz-company") as HTMLInputElement).value.trim());
+      fd.append("payment_method", "money_fusion");
+      fd.append("payment_reference", token);
+      fd.append("is_deposit", "0");
+      if (isHybrid && attendance) fd.append("attendance_mode", attendance);
+
+      let json: any = null;
+      try {
+        const res = await fetch("/api/reserver", { method: "POST", body: fd });
+        json = await res.json();
+      } catch { json = { ok: false, error: "network" }; }
+
+      if (!json?.ok) {
+        if (json?.error === "not_configured") { whatsappFallback(lines, total); success(null, true); }
+        else if (json?.error === "sold_out") { errEl.textContent = "Désolé, il ne reste plus assez de places pour ce tarif."; show(1); }
+        else errEl.textContent = "Une erreur est survenue. Réessayez ou finalisez sur WhatsApp.";
+        return;
+      }
+
+      // 3) Tout est prêt → rediriger vers la page de paiement Money Fusion.
+      redirecting = true;
+      window.location.href = payUrl;
     } catch {
-      resetBtn();
-      errEl.textContent = "Le paiement en ligne n'a pas pu démarrer. Réessayez ou finalisez sur WhatsApp.";
+      errEl.textContent = "Une erreur est survenue. Réessayez ou finalisez sur WhatsApp.";
+    } finally {
+      // Le bouton se réactive toujours, sauf si on part vers la page de paiement.
+      if (!redirecting) resetBtn();
     }
   }
 
@@ -428,6 +466,7 @@ export function initReservation() {
     lastFocused = document.activeElement as HTMLElement;
     overlay.classList.add("is-open");
     document.body.classList.add("rz-lock");
+    loadInfos(); // pré-remplit nom/e-mail/téléphone mémorisés
     show(1);
     refreshTotal();
     // Focus dans la modale (bouton fermer par défaut).
