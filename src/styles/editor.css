@@ -32,6 +32,10 @@
 .ed-btn.primary:hover { filter: brightness(1.07); color: #fff; }
 .ed-btn.ghost { border-color: transparent; background: transparent; color: var(--c-gray-600); text-decoration: none; }
 .ed-btn.ghost:hover { background: #eef4ff; color: var(--c-blue); }
+/* Action destructive (Supprimer) — toujours en rouge. */
+.ed-btn.danger { border-color: transparent; background: transparent; color: var(--c-danger); }
+.ed-btn.danger:hover { background: var(--c-danger-bg); border-color: var(--c-danger); color: var(--c-danger); }
+.ed-fscard-dup:hover { opacity: 1 !important; color: var(--c-blue); }
 .ed-btn[disabled] { opacity: .6; pointer-events: none; }
 
 /* ---------- Disposition ---------- */
@@ -204,8 +208,8 @@
 /* tarifs */
 .ed-tt { border: 1px solid var(--c-border); border-radius: 12px; padding: 12px; margin-bottom: 10px; background: var(--surface-2); }
 .ed-tt-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; font-weight: 700; color: var(--c-gray-500); }
-.ed-tt-del { border: 1px solid var(--c-border); background: var(--surface); color: var(--c-gray-500); width: 26px; height: 26px; border-radius: 7px; cursor: pointer; }
-.ed-tt-del:hover { border-color: var(--c-danger); color: var(--c-danger); }
+.ed-tt-del { border: 1px solid var(--c-border); background: var(--surface); color: var(--c-danger); width: 26px; height: 26px; border-radius: 7px; cursor: pointer; }
+.ed-tt-del:hover { border-color: var(--c-danger); color: var(--c-danger); background: var(--c-danger-bg); }
 .ed-addline { width: 100%; border: 1px dashed var(--c-border); background: transparent; color: var(--c-blue); font-family: inherit;
   font-weight: 700; font-size: 13px; padding: 9px; border-radius: 9px; cursor: pointer; }
 .ed-addline:hover { background: #eef4ff; }
