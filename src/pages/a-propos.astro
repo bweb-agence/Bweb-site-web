@@ -4,6 +4,7 @@ import path from "node:path";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import IllusApropos from "../components/illus/IllusApropos.astro";
 import TeamAvatar from "../components/TeamAvatar.astro";
+import "../styles/formations.css";
 
 // Photos d'équipe : dépose le fichier dans public/images/ au nom indiqué,
 // il est utilisé automatiquement dès qu'il existe (sinon on retombe sur les initiales).
@@ -14,6 +15,8 @@ function teamPhoto(filename: string) {
 const godwin = teamPhoto("godwin-soola.png");
 const opsManager = teamPhoto("ops-manager.png");
 const mediaBuyer = teamPhoto("media-buyer.png");
+const closerSenior = teamPhoto("closer-senior.png");
+const sdrCloser2 = teamPhoto("sdr-closer2.png");
 ---
 
 <BaseLayout title="À propos — Cabinet conseil, formation & IA | Bweb" description="Bweb est un cabinet de conseil, de formation et d'accompagnement en IA et nouvelles technologies, fondé par Godwin Soola pour faire avancer les entreprises." breadcrumbs={[{ name: "Accueil", path: "/" }, { name: "À propos", path: "/a-propos" }]}>
@@ -31,8 +34,7 @@ const mediaBuyer = teamPhoto("media-buyer.png");
     </div>
     <div class="page-hero-grid">
       <div class="text-white" data-hero-in>
-        <div class="eyebrow on-dark">Notre histoire</div>
-        <h1>Rendre l'IA utile aux entreprises.</h1>
+        <h1>Le digital au service de votre croissance.</h1>
         <p class="lead">Bweb est un cabinet de conseil, de formation et d'accompagnement qui aide les entreprises à intégrer l'IA et les nouvelles technologies dans leur quotidien.</p>
       </div>
       <div class="visual" data-hero-in>
@@ -92,14 +94,14 @@ const mediaBuyer = teamPhoto("media-buyer.png");
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".6" fill="currentColor" stroke="none"/></svg>
         </div>
         <h3 class="text-white margin-bottom_small">Notre mission</h3>
-        <p class="text-reveal on-dark" style="font-size:1.1rem">Accompagner les entreprises et les organisations africaines dans l'adoption de l'IA et du numérique grâce à des approches pratiques, accessibles et adaptées à leurs réalités.</p>
+        <p class="text-reveal on-dark" style="font-size:1.1rem">Rendre l'IA et le digital accessibles à toute entreprise qui veut avancer pas seulement aux grandes structures. Nous accompagnons nos clients avec méthode, proximité et résultats mesurables, du premier diagnostic jusqu'à l'autonomie totale de leurs équipes.</p>
       </div>
       <div class="card">
         <div class="icon-tile">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
         </div>
         <h3 class="margin-bottom_small">Notre vision</h3>
-        <p>Construire une nouvelle génération d'entreprises africaines performantes, autonomes et tournées vers le numérique.</p>
+        <p>Dans dix ans, nous voulons avoir contribué à faire émerger une génération d'entrepreneurs et de dirigeants africains qui utilisent l'IA et le digital comme des leviers naturels de performance pas comme des sujets réservés aux experts.</p>
       </div>
     </div>
   </div>
@@ -111,15 +113,51 @@ const mediaBuyer = teamPhoto("media-buyer.png");
     <div class="section-head center reveal">
       <div class="eyebrow" style="justify-content:center">Ce qui nous guide</div>
       <h2>Nos valeurs</h2>
+      <p class="lead" style="margin-top:16px">Chaque projet Bweb est guidé par des principes non négociables. Ce sont eux qui définissent notre façon de travailler, de communiquer et d'accompagner.</p>
     </div>
-    <div class="grid-4-col collapse_tablet" data-stagger>
-      <div class="card value-card"><div class="num">01</div><h4>Innovation</h4><p style="font-size:.9rem;margin-top:6px">Explorer sans cesse de nouvelles façons de résoudre les problèmes de nos clients.</p></div>
-      <div class="card value-card"><div class="num">02</div><h4>Proximité</h4><p style="font-size:.9rem;margin-top:6px">Rester à l'écoute et accessible, à chaque étape de l'accompagnement.</p></div>
-      <div class="card value-card"><div class="num">03</div><h4>Pédagogie</h4><p style="font-size:.9rem;margin-top:6px">Transmettre les compétences pour rendre nos clients autonomes.</p></div>
-      <div class="card value-card"><div class="num">04</div><h4>Excellence</h4><p style="font-size:.9rem;margin-top:6px">Viser un niveau de qualité élevé dans chaque livrable.</p></div>
-      <div class="card value-card"><div class="num">05</div><h4>Simplicité</h4><p style="font-size:.9rem;margin-top:6px">Proposer des outils simples à comprendre et à utiliser au quotidien.</p></div>
-      <div class="card value-card"><div class="num">06</div><h4>Résultats</h4><p style="font-size:.9rem;margin-top:6px">Chaque action est pensée pour produire un impact mesurable.</p></div>
-      <div class="card value-card"><div class="num">07</div><h4>Engagement</h4><p style="font-size:.9rem;margin-top:6px">Nous restons présents avant, pendant et après chaque projet.</p></div>
+    <div class="tb-bento" data-stagger>
+      <article class="tb-tile" style="--c:#1f6ced">
+        <span class="tb-num">01</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.5.4.8 1 .8 1.6v.5h5.4v-.5c0-.6.3-1.2.8-1.6A6 6 0 0 0 12 3z"/></svg></span>
+        <h3>Innovation</h3>
+        <p>Explorer sans cesse de nouvelles façons de résoudre les problèmes de nos clients.</p>
+      </article>
+      <article class="tb-tile" style="--c:#7b5cff">
+        <span class="tb-num">02</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15 13.5c2.4.4 4 2 4 5.5"/></svg></span>
+        <h3>Proximité</h3>
+        <p>Rester à l'écoute et accessible, à chaque étape de l'accompagnement.</p>
+      </article>
+      <article class="tb-tile" style="--c:#ec4899">
+        <span class="tb-num">03</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/></svg></span>
+        <h3>Pédagogie</h3>
+        <p>Transmettre les compétences pour rendre nos clients autonomes.</p>
+      </article>
+      <article class="tb-tile" style="--c:#f59e0b">
+        <span class="tb-num">04</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><polygon points="12 2.5 14.9 8.6 21.5 9.4 16.7 13.9 18 20.5 12 17.2 6 20.5 7.3 13.9 2.5 9.4 9.1 8.6"/></svg></span>
+        <h3>Excellence</h3>
+        <p>Viser un niveau de qualité élevé dans chaque livrable.</p>
+      </article>
+      <article class="tb-tile" style="--c:#0ea5a3">
+        <span class="tb-num">05</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M4 16c6-10 12-12 16-12-1 4-3 9-9 12-2 1-5 1-7 0z"/><path d="M4 20l4-4"/></svg></span>
+        <h3>Simplicité</h3>
+        <p>Proposer des outils simples à comprendre et à utiliser au quotidien.</p>
+      </article>
+      <article class="tb-tile" style="--c:#1fb663">
+        <span class="tb-num">06</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/></svg></span>
+        <h3>Résultats</h3>
+        <p>Chaque action est pensée pour produire un impact mesurable.</p>
+      </article>
+      <article class="tb-tile" style="--c:#06b6d4">
+        <span class="tb-num">07</span>
+        <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-9.5-9C.7 7.4 2.3 4 5.7 4c2 0 3.3 1.1 4.3 2.4C11 5.1 12.3 4 14.3 4c3.4 0 5 3.4 3.2 7-2.5 4.5-9.5 9-9.5 9z"/></svg></span>
+        <h3>Engagement</h3>
+        <p>Nous restons présents avant, pendant et après chaque projet.</p>
+      </article>
     </div>
   </div>
 </section>
@@ -152,8 +190,8 @@ const mediaBuyer = teamPhoto("media-buyer.png");
           </div>
           <div class="team-org__connector team-org__connector--h" aria-hidden="true"></div>
           <div class="team-card card">
-            <TeamAvatar photo={opsManager} name="Désiré Yoboué" />
-            <h4>Désiré Yoboué</h4>
+            <TeamAvatar photo={opsManager} name="Désiré Yobouet" />
+            <h4>Désiré Yobouet</h4>
             <div class="role">Ops Manager · Chef d'orchestre</div>
             <p>Coordonne les six pôles de l'équipe et pilote l'exécution au quotidien.</p>
           </div>
@@ -172,22 +210,16 @@ const mediaBuyer = teamPhoto("media-buyer.png");
             <p>Pilote les campagnes Meta, le tracking et le budget publicitaire.</p>
           </div>
           <div class="team-card card">
-            <span class="avatar-badge is-placeholder">?</span>
-            <h4>Copywriter</h4>
-            <div class="role is-placeholder">Architecte conversion</div>
-            <p>Écrit les pages de vente, scripts et accroches qui convertissent.</p>
-          </div>
-          <div class="team-card card">
-            <span class="avatar-badge is-placeholder">?</span>
-            <h4>Tech Manager</h4>
-            <div class="role is-placeholder">Systèmes &amp; automation</div>
-            <p>Construit les funnels, automatisations et intégrations techniques.</p>
-          </div>
-          <div class="team-card card">
-            <span class="avatar-badge is-placeholder">?</span>
-            <h4>Closer Senior</h4>
-            <div class="role is-placeholder">Ventes haute valeur</div>
+            <TeamAvatar photo={closerSenior} name="Laure Kalo" />
+            <h4>Laure Kalo</h4>
+            <div class="role">Closer Senior · Ventes haute valeur</div>
             <p>Conclut les ventes à forte valeur et supervise le SDR.</p>
+          </div>
+          <div class="team-card card">
+            <TeamAvatar photo={sdrCloser2} name="N'drin Jemima" />
+            <h4>N'drin Jemima</h4>
+            <div class="role">SDR / Closer #2 · Qualification &amp; mid-ticket</div>
+            <p>Qualifie les leads entrants et conclut les ventes mid-ticket. Supervisé par le Closer Senior.</p>
           </div>
           <div class="team-card card">
             <span class="avatar-badge is-placeholder">?</span>
@@ -197,23 +229,17 @@ const mediaBuyer = teamPhoto("media-buyer.png");
           </div>
           <div class="team-card card">
             <span class="avatar-badge is-placeholder">?</span>
-            <h4>Customer Success</h4>
-            <div class="role is-placeholder">Rétention &amp; LTV</div>
-            <p>Accompagne les clients et anime la communauté au quotidien.</p>
+            <h4>Content Creator #2</h4>
+            <div class="role is-placeholder">Production visuelle</div>
+            <p>Produit les vidéos, visuels et contenus de la marque.</p>
+          </div>
+          <div class="team-card card">
+            <span class="avatar-badge is-placeholder">?</span>
+            <h4>Tech Manager</h4>
+            <div class="role is-placeholder">Systèmes &amp; automation</div>
+            <p>Construit les funnels, automatisations et intégrations techniques.</p>
           </div>
         </div>
-      </div>
-
-      <div class="team-org__connector" aria-hidden="true"></div>
-
-      <div class="team-org__single reveal">
-        <div class="team-card card">
-          <span class="avatar-badge is-placeholder">?</span>
-          <h4>SDR / Closer #2</h4>
-          <div class="role is-placeholder">Qualification &amp; mid-ticket</div>
-          <p>Qualifie les leads entrants et conclut les ventes mid-ticket.</p>
-        </div>
-        <div class="team-org__caption">Supervisé par le Closer Senior</div>
       </div>
     </div>
   </div>
