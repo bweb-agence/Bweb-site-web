@@ -10,7 +10,7 @@
 // Lien API (création de paiement) généré par Money Fusion :
 const MONEYFUSION_API_URL    = 'https://pay.moneyfusion.net/VOTRE_APP/VOTRE_HASH/pay/'; // valeur réelle configurée sur Hostinger
 // Lien de vérification du statut (endpoint officiel FusionPay, ne pas changer) :
-const MONEYFUSION_VERIFY_URL = 'https://www.pay.moneyfusion.net/paiementNotif';
+const MONEYFUSION_VERIFY_URL = 'https://pay.moneyfusion.net/paiementNotif';
 
 // URL de retour sur le site après paiement (page déjà créée) :
 const RETURN_URL = 'https://www.bwebagence.com/formations/paiement-retour';
