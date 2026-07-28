@@ -175,7 +175,11 @@ const mShort = (s: string) => {
   return m.charAt(0).toUpperCase() + m.slice(1);
 };
 
-const mapQuery = `${(session?.venue ?? "").split("·").pop()?.trim() || session?.city || "Abidjan"}, Côte d'Ivoire`;
+// Adresse du lieu : celle saisie dans l'admin (détails de la date) si présente,
+// sinon l'adresse par défaut de l'espace Bweb (plus code Google Maps).
+const DEFAULT_ADDRESS = "83JG+HH4, Unnamed Road, Abidjan";
+const venueAddress = ((session as any)?.address || "").trim() || DEFAULT_ADDRESS;
+const mapQuery = `${venueAddress}, Côte d'Ivoire`;
 const mapEmbed = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`;
 const shareUrl = Astro.url.href;
 
@@ -433,7 +437,7 @@ const sessCrumbs = session
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
                     <div>
                       <div class="mf-place">{session.venue ?? "Espace de formation Bweb · Cocody"}</div>
-                      {(session as any).address && <div class="mf-addr">{(session as any).address}</div>}
+                      <div class="mf-addr">{venueAddress}</div>
                       <div class="mf-city">{session.city ?? "Abidjan"}, Côte d'Ivoire</div>
                     </div>
                   </div>
@@ -560,8 +564,6 @@ const sessCrumbs = session
                   <span class="ev-sold ev-sold--past">Passée</span>
                 ) : isFull ? (
                   <span class="ev-sold">Complet</span>
-                ) : minCompareAt ? (
-                  <span class="ev-promo">−{minDiscountPct}%</span>
                 ) : null}
               </div>
               <div class="buy-card__pad">
@@ -589,7 +591,7 @@ const sessCrumbs = session
                 <div class="buy-includes-title">Cette formation comprend :</div>
                 <ul class="buy-includes">
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span><b>{formation?.duration ?? "Formation"}</b> {online ? "en visioconférence" : hybrid ? "en présentiel ou en ligne" : "en présentiel"}</span></li>
-                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Groupe limité à <b>{totalCap} participants</b></li>
+                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Places limitées à <b>{totalCap} participants</b></li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.5 13.5L7 22l5-3 5 3-1.5-8.5"/></svg><b>Attestation</b> de fin de formation</li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12H4z"/><path d="M8 9h6M8 13h8M8 17h5"/></svg><b>Support</b> de formation fourni</li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 5.8 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.8-4-9s1.5-6.4 4-9z"/></svg>Formation en <b>français</b></li>
@@ -614,7 +616,7 @@ const sessCrumbs = session
         data-mode={sessMode ?? "presentiel"} data-pay-api={import.meta.env.PAYMENT_API_URL}>
         <div class="rz-top">
           <div class="rz-top-brand">
-            <img class="rz-logo" src="/images/logo.svg" alt="Bweb Agence" width="120" height="28" />
+            <img class="rz-logo" src="/images/logo.svg" alt="Bweb Agence" width="171" height="40" />
             <span class="rz-title">{session.title} · {frDateShort(session.starts_at)}</span>
           </div>
           <button type="button" class="rz-close" id="rz-close" aria-label="Fermer">✕</button>

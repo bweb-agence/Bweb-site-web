@@ -15,7 +15,7 @@ const MODES: [string, string][] = [
   ["presentiel", "Présentiel"], ["en_ligne", "En ligne (visio)"], ["hybride", "Les deux (présentiel + en ligne)"],
 ];
 const STATUSES: [string, string][] = [
-  ["draft", "Brouillon"], ["published", "Publiée"], ["full", "Complète"], ["cancelled", "Annulée"],
+  ["draft", "Brouillon"], ["published", "Publiée"], ["full", "Complète"], ["cancelled", "Annulée"], ["archived", "Archivée"],
 ];
 // Apparence de la pastille d'état (visible sur l'en-tête de chaque date).
 const STATUS_META: Record<string, { label: string; bg: string; fg: string }> = {
@@ -23,6 +23,7 @@ const STATUS_META: Record<string, { label: string; bg: string; fg: string }> = {
   published: { label: "En ligne",  bg: "#dcfce7", fg: "#166534" },
   full:      { label: "Complète",  bg: "#e0e7ff", fg: "#3730a3" },
   cancelled: { label: "Annulée",   bg: "#fee2e2", fg: "#991b1b" },
+  archived:  { label: "Archivée",  bg: "#e7e9ef", fg: "#4a5169" },
 };
 
 type TtOption = { id: string; sessionId: string; label: string };

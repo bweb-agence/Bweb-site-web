@@ -574,12 +574,15 @@
 .sess-meta .m { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
 .sess-meta .m svg { color: var(--c-blue); }
 
-.learn-box { border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 20px 22px; margin: var(--space-md) 0; box-shadow: var(--shadow-sm); }
-.learn-box h2 { font-family: var(--f-display); font-weight: 800; font-size: var(--fs-h4); margin: 0 0 14px; color: var(--c-ink); }
+.learn-box { position: relative; overflow: hidden; border: 1px solid transparent; border-radius: var(--radius-md); padding: 22px 24px; margin: var(--space-md) 0; background: var(--g-navy); color: #fff; box-shadow: var(--shadow-md); }
+/* Halo lumineux discret, dans l'esprit du hero. */
+.learn-box::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(90% 120% at 12% 0%, rgba(255, 255, 255, 0.12), transparent 55%); }
+.learn-box > * { position: relative; }
+.learn-box h2 { font-family: var(--f-display); font-weight: 800; font-size: var(--fs-h4); margin: 0 0 14px; color: #fff; }
 .learn-grid { display: grid; gap: 12px 26px; list-style: none; padding: 0; margin: 0; }
 @media (min-width: 620px) { .learn-grid { grid-template-columns: 1fr 1fr; } }
-.learn-grid li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9rem; color: var(--c-gray-700); line-height: 1.45; }
-.learn-grid li svg { flex: none; margin-top: 2px; color: var(--c-green); }
+.learn-grid li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9rem; color: rgba(255, 255, 255, 0.92); line-height: 1.45; }
+.learn-grid li svg { flex: none; margin-top: 2px; color: #35d6a4; }
 
 /* Carte d'achat collante */
 .sess-aside { position: relative; }
@@ -609,6 +612,11 @@
 
 /* Carte d'achat — style « billet » (médaillon de date coloré par thème) */
 .buy-card__media { height: 150px; aspect-ratio: auto; }
+/* Visuel 16/9 bien visible : overlay léger (juste assez pour que le médaillon de
+   date, la pastille thème et le bouton favori restent lisibles par-dessus l'image). */
+.buy-card__media .ev-scrim {
+  background: linear-gradient(180deg, rgba(2, 11, 80, 0.12) 0%, transparent 34%, rgba(2, 11, 80, 0.24) 100%);
+}
 .buy-card[data-grad="warm"] .ev-date .m { color: #cf7a10; }
 .buy-card[data-grad="teal"] .ev-date .m { color: #0e9c8f; }
 .buy-card[data-grad="navy"] .ev-date .m { color: #3a3f8f; }
@@ -699,9 +707,9 @@ body.rz-lock { overflow: hidden; }
 .rz-overlay.is-open { display: flex; }
 .rz-top { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px clamp(16px, 5vw, 40px); border-bottom: 1px solid var(--c-border); background: #fff; }
 .rz-top-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.rz-logo { height: 27px; width: auto; flex: none; }
+.rz-logo { height: 40px; width: auto; flex: none; }
 .rz-title { font-size: 0.82rem; color: var(--c-gray-500); font-weight: 600; padding-left: 12px; border-left: 1px solid var(--c-border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-@media (max-width: 480px) { .rz-title { font-size: 0.76rem; padding-left: 10px; } .rz-logo { height: 24px; } }
+@media (max-width: 480px) { .rz-title { font-size: 0.76rem; padding-left: 10px; } .rz-logo { height: 34px; } }
 .rz-close { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--c-border); background: #fff; color: var(--c-gray-700); font-size: 1.1rem; cursor: pointer; display: grid; place-items: center; }
 .rz-close:hover { border-color: var(--c-blue); color: var(--c-blue); }
 
@@ -1011,6 +1019,9 @@ body.rz-lock { overflow: hidden; }
    Page session — badge niveau + bloc visioconférence
    ========================================================= */
 .sess-eyebrows { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* Le .eyebrow global porte un margin-bottom qui le décale verticalement dans la
+   rangée ; on l'annule ici pour aligner le texte thème·format avec le badge niveau. */
+.sess-eyebrows .eyebrow { margin-bottom: 0; }
 .sess-level {
   font-size: 0.7rem; font-weight: 800; letter-spacing: 0.02em; padding: 4px 11px;
   border-radius: var(--radius-pill); display: inline-flex; align-items: center; gap: 6px;

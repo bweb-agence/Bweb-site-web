@@ -469,15 +469,18 @@ export async function initEditorPage() {
     }));
   }
 
-  /* ---------- Couverture / visuel ---------- */
+  /* ---------- Couverture / visuel / photo ---------- */
   function setupCover() {
-    const box = $("ed-cover") as HTMLElement | null; if (!box) return;
+    document.querySelectorAll<HTMLElement>(".ed-cover").forEach((box) => setupCoverBox(box));
+  }
+  function setupCoverBox(box: HTMLElement) {
     const targetId = box.dataset.target!;
+    const hint = box.dataset.hint || "JPG/PNG · 5 Mo max · 16/9 conseillé";
     const draw = () => {
       const url = val(targetId);
       box.innerHTML = url
         ? `<div class="ed-cover-thumb"><img src="${esc(url)}" alt="" /><button type="button" class="ed-cover-rm">Retirer</button></div>`
-        : `<div class="ed-cover-drop"><span class="em">🖼</span><span class="t">Déposer ou choisir une image</span><span class="s">JPG/PNG · 5 Mo max · 16/9 conseillé</span></div>`;
+        : `<div class="ed-cover-drop"><span class="em">🖼</span><span class="t">Déposer ou choisir une image</span><span class="s">${esc(hint)}</span></div>`;
       if (url) box.querySelector(".ed-cover-rm")!.addEventListener("click", (e) => { e.stopPropagation(); setVal(targetId, ""); draw(); markDirty(); });
     };
     const pick = async () => {
