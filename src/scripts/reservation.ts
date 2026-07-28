@@ -71,6 +71,34 @@ export function initReservation() {
   // URL du relais paiement (Hostinger, IP fixe) — injectée côté serveur.
   const PAY_API = (overlay.dataset.payApi || "").replace(/\/+$/, "");
 
+  // ---------- Validation e-mail / téléphone ----------
+  // Indicatif pays sélectionné, en chiffres (ex. « +225 » → « 225 »).
+  function dialDigits(): string {
+    const sel = ($("rz-phone") as HTMLElement | null)?.closest(".phone-field")?.querySelector('[name="phone_cc"]') as HTMLSelectElement | null;
+    return (sel?.value || "").replace(/\D/g, "");
+  }
+  // E-mail : format réaliste (partie locale @ domaine . TLD ≥ 2), sans points doublés.
+  function isValidEmail(v: string): boolean {
+    const s = v.trim();
+    if (s.length < 6 || s.length > 254) return false;
+    if (/\.\./.test(s) || /^[.@]|[.@]$/.test(s) || /\.@|@\./.test(s)) return false;
+    return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/.test(s);
+  }
+  // Numéro national saisi, en chiffres uniquement.
+  function phoneNat(): string {
+    return (($("rz-phone") as HTMLInputElement | null)?.value || "").replace(/\D/g, "");
+  }
+  // Téléphone valide : longueur nationale plausible (6–14 chiffres), total E.164 ≤ 15,
+  // pas une suite de zéros. Couvre la Côte d'Ivoire (10 chiffres) et l'international.
+  function isValidPhone(): boolean {
+    const nat = phoneNat();
+    if (nat.length < 6 || nat.length > 14) return false;
+    if (/^0+$/.test(nat)) return false;
+    const total = dialDigits().length + nat.length;
+    return total >= 8 && total <= 15;
+  }
+  const markField = (el: HTMLElement | null, ok: boolean) => el?.setAttribute("aria-invalid", ok ? "false" : "true");
+
   // Mémorisation locale des coordonnées → pré-remplissage aux visites suivantes.
   const INFO_KEY = "bweb_resa_infos";
   function saveInfos() {
@@ -264,16 +292,22 @@ export function initReservation() {
       return true;
     }
     if (n === 2) {
-      const req = ["rz-name", "rz-email", "rz-phone"];
-      let ok = true;
-      req.forEach((id) => {
-        const el = $(id) as HTMLInputElement;
-        const empty = !el.value.trim();
-        el.setAttribute("aria-invalid", empty ? "true" : "false");
-        if (empty) ok = false;
-      });
-      if (!ok) errEl.textContent = "Merci de remplir les champs obligatoires.";
-      return ok;
+      const nameEl = $("rz-name") as HTMLInputElement;
+      const emailEl = $("rz-email") as HTMLInputElement;
+      const phoneEl = $("rz-phone") as HTMLInputElement;
+      const nameOk = nameEl.value.trim().length >= 2;
+      const emailOk = isValidEmail(emailEl.value);
+      const phoneOk = isValidPhone();
+      markField(nameEl, nameOk);
+      markField(emailEl, emailOk);
+      markField(phoneEl, phoneOk);
+      let bad: HTMLInputElement | null = null;
+      let msg = "";
+      if (!nameOk) { bad = nameEl; msg = "Indiquez votre nom complet."; }
+      else if (!emailOk) { bad = emailEl; msg = emailEl.value.trim() ? "Adresse e-mail invalide — vérifiez le format (ex. nom@domaine.com)." : "Indiquez votre adresse e-mail."; }
+      else if (!phoneOk) { bad = phoneEl; msg = phoneNat() ? "Numéro de téléphone invalide — vérifiez qu'il est complet." : "Indiquez votre numéro de téléphone."; }
+      if (bad) { errEl.textContent = msg; try { bad.focus(); } catch {} return false; }
+      return true;
     }
     if (n === 3) {
       if (!method) { errEl.textContent = "Choisissez un moyen de paiement."; return false; }
@@ -342,6 +376,13 @@ export function initReservation() {
 
   // ---------- Paiement en ligne (Money Fusion) ----------
   async function submitOnline() {
+    // Garde-fou : jamais de paiement avec un e-mail ou un numéro invalide.
+    if (!isValidEmail(($("rz-email") as HTMLInputElement).value) || !isValidPhone()) {
+      show(2); errEl.textContent = "Vérifiez votre e-mail et votre numéro avant de payer.";
+      markField($("rz-email"), isValidEmail(($("rz-email") as HTMLInputElement).value));
+      markField($("rz-phone"), isValidPhone());
+      return;
+    }
     const resetBtn = () => { nextBtn.removeAttribute("disabled"); nextBtn.textContent = method === "money_fusion_acompte" ? "Payer l'acompte ›" : "Payer en ligne ›"; };
     nextBtn.setAttribute("disabled", "true");
     nextBtn.textContent = "Redirection…";
@@ -483,6 +524,15 @@ export function initReservation() {
   }
   $("open-rz")?.addEventListener("click", open);
   $("rz-close")?.addEventListener("click", close);
+
+  // Retour visuel en direct : on lève le drapeau (et l'erreur) dès que le champ redevient valide,
+  // et on le marque en erreur à la sortie du champ s'il est renseigné mais incorrect.
+  const emailInput = $("rz-email") as HTMLInputElement | null;
+  const phoneInput = $("rz-phone") as HTMLInputElement | null;
+  emailInput?.addEventListener("input", () => { if (isValidEmail(emailInput.value)) { markField(emailInput, true); if (step === 2) errEl.textContent = ""; } });
+  emailInput?.addEventListener("blur", () => markField(emailInput, isValidEmail(emailInput.value) || !emailInput.value.trim()));
+  phoneInput?.addEventListener("input", () => { if (isValidPhone()) { markField(phoneInput, true); if (step === 2) errEl.textContent = ""; } });
+  phoneInput?.addEventListener("blur", () => markField(phoneInput, isValidPhone() || !phoneNat()));
   document.addEventListener("keydown", (e) => {
     if (!overlay.classList.contains("is-open")) return;
     if (e.key === "Escape" && step <= FORM_STEPS) { close(); return; }
