@@ -62,6 +62,19 @@ export async function initEditorPage() {
     if (sel) sel.innerHTML = '<option value="">— Aucune —</option>' +
       (fs || []).map((f: any) => `<option value="${f.id}">${esc(f.title)}</option>`).join("");
 
+    // Pré-remplissage depuis la fiche formation (« + Ajouter une date »).
+    if (!id) {
+      const preF = new URLSearchParams(location.search).get("formation");
+      if (preF && sel) {
+        sel.value = preF;
+        const pf = (fs || []).find((x: any) => x.id === preF);
+        if (pf) {
+          if (!titleEl.value) { titleEl.value = pf.title || ""; setVal("f-slug", slugify(pf.title || "")); slugTouched = false; }
+          if (!val("f-theme")) setVal("f-theme", pf.theme || "");
+        }
+      }
+    }
+
     // Tarifs des AUTRES sessions (cibles possibles d'un order bump).
     const { data: tts } = await supabaseBrowser
       .from("ticket_types")
@@ -151,6 +164,7 @@ export async function initEditorPage() {
   /* ---------- Éléments d'UI communs ---------- */
   updateCrumb(); updatePill(); updatePreview(); autoGrow(); updateMeta(); renderSeo();
   if (type === "session") setupModeToggle();
+  if (type === "formation") loadFormationSessions();
 
   titleEl.addEventListener("input", () => {
     autoGrow();
@@ -366,6 +380,39 @@ export async function initEditorPage() {
     apply();
   }
 
+  /* ---------- Sessions liées (hub dans la fiche formation) ---------- */
+  async function loadFormationSessions() {
+    const box = $("ed-fsessions"); if (!box) return;
+    const addBtn = $("ed-fsession-add") as HTMLAnchorElement | null;
+    if (!id) {
+      box.innerHTML = '<div class="ed-help">Enregistrez d’abord la formation pour lui ajouter des dates.</div>';
+      addBtn?.setAttribute("hidden", "");
+      return;
+    }
+    if (addBtn) { addBtn.removeAttribute("hidden"); addBtn.href = `/admin/editeur/session/nouveau?formation=${id}`; }
+    const { data } = await supabaseBrowser
+      .from("sessions")
+      .select("id,title,slug,starts_at,status,ticket_types(capacity,sold)")
+      .eq("formation_id", id)
+      .order("starts_at", { ascending: false });
+    const list = data || [];
+    if (!list.length) {
+      box.innerHTML = '<div class="ed-help">Aucune date pour cette formation. Cliquez sur « + Ajouter une date ».</div>';
+      return;
+    }
+    const stLabel: Record<string, string> = { published: "Publiée", draft: "Brouillon", full: "Complète", cancelled: "Annulée" };
+    box.innerHTML = list.map((s: any) => {
+      const cap = (s.ticket_types || []).reduce((a: number, x: any) => a + (x.capacity || 0), 0);
+      const sold = (s.ticket_types || []).reduce((a: number, x: any) => a + (x.sold || 0), 0);
+      const d = s.starts_at ? new Date(s.starts_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+      const st = stLabel[s.status] || s.status || "";
+      return `<a href="/admin/editeur/session/${esc(s.id)}" style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--ed-line,#e5e7eb);border-radius:8px;margin-bottom:6px;text-decoration:none;color:inherit;font-size:.82rem">
+        <b style="white-space:nowrap">${d}</b>
+        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.title || "Session")}</span>
+        <span style="white-space:nowrap;opacity:.65">${sold}/${cap} · ${esc(st)}</span></a>`;
+    }).join("");
+  }
+
   /* ---------- Couverture / visuel ---------- */
   function setupCover() {
     const box = $("ed-cover") as HTMLElement | null; if (!box) return;
@@ -481,6 +528,7 @@ export async function initEditorPage() {
         history.replaceState(null, "", `/admin/editeur/${type}/${id}`);
       }
       if (type === "session") { await syncTickets(id); await syncBumps(id); }
+      if (type === "formation") loadFormationSessions();
       setSaved();
       updatePreview();
       if (!silent) toast(record ? "Modifications enregistrées." : "Créé avec succès. ✅");

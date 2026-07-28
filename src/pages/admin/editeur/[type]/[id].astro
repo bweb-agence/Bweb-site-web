@@ -169,6 +169,10 @@ const isNew = id === "nouveau";
               <div class="ed-field"><label for="f-prerequis">Prérequis</label><textarea class="ed-ta" id="f-prerequis" rows="2" placeholder="Ex. Aucun prérequis. Apportez un ordinateur portable."></textarea></div>
               <div class="ed-field"><label for="f-included">Inclus en plus (1 par ligne)</label><textarea class="ed-ta" id="f-included" rows="2" placeholder="Déjeuner et pauses café inclus&#10;Accès à la communauté privée"></textarea></div>
             </section>
+            <section class="ed-panel"><h4>Dates &amp; sessions</h4>
+              <div id="ed-fsessions"><div class="ed-help">Chargement…</div></div>
+              <a class="ed-addline" id="ed-fsession-add" href="#" hidden>+ Ajouter une date</a>
+            </section>
             <section class="ed-panel"><h4>Visuel (16/9)</h4>
               <div class="ed-cover" id="ed-cover" data-target="f-image"></div>
               <input type="hidden" id="f-image" />
