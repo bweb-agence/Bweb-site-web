@@ -311,7 +311,7 @@ const sessCrumbs = session
         {isPast && (
           <div class="sess-past" role="status">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-            <span>Cette session est <b>passée</b>. Découvrez les prochaines dates au <a href="/formations/calendrier">calendrier</a>.</span>
+            <span>Cette date est <b>passée</b>. Découvrez les prochaines dates au <a href="/formations/calendrier">calendrier</a>.</span>
           </div>
         )}
 
@@ -327,7 +327,7 @@ const sessCrumbs = session
 
             <div class="sess-meta">
               <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>{frDateLong(session.starts_at)} · {frTime(session.starts_at)}</span>
-              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg>{isPast ? "Session passée" : isFull ? "Session complète" : `${totalRemaining} places restantes`}</span>
+              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg>{isPast ? "Date passée" : isFull ? "Complet" : `${totalRemaining} places restantes`}</span>
               {showVenue && (
                 <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>{session.venue ?? "Espace Bweb · Cocody"}, {session.city ?? "Abidjan"}</span>
               )}
@@ -403,13 +403,13 @@ const sessCrumbs = session
 
             {showOnline && (
               <>
-                <h2 class="sectitle">Se connecter à la session</h2>
+                <h2 class="sectitle">Se connecter à la formation</h2>
                 <div class="meet-box">
                   <div class="meet-box__head">
                     <span class="meet-box__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="15" height="13" rx="2"/><path d="M17 9l5-3v11l-5-3z"/></svg></span>
                     <div>
                       <div class="meet-box__title">Formation en visioconférence</div>
-                      <div class="meet-box__sub">Suivez la session en direct, où que vous soyez.</div>
+                      <div class="meet-box__sub">Suivez la formation en direct, où que vous soyez.</div>
                     </div>
                   </div>
                   {meetingInfo && <p class="meet-box__info">{meetingInfo}</p>}
@@ -580,7 +580,7 @@ const sessCrumbs = session
                 )}
                 {!isPast && !isFull && <p class="buy-card__note">💺 Plus que <strong>{totalRemaining}</strong> places pour cette session.</p>}
                 {isPast ? (
-                  <a class="btn btn-outline btn-block btn-lg" href="/formations/calendrier">Voir les prochaines sessions</a>
+                  <a class="btn btn-outline btn-block btn-lg" href="/formations/calendrier">Voir les prochaines dates</a>
                 ) : isFull ? (
                   <a class="btn btn-outline btn-block btn-lg" href={`https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("Bonjour, je souhaite être sur la liste d'attente pour « " + session.title + " » du " + frDateLong(session.starts_at) + ".")}`} target="_blank" rel="noopener">Rejoindre la liste d'attente</a>
                 ) : (
@@ -588,7 +588,7 @@ const sessCrumbs = session
                 )}
                 <div class="buy-includes-title">Cette formation comprend :</div>
                 <ul class="buy-includes">
-                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span><b>{formation?.duration ?? "Session"}</b> {online ? "en visioconférence" : hybrid ? "en présentiel ou en ligne" : "en présentiel"}</span></li>
+                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span><b>{formation?.duration ?? "Formation"}</b> {online ? "en visioconférence" : hybrid ? "en présentiel ou en ligne" : "en présentiel"}</span></li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Groupe limité à <b>{totalCap} participants</b></li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.5 13.5L7 22l5-3 5 3-1.5-8.5"/></svg><b>Attestation</b> de fin de formation</li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12H4z"/><path d="M8 9h6M8 13h8M8 17h5"/></svg><b>Support</b> de formation fourni</li>
@@ -633,7 +633,7 @@ const sessCrumbs = session
               {hybrid && (
                 <div class="rz-attend" id="rz-attend">
                   <h2 class="rz-h">Comment souhaitez-vous participer ?</h2>
-                  <p class="rz-sub">Cette session se tient en présentiel et en ligne — choisissez votre mode.</p>
+                  <p class="rz-sub">Cette formation se tient en présentiel et en ligne — choisissez votre mode.</p>
                   <div class="rz-attend-grid" role="radiogroup" aria-label="Mode de participation">
                     <button type="button" class="rz-attend-opt" data-attend="presentiel" aria-pressed="false">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
@@ -785,7 +785,7 @@ const sessCrumbs = session
       <div class="container" style="text-align:center">
         <div class="eyebrow" style="justify-content:center">Erreur 404</div>
         <h1>Cette session n'existe pas (ou plus).</h1>
-        <p class="lead">Elle est peut-être passée ou complète. Voir les prochaines sessions au calendrier.</p>
+        <p class="lead">Elle est peut-être passée ou complète. Voir les prochaines dates au calendrier.</p>
         <p style="margin-top:var(--space-md)"><a class="btn btn-primary" href="/formations/calendrier">Voir le calendrier</a></p>
       </div>
     </section>

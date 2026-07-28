@@ -101,10 +101,27 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   }
   async function del(id: string) {
     const f = all.find((x) => x.id === id);
-    if (!window.confirm(`Supprimer « ${f?.title} » ? Les sessions liées ne seront pas supprimées.`)) return;
+    // Les dates (sessions) sont les disponibilités de la formation : on les supprime avec elle.
+    const { data: sess } = await supabaseBrowser.from("sessions").select("id").eq("formation_id", id);
+    const sessionIds = (sess || []).map((s: any) => s.id);
+    // Garde-fou : on ne supprime jamais des dates qui ont des réservations.
+    if (sessionIds.length) {
+      const { count } = await supabaseBrowser.from("bookings").select("id", { count: "exact", head: true }).in("session_id", sessionIds);
+      if ((count || 0) > 0) {
+        toast(`Impossible : cette formation a des dates avec ${count} réservation(s). Gérez-les d'abord dans les dates.`, "err");
+        return;
+      }
+    }
+    const suffix = sessionIds.length ? ` et ses ${sessionIds.length} date(s)` : "";
+    if (!window.confirm(`Supprimer « ${f?.title} »${suffix} ? Action irréversible.`)) return;
+    if (sessionIds.length) {
+      const { error: se } = await supabaseBrowser.from("sessions").delete().eq("formation_id", id);
+      if (se) { toast("Suppression des dates impossible.", "err"); return; }
+    }
     const { error } = await supabaseBrowser.from("formations").delete().eq("id", id);
     if (error) { toast("Suppression impossible.", "err"); return; }
-    toast("Formation supprimée."); await load();
+    toast(sessionIds.length ? "Formation et ses dates supprimées." : "Formation supprimée.");
+    await load();
   }
   async function save() {
     const title = $("f-title").value.trim(); const slug = $("f-slug").value.trim() || slugify(title);

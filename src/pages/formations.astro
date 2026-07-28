@@ -37,7 +37,7 @@ const tmap = themeColorMap(themesData);
         <h1>Montez en compétence sur l'IA.</h1>
         <p class="lead">Bweb forme entreprises, associations et institutions aux compétences en IA et en digital qui font vraiment la différence au quotidien.</p>
         <div class="hero-actions" style="margin-top:32px;margin-bottom:0">
-          <a href="/formations/calendrier" class="btn btn-warm">Voir le calendrier des sessions</a>
+          <a href="/formations/calendrier" class="btn btn-warm">Voir le calendrier des formations</a>
           <a href="/devis" class="btn btn-outline-light">Demander le catalogue</a>
         </div>
       </div>
@@ -49,12 +49,12 @@ const tmap = themeColorMap(themesData);
 </section>
 
 <!-- ===== Prochaines sessions (aperçu du calendrier) ===== -->
-<section class="section" data-nav-section="Prochaines sessions">
+<section class="section" data-nav-section="Prochaines dates">
   <div class="container">
     <div class="section-head center reveal">
-      <div class="eyebrow" style="justify-content:center">Prochaines sessions</div>
+      <div class="eyebrow" style="justify-content:center">Prochaines dates</div>
       <h2>Les prochaines formations au calendrier.</h2>
-      <p class="lead" style="margin-top:16px">Réservez votre place aux sessions en présentiel à venir à Abidjan.</p>
+      <p class="lead" style="margin-top:16px">Réservez votre place aux prochaines dates en présentiel à Abidjan.</p>
     </div>
 
     {sessions.length > 0 ? (
@@ -64,15 +64,15 @@ const tmap = themeColorMap(themesData);
         </div>
         <div style="text-align:center;margin-top:var(--space-lg)">
           <a class="btn btn-outline" href="/formations/calendrier">
-            Voir toutes les sessions
+            Voir toutes les dates
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:8px"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
         </div>
       </>
     ) : (
       <div style="text-align:center;margin-top:var(--space-lg)">
-        <p class="form-note">Les prochaines sessions seront bientôt annoncées.</p>
-        <a class="btn btn-outline" href="/formations/calendrier" style="margin-top:14px">Voir le calendrier des sessions</a>
+        <p class="form-note">Les prochaines dates seront bientôt annoncées.</p>
+        <a class="btn btn-outline" href="/formations/calendrier" style="margin-top:14px">Voir le calendrier des formations</a>
       </div>
     )}
   </div>

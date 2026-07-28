@@ -115,7 +115,7 @@ const calData = sessions.map((s) => {
 
 <BaseLayout
   title="Calendrier des formations en présentiel | Bweb Agence"
-  description="Réservez votre place aux prochaines sessions de formation en présentiel de Bweb Agence à Abidjan : IA, marketing, vente en ligne."
+  description="Réservez votre place aux prochaines dates de formation en présentiel de Bweb Agence à Abidjan : IA, marketing, vente en ligne."
   breadcrumbs={[{ name: "Accueil", path: "/" }, { name: "Formations", path: "/formations" }, { name: "Calendrier", path: "/formations/calendrier" }]}
 >
   <section class="page-hero" data-nav-section="Calendrier">
@@ -131,8 +131,8 @@ const calData = sessions.map((s) => {
       </div>
       <div class="text-white" data-hero-in>
         <div class="eyebrow on-dark">Formations en présentiel</div>
-        <h1>Calendrier des sessions.</h1>
-        <p class="lead">Réservez votre place aux prochaines sessions à l'espace de formation Bweb Agence, à Abidjan.</p>
+        <h1>Calendrier des formations.</h1>
+        <p class="lead">Réservez votre place aux prochaines dates de formation à l'espace Bweb Agence, à Abidjan.</p>
       </div>
     </div>
   </section>
@@ -140,7 +140,7 @@ const calData = sessions.map((s) => {
   <section class="section">
     <div class="container">
       {sessions.length === 0 ? (
-        <p class="cal-empty">Aucune session programmée pour le moment. Revenez bientôt, ou <a href="/devis">demandez le catalogue</a>.</p>
+        <p class="cal-empty">Aucune date programmée pour le moment. Revenez bientôt, ou <a href="/devis">demandez le catalogue</a>.</p>
       ) : (
         <>
           <div class="cal-filters" role="group" aria-label="Filtres et tri">
@@ -237,7 +237,7 @@ const calData = sessions.map((s) => {
               <label class="sort-field" for="sort-select">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h12M3 12h9M3 18h6M17 5v14M17 19l3-3M17 19l-3-3"/></svg>
                 <span class="sort-lbl">Trier</span>
-                <select id="sort-select" class="sort-select" aria-label="Trier les sessions">
+                <select id="sort-select" class="sort-select" aria-label="Trier les dates">
                   <option value="date">Date : plus proche</option>
                   <option value="new">Nouveautés</option>
                   <option value="price-asc">Prix croissant</option>
@@ -338,7 +338,7 @@ const calData = sessions.map((s) => {
 
                     <div class={`ev-avail ${d.level}`}>
                       <div class="top">
-                        <span class="cnt">{d.full ? "Session complète" : (<><b>{d.remaining}</b> places restantes</>)}</span>
+                        <span class="cnt">{d.full ? "Complet" : (<><b>{d.remaining}</b> places restantes</>)}</span>
                         <span class="st">{availLabel(d.level)}</span>
                       </div>
                       <div class="track"><i style={`width:${d.cap ? Math.round((d.sold / d.cap) * 100) : 100}%`}></i></div>
@@ -357,7 +357,7 @@ const calData = sessions.map((s) => {
               );
             })}
           </div>
-          <p class="cal-empty" id="no-result" style="display:none;margin-top:16px">Aucune session ne correspond à ces filtres. <button type="button" class="mp-reset" id="clear-all">Réinitialiser</button></p>
+          <p class="cal-empty" id="no-result" style="display:none;margin-top:16px">Aucune date ne correspond à ces filtres. <button type="button" class="mp-reset" id="clear-all">Réinitialiser</button></p>
 
           <!-- ===== Vue Calendrier (façon Calendly) ===== -->
           <div class="cal-view" id="cal-view" hidden>
@@ -384,7 +384,7 @@ const calData = sessions.map((s) => {
 
             <div class="cal-panel day-panel">
               <div class="dp-head">
-                <div class="dp-kicker">Sessions du jour</div>
+                <div class="dp-kicker">Dates du jour</div>
                 <div class="dp-date" id="dp-date">Sélectionnez une date</div>
               </div>
               <div class="dp-body" id="dp-body"></div>
@@ -631,7 +631,7 @@ const calData = sessions.map((s) => {
       if (!dpDate || !dpBody) return;
       if (!state.date) {
         dpDate.textContent = "Sélectionnez une date";
-        dpBody.innerHTML = `<p class="dp-empty">Cliquez sur un jour surligné pour voir les sessions et réserver.</p>`;
+        dpBody.innerHTML = `<p class="dp-empty">Cliquez sur un jour surligné pour voir les dates et réserver.</p>`;
         return;
       }
       const [yy, mm, dd] = state.date.split("-").map(Number);
@@ -639,7 +639,7 @@ const calData = sessions.map((s) => {
       const long = `${JOURS[dt.getDay()]} ${dd} ${MOIS[mm - 1]} ${yy}`;
       dpDate.textContent = long.charAt(0).toUpperCase() + long.slice(1);
       const evs = EV.filter((e) => e.date === state.date && passTd(e));
-      if (!evs.length) { dpBody.innerHTML = `<p class="dp-empty">Aucune session ce jour-là avec ces filtres.</p>`; return; }
+      if (!evs.length) { dpBody.innerHTML = `<p class="dp-empty">Aucune date ce jour-là avec ces filtres.</p>`; return; }
       dpBody.innerHTML = evs.map((e) => {
         const priceHtml = e.minPrice !== null
           ? `<span class="di-price">
@@ -654,7 +654,7 @@ const calData = sessions.map((s) => {
           </div>
           <h4 class="di-title">${e.title}</h4>
           <div class="di-meta">${priceHtml}<span class="di-loc">📍 ${e.venue}</span></div>
-          <div><span class="di-seat ${e.level}">${e.full ? "Session complète" : e.remaining + " places restantes"}</span></div>
+          <div><span class="di-seat ${e.level}">${e.full ? "Complet" : e.remaining + " places restantes"}</span></div>
           <a class="btn ${e.full ? "btn-outline" : "btn-primary"} di-btn" href="/formations/session/${e.slug}">${e.full ? "Liste d'attente" : "Réserver"}</a>
         </div>`;
       }).join("");
