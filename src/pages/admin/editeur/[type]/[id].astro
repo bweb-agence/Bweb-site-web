@@ -108,8 +108,8 @@ const isNew = id === "nouveau";
             </section>
             <section class="ed-panel"><h4>Organisation</h4>
               <div class="ed-field"><label for="f-category">Catégorie</label>
-                <input class="ed-inp" id="f-category" list="cat-list" />
-                <datalist id="cat-list"><option value="IA"></option><option value="Marketing"></option><option value="Automatisation"></option><option value="Vente en ligne"></option><option value="Cas clients"></option></datalist></div>
+                <select class="ed-sel" id="f-category"><option value="">— Aucun —</option></select>
+                <div class="ed-help">Gérez la liste dans <a href="/admin/themes" target="_blank" style="color:var(--c-blue);font-weight:600">Thèmes</a>.</div></div>
               <div class="ed-row2">
                 <div class="ed-field"><label for="f-author">Auteur</label><input class="ed-inp" id="f-author" value="Équipe Bweb" /></div>
                 <div class="ed-field"><label for="f-reading">Lecture (min)</label><input class="ed-inp" id="f-reading" type="number" min="1" placeholder="auto" /></div>
@@ -156,10 +156,18 @@ const isNew = id === "nouveau";
               <div class="ed-help" style="margin-top:2px">Les formations sont toujours visibles dans le catalogue.</div>
             </section>
             <section class="ed-panel"><h4>Détails</h4>
-              <div class="ed-field"><label for="f-theme">Thème</label><input class="ed-inp" id="f-theme" list="th-list" />
-                <datalist id="th-list"><option value="IA"></option><option value="Marketing"></option><option value="Vente en ligne"></option><option value="Automatisation"></option></datalist></div>
+              <div class="ed-field"><label for="f-theme">Thème</label><select class="ed-sel" id="f-theme"><option value="">— Aucun —</option></select>
+                <div class="ed-help">Gérez la liste dans <a href="/admin/themes" target="_blank" style="color:var(--c-blue);font-weight:600">Thèmes</a>.</div></div>
               <div class="ed-row2">
-                <div class="ed-field"><label for="f-level">Niveau</label><input class="ed-inp" id="f-level" placeholder="Débutant accepté" /></div>
+                <div class="ed-field"><label for="f-level">Niveau</label>
+                  <select class="ed-sel" id="f-level">
+                    <option value="">— Non précisé —</option>
+                    <option value="Débutant accepté">Débutant accepté</option>
+                    <option value="Tous niveaux">Tous niveaux</option>
+                    <option value="Intermédiaire">Intermédiaire</option>
+                    <option value="Avancé">Avancé</option>
+                    <option value="Prérequis nécessaires">Prérequis nécessaires</option>
+                  </select></div>
                 <div class="ed-field"><label for="f-duration">Durée</label><input class="ed-inp" id="f-duration" placeholder="2 jours (14 h)" /></div>
               </div>
               <div class="ed-field"><label for="f-price">Prix indicatif (FCFA)</label><input class="ed-inp" id="f-price" type="number" min="0" /></div>
@@ -215,8 +223,8 @@ const isNew = id === "nouveau";
             </section>
             <section class="ed-panel"><h4>Détails</h4>
               <div class="ed-field"><label for="f-formation">Formation liée</label><select class="ed-sel" id="f-formation"><option value="">— Aucune —</option></select></div>
-              <div class="ed-field"><label for="f-theme">Thème</label><input class="ed-inp" id="f-theme" list="th-list" />
-                <datalist id="th-list"><option value="IA"></option><option value="Marketing"></option><option value="Vente en ligne"></option><option value="Automatisation"></option></datalist></div>
+              <div class="ed-field"><label for="f-theme">Thème</label><select class="ed-sel" id="f-theme"><option value="">— Aucun —</option></select>
+                <div class="ed-help">Gérez la liste dans <a href="/admin/themes" target="_blank" style="color:var(--c-blue);font-weight:600">Thèmes</a>.</div></div>
               <div class="ed-row2">
                 <div class="ed-field"><label for="f-level">Niveau</label>
                   <select class="ed-sel" id="f-level">

@@ -97,7 +97,9 @@
 .row-actions { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap; }
 .icon-btn { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 1px solid var(--c-border); border-radius: 8px; background: #fff; color: var(--c-gray-600); cursor: pointer; }
 .icon-btn:hover { border-color: var(--c-blue); color: var(--c-blue); }
-.icon-btn.danger:hover { border-color: var(--c-danger); color: var(--c-danger); }
+/* Action destructive (Supprimer) — rouge par défaut, pas seulement au survol. */
+.icon-btn.danger { color: var(--c-danger); }
+.icon-btn.danger:hover { border-color: var(--c-danger); color: var(--c-danger); background: var(--c-danger-bg); }
 .icon-btn svg { width: 15px; height: 15px; }
 .admin-table td a.rowlink { color: var(--c-navy); font-weight: 700; text-decoration: none; }
 .admin-table td a.rowlink:hover { color: var(--c-blue); }

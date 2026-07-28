@@ -23,7 +23,7 @@ type TtOption = { id: string; sessionId: string; label: string };
 export async function initFormationSessions(
   root: HTMLElement,
   formationId: string,
-  defaults: { theme?: string; title?: string },
+  defaults: { theme?: string | null; theme_id?: string | null; title?: string },
 ) {
   const listEl = root.querySelector<HTMLElement>("#ed-fsessions-inline");
   const addBtn = root.querySelector<HTMLButtonElement>("#ed-fsession-add");
@@ -74,8 +74,8 @@ export async function initFormationSessions(
   /* ---------------- Construction d'une carte session ---------------- */
   function buildCard(s: any | null, collapsed: boolean): HTMLElement {
     let sessionId: string = s?.id || "";
-    let originalTtIds: string[] = (s?.ticket_types || []).map((t: any) => t.id);
-    let originalObIds: string[] = (s?.order_bumps || []).map((o: any) => o.id);
+    let originalTtIds: string[] = (s?.ticket_types || []).map((t: any) => t.id).filter(Boolean);
+    let originalObIds: string[] = (s?.order_bumps || []).map((o: any) => o.id).filter(Boolean);
 
     const cap = (s?.ticket_types || []).reduce((a: number, t: any) => a + (t.capacity || 0), 0);
     const sold = (s?.ticket_types || []).reduce((a: number, t: any) => a + (t.sold || 0), 0);
@@ -93,14 +93,19 @@ export async function initFormationSessions(
     const rowBox = "background:var(--ed-subtle,#f5f6f8);border-radius:8px;padding:8px;margin-bottom:8px";
 
     card.innerHTML = `
-      <button type="button" class="ed-fscard-head" data-act="toggle"
-        style="display:flex;gap:8px;align-items:center;width:100%;text-align:left;border:0;background:transparent;padding:11px 12px;cursor:pointer;font:inherit">
-        <span data-chevron style="transition:transform .15s;transform:rotate(${collapsed ? -90 : 0}deg);opacity:.6">▾</span>
-        <span style="flex:1;min-width:0">
-          <strong data-summary style="display:block;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s?.title || dateLabel)}</strong>
-          <span data-sub style="font-size:.72rem;opacity:.6">${esc(subLabel)}</span>
-        </span>
-      </button>
+      <div class="ed-fscard-head" style="display:flex;align-items:center">
+        <button type="button" data-act="toggle"
+          style="flex:1;min-width:0;display:flex;gap:8px;align-items:center;text-align:left;border:0;background:transparent;padding:11px 12px;cursor:pointer;font:inherit">
+          <span data-chevron style="transition:transform .15s;transform:rotate(${collapsed ? -90 : 0}deg);opacity:.6">▾</span>
+          <span style="flex:1;min-width:0">
+            <strong data-summary style="display:block;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s?.title || dateLabel)}</strong>
+            <span data-sub style="font-size:.72rem;opacity:.6">${esc(subLabel)}</span>
+          </span>
+        </button>
+        <button type="button" class="ed-fscard-dup" data-act="duplicate" title="Dupliquer cette date"
+          aria-label="Dupliquer cette date"
+          style="border:0;background:transparent;cursor:pointer;padding:9px 12px;opacity:.55;font-size:1.05rem;line-height:1" ${sessionId ? "" : "hidden"}>⧉</button>
+      </div>
       <div class="ed-fscard-body" style="padding:0 12px 12px" ${collapsed ? "hidden" : ""}>
         <div class="ed-row2">
           <div class="ed-field"><label>Format</label><select class="ed-sel" data-field="mode">${optionTags(MODES, s?.mode || "presentiel")}</select></div>
@@ -130,12 +135,9 @@ export async function initFormationSessions(
         <div data-ob-list></div>
         <button type="button" class="ed-addline" data-act="ob-add">+ Ajouter un order bump</button>
 
-        <div class="ed-fscard-foot" style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
-          <button type="button" class="ed-btn primary" data-act="save" style="width:100%;padding:10px">Enregistrer cette date</button>
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-            <a data-detail style="font-size:.78rem;opacity:.75" ${sessionId ? `href="/admin/editeur/session/${esc(sessionId)}"` : "hidden"}>Édition détaillée →</a>
-            <button type="button" class="ed-btn ghost" data-act="delete" style="font-size:.8rem" ${sessionId ? "" : "hidden"}>Supprimer</button>
-          </div>
+        <div class="ed-fscard-foot" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <button type="button" class="ed-btn danger" data-act="delete" style="font-size:.8rem" ${sessionId ? "" : "hidden"}>Supprimer cette date</button>
+          <button type="button" class="ed-btn primary" data-act="save" style="padding:10px 18px">Enregistrer cette date</button>
         </div>
       </div>`;
 
@@ -179,6 +181,7 @@ export async function initFormationSessions(
 
     q('[data-act="save"]').addEventListener("click", () => saveCard());
     q('[data-act="delete"]').addEventListener("click", () => deleteCard());
+    q('[data-act="duplicate"]').addEventListener("click", () => duplicateCard());
 
     return card;
 
@@ -191,7 +194,7 @@ export async function initFormationSessions(
       div.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:.78rem;opacity:.7">${t ? "Vendus : " + (t.sold ?? 0) : "Nouveau tarif"}</span>
-          <button type="button" data-tt-del title="Retirer" style="border:0;background:transparent;cursor:pointer;opacity:.6">✕</button></div>
+          <button type="button" data-tt-del title="Retirer ce tarif" aria-label="Retirer ce tarif" style="border:0;background:transparent;cursor:pointer;color:var(--c-danger);font-weight:700">✕</button></div>
         <input class="ed-inp" data-tt-name placeholder="Nom du tarif" value="${esc(t?.name || "")}" />
         <div class="ed-row2" style="margin-top:8px">
           <input class="ed-inp" data-tt-price type="number" min="0" placeholder="Prix FCFA" value="${t?.price ?? ""}" />
@@ -217,7 +220,7 @@ export async function initFormationSessions(
       div.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:.78rem;opacity:.7">Order bump</span>
-          <button type="button" data-ob-del title="Retirer" style="border:0;background:transparent;cursor:pointer;opacity:.6">✕</button></div>
+          <button type="button" data-ob-del title="Retirer cet order bump" aria-label="Retirer cet order bump" style="border:0;background:transparent;cursor:pointer;color:var(--c-danger);font-weight:700">✕</button></div>
         <select class="ed-sel" data-ob-tt>${opts}</select>
         <input class="ed-inp" data-ob-badge placeholder="Badge (ex. Recommandé)" value="${esc(o?.badge || "")}" style="margin-top:8px" />
         <input class="ed-inp" data-ob-headline placeholder="Accroche (optionnel)" value="${esc(o?.headline || "")}" style="margin-top:8px" />
@@ -256,7 +259,7 @@ export async function initFormationSessions(
         } else {
           const slug = `${slugify(title)}-${start.slice(0, 10)}`;
           const { data, error } = await supabaseBrowser.from("sessions")
-            .insert({ ...fields, slug, theme: defaults.theme || null })
+            .insert({ ...fields, slug, theme: defaults.theme || null, theme_id: defaults.theme_id || null })
             .select("id").single();
           if (error) throw error;
           sessionId = data.id;
@@ -266,9 +269,8 @@ export async function initFormationSessions(
         await syncBumps();
 
         q("[data-summary]").textContent = title;
-        const detail = q<HTMLAnchorElement>("[data-detail]");
-        detail.href = `/admin/editeur/session/${sessionId}`; detail.removeAttribute("hidden");
         q('[data-act="delete"]').removeAttribute("hidden");
+        card.querySelector('[data-act="duplicate"]')?.removeAttribute("hidden");
         toast("Date enregistrée. ✅");
       } catch (e: any) {
         const m = String(e?.message || "");
@@ -331,6 +333,31 @@ export async function initFormationSessions(
       const toDelete = originalObIds.filter((x) => !kept.includes(x));
       if (toDelete.length) { const { error } = await supabaseBrowser.from("order_bumps").delete().in("id", toDelete); if (error) throw error; }
       originalObIds = kept;
+    }
+
+    /* ----- duplication : nouvelle carte pré-remplie, date à ressaisir ----- */
+    function duplicateCard() {
+      const src: any = s ? JSON.parse(JSON.stringify(s)) : {};
+      const dup: any = {
+        title: (fieldVal("title") || src.title || "") + " (copie)",
+        mode: fieldVal("mode") || src.mode || "presentiel",
+        status: "draft",
+        starts_at: null, ends_at: null, // nouvelle date à saisir
+        city: fieldVal("city") || src.city || null,
+        venue: fieldVal("venue") || src.venue || null,
+        address: fieldVal("address") || src.address || null,
+        meeting_url: fieldVal("meeting_url") || src.meeting_url || null,
+        meeting_info: fieldVal("meeting_info") || src.meeting_info || null,
+        image_url: src.image_url || null,
+        ticket_types: (src.ticket_types || []).map((t: any) => ({ ...t, id: undefined, sold: 0 })),
+        order_bumps: (src.order_bumps || []).map((o: any) => ({ ...o, id: undefined })),
+      };
+      listEl!.querySelector("[data-empty]")?.remove();
+      const nc = buildCard(dup, false);
+      card.after(nc);
+      nc.scrollIntoView({ behavior: "smooth", block: "center" });
+      (nc.querySelector('[data-field="start"]') as HTMLInputElement | null)?.focus();
+      toast("Date dupliquée — choisissez la nouvelle date puis « Enregistrer ».");
     }
 
     async function deleteCard() {

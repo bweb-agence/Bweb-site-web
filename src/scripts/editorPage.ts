@@ -6,6 +6,8 @@
    ========================================================= */
 import { supabaseBrowser } from "../lib/supabaseBrowser";
 import { slugify, dtLocalValue, toast, esc } from "./adminUtils";
+import { gradSuffix } from "../lib/format";
+import { themeHex } from "../lib/themes";
 import { mountEditor, type EditorHandle } from "./editor/editor";
 import { uploadMedia } from "./editor/uploadMedia";
 import { analyzeSeo } from "./editor/seo";
@@ -81,6 +83,61 @@ export async function initEditorPage() {
     }
   }
 
+  /* ---------- Thèmes (liste partagée, réutilisable) ---------- */
+  const { data: themesData } = await supabaseBrowser
+    .from("themes").select("id,name,slug,color").order("sort_order").order("name");
+  const themes: any[] = themesData || [];
+  const themeSelId = type === "article" ? "f-category" : "f-theme";
+  const NEW_THEME = "__new__";
+  function themeAccent(el: HTMLSelectElement) {
+    const t = themes.find((x) => x.id === el.value);
+    el.style.borderLeft = t ? `4px solid ${themeHex(t.color)}` : "";
+    el.style.paddingLeft = t ? "9px" : "";
+  }
+  function fillThemeSelect(selectedId: string) {
+    const el = $<HTMLSelectElement>(themeSelId);
+    if (!el) return;
+    el.innerHTML = '<option value="">— Aucun —</option>' +
+      themes.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join("") +
+      `<option value="${NEW_THEME}">＋ Nouveau thème…</option>`;
+    el.value = selectedId || "";
+    themeAccent(el);
+  }
+  const selectedTheme = () => {
+    const tid = val(themeSelId);
+    if (!tid || tid === NEW_THEME) return { theme_id: null as string | null, name: null as string | null };
+    const t = themes.find((x) => x.id === tid);
+    return { theme_id: tid as string | null, name: (t?.name ?? null) as string | null };
+  };
+  async function createThemeInline() {
+    const name = (window.prompt("Nom du nouveau thème :") || "").trim();
+    if (!name) { fillThemeSelect(""); return; }
+    const { data, error } = await supabaseBrowser.from("themes")
+      .insert({ name, slug: slugify(name), color: gradSuffix(name) })
+      .select("id,name,slug,color,sort_order").single();
+    if (error) {
+      const dup = (error.message || "").includes("duplicate") || (error as any).code === "23505";
+      // Si le thème existe déjà, on le sélectionne au lieu d'échouer.
+      const existing = themes.find((x) => x.name.toLowerCase() === name.toLowerCase());
+      if (dup && existing) { fillThemeSelect(existing.id); markDirty(); return; }
+      toast(dup ? "Ce thème existe déjà." : "Création du thème impossible.", "err");
+      fillThemeSelect("");
+      return;
+    }
+    themes.push(data);
+    themes.sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
+    fillThemeSelect(data.id);
+    markDirty();
+    toast("Thème créé ✅ (recolorez-le dans « Thèmes » si besoin).");
+  }
+  fillThemeSelect(record?.theme_id || "");
+  $(themeSelId)?.addEventListener("change", () => {
+    const el = $<HTMLSelectElement>(themeSelId);
+    if (!el) return;
+    if (el.value === NEW_THEME) { void createThemeInline(); return; }
+    themeAccent(el);
+  });
+
   /* ---------- Pré-remplissage des champs ---------- */
   if (record) {
     titleEl.value = record.title || "";
@@ -89,7 +146,6 @@ export async function initEditorPage() {
     if (type !== "formation") status = record.status || "draft";
 
     if (type === "article") {
-      setVal("f-category", record.category || "");
       setVal("f-author", record.author || "Équipe Bweb");
       setVal("f-reading", record.reading_minutes || "");
       setVal("f-excerpt", record.excerpt || "");
@@ -99,8 +155,9 @@ export async function initEditorPage() {
       setVal("f-focus", record.focus_keyword || "");
       setVal("f-pubdate", record.published_at ? dtLocalValue(record.published_at) : "");
     } else if (type === "formation") {
-      setVal("f-theme", record.theme || "");
-      setVal("f-level", record.level || "");
+      const _lv = $<HTMLSelectElement>("f-level"); const _lvVal = record.level || "";
+      if (_lv && _lvVal && ![..._lv.options].some((o) => o.value === _lvVal)) _lv.add(new Option(_lvVal, _lvVal));
+      setVal("f-level", _lvVal);
       setVal("f-duration", record.duration || "");
       setVal("f-price", record.default_price ?? "");
       setVal("f-summary", record.summary || "");
@@ -117,8 +174,9 @@ export async function initEditorPage() {
       setVal("f-focus", record.focus_keyword || "");
     } else {
       setVal("f-formation", record.formation_id || "");
-      setVal("f-theme", record.theme || "");
-      setVal("f-level", record.level || "");
+      const _lv = $<HTMLSelectElement>("f-level"); const _lvVal = record.level || "";
+      if (_lv && _lvVal && ![..._lv.options].some((o) => o.value === _lvVal)) _lv.add(new Option(_lvVal, _lvVal));
+      setVal("f-level", _lvVal);
       setVal("f-mode", record.mode || "presentiel");
       setVal("f-start", record.starts_at ? dtLocalValue(record.starts_at) : "");
       setVal("f-end", record.ends_at ? dtLocalValue(record.ends_at) : "");
@@ -152,7 +210,38 @@ export async function initEditorPage() {
   /* ---------- Éléments d'UI communs ---------- */
   updateCrumb(); updatePill(); updatePreview(); autoGrow(); updateMeta(); renderSeo();
   if (type === "session") setupModeToggle();
-  if (type === "formation") { setupFormationTabs(); initFormationSessions(root, id, { theme: val("f-theme") }); }
+  if (type === "formation") { setupFormationTabs(); initFormationSessions(root, id, { theme: selectedTheme().name, theme_id: selectedTheme().theme_id }); }
+
+  // Panneaux de réglages pliables (accordéon) — confort sur les longs panneaux.
+  // L'état plié/déplié est mémorisé par section (localStorage).
+  (function setupCollapsiblePanels() {
+    const KEY = "ed-collapsed-panels";
+    let saved: string[] = [];
+    try { saved = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { /* ignore */ }
+    root.querySelectorAll<HTMLElement>(".ed-aside .ed-panel").forEach((panel) => {
+      const h = panel.querySelector("h4");
+      if (!h) return;
+      const key = (h.childNodes[0]?.textContent || h.textContent || "").trim();
+      if (saved.includes(key)) panel.classList.add("is-collapsed");
+      h.setAttribute("role", "button");
+      h.setAttribute("tabindex", "0");
+      h.setAttribute("aria-expanded", panel.classList.contains("is-collapsed") ? "false" : "true");
+      const toggle = () => {
+        panel.classList.toggle("is-collapsed");
+        const collapsed = panel.classList.contains("is-collapsed");
+        h.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        const set = new Set(saved);
+        if (collapsed) set.add(key); else set.delete(key);
+        saved = [...set];
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch { /* ignore */ }
+      };
+      h.addEventListener("click", toggle);
+      h.addEventListener("keydown", (e) => {
+        const k = (e as KeyboardEvent).key;
+        if (k === "Enter" || k === " ") { e.preventDefault(); toggle(); }
+      });
+    });
+  })();
 
   titleEl.addEventListener("input", () => {
     autoGrow();
@@ -425,12 +514,16 @@ export async function initEditorPage() {
     const html = handle.getHTML();
     const payload: any = { title, slug };
     payload[HTMLCOL[type]] = html || null;
+    // Thème : on enregistre la liaison (theme_id) ET le nom texte (colonne historique
+    // encore lue par certaines pages publiques) pour rester cohérent pendant la bascule.
+    const th = selectedTheme();
 
     if (type === "article") {
       let publishedAt = val("f-pubdate") ? new Date(val("f-pubdate")).toISOString() : (record?.published_at || null);
       if (status === "published" && !publishedAt) publishedAt = new Date().toISOString();
       Object.assign(payload, {
-        category: val("f-category").trim() || null,
+        category: th.name,
+        theme_id: th.theme_id,
         author: val("f-author").trim() || "Équipe Bweb",
         reading_minutes: val("f-reading") ? parseInt(val("f-reading")) : estimateReading(html),
         excerpt: val("f-excerpt").trim() || null,
@@ -442,7 +535,8 @@ export async function initEditorPage() {
       });
     } else if (type === "formation") {
       Object.assign(payload, {
-        theme: val("f-theme").trim() || null,
+        theme: th.name,
+        theme_id: th.theme_id,
         level: val("f-level").trim() || null,
         duration: val("f-duration").trim() || null,
         default_price: val("f-price") ? parseInt(val("f-price")) : null,
@@ -462,7 +556,8 @@ export async function initEditorPage() {
     } else {
       Object.assign(payload, {
         formation_id: val("f-formation") || null,
-        theme: val("f-theme").trim() || null,
+        theme: th.name,
+        theme_id: th.theme_id,
         level: val("f-level") || null,
         mode: val("f-mode") || "presentiel",
         starts_at: new Date(val("f-start")).toISOString(),
@@ -493,7 +588,7 @@ export async function initEditorPage() {
         const { data, error } = await supabaseBrowser.from(TABLE[type]).insert(payload).select("id").single(); if (error) throw error;
         id = data.id; root.dataset.id = id;
         history.replaceState(null, "", `/admin/editeur/${type}/${id}`);
-        if (type === "formation") initFormationSessions(root, id, { theme: val("f-theme") });
+        if (type === "formation") initFormationSessions(root, id, { theme: selectedTheme().name, theme_id: selectedTheme().theme_id });
       }
       if (type === "session") { await syncTickets(id); await syncBumps(id); }
       setSaved();
