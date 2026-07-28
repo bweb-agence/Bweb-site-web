@@ -54,16 +54,19 @@ export const POST: APIRoute = async ({ request }) => {
   // payment_reference (posé à la création après acceptation du paiement).
   const { data: bookings } = await admin
     .from("bookings")
-    .select("id, status, reference, full_name, email, quantity, amount_due, sessions(title, starts_at, venue, city), ticket_types(name)")
+    .select("id, status, reference, full_name, email, quantity, amount_due, is_deposit, sessions(title, starts_at, venue, city), ticket_types(name)")
     .eq("payment_reference", token);
 
   let confirmed = 0;
   for (const b of bookings || []) {
     if (b.status === "confirmed") continue; // idempotent : déjà fait
 
+    // Acompte 50 % réglé en ligne → amount_paid = moitié ; solde dû sur place.
+    const due = (b as any).amount_due ?? 0;
+    const amountPaid = (b as any).is_deposit ? Math.max(1, Math.ceil(due / 2)) : due;
     const { error } = await admin.rpc("confirm_booking", {
       p_booking_id: b.id,
-      p_amount_paid: (b as any).amount_due ?? null,
+      p_amount_paid: amountPaid,
     });
     if (error) continue;
     confirmed++;
@@ -78,7 +81,8 @@ export const POST: APIRoute = async ({ request }) => {
         session_venue: s?.venue ? `${s.venue}${s.city ? " · " + s.city : ""}` : null,
         ticket_name: (b as any).ticket_types?.name || null,
         quantity: b.quantity,
-        amount: (b as any).amount_due ?? montant,
+        amount: amountPaid,
+        balance: (b as any).is_deposit ? Math.max(0, due - amountPaid) : 0,
       });
       await sendEmail({ to: b.email, subject: c.subject, html: c.html });
     }
