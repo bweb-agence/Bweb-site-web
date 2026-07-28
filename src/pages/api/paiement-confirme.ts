@@ -33,7 +33,6 @@ export const POST: APIRoute = async ({ request }) => {
   // 1) Re-vérifier le paiement auprès de Money Fusion (via le relais IP fixe).
   let statut = "";
   let montant: number | null = null;
-  let refs: string[] = [];
   try {
     const r = await fetch(`${payApi.replace(/\/+$/, "")}/status.php?token=${encodeURIComponent(token)}`, {
       headers: { Accept: "application/json" },
@@ -41,7 +40,6 @@ export const POST: APIRoute = async ({ request }) => {
     const s: any = await r.json();
     statut = String(s?.statut || "").toLowerCase();
     montant = Number(s?.montant) || null;
-    refs = Array.isArray(s?.refs) ? s.refs : [];
   } catch {
     return json({ ok: false, error: "verify_failed" }, 502);
   }
@@ -49,25 +47,20 @@ export const POST: APIRoute = async ({ request }) => {
   // Pas encore payé : rien à confirmer (le webhook/retour rappellera).
   const paid = ["paid", "payé", "paye", "success", "successful"].includes(statut);
   if (!paid) return json({ ok: true, statut, montant, confirmed: 0 });
-  if (refs.length === 0) return json({ ok: true, statut, montant, confirmed: 0, note: "no_refs" });
 
   const admin = createAdminClient();
+
+  // Les réservations liées à ce paiement portent le jeton Money Fusion en
+  // payment_reference (posé à la création après acceptation du paiement).
+  const { data: bookings } = await admin
+    .from("bookings")
+    .select("id, status, reference, full_name, email, quantity, amount_due, sessions(title, starts_at, venue, city), ticket_types(name)")
+    .eq("payment_reference", token);
+
   let confirmed = 0;
-
-  for (const ref of refs) {
-    // Récupère la réservation + les infos pour l'e-mail.
-    const { data: b } = await admin
-      .from("bookings")
-      .select(
-        "id, status, reference, full_name, email, quantity, amount_due, sessions(title, starts_at, venue, city), ticket_types(name)"
-      )
-      .eq("reference", ref)
-      .maybeSingle();
-
-    if (!b) continue;
+  for (const b of bookings || []) {
     if (b.status === "confirmed") continue; // idempotent : déjà fait
 
-    // Montant réparti : on confirme au montant dû de la réservation.
     const { error } = await admin.rpc("confirm_booking", {
       p_booking_id: b.id,
       p_amount_paid: (b as any).amount_due ?? null,
