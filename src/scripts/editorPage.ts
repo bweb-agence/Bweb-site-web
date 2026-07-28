@@ -10,6 +10,7 @@ import { mountEditor, type EditorHandle } from "./editor/editor";
 import { uploadMedia } from "./editor/uploadMedia";
 import { analyzeSeo } from "./editor/seo";
 import { marked } from "marked";
+import { initFormationSessions } from "./formationSessions";
 
 type Kind = "article" | "formation" | "session";
 const TABLE: Record<Kind, string> = { article: "posts", formation: "formations", session: "sessions" };
@@ -151,6 +152,7 @@ export async function initEditorPage() {
   /* ---------- Éléments d'UI communs ---------- */
   updateCrumb(); updatePill(); updatePreview(); autoGrow(); updateMeta(); renderSeo();
   if (type === "session") setupModeToggle();
+  if (type === "formation") { setupFormationTabs(); initFormationSessions(root, id, { theme: val("f-theme") }); }
 
   titleEl.addEventListener("input", () => {
     autoGrow();
@@ -366,6 +368,18 @@ export async function initEditorPage() {
     apply();
   }
 
+  /* ---------- Onglets Détails / Sessions (formation) ---------- */
+  function setupFormationTabs() {
+    const tabs = Array.from(root.querySelectorAll<HTMLElement>(".ed-ftab"));
+    const panes = Array.from(root.querySelectorAll<HTMLElement>("[data-ftab-pane]"));
+    if (!tabs.length) return;
+    tabs.forEach((tab) => tab.addEventListener("click", () => {
+      const target = tab.dataset.ftab;
+      tabs.forEach((x) => { const on = x.dataset.ftab === target; x.classList.toggle("is-active", on); x.setAttribute("aria-selected", String(on)); });
+      panes.forEach((p) => { p.hidden = p.dataset.ftabPane !== target; });
+    }));
+  }
+
   /* ---------- Couverture / visuel ---------- */
   function setupCover() {
     const box = $("ed-cover") as HTMLElement | null; if (!box) return;
@@ -479,6 +493,7 @@ export async function initEditorPage() {
         const { data, error } = await supabaseBrowser.from(TABLE[type]).insert(payload).select("id").single(); if (error) throw error;
         id = data.id; root.dataset.id = id;
         history.replaceState(null, "", `/admin/editeur/${type}/${id}`);
+        if (type === "formation") initFormationSessions(root, id, { theme: val("f-theme") });
       }
       if (type === "session") { await syncTickets(id); await syncBumps(id); }
       setSaved();
