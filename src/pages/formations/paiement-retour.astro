@@ -1,0 +1,117 @@
+---
+// Page de retour après paiement Money Fusion.
+// Money Fusion redirige l'acheteur ici avec un jeton : ?token=xxxx
+// On vérifie le statut CÔTÉ SERVEUR (jamais se fier au seul retour navigateur),
+// puis on affiche succès / échec / en attente.
+//
+// Rendu à la demande (SSR) — obligatoire pour lire l'URL et appeler l'API.
+export const prerender = false;
+
+import { whatsappLink } from "../../config/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+// Le jeton renvoyé par Money Fusion (nom de paramètre selon leur config : token/paiementId).
+const token =
+  Astro.url.searchParams.get("token") ||
+  Astro.url.searchParams.get("paiementId") ||
+  Astro.url.searchParams.get("tokenPay") ||
+  "";
+
+// On appelle l'endpoint de confirmation du site : il re-vérifie le paiement
+// auprès de Money Fusion (via le relais IP fixe), confirme la réservation si
+// besoin (idempotent) et renvoie le statut à afficher.
+type Etat = "success" | "failed" | "pending" | "unknown";
+let etat: Etat = "unknown";
+let montant: number | null = null;
+
+if (token) {
+  try {
+    const res = await fetch(`${Astro.url.origin}/api/paiement-confirme`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    if (res.ok) {
+      const data: any = await res.json();
+      const statut = String(data?.statut ?? "").toLowerCase();
+      montant = Number(data?.montant) || null;
+      if (["paid", "payé", "paye", "success", "successful"].includes(statut)) etat = "success";
+      else if (["pending", "en attente", "processing"].includes(statut)) etat = "pending";
+      else if (statut) etat = "failed";
+    }
+  } catch {
+    // Réseau/API indisponible : on reste en "unknown" et on propose WhatsApp.
+    etat = "unknown";
+  }
+}
+
+const M: Record<Etat, { titre: string; texte: string; couleur: string }> = {
+  success: {
+    titre: "Paiement confirmé 🎉",
+    texte:
+      "Merci ! Ton paiement a bien été reçu. Tu vas recevoir un e-mail de confirmation avec les accès à ta formation. Pense à vérifier tes spams.",
+    couleur: "var(--c-green)",
+  },
+  pending: {
+    titre: "Paiement en cours de validation",
+    texte:
+      "Ton paiement est en cours de traitement chez l'opérateur. Dès qu'il est confirmé, tu reçois un e-mail avec tes accès. Cela prend en général quelques minutes.",
+    couleur: "var(--c-warm, #f0a500)",
+  },
+  failed: {
+    titre: "Le paiement n'a pas abouti",
+    texte:
+      "La transaction n'a pas pu être finalisée. Aucun montant ne devrait avoir été débité. Tu peux réessayer, ou nous écrire sur WhatsApp pour qu'on t'aide.",
+    couleur: "#e5484d",
+  },
+  unknown: {
+    titre: "Merci pour ta commande",
+    texte:
+      "Nous vérifions le statut de ton paiement. Si tu as bien été débité(e) sans recevoir tes accès sous quelques minutes, écris-nous sur WhatsApp avec ta référence de paiement.",
+    couleur: "var(--c-green)",
+  },
+};
+
+const v = M[etat];
+---
+
+<BaseLayout
+  title="Retour de paiement — Bweb Agence"
+  description="Confirmation de votre paiement pour la formation Bweb Agence."
+  noindex
+>
+  <section class="hero" style="padding-bottom:clamp(80px,8vw,120px)">
+    <div class="mesh-bg"></div>
+    <div class="grid-lines"></div>
+    <div class="container">
+      <div class="text-center text-white" style="max-width:640px;margin:0 auto" data-hero-in>
+        <div
+          style={`width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 28px`}
+        >
+          {etat === "failed" ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style={`width:36px;height:36px;color:${v.couleur}`}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          ) : etat === "pending" ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style={`width:36px;height:36px;color:${v.couleur}`}><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style={`width:36px;height:36px;color:${v.couleur}`}><polyline points="5 13 10 18 19 7"/></svg>
+          )}
+        </div>
+        <h1>{v.titre}</h1>
+        <p class="lead" style="margin:20px auto 12px">{v.texte}</p>
+        {montant && etat === "success" && (
+          <p class="text-white" style="opacity:.8;margin:0 auto 28px">Montant réglé : <strong>{montant.toLocaleString("fr-FR")} FCFA</strong></p>
+        )}
+        <div class="hero-actions" style="justify-content:center;margin-top:28px;margin-bottom:0">
+          <a href="/formations" class="btn btn-warm">Voir les formations</a>
+          {etat === "failed" && (
+            <a href="/formations/calendrier" class="btn btn-outline-light">Réessayer</a>
+          )}
+          <a href={whatsappLink()} class="btn btn-whatsapp" data-whatsapp-link target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z"/></svg>
+            Besoin d'aide ? WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
