@@ -58,10 +58,12 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         <td>${esc(f.theme || "—")}</td><td>${esc(f.duration || "—")}</td><td>${f.default_price ? fmtFCFA(f.default_price) : "—"}</td>
         <td><div class="row-actions">
           <button class="icon-btn" data-edit="${f.id}" title="Éditer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="icon-btn" data-dup="${f.id}" title="Dupliquer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
           <button class="icon-btn danger" data-del="${f.id}" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
         </div></td>
       </tr>`).join("") : `<tr><td class="empty" colspan="5">Aucune formation.</td></tr>`;
     rows.querySelectorAll<HTMLElement>("[data-edit]").forEach((b) => b.addEventListener("click", () => edit(b.dataset.edit!)));
+    rows.querySelectorAll<HTMLElement>("[data-dup]").forEach((b) => b.addEventListener("click", () => dup(b.dataset.dup!)));
     rows.querySelectorAll<HTMLElement>("[data-del]").forEach((b) => b.addEventListener("click", () => del(b.dataset.del!)));
   }
   const applySearch = () => { const q = ($("f-search").value || "").toLowerCase(); render(all.filter((f) => !q || (f.title + " " + (f.theme || "")).toLowerCase().includes(q))); };
@@ -78,6 +80,22 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   }
   const openNew = () => { location.href = "/admin/editeur/formation/nouveau"; };
   const edit = (id: string) => { location.href = "/admin/editeur/formation/" + id; };
+  async function dup(id: string) {
+    const f = all.find((x) => x.id === id);
+    if (!f) return;
+    const copy: any = { ...f };
+    delete copy.id; delete copy.created_at; delete copy.updated_at;
+    copy.title = `${f.title} (copie)`;
+    copy.slug = `${f.slug}-copie`;
+    let { error } = await supabaseBrowser.from("formations").insert(copy);
+    if (error) { // slug déjà pris -> suffixe aléatoire
+      copy.slug = `${f.slug}-copie-${Math.random().toString(36).slice(2, 6)}`;
+      ({ error } = await supabaseBrowser.from("formations").insert(copy));
+    }
+    if (error) { toast("Duplication impossible.", "err"); return; }
+    toast("Formation dupliquée. ✅");
+    await load();
+  }
   async function del(id: string) {
     const f = all.find((x) => x.id === id);
     if (!window.confirm(`Supprimer « ${f?.title} » ? Les sessions liées ne seront pas supprimées.`)) return;

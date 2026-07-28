@@ -6,6 +6,8 @@
    ========================================================= */
 import { supabaseBrowser } from "../lib/supabaseBrowser";
 import { slugify, dtLocalValue, toast, esc } from "./adminUtils";
+import { gradSuffix } from "../lib/format";
+import { themeHex } from "../lib/themes";
 import { mountEditor, type EditorHandle } from "./editor/editor";
 import { uploadMedia } from "./editor/uploadMedia";
 import { analyzeSeo } from "./editor/seo";
@@ -86,19 +88,55 @@ export async function initEditorPage() {
     .from("themes").select("id,name,slug,color").order("sort_order").order("name");
   const themes: any[] = themesData || [];
   const themeSelId = type === "article" ? "f-category" : "f-theme";
+  const NEW_THEME = "__new__";
+  function themeAccent(el: HTMLSelectElement) {
+    const t = themes.find((x) => x.id === el.value);
+    el.style.borderLeft = t ? `4px solid ${themeHex(t.color)}` : "";
+    el.style.paddingLeft = t ? "9px" : "";
+  }
   function fillThemeSelect(selectedId: string) {
-    const el = $(themeSelId) as HTMLSelectElement | null;
+    const el = $<HTMLSelectElement>(themeSelId);
     if (!el) return;
     el.innerHTML = '<option value="">— Aucun —</option>' +
-      themes.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+      themes.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join("") +
+      `<option value="${NEW_THEME}">＋ Nouveau thème…</option>`;
     el.value = selectedId || "";
+    themeAccent(el);
   }
   const selectedTheme = () => {
-    const tid = val(themeSelId) || null;
+    const tid = val(themeSelId);
+    if (!tid || tid === NEW_THEME) return { theme_id: null as string | null, name: null as string | null };
     const t = themes.find((x) => x.id === tid);
-    return { theme_id: (tid || null) as string | null, name: (t?.name ?? null) as string | null };
+    return { theme_id: tid as string | null, name: (t?.name ?? null) as string | null };
   };
+  async function createThemeInline() {
+    const name = (window.prompt("Nom du nouveau thème :") || "").trim();
+    if (!name) { fillThemeSelect(""); return; }
+    const { data, error } = await supabaseBrowser.from("themes")
+      .insert({ name, slug: slugify(name), color: gradSuffix(name) })
+      .select("id,name,slug,color,sort_order").single();
+    if (error) {
+      const dup = (error.message || "").includes("duplicate") || (error as any).code === "23505";
+      // Si le thème existe déjà, on le sélectionne au lieu d'échouer.
+      const existing = themes.find((x) => x.name.toLowerCase() === name.toLowerCase());
+      if (dup && existing) { fillThemeSelect(existing.id); markDirty(); return; }
+      toast(dup ? "Ce thème existe déjà." : "Création du thème impossible.", "err");
+      fillThemeSelect("");
+      return;
+    }
+    themes.push(data);
+    themes.sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
+    fillThemeSelect(data.id);
+    markDirty();
+    toast("Thème créé ✅ (recolorez-le dans « Thèmes » si besoin).");
+  }
   fillThemeSelect(record?.theme_id || "");
+  $(themeSelId)?.addEventListener("change", () => {
+    const el = $<HTMLSelectElement>(themeSelId);
+    if (!el) return;
+    if (el.value === NEW_THEME) { void createThemeInline(); return; }
+    themeAccent(el);
+  });
 
   /* ---------- Pré-remplissage des champs ---------- */
   if (record) {
