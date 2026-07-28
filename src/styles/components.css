@@ -275,15 +275,54 @@ mark { background: none; color: var(--c-blue); position: relative; }
 .testimonial-card .stars svg { width: 16px; height: 16px; }
 .testimonial-card p { font-size: .98rem; color: var(--c-gray-700); flex: 1; margin-bottom: 22px; }
 .testimonial-person { display: flex; align-items: center; gap: 14px; }
-.avatar-badge { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-weight: 700; color: #fff; background: var(--g-blue); font-size: .95rem; flex: none; }
+.avatar-badge { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-weight: 700; color: #fff; background: var(--g-blue); font-size: .95rem; flex: none; overflow: hidden; }
+.avatar-badge img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 .testimonial-person .name { font-weight: 700; font-size: .92rem; color: var(--c-navy); }
 .testimonial-person .role { font-size: .8rem; color: var(--c-gray-500); }
 
 .team-card { text-align: center; padding: 36px 24px; }
-.team-card .avatar-badge { width: 96px; height: 96px; font-size: 1.8rem; margin: 0 auto 20px; }
+.team-card .avatar-badge { width: 112px; height: 112px; font-size: 2rem; margin: 0 auto 20px; }
+.team-card .avatar-badge.is-placeholder { background: var(--c-gray-300); color: var(--c-gray-700); }
 .team-card h4 { margin-bottom: 2px; }
 .team-card .role { color: var(--c-blue); font-weight: 700; font-size: .85rem; margin-bottom: 12px; }
+.team-card .role.is-placeholder { color: var(--c-gray-500); }
 .team-card p { font-size: .88rem; }
+
+/* Organigramme équipe (À propos) — reflète la hiérarchie : direction, puis pôles opérationnels */
+.team-org { display: flex; flex-direction: column; align-items: center; }
+.team-tier { width: 100%; }
+.team-tier__label { text-align: center; font-weight: 700; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--c-gray-500); margin-bottom: 20px; }
+.team-org__single { width: 100%; max-width: 320px; margin: 0 auto; }
+.team-org__caption { text-align: center; font-size: .82rem; color: var(--c-gray-500); margin-top: 12px; }
+
+.team-org__pair { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; }
+.team-org__pair .team-card { flex: 1 1 280px; max-width: 320px; }
+
+/* Liaisons animées entre les cartes — dégradé bleu/turquoise (couleurs du logo) qui circule en boucle */
+.team-org__connector { position: relative; width: 3px; height: 40px; margin: 20px auto; border-radius: 2px; background: color-mix(in srgb, var(--c-blue) 18%, transparent); overflow: hidden; flex: none; }
+.team-org__connector::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent, var(--c-blue), var(--c-teal), transparent);
+  filter: drop-shadow(0 0 4px var(--c-blue)) drop-shadow(0 0 7px var(--c-teal));
+  animation: team-org-flow-v 2.6s ease-in-out infinite;
+}
+.team-org__connector--h { width: 56px; height: 3px; margin: 0 4px; align-self: center; }
+.team-org__connector--h::after {
+  background: linear-gradient(90deg, transparent, var(--c-blue), var(--c-teal), transparent);
+  animation: team-org-flow-h 2.2s ease-in-out infinite;
+}
+@keyframes team-org-flow-v { 0% { transform: translateY(-120%); } 100% { transform: translateY(320%); } }
+@keyframes team-org-flow-h { 0% { transform: translateX(-160%); } 100% { transform: translateX(260%); } }
+@media (prefers-reduced-motion: reduce) { .team-org__connector::after { animation: none; opacity: .7; } }
+
+@media (max-width: 720px) {
+  .team-org__pair { flex-direction: column; }
+  .team-org__connector--h { width: 3px; height: 32px; margin: 4px auto; }
+  .team-org__connector--h::after {
+    background: linear-gradient(180deg, transparent, var(--c-blue), var(--c-teal), transparent);
+    animation: team-org-flow-v 2.6s ease-in-out infinite;
+  }
+}
 
 .marquee { overflow: hidden; position: relative; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
 .marquee-track { display: flex; gap: 64px; width: max-content; animation: marquee 30s linear infinite; }

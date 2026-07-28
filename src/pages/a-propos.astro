@@ -1,6 +1,13 @@
 ---
+import { existsSync } from "node:fs";
+import path from "node:path";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import IllusApropos from "../components/illus/IllusApropos.astro";
+
+// Photos d'équipe : dépose le fichier dans public/images/team/ au chemin indiqué,
+// il est utilisé automatiquement dès qu'il existe (sinon on retombe sur les initiales).
+const godwinPhoto = "/images/godwin-soola.png";
+const godwinPhotoExists = existsSync(path.join(process.cwd(), "public", godwinPhoto));
 ---
 
 <BaseLayout title="À propos — Cabinet conseil, formation & IA | Bweb" description="Bweb est un cabinet de conseil, de formation et d'accompagnement en IA et nouvelles technologies, fondé par Godwin Soola pour faire avancer les entreprises." breadcrumbs={[{ name: "Accueil", path: "/" }, { name: "À propos", path: "/a-propos" }]}>
@@ -53,8 +60,14 @@ import IllusApropos from "../components/illus/IllusApropos.astro";
       </div>
       <div class="visual reveal" data-delay=".15">
         <div class="card" style="padding:0;overflow:hidden">
-          <div style="background:var(--g-navy);padding:48px 32px;text-align:center">
-            <span class="avatar-badge" style="width:96px;height:96px;font-size:1.9rem;margin:0 auto 20px;background:#fff;color:var(--c-navy)">GS</span>
+          {godwinPhotoExists ? (
+            <img src={godwinPhoto} alt="Godwin Soola" style="width:100%;display:block;aspect-ratio:1/1;object-fit:cover" />
+          ) : (
+            <div style="background:var(--g-navy);padding:48px 32px 0;text-align:center">
+              <span class="avatar-badge" style="width:96px;height:96px;font-size:1.9rem;margin:0 auto 20px;background:#fff;color:var(--c-navy)">GS</span>
+            </div>
+          )}
+          <div style="background:var(--g-navy);padding:24px 32px;text-align:center">
             <h3 class="text-white" style="margin-bottom:4px">Godwin Soola</h3>
             <p style="color:rgba(255,255,255,.7);font-size:.9rem">Expert en marketing digital &amp; Fondateur de Bweb Agence</p>
           </div>
@@ -110,36 +123,87 @@ import IllusApropos from "../components/illus/IllusApropos.astro";
   <div class="container">
     <div class="section-head center reveal">
       <div class="eyebrow" style="justify-content:center">L'équipe</div>
-      <h2>Une équipe multidisciplinaire, réactive et disponible.</h2>
+      <h2>Une équipe structurée, multidisciplinaire et disponible.</h2>
       <p class="placeholder-note" style="margin-top:24px;text-align:left">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/></svg>
-        Fiches complètes de l'équipe (photos, postes, compétences) à compléter — seul le fondateur est confirmé à ce stade.
+        Organisation de l'équipe par pôle de responsabilité — noms et photos des membres à venir (seul le fondateur est confirmé à ce stade).
       </p>
     </div>
-    <div class="grid grid-4" data-stagger>
-      <div class="team-card card">
-        <span class="avatar-badge">GS</span>
-        <h4>Godwin Soola</h4>
-        <div class="role">Fondateur — Expert marketing digital</div>
-        <p>Pilote la stratégie et l'accompagnement des clients de l'agence.</p>
+
+    <div class="team-org">
+      <div class="team-tier">
+        <div class="team-tier__label">Direction</div>
+        <div class="team-org__pair reveal">
+          <div class="team-card card">
+            <span class="avatar-badge">{godwinPhotoExists ? <img src={godwinPhoto} alt="Godwin Soola" /> : "GS"}</span>
+            <h4>Godwin Soola</h4>
+            <div class="role">CEO &amp; Fondateur</div>
+            <p>Pilote la vision, la stratégie et incarne la marque Bweb Agence.</p>
+          </div>
+          <div class="team-org__connector team-org__connector--h" aria-hidden="true"></div>
+          <div class="team-card card">
+            <span class="avatar-badge is-placeholder">?</span>
+            <h4>Ops Manager</h4>
+            <div class="role is-placeholder">Chef d'orchestre</div>
+            <p>Coordonne les six pôles de l'équipe et pilote l'exécution au quotidien.</p>
+          </div>
+        </div>
       </div>
-      <div class="team-card card">
-        <span class="avatar-badge" style="background:var(--c-gray-300);color:var(--c-gray-700)">?</span>
-        <h4>Poste à définir</h4>
-        <div class="role" style="color:var(--c-gray-500)">Conseil &amp; stratégie</div>
-        <p>Membre de l'équipe — informations à venir.</p>
+
+      <div class="team-org__connector" aria-hidden="true"></div>
+
+      <div class="team-tier">
+        <div class="team-tier__label">Pôles opérationnels</div>
+        <div class="grid grid-3" data-stagger>
+          <div class="team-card card">
+            <span class="avatar-badge is-placeholder">?</span>
+            <h4>Media Buyer</h4>
+            <div class="role is-placeholder">Acquisition payante</div>
+            <p>Pilote les campagnes Meta, le tracking et le budget publicitaire.</p>
+          </div>
+          <div class="team-card card">
+            <span class="avatar-badge is-placeholder">?</span>
+            <h4>Copywriter</h4>
+            <div class="role is-placeholder">Architecte conversion</div>
+            <p>Écrit les pages de vente, scripts et accroches qui convertissent.</p>
+          </div>
+          <div class="team-card card">
+            <span class="avatar-badge is-placeholder">?</span>
+            <h4>Tech Manager</h4>
+            <div class="role is-placeholder">Systèmes &amp; automation</div>
+            <p>Construit les funnels, automatisations et intégrations techniques.</p>
+          </div>
+          <div class="team-card card">
+            <span class="avatar-badge is-placeholder">?</span>
+            <h4>Closer Senior</h4>
+            <div class="role is-placeholder">Ventes haute valeur</div>
+            <p>Conclut les ventes à forte valeur et supervise le SDR.</p>
+          </div>
+          <div class="team-card card">
+            <span class="avatar-badge is-placeholder">?</span>
+            <h4>Content Creator</h4>
+            <div class="role is-placeholder">Production visuelle</div>
+            <p>Produit les vidéos, visuels et contenus de la marque.</p>
+          </div>
+          <div class="team-card card">
+            <span class="avatar-badge is-placeholder">?</span>
+            <h4>Customer Success</h4>
+            <div class="role is-placeholder">Rétention &amp; LTV</div>
+            <p>Accompagne les clients et anime la communauté au quotidien.</p>
+          </div>
+        </div>
       </div>
-      <div class="team-card card">
-        <span class="avatar-badge" style="background:var(--c-gray-300);color:var(--c-gray-700)">?</span>
-        <h4>Poste à définir</h4>
-        <div class="role" style="color:var(--c-gray-500)">Formation</div>
-        <p>Membre de l'équipe — informations à venir.</p>
-      </div>
-      <div class="team-card card">
-        <span class="avatar-badge" style="background:var(--c-gray-300);color:var(--c-gray-700)">?</span>
-        <h4>Poste à définir</h4>
-        <div class="role" style="color:var(--c-gray-500)">Technique &amp; automatisation</div>
-        <p>Membre de l'équipe — informations à venir.</p>
+
+      <div class="team-org__connector" aria-hidden="true"></div>
+
+      <div class="team-org__single reveal">
+        <div class="team-card card">
+          <span class="avatar-badge is-placeholder">?</span>
+          <h4>SDR / Closer #2</h4>
+          <div class="role is-placeholder">Qualification &amp; mid-ticket</div>
+          <p>Qualifie les leads entrants et conclut les ventes mid-ticket.</p>
+        </div>
+        <div class="team-org__caption">Supervisé par le Closer Senior</div>
       </div>
     </div>
   </div>
