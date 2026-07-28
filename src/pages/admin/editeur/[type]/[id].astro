@@ -176,7 +176,10 @@ const isNew = id === "nouveau";
                 <div class="ed-field"><label for="f-instructor">Formateur (nom)</label><input class="ed-inp" id="f-instructor" placeholder="Ex. Awa K." /></div>
                 <div class="ed-field"><label for="f-instructor-role">Formateur (rôle)</label><input class="ed-inp" id="f-instructor-role" placeholder="Ex. Consultante IA" /></div>
               </div>
-              <div class="ed-field"><label for="f-instructor-photo">Photo formateur (URL)</label><input class="ed-inp" id="f-instructor-photo" placeholder="https://…/photo.jpg" /></div>
+              <div class="ed-field"><label>Photo du formateur</label>
+                <div class="ed-cover ed-cover--avatar" data-target="f-instructor-photo" data-hint="JPG/PNG · portrait conseillé"></div>
+                <input type="hidden" id="f-instructor-photo" />
+              </div>
               <div class="ed-field"><label for="f-instructor-bio">Bio formateur</label><textarea class="ed-ta" id="f-instructor-bio" rows="2" placeholder="Courte présentation du formateur…"></textarea></div>
               <div class="ed-field"><label for="f-audience">À qui s'adresse cette formation</label><textarea class="ed-ta" id="f-audience" rows="2" placeholder="Ex. Entrepreneurs, indépendants, responsables marketing…"></textarea></div>
               <div class="ed-field"><label for="f-prerequis">Prérequis</label><textarea class="ed-ta" id="f-prerequis" rows="2" placeholder="Ex. Aucun prérequis. Apportez un ordinateur portable."></textarea></div>

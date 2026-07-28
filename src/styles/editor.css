@@ -208,6 +208,10 @@
   color: var(--c-gray-700); font-size: 11.5px; font-weight: 700; padding: 4px 9px; border-radius: 7px; cursor: pointer; }
 .ed-cover-rm:hover { color: var(--c-danger); border-color: var(--c-danger); }
 .ed-cover.busy { opacity: .6; pointer-events: none; }
+/* Variante « avatar » (photo formateur) : vignette carrée et compacte. */
+.ed-cover--avatar { max-width: 150px; }
+.ed-cover--avatar .ed-cover-thumb img { aspect-ratio: 1 / 1; }
+.ed-cover--avatar .ed-cover-drop { padding: 18px 10px; border-radius: 50%; aspect-ratio: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 3px; }
 
 /* tarifs */
 .ed-tt { border: 1px solid var(--c-border); border-radius: 12px; padding: 12px; margin-bottom: 10px; background: var(--surface-2); }

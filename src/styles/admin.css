@@ -59,6 +59,7 @@
 .tag-pill.pub { background: #e3edff; color: #1550b8; }
 .tag-pill.draft { background: var(--c-gray-100); color: var(--c-gray-600); }
 .tag-pill.full { background: #fbe7e7; color: #b02525; }
+.tag-pill.archived { background: #e7e9ef; color: #4a5169; }
 
 /* Boutons admin (réutilise .btn du design system, + variantes) */
 .abtn { display: inline-flex; align-items: center; gap: 6px; border-radius: 9px; font-weight: 700; font-size: 0.82rem; padding: 8px 14px; border: 1px solid var(--c-border); background: #fff; color: var(--c-navy); cursor: pointer; text-decoration: none; }
