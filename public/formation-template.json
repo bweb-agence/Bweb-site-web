@@ -1,0 +1,50 @@
+{
+  "formation": {
+    "title": "Initiation aux produits digitaux — Comment créer une nouvelle source de revenus",
+    "slug": "initiation-produits-digitaux",
+    "theme": "Produits digitaux",
+    "level": "Débutant accepté",
+    "duration": "3 à 4 heures",
+    "default_price": 10000,
+    "summary": "Comprendre les produits digitaux, trouver une idée adaptée à vos compétences et repartir avec un plan concret pour démarrer.",
+    "instructor_name": "Godwin SOOLA",
+    "instructor_role": "Expert marketing digital",
+    "instructor_photo_url": null,
+    "instructor_bio": null,
+    "audience": "Étudiants, salariés, entrepreneurs, freelances, créateurs de contenu — et toute personne souhaitant créer une activité autour des produits digitaux. Aucun prérequis technique.",
+    "prerequisites": "Aucun prérequis technique n'est nécessaire.",
+    "included_extra": "Attestation de participation\nFeuille de route pour lancer votre premier produit",
+    "image_url": null,
+    "description_html": null,
+    "description_md": "Vous souhaitez vous lancer dans les produits digitaux, mais vous ne savez pas quel produit créer ni par où commencer ? Cette formation est conçue pour vous donner une vision claire, simple et pratique.\n\nPendant cette session, vous découvrirez comment transformer une compétence, une expérience ou une connaissance en un produit digital utile. Nous explorerons les formats les plus accessibles, les besoins des clients et les erreurs à éviter au démarrage.\n\nÀ la fin de la formation, vous repartirez avec une idée de produit digital validée et une feuille de route pour passer à l'action.\n\n## Programme de la formation\n1. **Comprendre les produits digitaux** — définition et exemples concrets, opportunités en Afrique, modèles de revenus.\n2. **Trouver une idée de produit** — identifier ses compétences, choisir une audience précise, repérer un besoin à résoudre.\n3. **Choisir le bon format** — e-book, guide, template, mini-formation ou accompagnement ; avantages/limites ; produit simple à lancer.\n4. **Construire son plan de démarrage** — définir son premier produit, poser les bases de l'offre, préparer la création et la vente.\n\n## Résultat attendu\nÀ l'issue de la formation, vous aurez : une compréhension claire des produits digitaux, une idée adaptée à vos compétences, un public cible identifié et un plan d'action simple pour créer votre premier produit.\n\n## Au programme\n- Comprendre ce qu'est un produit digital et comment il génère des revenus\n- Identifier vos compétences, votre audience et une idée de produit pertinente\n- Découvrir les formats simples à créer : e-book, guide, template, mini-formation\n- Définir les premières étapes pour lancer votre projet",
+    "seo_title": "Formation produits digitaux à Abidjan — créer une source de revenus | Bweb",
+    "seo_description": "Comprendre les produits digitaux, trouver une idée adaptée à vos compétences et repartir avec un plan concret pour démarrer. Formation d'initiation en présentiel à Abidjan.",
+    "focus_keyword": "formation produits digitaux Abidjan"
+  },
+  "sessions": [
+    {
+      "slug": "initiation-produits-digitaux-2026-08-01",
+      "title": "Initiation aux produits digitaux · Abidjan · 1er août 2026",
+      "starts_at": "2026-08-01T09:00:00Z",
+      "ends_at": null,
+      "mode": "presentiel",
+      "level": "debutant",
+      "city": "Abidjan",
+      "venue": "Espace de formation Bweb · Cocody",
+      "address": null,
+      "image_url": null,
+      "tickets": [
+        { "name": "Premier arrivé", "price": 9000, "capacity": 10, "compare_at_price": null, "badge": "limited", "sales_end": null },
+        { "name": "Individuel", "price": 10000, "capacity": 39, "compare_at_price": null, "badge": null, "sales_end": null },
+        { "name": "DUO (2 personnes)", "price": 18000, "capacity": 16, "compare_at_price": null, "badge": "ok", "sales_end": null }
+      ],
+      "order_bumps": []
+    }
+  ],
+  "faqs": [
+    { "question": "Dois-je déjà avoir une idée de produit ?", "answer_md": "Non. La formation vous aide justement à identifier et structurer votre première idée.", "sort": 1 },
+    { "question": "Faut-il savoir créer un site ou maîtriser des outils techniques ?", "answer_md": "Non. Cette session est accessible aux débutants, sans prérequis technique.", "sort": 2 },
+    { "question": "Est-ce que je vais créer mon produit pendant cette formation ?", "answer_md": "Vous définirez votre idée, votre format et votre plan de création. La formation suivante vous accompagnera dans la création complète du produit.", "sort": 3 },
+    { "question": "Recevrai-je une attestation ?", "answer_md": "Oui, une attestation de participation peut être remise à la fin de la formation.", "sort": 4 }
+  ]
+}

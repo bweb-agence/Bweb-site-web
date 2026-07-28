@@ -6,7 +6,10 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 <AdminLayout title="Formations" active="formations">
   <div class="admin-toolbar">
     <div class="left"><input class="admin-search" id="f-search" type="search" placeholder="Rechercher une formation…" /></div>
-    <button class="abtn primary" id="new-btn">+ Nouvelle formation</button>
+    <div style="display:flex;gap:8px">
+      <a class="abtn" href="/admin/import">⬆ Importer (JSON)</a>
+      <button class="abtn primary" id="new-btn">+ Nouvelle formation</button>
+    </div>
   </div>
 
   <div class="panel">
