@@ -259,14 +259,41 @@ const courseLd = session && reviewCount
     }
   : null;
 const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+// FAQPage (rich result) — à partir des questions fréquentes de la session.
+const faqLd = session && faqs.length
+  ? {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqs.map((f) => ({
+        "@type": "Question",
+        name: f.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: (marked.parse(f.answer_md, { async: false }) as string).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+        },
+      })),
+    }
+  : null;
+// Fil d'Ariane de la page de session.
+const sessCrumbs = session
+  ? [
+      { name: "Accueil", path: "/" },
+      { name: "Formations", path: "/formations" },
+      { name: "Calendrier", path: "/formations/calendrier" },
+      { name: session.title, path: `/formations/session/${session.slug}` },
+    ]
+  : undefined;
 ---
 
 {session ? (
   <BaseLayout
     title={session.seo_title || `${session.title} — ${frDateShort(session.starts_at)} | Formations Bweb`}
     description={session.seo_description || formation?.summary || (online ? `Formation en ligne (visioconférence) le ${frDateLong(session.starts_at)}.` : hybrid ? `Formation en présentiel à Abidjan et en ligne le ${frDateLong(session.starts_at)}.` : `Session de formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`)}
-    image={session.image_url || undefined}
+    image={`/og/session/${session.slug}.png`}
     noindex={isPast}
+    breadcrumbs={sessCrumbs}
+    schemas={faqLd ? [faqLd] : []}
   >
     {eventLd && <script type="application/ld+json" slot="head" is:inline set:html={JSON.stringify(eventLd)} />}
     {courseLd && <script type="application/ld+json" slot="head" is:inline set:html={JSON.stringify(courseLd)} />}

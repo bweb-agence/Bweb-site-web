@@ -10,7 +10,16 @@ const SITE = "https://www.bwebagence.com";
 export default defineConfig({
   site: SITE,
   trailingSlash: "ignore",
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      // Exclut les pages privées / techniques du sitemap (admin en noindex,
+      // pages de retour paiement et de remerciement sans valeur SEO).
+      filter: (page) =>
+        !page.includes("/admin") &&
+        !page.includes("/formations/paiement-retour") &&
+        !page.includes("/merci"),
+    }),
+  ],
   // Rendu STATIQUE par défaut (aucune régression sur les pages vitrine).
   // Depuis Astro 5, `static` intègre l'ancien mode `hybrid` : les pages
   // dynamiques (calendrier, réservation, admin, API) restent rendues à la

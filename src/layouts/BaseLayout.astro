@@ -12,20 +12,27 @@ interface Props {
   description?: string;
   image?: string;
   noindex?: boolean;
-  /* N'émet le bloc JSON-LD Organization/ProfessionalService QUE sur les pages
-     qui l'activent (l'accueil). Évite de répéter le même bloc générique sur
-     chaque URL — une seule entité faisant autorité pour le site. */
+  /* Type Open Graph : "website" par défaut, "article" pour un article de blog. */
+  ogType?: string;
+  /* N'émet le bloc JSON-LD Organization + WebSite QUE sur les pages qui
+     l'activent (l'accueil). Une seule entité faisant autorité pour le site. */
   organization?: boolean;
+  /* Fil d'Ariane (BreadcrumbList JSON-LD). Chaque item : { name, path }. */
+  breadcrumbs?: { name: string; path: string }[];
+  /* Données structurées additionnelles propres à la page (JSON-LD). */
+  schemas?: Record<string, any>[];
 }
 
-const { title, description = site.description, image = site.ogImage, noindex = false, organization = false } = Astro.props;
+const {
+  title, description = site.description, image = site.ogImage, noindex = false,
+  ogType = "website", organization = false, breadcrumbs, schemas = [],
+} = Astro.props;
 const canonical = new URL(Astro.url.pathname, site.url).href.replace(/\/$/, "") || site.url;
 const ogImageUrl = new URL(image, site.url).href;
 
 // TODO (contenu à confirmer) : ajouter streetAddress, postalCode et
 // openingHoursSpecification quand l'adresse réelle sera validée (audit #2).
-const jsonLd = {
-  "@context": "https://schema.org",
+const orgLd = {
   "@type": "ProfessionalService",
   "@id": site.url + "#organization",
   name: site.name,
@@ -43,6 +50,33 @@ const jsonLd = {
   areaServed: ["Côte d'Ivoire", "Afrique"],
   sameAs: [contact.social.facebook, contact.social.instagram, contact.social.linkedin].filter(Boolean),
 };
+// Accueil : graphe Organization + WebSite (entités racines réutilisables via @id).
+const orgGraph = {
+  "@context": "https://schema.org",
+  "@graph": [
+    orgLd,
+    {
+      "@type": "WebSite",
+      "@id": site.url + "#website",
+      url: site.url,
+      name: site.name,
+      inLanguage: "fr-FR",
+      publisher: { "@id": site.url + "#organization" },
+    },
+  ],
+};
+const breadcrumbLd = breadcrumbs?.length
+  ? {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: breadcrumbs.map((b, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: b.name,
+        item: new URL(b.path, site.url).href.replace(/\/$/, "") || site.url,
+      })),
+    }
+  : null;
 ---
 
 <!doctype html>
@@ -57,7 +91,7 @@ const jsonLd = {
     <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
 
     <!-- Open Graph -->
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={site.name} />
     <meta property="og:locale" content={site.locale} />
     <meta property="og:title" content={title} />
@@ -72,7 +106,9 @@ const jsonLd = {
 
     <meta name="theme-color" content="#020B50" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    {organization && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />}
+    {organization && <script type="application/ld+json" set:html={JSON.stringify(orgGraph)} is:inline />}
+    {breadcrumbLd && <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} is:inline />}
+    {schemas.map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} is:inline />)}
 
     <!-- Balises additionnelles propres à une page (ex. JSON-LD Event). -->
     <slot name="head" />
