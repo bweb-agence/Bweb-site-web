@@ -403,31 +403,53 @@ export function initReservation() {
       const amount = isDeposit ? Math.max(1, Math.ceil(total / 2)) : total;
       saveInfos();
 
-      if (!PAY_API) { errEl.textContent = "Le paiement en ligne est momentanément indisponible."; return; }
-
-      // 1) Créer le paiement Money Fusion D'ABORD. Aucune réservation n'est créée
-      //    tant que le paiement n'est pas accepté → plus de réservation « fantôme ».
+      // 1) Créer le paiement D'ABORD (aucune réservation « fantôme »). Passerelle selon
+      //    l'indicatif : +225 (Côte d'Ivoire) → Paystack SI configuré, sinon repli
+      //    automatique sur Money Fusion (comme les autres pays) → jamais de blocage.
       let token = "";
       let payUrl = "";
-      try {
-        const pres = await fetch(`${PAY_API}/pay.php`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            montant: amount,
-            nom: name,
-            telephone: numeroSend,
-            article: overlay.dataset.title || "Formation Bweb",
-            meta: { session_id: overlay.dataset.session, email },
-          }),
-        });
-        const pj = await pres.json();
-        if (!pj?.ok || !pj?.url) throw new Error("no_url");
-        token = pj.token || "";
-        payUrl = pj.url;
-      } catch {
-        errEl.textContent = "Le paiement en ligne n'a pas pu démarrer. Réessayez ou finalisez sur WhatsApp.";
-        return;
+      let payMethod = "money_fusion";
+
+      if (phoneCc === "+225") {
+        try {
+          const pres = await fetch("/api/paystack/init", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount, email, name, phone: numeroSend,
+              session_id: overlay.dataset.session, title: overlay.dataset.title || "Formation Bweb",
+            }),
+          });
+          const pj = await pres.json();
+          if (pj?.ok && pj?.url) { token = pj.reference || ""; payUrl = pj.url; payMethod = "paystack"; }
+          // sinon (non configuré / erreur) → repli Money Fusion ci-dessous.
+        } catch { /* repli Money Fusion ci-dessous */ }
+      }
+
+      if (!payUrl) {
+        // Money Fusion (relais à IP fixe) — autres pays, et repli si Paystack indisponible.
+        if (!PAY_API) { errEl.textContent = "Le paiement en ligne est momentanément indisponible."; return; }
+        try {
+          const pres = await fetch(`${PAY_API}/pay.php`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              montant: amount,
+              nom: name,
+              telephone: numeroSend,
+              article: overlay.dataset.title || "Formation Bweb",
+              meta: { session_id: overlay.dataset.session, email },
+            }),
+          });
+          const pj = await pres.json();
+          if (!pj?.ok || !pj?.url) throw new Error("no_url");
+          token = pj.token || "";
+          payUrl = pj.url;
+          payMethod = "money_fusion";
+        } catch {
+          errEl.textContent = "Le paiement en ligne n'a pas pu démarrer. Réessayez ou finalisez sur WhatsApp.";
+          return;
+        }
       }
 
       // 2) Paiement accepté → créer la (les) réservation(s) « en attente », en stockant
@@ -439,7 +461,7 @@ export function initReservation() {
       fd.append("email", email);
       fd.append("phone", phone);
       fd.append("company", ($("rz-company") as HTMLInputElement).value.trim());
-      fd.append("payment_method", "money_fusion");
+      fd.append("payment_method", payMethod);
       fd.append("payment_reference", token);
       fd.append("is_deposit", isDeposit ? "1" : "0");
       if (isHybrid && attendance) fd.append("attendance_mode", attendance);

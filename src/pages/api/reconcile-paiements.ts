@@ -32,34 +32,39 @@ async function handle(request: Request): Promise<Response> {
   const origin = new URL(request.url).origin;
   const admin = createAdminClient();
 
-  // Réservations en attente, payées via Money Fusion, avec jeton, des 3 derniers jours.
+  // Réservations en attente, payées en ligne (Money Fusion ou Paystack), des 3 derniers jours.
   const since = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
   const { data: pend } = await admin
     .from("bookings")
-    .select("payment_reference")
+    .select("payment_reference, payment_method")
     .eq("status", "pending")
-    .eq("payment_method", "money_fusion")
+    .in("payment_method", ["money_fusion", "paystack"])
     .not("payment_reference", "is", null)
     .gte("created_at", since);
 
-  const tokens = [...new Set((pend || []).map((b: any) => b.payment_reference).filter(Boolean))];
+  // Référence unique → passerelle à interroger.
+  const byRef = new Map<string, string>();
+  for (const b of pend || []) {
+    const ref = (b as any).payment_reference;
+    if (ref && !byRef.has(ref)) byRef.set(ref, (b as any).payment_method === "paystack" ? "paystack" : "money_fusion");
+  }
 
   let confirmed = 0;
-  for (const token of tokens) {
+  for (const [token, gateway] of byRef) {
     try {
       const r = await fetch(`${origin}/api/paiement-confirme`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, gateway }),
       });
       const d: any = await r.json();
       confirmed += Number(d?.confirmed) || 0;
     } catch {
-      // on continue : les jetons suivants seront tentés au prochain passage
+      // on continue : les références suivantes seront tentées au prochain passage
     }
   }
 
-  return json({ ok: true, checked: tokens.length, confirmed });
+  return json({ ok: true, checked: byRef.size, confirmed });
 }
 
 export const GET: APIRoute = ({ request }) => handle(request);
