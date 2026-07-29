@@ -50,7 +50,6 @@ const formation = session?.formations as
 // Titre affiché : le nom de la formation prime (édité dans l'éditeur de formation),
 // sinon le titre propre de la date. La date/lieu restent affichés dans les méta.
 const displayTitle = formation?.title || session?.title || "";
-const formationSlug = (session?.formations as any)?.slug || null;
 // Visuel : image propre de la date, sinon le visuel 16/9 de la formation.
 const coverImage = ((session as any)?.image_url as string | null) || formation?.image_url || null;
 
@@ -112,6 +111,22 @@ if (session?.formation_id) {
     .limit(3);
   nextSessions = ns ?? [];
 }
+
+// Toutes les dates à venir de la formation (pour la modale « Prochaines dates »),
+// y compris la date courante (marquée). Sert à changer de date sans quitter la page.
+let formationDates: any[] = [];
+if (session?.formation_id) {
+  const { data: fd } = await supabase
+    .from("sessions")
+    .select("id,slug,starts_at,venue,city,mode,status, ticket_types(price,capacity,sold)")
+    .eq("formation_id", session.formation_id)
+    .in("status", ["published", "full"])
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true });
+  formationDates = fd ?? [];
+}
+const dmMin = (s: any) => { const t = s.ticket_types ?? []; return t.length ? Math.min(...t.map((x: any) => x.price)) : null; };
+const dmRemaining = (s: any) => { const t = s.ticket_types ?? []; return Math.max(0, t.reduce((a: number, x: any) => a + x.capacity, 0) - t.reduce((a: number, x: any) => a + x.sold, 0)); };
 
 // Avis approuvés (témoignages) de la formation
 let reviews: { author_name: string; author_role: string | null; rating: number; comment: string; created_at: string }[] = [];
@@ -354,11 +369,11 @@ const sessCrumbs = session
             </div>
             <h1 style="font-family:var(--f-display);font-weight:800;font-size:var(--fs-h1);line-height:1.08;letter-spacing:-.02em;margin:8px 0 10px;color:var(--c-ink)">{displayTitle}</h1>
             {formation?.summary && <p class="sess-desc" style="max-width:60ch">{formation.summary}</p>}
-            {formationSlug && (
-              <a class="sess-formation-link" href={`/formations/${formationSlug}`}>
-                Voir la formation &amp; toutes ses dates
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-              </a>
+            {formationDates.length > 1 && (
+              <button type="button" class="sess-formation-link" data-open-dates>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+                Voir toutes les dates ({formationDates.length})
+              </button>
             )}
 
             <div class="sess-meta">
@@ -850,6 +865,38 @@ const sessCrumbs = session
         </div>
       </div>
 
+      {formationDates.length > 1 && (
+        <div class="dm-overlay" id="dates-modal" role="dialog" aria-modal="true" aria-label="Prochaines dates de la formation" hidden>
+          <div class="dm-panel">
+            <div class="dm-head">
+              <div>
+                <h2 class="dm-title">Prochaines dates</h2>
+                <p class="dm-sub">{displayTitle}</p>
+              </div>
+              <button type="button" class="dm-close" id="dm-close" aria-label="Fermer">✕</button>
+            </div>
+            <div class="dm-list">
+              {formationDates.map((d: any) => {
+                const rem = dmRemaining(d);
+                const full = d.status === "full" || rem <= 0;
+                const p = dmMin(d);
+                const isCurrent = d.id === session.id;
+                return (
+                  <a class={`dm-item ${isCurrent ? "is-current" : ""} ${full ? "is-full" : ""}`} href={`/formations/session/${d.slug}`} aria-current={isCurrent ? "page" : undefined}>
+                    <span class="dm-date"><span class="d">{dNum(d.starts_at)}</span><span class="m">{mShort(d.starts_at)}</span></span>
+                    <span class="dm-body">
+                      <span class="dm-when">{frDateLong(d.starts_at)} · {frTime(d.starts_at)}{isCurrent && <span class="dm-tag">Cette date</span>}</span>
+                      <span class="dm-meta">{modeLabel(d.mode)}{d.mode !== "en_ligne" && <> · {d.venue ?? "Espace Bweb"}, {d.city ?? "Abidjan"}</>} · {full ? "Complet" : `${rem} place${rem > 1 ? "s" : ""}`}</span>
+                    </span>
+                    {p !== null && <span class="dm-price"><small>dès</small><b>{priceFCFA(p)}</b></span>}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {!isPast && !isFull && (
         <div class="sess-stickycta is-hidden" id="sess-stickycta">
           <div class="ssc-price">
@@ -889,6 +936,17 @@ const sessCrumbs = session
     io.observe(mainCta);
   } else if (stickyCta) {
     stickyCta.classList.remove("is-hidden");
+  }
+
+  // Modale « Prochaines dates » — changer de date sans quitter la page.
+  const datesModal = document.getElementById("dates-modal");
+  if (datesModal) {
+    const openDates = () => { datesModal.hidden = false; document.body.style.overflow = "hidden"; };
+    const closeDates = () => { datesModal.hidden = true; document.body.style.overflow = ""; };
+    document.querySelectorAll("[data-open-dates]").forEach((b) => b.addEventListener("click", openDates));
+    document.getElementById("dm-close")?.addEventListener("click", closeDates);
+    datesModal.addEventListener("click", (e) => { if (e.target === datesModal) closeDates(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !datesModal.hidden) closeDates(); });
   }
 
   // Carte Google Maps chargée au clic (RGPD : pas de cookie tiers avant consentement).
