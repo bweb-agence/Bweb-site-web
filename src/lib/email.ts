@@ -88,6 +88,25 @@ export function ackEmail(b: BookingEmail) {
   };
 }
 
+/* Gabarit e-mail marketing / campagne : message libre de l'admin (texte
+   multi-lignes → paragraphes HTML, URLs cliquables) + lien de désabonnement
+   obligatoire (conformité). */
+export function campaignEmailHtml(message: string, unsubUrl: string): string {
+  const linkify = (t: string) => t.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#1f6ced;font-weight:700">$1</a>');
+  const body = esc(message)
+    .split(/\n{2,}/)
+    .map((p) => `<p style="font-size:15px;color:#3f4568;line-height:1.65;margin:0 0 14px">${linkify(p.replace(/\n/g, "<br>"))}</p>`)
+    .join("");
+  return shell(`<div style="padding:24px">
+    ${body}
+    <p style="font-size:14px;color:#3f4568;margin:14px 0 0">L'équipe Bweb Agence</p>
+    <p style="font-size:11px;color:#aab0c8;margin:22px 0 0;padding-top:14px;border-top:1px solid #eef2fb">
+      Vous recevez cet e-mail car vous avez déjà interagi avec Bweb Agence.
+      <a href="${unsubUrl}" style="color:#8b91ae;text-decoration:underline">Se désabonner en un clic</a>.
+    </p>
+  </div>`);
+}
+
 /* Une ligne d'information dans le corps du billet (label / valeur). */
 function ticketRow(k: string, v: string) {
   return `<tr>
