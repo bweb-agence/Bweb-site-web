@@ -5,11 +5,26 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 <AdminLayout title="Clients" active="clients">
   <div class="crm-kpis">
-    <div class="stat"><div class="k">Clients payants</div><div class="v ok" data-kpi="clients">—</div></div>
-    <div class="stat"><div class="k">Prospects</div><div class="v" data-kpi="prospects">—</div></div>
-    <div class="stat"><div class="k">CA confirmé</div><div class="v" data-kpi="ca">—</div></div>
-    <div class="stat"><div class="k">Taux conversion</div><div class="v" data-kpi="taux">—</div></div>
-    <div class="stat"><div class="k">À relancer</div><div class="v warn" data-kpi="relance">—</div></div>
+    <div class="kpi-card" data-accent="green">
+      <span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M22 19a6 6 0 0 0-4-5.6"/></svg></span>
+      <div class="kpi-txt"><div class="kpi-k">Clients payants</div><div class="kpi-v" data-kpi="clients">—</div></div>
+    </div>
+    <div class="kpi-card" data-accent="blue">
+      <span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg></span>
+      <div class="kpi-txt"><div class="kpi-k">Prospects</div><div class="kpi-v" data-kpi="prospects">—</div></div>
+    </div>
+    <div class="kpi-card" data-accent="navy">
+      <span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 10v4M18 10v4"/></svg></span>
+      <div class="kpi-txt"><div class="kpi-k">CA confirmé</div><div class="kpi-v" data-kpi="ca">—</div></div>
+    </div>
+    <div class="kpi-card" data-accent="violet">
+      <span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/></svg></span>
+      <div class="kpi-txt"><div class="kpi-k">Taux conversion</div><div class="kpi-v" data-kpi="taux">—</div></div>
+    </div>
+    <div class="kpi-card" data-accent="amber">
+      <span class="kpi-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+      <div class="kpi-txt"><div class="kpi-k">À relancer</div><div class="kpi-v" data-kpi="relance">—</div></div>
+    </div>
   </div>
 
   <div class="admin-toolbar">
@@ -32,11 +47,11 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     <button class="abtn" id="c-export">⬇ Exporter CSV</button>
   </div>
 
-  <div class="panel">
-    <table class="admin-table">
-      <thead><tr><th>Client</th><th>Contact</th><th>Réserv.</th><th>Total dépensé</th><th>Dernière activité</th><th>Statut</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="7">Chargement…</td></tr></tbody>
-    </table>
+  <div class="panel crm-panel">
+    <div class="crm-head">
+      <span></span><span>Client</span><span>Contact</span><span>Activité</span><span>Total dépensé</span><span>Statut</span><span></span>
+    </div>
+    <div class="crm-list" data-rows><div class="crm-loading">Chargement…</div></div>
   </div>
 
   <!-- Tiroir : fiche client -->
@@ -163,21 +178,25 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       const allT = c.customer?.tags || [];
       const tags = allT.slice(0, 2).map((t) => `<span class="crm-tag sm">${esc(t)}</span>`).join("")
         + (allT.length > 2 ? `<span class="crm-tag sm more" title="${esc(allT.slice(2).join(", "))}">+${allT.length - 2}</span>` : "");
-      return `<tr class="rowclick" data-idx="${idx}">
-        <td><div class="cli"><span class="avatar" style="background:${avatarBg(c.key)}">${esc(initials(c.name))}</span><span><b>${esc(c.name)}${tags ? ' <span class="crm-tags-inline">' + tags + "</span>" : ""}</b><span class="sub">${esc(c.email || "—")}</span></span></div></td>
-        <td><span class="sub" style="color:var(--c-gray-600)">${esc(contact)}</span></td>
-        <td class="num">${c.bookings.length}</td>
-        <td class="money">${fmtFCFA(c.ca)}</td>
-        <td><span class="sub" style="color:var(--c-gray-500)">${dshort(c.lastActivity)}</span></td>
-        <td><span class="tag-pill ${m.cls} dot">${m.label}</span></td>
-        <td><div class="row-actions">
-          <button class="ic" data-view="${idx}" title="Voir la fiche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-          ${digits(c.phone) ? `<button class="ic wa" data-wa="${idx}" title="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg></button>` : ""}
-        </div></td></tr>`;
-    }).join("") : `<tr><td class="empty" colspan="7">Aucun client.</td></tr>`;
+      return `<div class="crm-row" data-idx="${idx}" role="button" tabindex="0">
+        <span class="avatar crm-av" style="background:${avatarBg(c.key)}">${esc(initials(c.name))}</span>
+        <div class="crm-id"><b>${esc(c.name)}${tags ? ' <span class="crm-tags-inline">' + tags + "</span>" : ""}</b><span class="sub">${esc(c.email || "—")}</span></div>
+        <div class="crm-contact">${esc(contact)}</div>
+        <div class="crm-activity"><b>${c.bookings.length}</b> réserv.<span class="crm-dot">·</span>${dshort(c.lastActivity)}</div>
+        <div class="crm-ca money">${fmtFCFA(c.ca)}</div>
+        <div class="crm-status"><span class="tag-pill ${m.cls} dot">${m.label}</span></div>
+        <div class="crm-actions">
+          <button class="ic" data-view="${idx}" title="Voir la fiche" aria-label="Voir la fiche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          ${digits(c.phone) ? `<button class="ic wa" data-wa="${idx}" title="WhatsApp" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg></button>` : ""}
+        </div>
+      </div>`;
+    }).join("") : `<div class="crm-empty">Aucun client.</div>`;
 
-    rows.querySelectorAll<HTMLElement>("tr.rowclick").forEach((tr) =>
-      tr.addEventListener("click", (e) => { if (!(e.target as HTMLElement).closest("[data-wa]")) openDrawer(+tr.dataset.idx!); }));
+    const open = (el: HTMLElement, e: Event) => { if (!(e.target as HTMLElement).closest("[data-wa]")) openDrawer(+el.dataset.idx!); };
+    rows.querySelectorAll<HTMLElement>(".crm-row").forEach((row) => {
+      row.addEventListener("click", (e) => open(row, e));
+      row.addEventListener("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter") open(row, e); });
+    });
     rows.querySelectorAll<HTMLElement>("[data-wa]").forEach((el) =>
       el.addEventListener("click", (e) => { e.stopPropagation(); waGeneric(list[+el.dataset.wa!]); }));
   }

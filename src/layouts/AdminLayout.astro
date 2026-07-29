@@ -41,7 +41,8 @@ const nav = [
     </div>
 
     <div class="admin-shell" data-admin hidden>
-      <aside class="admin-side">
+      <div class="admin-side-overlay" id="admin-side-overlay"></div>
+      <aside class="admin-side" id="admin-side">
         <a href="/admin" class="brand"><span class="m">B</span> Admin</a>
         <nav>
           {nav.map((item) => (
@@ -61,8 +62,11 @@ const nav = [
 
       <div class="admin-main">
         <header class="admin-topbar">
+          <button type="button" class="admin-burger" id="admin-burger" aria-label="Ouvrir le menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
           <h1>{title}</h1>
-          <span class="admin-user"><span class="av" data-user-initials>—</span><span data-user-email>…</span></span>
+          <span class="admin-user"><span class="av" data-user-initials>—</span><span class="admin-user-email" data-user-email>…</span></span>
         </header>
         <div class="admin-content">
           <slot />
@@ -115,6 +119,14 @@ const nav = [
             await supabaseBrowser.auth.signOut();
             location.replace("/admin/connexion");
           });
+
+          // Menu latéral mobile (off-canvas)
+          const side = document.getElementById("admin-side");
+          const overlay = document.getElementById("admin-side-overlay");
+          const openSide = (o: boolean) => { side?.classList.toggle("open", o); overlay?.classList.toggle("open", o); };
+          document.getElementById("admin-burger")?.addEventListener("click", () => openSide(!side?.classList.contains("open")));
+          overlay?.addEventListener("click", () => openSide(false));
+          side?.querySelectorAll("nav a").forEach((a) => a.addEventListener("click", () => openSide(false)));
         } catch (e) {
           console.error("[admin] erreur de vérification de session", e);
           location.replace("/admin/connexion?err=session");
