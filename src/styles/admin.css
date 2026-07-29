@@ -238,3 +238,49 @@
 .crm-last { color: var(--c-gray-500); font-size: 0.76rem; margin-left: auto; }
 .crm-last b { color: var(--c-gray-700); font-weight: 700; }
 .crm-optout { display: inline-flex; align-items: center; font-size: 0.78rem; font-weight: 700; color: #8a6400; background: #fbf1d6; padding: 6px 11px; border-radius: 9px; }
+
+/* ---------- Campagnes (Phase 3) ---------- */
+.admin-sub { color: var(--c-gray-600); font-size: 0.9rem; margin: -6px 0 18px; max-width: 70ch; }
+.hint { color: var(--c-gray-500); font-size: 0.78rem; }
+.camp-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; align-items: start; }
+@media (max-width: 860px) { .camp-grid { grid-template-columns: 1fr; } }
+.camp-seg { display: inline-flex; background: var(--c-gray-100); border-radius: var(--radius-pill); padding: 3px; gap: 2px; }
+.camp-seg button { border: 0; background: transparent; padding: 8px 15px; border-radius: var(--radius-pill); font: inherit; font-weight: 700; font-size: 0.82rem; color: var(--c-gray-600); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.camp-seg button svg { width: 15px; height: 15px; }
+.camp-seg button.on { background: #fff; color: var(--c-ink); box-shadow: var(--shadow-sm); }
+.camp-seg button.on[data-ch="whatsapp"] { color: #128c3e; }
+.camp-aud { display: flex; flex-wrap: wrap; gap: 8px; }
+.camp-chip { border: 1px solid var(--c-border); border-radius: var(--radius-pill); padding: 7px 13px; font-size: 0.8rem; font-weight: 700; color: var(--c-gray-600); cursor: pointer; background: #fff; }
+.camp-chip:hover { border-color: var(--c-blue); color: var(--c-blue); }
+.camp-chip.on { border-color: var(--c-blue); color: var(--c-blue); background: color-mix(in srgb, var(--c-blue) 8%, transparent); }
+.camp-chip .n { opacity: 0.7; font-weight: 800; margin-left: 3px; }
+.camp-recipients { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--c-border-soft); border-radius: 9px; padding: 10px 13px; margin-top: 10px; }
+.camp-recipients .big { font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; color: var(--c-blue); font-variant-numeric: tabular-nums; }
+.camp-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.camp-note { color: var(--c-gray-500); font-size: 0.78rem; margin: 12px 0 0; }
+/* Aperçu WhatsApp */
+.wa-wrap { background: #e5ddd5; padding: 14px; }
+.wa-bubble { background: #dcf8c6; border-radius: 12px; padding: 11px 13px; font-size: 0.88rem; color: #0b3b1e; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06); line-height: 1.5; }
+.wa-bubble .t { font-size: 0.62rem; color: #5a7a5a; text-align: right; margin-top: 6px; }
+/* Aperçu e-mail */
+.mail-prev { padding: 14px; }
+.mail-subj { font-weight: 800; color: var(--c-ink); font-size: 0.92rem; padding-bottom: 10px; border-bottom: 1px solid var(--c-border); margin-bottom: 12px; }
+.mail-body { font-size: 0.88rem; color: var(--c-gray-700); line-height: 1.55; }
+.mail-unsub { color: var(--c-gray-400); font-size: 0.72rem; text-decoration: underline; margin: 16px 0 0; }
+/* File d'attente WhatsApp */
+.camp-qprogress { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.camp-qprogress .bar { flex: 1; height: 8px; background: var(--c-gray-100); border-radius: 999px; overflow: hidden; }
+.camp-qprogress .bar span { display: block; height: 100%; width: 0; background: #25d366; transition: width 0.25s ease; }
+.camp-qprogress > span { font-size: 0.78rem; font-weight: 700; color: var(--c-gray-600); white-space: nowrap; }
+.camp-qlist { display: flex; flex-direction: column; gap: 8px; }
+.camp-qrow { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border: 1px solid var(--c-border); border-radius: 10px; }
+.camp-qrow.done { opacity: 0.55; background: var(--surface-2); }
+.camp-qrow .qinfo { flex: 1; min-width: 0; }
+.camp-qrow .qinfo b { display: block; font-size: 0.86rem; color: var(--c-ink); }
+.camp-qrow .qinfo span { font-size: 0.76rem; color: var(--c-gray-500); }
+/* Historique campagnes */
+.camp-hrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--c-border-soft); }
+.camp-hrow:last-child { border-bottom: 0; }
+.camp-hrow b { font-size: 0.86rem; color: var(--c-ink); display: block; }
+.camp-hrow .hint { display: block; margin-top: 2px; }
+.camp-hcount { font-size: 0.8rem; color: var(--c-gray-600); white-space: nowrap; }
