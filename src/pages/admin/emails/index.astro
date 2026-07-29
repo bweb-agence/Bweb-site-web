@@ -1,0 +1,75 @@
+---
+export const prerender = false;
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="E-mails" active="emails">
+  <p class="admin-sub">Créez des e-mails riches avec l'éditeur, puis utilisez-les comme corps de campagne dans <a href="/admin/campagnes" style="color:var(--c-blue);font-weight:600">Campagnes</a>.</p>
+
+  <div class="admin-toolbar">
+    <div class="left">
+      <input class="admin-search" id="e-search" type="search" placeholder="Nom, objet…" />
+    </div>
+    <a class="abtn primary" href="/admin/emails/nouveau">+ Nouvel e-mail</a>
+  </div>
+
+  <div class="panel">
+    <table class="admin-table">
+      <thead><tr><th>Nom</th><th>Objet</th><th>Modifié</th><th></th></tr></thead>
+      <tbody data-rows><tr class="a-loading-row"><td colspan="4">Chargement…</td></tr></tbody>
+    </table>
+  </div>
+</AdminLayout>
+
+<script>
+  import { supabaseBrowser } from "../../../lib/supabaseBrowser";
+  import { esc, dshort, toast, confirmModal } from "../../../scripts/adminUtils";
+
+  const rows = document.querySelector("[data-rows]")!;
+  let all: any[] = [];
+
+  function render(list: any[]) {
+    rows.innerHTML = list.length ? list.map((t) => `<tr>
+      <td><a class="rowlink" href="/admin/emails/${t.id}">${esc(t.name || "Sans titre")}</a></td>
+      <td><span style="color:var(--c-gray-600)">${esc(t.subject || "—")}</span></td>
+      <td><span style="color:var(--c-gray-500);font-size:.82rem">${dshort(t.updated_at)}</span></td>
+      <td><div class="row-actions">
+        <a class="abtn sm" href="/admin/emails/${t.id}">Éditer</a>
+        <button class="abtn sm" data-dup="${t.id}">Dupliquer</button>
+        <button class="abtn sm" data-del="${t.id}">Supprimer</button>
+      </div></td></tr>`).join("") : `<tr><td class="empty" colspan="4">Aucun e-mail. Créez-en un pour vos campagnes.</td></tr>`;
+
+    rows.querySelectorAll<HTMLElement>("[data-del]").forEach((el) => el.addEventListener("click", async () => {
+      if (!(await confirmModal({ title: "Supprimer l'e-mail", message: "Ce modèle sera supprimé définitivement. Continuer ?", danger: true, confirmLabel: "Supprimer" }))) return;
+      const { error } = await supabaseBrowser.from("email_templates").delete().eq("id", el.dataset.del);
+      if (error) { toast("Suppression impossible.", "err"); return; }
+      toast("E-mail supprimé."); await load();
+    }));
+    rows.querySelectorAll<HTMLElement>("[data-dup]").forEach((el) => el.addEventListener("click", async () => {
+      const src = all.find((x) => x.id === el.dataset.dup);
+      if (!src) return;
+      const { error } = await supabaseBrowser.from("email_templates").insert({ name: (src.name || "E-mail") + " (copie)", subject: src.subject, body_html: src.body_html });
+      if (error) { toast("Duplication impossible.", "err"); return; }
+      toast("E-mail dupliqué."); await load();
+    }));
+  }
+
+  function applyFilter() {
+    const q = ((document.getElementById("e-search") as HTMLInputElement).value || "").toLowerCase();
+    render(all.filter((t) => !q || ((t.name || "") + " " + (t.subject || "")).toLowerCase().includes(q)));
+  }
+
+  async function load() {
+    const { data } = await supabaseBrowser.from("email_templates").select("id,name,subject,updated_at").order("updated_at", { ascending: false });
+    all = data || [];
+    applyFilter();
+  }
+
+  document.getElementById("e-search")!.addEventListener("input", applyFilter);
+
+  (async () => {
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    if (!session) return;
+    await load();
+  })();
+</script>
