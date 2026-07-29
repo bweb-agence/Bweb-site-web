@@ -232,12 +232,18 @@
 .crm-tags-edit { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .crm-tag-input { border: 1px dashed var(--c-border); border-radius: var(--radius-pill); padding: 3px 10px; font-size: 0.72rem; font-family: inherit; width: 92px; color: var(--c-ink); }
 .crm-tag-input:focus { outline: none; border-color: var(--c-blue); border-style: solid; }
-.crm-consent { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 10px; font-size: 0.8rem; color: var(--c-gray-700); }
+.crm-tag.more { background: transparent; color: var(--c-gray-500); border: 1px dashed var(--c-border); cursor: default; }
+.crm-notes-wrap { position: relative; }
+.crm-saved { position: absolute; right: 8px; bottom: 8px; font-size: 0.7rem; font-weight: 800; color: #0a7d5f; background: #dcf5ec; padding: 3px 8px; border-radius: 999px; pointer-events: none; }
+.crm-consent { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 12px; font-size: 0.8rem; color: var(--c-gray-700); }
 .crm-consent label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; }
 .crm-consent input { accent-color: var(--c-blue); width: 15px; height: 15px; }
-.crm-last { color: var(--c-gray-500); font-size: 0.76rem; margin-left: auto; }
+.crm-last { color: var(--c-gray-500); font-size: 0.76rem; margin-top: 8px; }
 .crm-last b { color: var(--c-gray-700); font-weight: 700; }
 .crm-optout { display: inline-flex; align-items: center; font-size: 0.78rem; font-weight: 700; color: #8a6400; background: #fbf1d6; padding: 6px 11px; border-radius: 9px; }
+/* Icône WhatsApp verte dans un bouton secondaire (actions de contact rapides) */
+.ico-wa { display: inline-flex; color: #25d366; }
+.ico-wa svg { width: 15px; height: 15px; }
 
 /* ---------- Campagnes (Phase 3) ---------- */
 .admin-sub { color: var(--c-gray-600); font-size: 0.9rem; margin: -6px 0 18px; max-width: 70ch; }
@@ -267,6 +273,8 @@
 .mail-subj { font-weight: 800; color: var(--c-ink); font-size: 0.92rem; padding-bottom: 10px; border-bottom: 1px solid var(--c-border); margin-bottom: 12px; }
 .mail-body { font-size: 0.88rem; color: var(--c-gray-700); line-height: 1.55; }
 .mail-unsub { color: var(--c-gray-400); font-size: 0.72rem; text-decoration: underline; margin: 16px 0 0; }
+.var-ph { display: inline-block; background: rgba(31, 108, 237, 0.1); color: var(--c-blue); font-weight: 700; font-size: 0.82em; padding: 0 5px; border-radius: 5px; }
+.wa-bubble .var-ph { background: rgba(10, 125, 95, 0.14); color: #0a7d5f; }
 /* File d'attente WhatsApp */
 .camp-qprogress { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .camp-qprogress .bar { flex: 1; height: 8px; background: var(--c-gray-100); border-radius: 999px; overflow: hidden; }

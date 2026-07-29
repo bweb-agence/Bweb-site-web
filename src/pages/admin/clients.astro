@@ -160,7 +160,9 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     rows.innerHTML = list.length ? list.map((c, idx) => {
       const m = statusMeta[c.status];
       const contact = c.phone || c.email || "—";
-      const tags = (c.customer?.tags || []).map((t) => `<span class="crm-tag sm">${esc(t)}</span>`).join("");
+      const allT = c.customer?.tags || [];
+      const tags = allT.slice(0, 2).map((t) => `<span class="crm-tag sm">${esc(t)}</span>`).join("")
+        + (allT.length > 2 ? `<span class="crm-tag sm more" title="${esc(allT.slice(2).join(", "))}">+${allT.length - 2}</span>` : "");
       return `<tr class="rowclick" data-idx="${idx}">
         <td><div class="cli"><span class="avatar" style="background:${avatarBg(c.key)}">${esc(initials(c.name))}</span><span><b>${esc(c.name)}${tags ? ' <span class="crm-tags-inline">' + tags + "</span>" : ""}</b><span class="sub">${esc(c.email || "—")}</span></span></div></td>
         <td><span class="sub" style="color:var(--c-gray-600)">${esc(contact)}</span></td>
@@ -214,9 +216,11 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   const openD = () => { drawer.classList.add("open"); overlay.classList.add("open"); document.body.style.overflow = "hidden"; };
   const closeD = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); document.body.style.overflow = ""; };
 
-  function openDrawer(idx: number) {
+  function openDrawer(idx: number, keepScroll = false) {
     const c = clients[idx];
     const m = statusMeta[c.status];
+    const bodyEl = document.querySelector('[data-d="body"]') as HTMLElement;
+    const savedScroll = keepScroll ? bodyEl.scrollTop : 0;
     const setD = (k: string, html: string) => { const el = document.querySelector(`[data-d="${k}"]`)!; el.innerHTML = html; };
     (document.querySelector('[data-d="avatar"]') as HTMLElement).style.background = avatarBg(c.key);
     setD("avatar", esc(initials(c.name)));
@@ -285,8 +289,9 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         <div class="btns">${wa}${mail}</div></div>`;
     }
 
-    // Actions de contact (respectent le consentement)
-    const cWa = hasPhone && waOk ? `<a class="abtn wa sm" data-track target="_blank" rel="noopener" href="https://wa.me/${digits(c.phone)}?text=${encodeURIComponent(waMsgGeneric)}">${svgWa}WhatsApp</a>` : "";
+    // Actions de contact rapides — style secondaire (outline) pour laisser la
+    // relance (bloc coloré plus bas) être l'action principale.
+    const cWa = hasPhone && waOk ? `<a class="abtn sm" data-track target="_blank" rel="noopener" href="https://wa.me/${digits(c.phone)}?text=${encodeURIComponent(waMsgGeneric)}"><span class="ico-wa">${svgWa}</span>WhatsApp</a>` : "";
     const cMail = c.email && mailOk ? `<a class="abtn sm" data-track href="mailto:${encodeURIComponent(c.email)}">${svgMail}E-mail</a>` : "";
     const cTel = c.phone ? `<a class="abtn sm" data-track href="tel:${esc(c.phone.replace(/\s/g, ""))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>Appeler</a>` : "";
 
@@ -299,12 +304,15 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       const last = cust?.last_contacted_at ? dshort(cust.last_contacted_at) : "jamais";
       enrichHtml = `
         <div class="crm-tags-edit" data-tagbox>${chips}<input class="crm-tag-input" data-tag-new placeholder="+ tag" maxlength="24" /></div>
-        <textarea class="a-textarea" data-notes placeholder="Notes internes (visibles admin uniquement)…" style="min-height:66px;margin-top:10px">${esc(cust?.notes || "")}</textarea>
+        <div class="crm-notes-wrap">
+          <textarea class="a-textarea" data-notes placeholder="Notes internes (visibles admin uniquement)…" style="min-height:66px;margin-top:10px">${esc(cust?.notes || "")}</textarea>
+          <span class="crm-saved" data-notes-saved hidden>Enregistré ✓</span>
+        </div>
         <div class="crm-consent">
           <label><input type="checkbox" data-optin="whatsapp_opt_in" ${waOk ? "checked" : ""}/> Accepte WhatsApp</label>
           <label><input type="checkbox" data-optin="email_opt_in" ${mailOk ? "checked" : ""}/> Accepte e-mail</label>
-          <span class="crm-last">Dernier contact : <b data-lastcontact>${last}</b></span>
-        </div>`;
+        </div>
+        <div class="crm-last">Dernier contact : <b data-lastcontact>${last}</b></div>`;
     } else {
       enrichHtml = `<p class="cd-empty">Ce client n'a pas d'e-mail — ajoutez-en un via une réservation pour activer tags, notes et consentement.</p>`;
     }
@@ -322,6 +330,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       <div class="cd-sect"><h4>Historique des transactions</h4>${txHtml}</div>
       ${relanceHtml}`);
     wireDrawer(c, idx);
+    if (keepScroll) bodyEl.scrollTop = savedScroll;
     openD();
   }
 
@@ -354,22 +363,24 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       e.preventDefault();
       const v = newInput.value.trim();
       if (!v || (c.customer?.tags || []).includes(v)) { newInput.value = ""; return; }
-      if (await toggleTag(v)) openDrawer(idx); // rebuild pour afficher la nouvelle puce
+      if (await toggleTag(v)) openDrawer(idx, true); // rebuild (nouvelle puce), scroll conservé
     });
 
-    // Notes (enregistrées à la perte de focus)
+    // Notes (enregistrées à la perte de focus) + indicateur discret « Enregistré ✓ »
     const notesEl = body.querySelector<HTMLTextAreaElement>("[data-notes]");
+    const savedTag = body.querySelector<HTMLElement>("[data-notes-saved]");
     notesEl?.addEventListener("blur", async () => {
       if ((c.customer?.notes || "") === notesEl.value) return;
-      if (await saveCustomer(c, { notes: notesEl.value })) toast("Notes enregistrées ✓");
-      else toast("Enregistrement impossible.", "err");
+      if (await saveCustomer(c, { notes: notesEl.value })) {
+        if (savedTag) { savedTag.hidden = false; setTimeout(() => { savedTag.hidden = true; }, 2200); }
+      } else toast("Enregistrement impossible.", "err");
     });
 
     // Consentement (RGPD)
     body.querySelectorAll<HTMLInputElement>("[data-optin]").forEach((cb) =>
       cb.addEventListener("change", async () => {
         const ok = await saveCustomer(c, { [cb.dataset.optin!]: cb.checked } as Partial<Customer>);
-        if (ok) { toast("Préférence enregistrée ✓"); openDrawer(idx); } // rebuild (maj boutons contact)
+        if (ok) { toast("Préférence enregistrée ✓"); openDrawer(idx, true); } // rebuild (maj boutons contact), scroll conservé
         else { cb.checked = !cb.checked; toast("Enregistrement impossible.", "err"); }
       }));
   }
