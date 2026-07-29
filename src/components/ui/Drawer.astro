@@ -1,0 +1,52 @@
+---
+/**
+ * Tiroir latéral (overlay + panneau glissant depuis la droite). Contenu dans
+ * le slot par défaut ; pied optionnel via le slot `foot`.
+ *
+ * Ouverture : n'importe quel élément `data-drawer-open="<id>"`.
+ * Fermeture : le bouton ✕, un clic sur l'overlay, ou la touche Échap.
+ * (Le câblage est délégué — aucun script par page nécessaire.)
+ *
+ * @example
+ *   <Button data-drawer-open="filtre">Filtrer</Button>
+ *   <Drawer id="filtre" title="Filtres">…</Drawer>
+ */
+interface Props {
+  id: string;
+  title?: string;
+}
+const { id, title } = Astro.props;
+const hasFoot = Astro.slots.has("foot");
+---
+
+<div class="a-drawer-overlay" id={`${id}-overlay`} data-drawer-overlay={id}></div>
+<aside class="a-drawer" id={id} aria-hidden="true" aria-label={title}>
+  <div class="a-drawer-head">
+    <h2>{title}</h2>
+    <button type="button" class="icon-btn" data-drawer-close={id} aria-label="Fermer">✕</button>
+  </div>
+  <div class="a-drawer-body"><slot /></div>
+  {hasFoot && <div class="a-drawer-foot"><slot name="foot" /></div>}
+</aside>
+
+<script>
+  // Câblage délégué (une seule fois pour tous les tiroirs de la page).
+  function setOpen(id: string, open: boolean) {
+    document.getElementById(id)?.classList.toggle("open", open);
+    document.getElementById(`${id}-overlay`)?.classList.toggle("open", open);
+    document.body.style.overflow = open ? "hidden" : "";
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target as HTMLElement;
+    const opener = t.closest<HTMLElement>("[data-drawer-open]");
+    if (opener) { setOpen(opener.dataset.drawerOpen!, true); return; }
+    const closer = t.closest<HTMLElement>("[data-drawer-close]");
+    if (closer) { setOpen(closer.dataset.drawerClose!, false); return; }
+    const overlay = t.closest<HTMLElement>("[data-drawer-overlay]");
+    if (overlay) setOpen(overlay.dataset.drawerOverlay!, false);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    document.querySelectorAll<HTMLElement>(".a-drawer.open").forEach((d) => setOpen(d.id, false));
+  });
+</script>

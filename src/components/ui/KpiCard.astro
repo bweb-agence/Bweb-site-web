@@ -1,0 +1,25 @@
+---
+/**
+ * Carte KPI (bandeau de statistiques). Icône dans le slot nommé `icon`,
+ * valeur dans le slot par défaut (ou prop `value`).
+ *
+ * @example
+ *   <KpiCard accent="green" label="Clients payants" value="38">
+ *     <svg slot="icon" …/>
+ *   </KpiCard>
+ */
+interface Props {
+  accent?: "green" | "blue" | "navy" | "violet" | "amber";
+  label: string;
+  value?: string;
+}
+const { accent = "blue", label, value } = Astro.props;
+---
+
+<div class="kpi-card" data-accent={accent}>
+  <span class="kpi-ic"><slot name="icon" /></span>
+  <div class="kpi-txt">
+    <div class="kpi-k">{label}</div>
+    <div class="kpi-v"><slot>{value}</slot></div>
+  </div>
+</div>

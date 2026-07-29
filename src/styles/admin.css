@@ -68,6 +68,7 @@
 .panel { background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); overflow: hidden; margin-bottom: 20px; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--c-border); }
 .panel-head h2 { font-family: var(--f-display); font-weight: 800; font-size: 1rem; margin: 0; }
+.panel-actions { display: flex; align-items: center; gap: 8px; }
 .admin-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 .admin-table th { text-align: left; color: var(--c-gray-500); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 11px 16px; border-bottom: 1px solid var(--c-border); }
 .admin-table td { padding: 12px 16px; border-bottom: 1px solid var(--c-border-soft); color: var(--c-gray-800, #232a52); vertical-align: middle; }
@@ -88,6 +89,12 @@
 .abtn.primary:hover { background: var(--c-blue-dark); color: #fff; }
 .abtn.sm { padding: 6px 11px; font-size: 0.76rem; }
 .abtn svg { width: 15px; height: 15px; flex: none; }
+.abtn.wa { background: var(--c-whatsapp); border-color: var(--c-whatsapp); color: #fff; }
+.abtn.wa:hover { background: var(--c-whatsapp-dark); border-color: var(--c-whatsapp-dark); color: #fff; }
+.abtn.danger { background: var(--c-danger); border-color: var(--c-danger); color: #fff; }
+.abtn.danger:hover { filter: brightness(1.06); color: #fff; border-color: var(--c-danger); }
+.abtn.ghost { background: transparent; border-color: transparent; color: var(--c-gray-700); }
+.abtn.ghost:hover { background: var(--c-gray-100); border-color: transparent; color: var(--c-navy); }
 
 /* ---------- Page de connexion ---------- */
 .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--g-navy); }
@@ -195,11 +202,11 @@
 .kpi-txt { min-width: 0; }
 .kpi-k { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-gray-500); font-weight: 700; }
 .kpi-v { font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; color: var(--c-ink); line-height: 1.1; margin-top: 3px; font-variant-numeric: tabular-nums; }
-.kpi-card[data-accent="green"] { --acc: #0a9d76; }
-.kpi-card[data-accent="blue"] { --acc: #1f6ced; }
-.kpi-card[data-accent="navy"] { --acc: #050a3a; }
-.kpi-card[data-accent="violet"] { --acc: #6b4df0; }
-.kpi-card[data-accent="amber"] { --acc: #d98a00; }
+.kpi-card[data-accent="green"] { --acc: var(--acc-green); }
+.kpi-card[data-accent="blue"] { --acc: var(--acc-blue); }
+.kpi-card[data-accent="navy"] { --acc: var(--acc-navy); }
+.kpi-card[data-accent="violet"] { --acc: var(--acc-violet); }
+.kpi-card[data-accent="amber"] { --acc: var(--acc-amber); }
 
 /* Statut client (pastilles) */
 .tag-pill.client { background: #dcf5ec; color: #0a7d5f; }
@@ -260,10 +267,6 @@
   .admin-toolbar .admin-filter { min-width: 0; width: 100%; }
   .admin-toolbar > .abtn { width: 100%; justify-content: center; }
 }
-
-/* Bouton WhatsApp (vert) */
-.abtn.wa { background: #25d366; border-color: #25d366; color: #fff; }
-.abtn.wa:hover { background: #1fbe5b; border-color: #1fbe5b; color: #fff; }
 
 /* ---------- Fiche client (contenu du tiroir) ---------- */
 .cd-head { display: flex; align-items: flex-start; gap: 14px; }
