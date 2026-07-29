@@ -221,3 +221,20 @@
 .cd-empty { color: var(--c-gray-500); font-size: 0.84rem; padding: 6px 0; }
 .money { font-family: var(--f-display); font-weight: 800; color: var(--c-navy); font-variant-numeric: tabular-nums; }
 .num { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* ---------- Tags & suivi client (Phase 2) ---------- */
+.crm-tag { display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: var(--radius-pill); background: #eef1f8; color: var(--c-gray-700); border: 1px solid transparent; }
+.crm-tag.sm { font-size: 0.62rem; padding: 2px 7px; }
+.crm-tags-inline { display: inline-flex; gap: 4px; vertical-align: middle; margin-left: 2px; }
+.crm-tag.toggle { cursor: pointer; background: #fff; border-color: var(--c-border); color: var(--c-gray-600); }
+.crm-tag.toggle:hover { border-color: var(--c-blue); color: var(--c-blue); }
+.crm-tag.toggle.on { background: var(--c-blue); border-color: var(--c-blue); color: #fff; }
+.crm-tags-edit { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.crm-tag-input { border: 1px dashed var(--c-border); border-radius: var(--radius-pill); padding: 3px 10px; font-size: 0.72rem; font-family: inherit; width: 92px; color: var(--c-ink); }
+.crm-tag-input:focus { outline: none; border-color: var(--c-blue); border-style: solid; }
+.crm-consent { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 10px; font-size: 0.8rem; color: var(--c-gray-700); }
+.crm-consent label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; }
+.crm-consent input { accent-color: var(--c-blue); width: 15px; height: 15px; }
+.crm-last { color: var(--c-gray-500); font-size: 0.76rem; margin-left: auto; }
+.crm-last b { color: var(--c-gray-700); font-weight: 700; }
+.crm-optout { display: inline-flex; align-items: center; font-size: 0.78rem; font-weight: 700; color: #8a6400; background: #fbf1d6; padding: 6px 11px; border-radius: 9px; }

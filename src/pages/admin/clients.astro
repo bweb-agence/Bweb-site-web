@@ -27,6 +27,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         <option value="paystack">Paystack</option>
         <option value="money_fusion">Money Fusion</option>
       </select>
+      <select class="admin-filter" id="c-tag"><option value="">Tous les tags</option></select>
     </div>
     <button class="abtn" id="c-export">⬇ Exporter CSV</button>
   </div>
@@ -74,11 +75,19 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     sessions?: { title: string; slug: string; starts_at: string | null; venue: string | null; city: string | null } | null;
     ticket_types?: { name: string } | null;
   };
+  type Customer = {
+    id: string; email: string; tags: string[]; notes: string | null;
+    whatsapp_opt_in: boolean; email_opt_in: boolean; last_contacted_at: string | null;
+  };
   type Client = {
     key: string; name: string; email: string; phone: string; company: string;
     bookings: Booking[]; status: "client" | "prospect" | "relance";
     ca: number; nbConfirmed: number; lastActivity: string; sessionIds: Set<string>; gateways: Set<string>;
+    // Enrichissement CRM (table customers) — présent seulement si e-mail connu
+    customer: Customer | null;
   };
+
+  const PRESET_TAGS = ["VIP", "Entreprise", "Fidèle", "Chaud", "Froid"];
 
   const PALETTE = ["#1f6ced,#00c89e", "#ff835f,#ffc72a", "#7b5cff,#1f6ced", "#00c89e,#0aa886", "#565d80,#8b91ae", "#f2971d,#ff835f", "#1550b8,#1f6ced"];
   const methodLabel: Record<string, string> = { wave: "Wave", orange_money: "Orange Money", mobile_money: "Mobile Money", sur_place: "Sur place", money_fusion: "Money Fusion", paystack: "Paystack" };
@@ -113,7 +122,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       if (!key) continue;
       let c = map.get(key);
       if (!c) {
-        c = { key, name: b.full_name || email || b.phone || "—", email: b.email || "", phone: b.phone || "", company: b.company || "", bookings: [], status: "prospect", ca: 0, nbConfirmed: 0, lastActivity: b.created_at, sessionIds: new Set(), gateways: new Set() };
+        c = { key, name: b.full_name || email || b.phone || "—", email: b.email || "", phone: b.phone || "", company: b.company || "", bookings: [], status: "prospect", ca: 0, nbConfirmed: 0, lastActivity: b.created_at, sessionIds: new Set(), gateways: new Set(), customer: null };
         map.set(key, c);
       }
       // Les réservations arrivent triées du + récent au + ancien : la 1re non vide gagne pour l'identité
@@ -151,8 +160,9 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     rows.innerHTML = list.length ? list.map((c, idx) => {
       const m = statusMeta[c.status];
       const contact = c.phone || c.email || "—";
+      const tags = (c.customer?.tags || []).map((t) => `<span class="crm-tag sm">${esc(t)}</span>`).join("");
       return `<tr class="rowclick" data-idx="${idx}">
-        <td><div class="cli"><span class="avatar" style="background:${avatarBg(c.key)}">${esc(initials(c.name))}</span><span><b>${esc(c.name)}</b><span class="sub">${esc(c.email || "—")}</span></span></div></td>
+        <td><div class="cli"><span class="avatar" style="background:${avatarBg(c.key)}">${esc(initials(c.name))}</span><span><b>${esc(c.name)}${tags ? ' <span class="crm-tags-inline">' + tags + "</span>" : ""}</b><span class="sub">${esc(c.email || "—")}</span></span></div></td>
         <td><span class="sub" style="color:var(--c-gray-600)">${esc(contact)}</span></td>
         <td class="num">${c.bookings.length}</td>
         <td class="money">${fmtFCFA(c.ca)}</td>
@@ -179,6 +189,25 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   function relanceMsg(c: Client, b: Booking) {
     return `Bonjour ${firstName(c.name)} 👋 Vous aviez commencé à réserver « ${b.sessions?.title || "une formation"} » chez Bweb Agence, mais le paiement n'a pas été finalisé. Votre place est encore disponible — souhaitez-vous confirmer votre inscription ? Voici le lien : ${sessionUrl(b.sessions?.slug)}`;
   }
+
+  // ---- Enrichissement CRM (table customers) ----
+  // Persiste tags / notes / consentement / dernier contact. Création paresseuse
+  // (upsert par e-mail) si la fiche customer n'existe pas encore.
+  async function saveCustomer(c: Client, patch: Partial<Customer>): Promise<boolean> {
+    if (!c.email) return false;
+    const email = c.email.trim().toLowerCase();
+    const { data, error } = await supabaseBrowser.from("customers")
+      .upsert({ email, ...patch }, { onConflict: "email" })
+      .select("id,email,tags,notes,whatsapp_opt_in,email_opt_in,last_contacted_at").single();
+    if (error || !data) return false;
+    c.customer = data as Customer;
+    return true;
+  }
+  async function markContacted(c: Client) {
+    if (!c.email) return;
+    await saveCustomer(c, { last_contacted_at: new Date().toISOString() });
+  }
+  const allTags = () => [...new Set(clients.flatMap((c) => c.customer?.tags || []))].sort();
 
   // ---- Fiche client (tiroir) ----
   const drawer = document.getElementById("drawer")!, overlay = document.getElementById("overlay")!;
@@ -231,22 +260,54 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         <div class="lr"><span class="money">${fmtFCFA(paidOf(b))}</span>${txPill[b.status] || esc(b.status)}</div></div>`;
     }).join("");
 
+    // Consentement (par défaut : accepte, tant que non explicitement désabonné)
+    const cust = c.customer;
+    const waOk = cust?.whatsapp_opt_in !== false;
+    const mailOk = cust?.email_opt_in !== false;
+    const hasPhone = !!digits(c.phone);
+    const waMsgGeneric = "Bonjour " + firstName(c.name) + " 👋 C'est l'équipe Bweb Agence.";
+    const svgWa = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>';
+    const svgMail = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
+
     // Relance (dernière réservation en attente)
     const pending = c.bookings.find((b) => b.status === "pending");
     let relanceHtml = "";
     if (pending) {
       const msg = relanceMsg(c, pending);
-      const wa = digits(c.phone) ? `<a class="abtn wa sm" target="_blank" rel="noopener" href="https://wa.me/${digits(c.phone)}?text=${encodeURIComponent(msg)}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>Relancer sur WhatsApp</a>` : "";
-      const mail = c.email ? `<a class="abtn sm" target="_blank" rel="noopener" href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent("Votre inscription chez Bweb Agence")}&body=${encodeURIComponent(msg)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Relancer par e-mail</a>` : "";
+      const wa = hasPhone
+        ? (waOk ? `<a class="abtn wa sm" data-track target="_blank" rel="noopener" href="https://wa.me/${digits(c.phone)}?text=${encodeURIComponent(msg)}">${svgWa}Relancer sur WhatsApp</a>` : `<span class="crm-optout">🔕 Désabonné WhatsApp</span>`)
+        : "";
+      const mail = c.email
+        ? (mailOk ? `<a class="abtn sm" data-track target="_blank" rel="noopener" href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent("Votre inscription chez Bweb Agence")}&body=${encodeURIComponent(msg)}">${svgMail}Relancer par e-mail</a>` : `<span class="crm-optout">🔕 Désabonné e-mail</span>`)
+        : "";
       relanceHtml = `<div class="cd-relance">
         <p><b>Relancer ce client</b> — une réservation en attente (${esc(pending.reference)}). Message pré-rempli avec son prénom et le lien de la formation.</p>
         <div class="btns">${wa}${mail}</div></div>`;
     }
 
-    // Actions de contact
-    const cWa = digits(c.phone) ? `<a class="abtn wa sm" target="_blank" rel="noopener" href="https://wa.me/${digits(c.phone)}?text=${encodeURIComponent("Bonjour " + firstName(c.name) + " 👋 C'est l'équipe Bweb Agence.")}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>WhatsApp</a>` : "";
-    const cMail = c.email ? `<a class="abtn sm" href="mailto:${encodeURIComponent(c.email)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>E-mail</a>` : "";
-    const cTel = c.phone ? `<a class="abtn sm" href="tel:${esc(c.phone.replace(/\s/g, ""))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>Appeler</a>` : "";
+    // Actions de contact (respectent le consentement)
+    const cWa = hasPhone && waOk ? `<a class="abtn wa sm" data-track target="_blank" rel="noopener" href="https://wa.me/${digits(c.phone)}?text=${encodeURIComponent(waMsgGeneric)}">${svgWa}WhatsApp</a>` : "";
+    const cMail = c.email && mailOk ? `<a class="abtn sm" data-track href="mailto:${encodeURIComponent(c.email)}">${svgMail}E-mail</a>` : "";
+    const cTel = c.phone ? `<a class="abtn sm" data-track href="tel:${esc(c.phone.replace(/\s/g, ""))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>Appeler</a>` : "";
+
+    // Suivi client (tags / notes / consentement) — requiert un e-mail
+    let enrichHtml: string;
+    if (c.email) {
+      const tags = cust?.tags || [];
+      const presets = [...new Set([...PRESET_TAGS, ...tags])];
+      const chips = presets.map((t) => `<button type="button" class="crm-tag toggle${tags.includes(t) ? " on" : ""}" data-tag="${esc(t)}">${esc(t)}</button>`).join("");
+      const last = cust?.last_contacted_at ? dshort(cust.last_contacted_at) : "jamais";
+      enrichHtml = `
+        <div class="crm-tags-edit" data-tagbox>${chips}<input class="crm-tag-input" data-tag-new placeholder="+ tag" maxlength="24" /></div>
+        <textarea class="a-textarea" data-notes placeholder="Notes internes (visibles admin uniquement)…" style="min-height:66px;margin-top:10px">${esc(cust?.notes || "")}</textarea>
+        <div class="crm-consent">
+          <label><input type="checkbox" data-optin="whatsapp_opt_in" ${waOk ? "checked" : ""}/> Accepte WhatsApp</label>
+          <label><input type="checkbox" data-optin="email_opt_in" ${mailOk ? "checked" : ""}/> Accepte e-mail</label>
+          <span class="crm-last">Dernier contact : <b data-lastcontact>${last}</b></span>
+        </div>`;
+    } else {
+      enrichHtml = `<p class="cd-empty">Ce client n'a pas d'e-mail — ajoutez-en un via une réservation pour activer tags, notes et consentement.</p>`;
+    }
 
     setD("body", `
       <div class="cd-actions">${cWa}${cMail}${cTel}</div>
@@ -256,10 +317,61 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         <div class="cd-stat"><div class="k">Formations</div><div class="v">${c.nbConfirmed}</div></div>
         <div class="cd-stat"><div class="k">À venir</div><div class="v">${aVenir}</div></div>
       </div>
+      <div class="cd-sect"><h4>Suivi client</h4>${enrichHtml}</div>
       <div class="cd-sect"><h4>Formations</h4>${formationsHtml}</div>
       <div class="cd-sect"><h4>Historique des transactions</h4>${txHtml}</div>
       ${relanceHtml}`);
+    wireDrawer(c, idx);
     openD();
+  }
+
+  // Branche les interactions du tiroir (contact, tags, notes, consentement)
+  function wireDrawer(c: Client, idx: number) {
+    const body = document.querySelector('[data-d="body"]')!;
+    const bumpLast = () => { const el = body.querySelector("[data-lastcontact]"); if (el) el.textContent = dshort(new Date().toISOString()); };
+
+    // Tout contact/relance = trace le dernier contact
+    body.querySelectorAll<HTMLElement>("[data-track]").forEach((el) =>
+      el.addEventListener("click", () => { markContacted(c).then(bumpLast); }));
+
+    // Tags (préréglages + existants) : bascule + enregistrement
+    const toggleTag = async (t: string, btn?: HTMLElement) => {
+      const cur = new Set(c.customer?.tags || []);
+      cur.has(t) ? cur.delete(t) : cur.add(t);
+      const ok = await saveCustomer(c, { tags: [...cur] });
+      if (!ok) { toast("Enregistrement impossible.", "err"); return false; }
+      btn?.classList.toggle("on");
+      populateTagFilter(); applyFilters();
+      return true;
+    };
+    body.querySelectorAll<HTMLElement>("[data-tag]").forEach((btn) =>
+      btn.addEventListener("click", () => toggleTag(btn.dataset.tag!, btn)));
+
+    // Ajout d'un tag libre (Entrée)
+    const newInput = body.querySelector<HTMLInputElement>("[data-tag-new]");
+    newInput?.addEventListener("keydown", async (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const v = newInput.value.trim();
+      if (!v || (c.customer?.tags || []).includes(v)) { newInput.value = ""; return; }
+      if (await toggleTag(v)) openDrawer(idx); // rebuild pour afficher la nouvelle puce
+    });
+
+    // Notes (enregistrées à la perte de focus)
+    const notesEl = body.querySelector<HTMLTextAreaElement>("[data-notes]");
+    notesEl?.addEventListener("blur", async () => {
+      if ((c.customer?.notes || "") === notesEl.value) return;
+      if (await saveCustomer(c, { notes: notesEl.value })) toast("Notes enregistrées ✓");
+      else toast("Enregistrement impossible.", "err");
+    });
+
+    // Consentement (RGPD)
+    body.querySelectorAll<HTMLInputElement>("[data-optin]").forEach((cb) =>
+      cb.addEventListener("change", async () => {
+        const ok = await saveCustomer(c, { [cb.dataset.optin!]: cb.checked } as Partial<Customer>);
+        if (ok) { toast("Préférence enregistrée ✓"); openDrawer(idx); } // rebuild (maj boutons contact)
+        else { cb.checked = !cb.checked; toast("Enregistrement impossible.", "err"); }
+      }));
   }
 
   document.getElementById("close-btn")!.addEventListener("click", closeD);
@@ -267,21 +379,31 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeD(); });
 
   // ---- Filtres ----
+  function populateTagFilter() {
+    const sel = $("c-tag"); const cur = sel.value;
+    const tags = allTags();
+    sel.innerHTML = '<option value="">Tous les tags</option>' + tags.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+    if (tags.includes(cur)) sel.value = cur;
+  }
   function applyFilters() {
     const q = ($("c-search").value || "").toLowerCase().trim();
-    const st = $("c-status").value, sess = $("c-session").value, gw = $("c-gateway").value;
+    const st = $("c-status").value, sess = $("c-session").value, gw = $("c-gateway").value, tag = $("c-tag").value;
     render(clients.filter((c) =>
       (!st || c.status === st) &&
       (!sess || c.sessionIds.has(sess)) &&
       (!gw || c.gateways.has(gw)) &&
+      (!tag || (c.customer?.tags || []).includes(tag)) &&
       (!q || (c.name + " " + c.email + " " + c.phone).toLowerCase().includes(q))));
   }
 
   function exportCsv() {
-    const head = ["Nom", "E-mail", "Téléphone", "Entreprise", "Réservations", "Confirmées", "CA confirmé", "Statut", "Dernière activité", "Formations"];
+    const head = ["Nom", "E-mail", "Téléphone", "Entreprise", "Réservations", "Confirmées", "CA confirmé", "Statut", "Tags", "WhatsApp OK", "E-mail OK", "Dernier contact", "Dernière activité", "Formations"];
     const lines = clients.map((c) => {
       const titles = [...new Set(c.bookings.map((b) => b.sessions?.title).filter(Boolean))].join(" | ");
-      return [c.name, c.email, c.phone, c.company, c.bookings.length, c.nbConfirmed, c.ca, statusMeta[c.status].label, new Date(c.lastActivity).toISOString(), titles]
+      const cu = c.customer;
+      return [c.name, c.email, c.phone, c.company, c.bookings.length, c.nbConfirmed, c.ca, statusMeta[c.status].label,
+        (cu?.tags || []).join(" | "), cu ? (cu.whatsapp_opt_in ? "oui" : "non") : "", cu ? (cu.email_opt_in ? "oui" : "non") : "",
+        cu?.last_contacted_at ? new Date(cu.last_contacted_at).toISOString() : "", new Date(c.lastActivity).toISOString(), titles]
         .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",");
     });
     const csv = [head.join(","), ...lines].join("\n");
@@ -293,14 +415,23 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   $("c-status").addEventListener("change", applyFilters);
   $("c-session").addEventListener("change", applyFilters);
   $("c-gateway").addEventListener("change", applyFilters);
+  $("c-tag").addEventListener("change", applyFilters);
   document.getElementById("c-export")!.addEventListener("click", exportCsv);
 
   async function load() {
-    const { data } = await supabaseBrowser.from("bookings")
-      .select("id,reference,session_id,quantity,full_name,email,phone,company,amount_due,amount_paid,is_deposit,payment_method,payment_reference,status,attendance_mode,created_at,sessions(title,slug,starts_at,venue,city),ticket_types(name)")
-      .order("created_at", { ascending: false });
+    const [{ data }, { data: custs }] = await Promise.all([
+      supabaseBrowser.from("bookings")
+        .select("id,reference,session_id,quantity,full_name,email,phone,company,amount_due,amount_paid,is_deposit,payment_method,payment_reference,status,attendance_mode,created_at,sessions(title,slug,starts_at,venue,city),ticket_types(name)")
+        .order("created_at", { ascending: false }),
+      supabaseBrowser.from("customers").select("id,email,tags,notes,whatsapp_opt_in,email_opt_in,last_contacted_at"),
+    ]);
     clients = aggregate((data || []) as unknown as Booking[]);
+    // Fusion de l'enrichissement CRM (table customers) par e-mail
+    const byEmail = new Map<string, Customer>();
+    (custs || []).forEach((c: any) => byEmail.set(String(c.email).toLowerCase(), c as Customer));
+    clients.forEach((c) => { if (c.email) c.customer = byEmail.get(c.email.toLowerCase()) || null; });
     renderKpis();
+    populateTagFilter();
     applyFilters();
   }
 
