@@ -10,12 +10,14 @@ export const prerender = false;
 import { whatsappLink } from "../../config/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
-// Le jeton renvoyé par Money Fusion (nom de paramètre selon leur config : token/paiementId).
-const token =
-  Astro.url.searchParams.get("token") ||
-  Astro.url.searchParams.get("paiementId") ||
-  Astro.url.searchParams.get("tokenPay") ||
-  "";
+// Passerelle : Paystack (numéros +225, callback ?gw=paystack&reference=…) ou Money Fusion.
+const isPaystack = Astro.url.searchParams.get("gw") === "paystack";
+const token = isPaystack
+  ? (Astro.url.searchParams.get("reference") || Astro.url.searchParams.get("trxref") || "")
+  : (Astro.url.searchParams.get("token") ||
+     Astro.url.searchParams.get("paiementId") ||
+     Astro.url.searchParams.get("tokenPay") ||
+     "");
 
 // On appelle l'endpoint de confirmation du site : il re-vérifie le paiement
 // auprès de Money Fusion (via le relais IP fixe), confirme la réservation si
@@ -43,7 +45,7 @@ if (token) {
     const res = await fetch(`${Astro.url.origin}/api/paiement-confirme`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ token, gateway: isPaystack ? "paystack" : "money_fusion" }),
     });
     if (res.ok) {
       const data: any = await res.json();
