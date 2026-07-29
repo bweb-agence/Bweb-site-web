@@ -107,6 +107,18 @@ export function campaignEmailHtml(message: string, unsubUrl: string): string {
   </div>`);
 }
 
+/* Variante « corps HTML riche » (modèle composé dans l'éditeur) : on injecte le
+   HTML tel quel dans le gabarit de marque + lien de désabonnement. */
+export function campaignEmailFromHtml(bodyHtml: string, unsubUrl: string): string {
+  return shell(`<div style="padding:24px;font-size:15px;color:#3f4568;line-height:1.65">
+    <div class="rich">${bodyHtml}</div>
+    <p style="font-size:11px;color:#aab0c8;margin:22px 0 0;padding-top:14px;border-top:1px solid #eef2fb">
+      Vous recevez cet e-mail car vous avez déjà interagi avec Bweb Agence.
+      <a href="${unsubUrl}" style="color:#8b91ae;text-decoration:underline">Se désabonner en un clic</a>.
+    </p>
+  </div>`);
+}
+
 /* Une ligne d'information dans le corps du billet (label / valeur). */
 function ticketRow(k: string, v: string) {
   return `<tr>

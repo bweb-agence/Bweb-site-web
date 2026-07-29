@@ -277,6 +277,13 @@
 .mail-prev { padding: 14px; }
 .mail-subj { font-weight: 800; color: var(--c-ink); font-size: 0.92rem; padding-bottom: 10px; border-bottom: 1px solid var(--c-border); margin-bottom: 12px; }
 .mail-body { font-size: 0.88rem; color: var(--c-gray-700); line-height: 1.55; }
+.mail-body.rich h1, .mail-body.rich h2, .mail-body.rich h3 { font-family: var(--f-display); color: var(--c-ink); margin: 0.6em 0 0.3em; line-height: 1.25; }
+.mail-body.rich h1 { font-size: 1.2rem; } .mail-body.rich h2 { font-size: 1.05rem; } .mail-body.rich h3 { font-size: 0.95rem; }
+.mail-body.rich p { margin: 0 0 0.7em; }
+.mail-body.rich a { color: var(--c-blue); }
+.mail-body.rich ul, .mail-body.rich ol { margin: 0 0 0.7em 1.2em; }
+.mail-body.rich img { max-width: 100%; border-radius: 8px; }
+.mail-body.rich blockquote { border-left: 3px solid var(--c-border); margin: 0 0 0.7em; padding-left: 12px; color: var(--c-gray-600); }
 .mail-unsub { color: var(--c-gray-400); font-size: 0.72rem; text-decoration: underline; margin: 16px 0 0; }
 .var-ph { display: inline-block; background: rgba(31, 108, 237, 0.1); color: var(--c-blue); font-weight: 700; font-size: 0.82em; padding: 0 5px; border-radius: 5px; }
 .wa-bubble .var-ph { background: rgba(10, 125, 95, 0.14); color: #0a7d5f; }

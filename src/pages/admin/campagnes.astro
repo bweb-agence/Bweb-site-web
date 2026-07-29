@@ -35,14 +35,28 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         <select class="a-select" id="sess-sel"><option value="">— Aucune (message libre) —</option></select>
       </div>
 
+      <div class="a-field" id="tpl-field" style="display:none">
+        <label>Modèle d'e-mail <span class="hint" style="font-weight:600">— créez-en dans <a href="/admin/emails" style="color:var(--c-blue)">E-mails</a></span></label>
+        <select class="a-select" id="tpl-sel"><option value="">— Choisir un modèle —</option></select>
+      </div>
+
       <div class="a-field" id="subj-field" style="display:none">
         <label>Objet de l'e-mail</label>
         <input class="a-input" id="subject" placeholder="Nouvelle session : {formation}" />
       </div>
 
-      <div class="a-field">
+      <div class="a-field" id="msg-field">
         <label>Message <span class="hint" style="font-weight:600">{"— variables : {prenom} {formation} {date} {lien}"}</span></label>
         <textarea class="a-textarea" id="msg" style="min-height:120px">{"Bonjour {prenom} 👋 Une nouvelle session « {formation} » est ouverte le {date} à Abidjan. Places limitées — réservez la vôtre ici : {lien}"}</textarea>
+      </div>
+
+      <div class="a-field" id="sched-field" style="display:none">
+        <label>Envoi</label>
+        <div class="camp-seg" id="when">
+          <button type="button" class="on" data-when="now">Maintenant</button>
+          <button type="button" data-when="later">Programmer</button>
+        </div>
+        <input class="a-input" id="sched-at" type="datetime-local" style="margin-top:8px;display:none" />
       </div>
 
       <div class="camp-actions">
@@ -91,11 +105,16 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     themeIds: Set<string>; email_opt_in: boolean; whatsapp_opt_in: boolean;
   };
   type Sess = { id: string; title: string; slug: string; starts_at: string | null; theme_id: string | null };
+  type Tpl = { id: string; name: string; subject: string; body_html: string };
 
   let clients: Client[] = [];
   let sessions: Sess[] = [];
+  let templates: Tpl[] = [];
   let channel: "whatsapp" | "email" = "whatsapp";
   let audience = "clients";
+  let sendMode: "now" | "later" = "now";
+
+  const selectedTemplate = () => templates.find((t) => t.id === ($("tpl-sel") as HTMLSelectElement).value) || null;
 
   const frDate = (d?: string | null) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
   const sessionUrl = (slug?: string) => slug ? `${site.url}/formations/session/${slug}` : `${site.url}/formations`;
@@ -157,11 +176,13 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       lien: s?.slug ? sessionUrl(s.slug) : `${PH}lien${PHE}`,
     };
   }
+  const phSpan = (t: string) => t.replace(new RegExp(PH + "(formation|date|lien)" + PHE, "g"), (_, k) => `<span class="var-ph">{${k}}</span>`);
   function previewHtml(tpl: string, prenom: string) {
-    const raw = fill(tpl, previewVars(prenom));
-    return esc(raw)
-      .replace(/\n/g, "<br>")
-      .replace(new RegExp(PH + "(formation|date|lien)" + PHE, "g"), (_, k) => `<span class="var-ph">{${k}}</span>`);
+    return phSpan(esc(fill(tpl, previewVars(prenom))).replace(/\n/g, "<br>"));
+  }
+  // Corps HTML riche (modèle) : on n'échappe pas — contenu de confiance (admin).
+  function previewRich(html: string, prenom: string) {
+    return phSpan(fill(html, previewVars(prenom)));
   }
   function renderPreview() {
     const sample = recipients()[0];
@@ -171,19 +192,27 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       $("preview").innerHTML = `<div class="wa-wrap"><div class="wa-bubble">${previewHtml(($("msg") as HTMLTextAreaElement).value, prenom)}<div class="t">10:24 ✓✓</div></div></div>`;
     } else {
       $("prev-title").textContent = "Aperçu e-mail";
-      const subj = previewHtml(($("subject") as HTMLInputElement).value || "(objet vide)", prenom);
-      $("preview").innerHTML = `<div class="mail-prev"><div class="mail-subj">${subj}</div><div class="mail-body">${previewHtml(($("msg") as HTMLTextAreaElement).value, prenom)}<p class="mail-unsub">Se désabonner</p></div></div>`;
+      const tpl = selectedTemplate();
+      const subj = previewHtml((tpl?.subject || ($("subject") as HTMLInputElement).value) || "(objet vide)", prenom);
+      const body = tpl
+        ? `<div class="mail-body rich">${previewRich(tpl.body_html, prenom)}<p class="mail-unsub">Se désabonner</p></div>`
+        : `<div class="mail-body"><p class="cd-empty" style="padding:8px 0">Choisissez un modèle d'e-mail pour l'aperçu.</p></div>`;
+      $("preview").innerHTML = `<div class="mail-prev"><div class="mail-subj">${subj}</div>${body}</div>`;
     }
   }
 
   function setChannel(ch: "whatsapp" | "email") {
     channel = ch;
+    const email = ch === "email";
     document.querySelectorAll("#chan button").forEach((b) => b.classList.toggle("on", (b as HTMLElement).dataset.ch === ch));
-    ($("subj-field") as HTMLElement).style.display = ch === "email" ? "" : "none";
-    ($("test") as HTMLElement).style.display = ch === "email" ? "" : "none";
-    $("send-lbl").textContent = ch === "email" ? "Envoyer par e-mail" : "Préparer les envois WhatsApp";
-    $("note").innerHTML = ch === "email"
-      ? "L'e-mail part via l'expéditeur Bird (no-reply@mail.bwebagence.com). Chaque message inclut un lien de désabonnement."
+    ($("tpl-field") as HTMLElement).style.display = email ? "" : "none";
+    ($("subj-field") as HTMLElement).style.display = email ? "" : "none";
+    ($("sched-field") as HTMLElement).style.display = email ? "" : "none";
+    ($("msg-field") as HTMLElement).style.display = email ? "none" : "";   // e-mail = corps via modèle
+    ($("test") as HTMLElement).style.display = email ? "" : "none";
+    $("send-lbl").textContent = email ? (sendMode === "later" ? "Programmer l'envoi" : "Envoyer par e-mail") : "Préparer les envois WhatsApp";
+    $("note").innerHTML = email
+      ? "L'e-mail part via l'expéditeur Bird (no-reply@mail.bwebagence.com), habillé de l'entête Bweb + lien de désabonnement."
       : "WhatsApp s'ouvre pré-rempli pour chaque contact — tu valides l'envoi manuellement (aucun envoi automatique).";
     refreshCounts(); renderPreview();
   }
@@ -227,16 +256,22 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   $("q-close").addEventListener("click", closeQueue);
   qOverlay.addEventListener("click", closeQueue);
 
-  // ---- Envoi e-mail ----
+  // ---- Envoi / programmation e-mail (corps = modèle) ----
   async function sendEmailCampaign(test: boolean) {
-    const subject = ($("subject") as HTMLInputElement).value.trim();
-    const message = ($("msg") as HTMLTextAreaElement).value.trim();
-    if (!subject || !message) { toast("Renseigne l'objet et le message.", "err"); return; }
-    const list = recipients();
-    if (!test && !list.length) { toast("Aucun destinataire pour cette audience.", "err"); return; }
-    if (!test && !(await confirmModal({ title: "Envoyer la campagne", message: `Envoyer cet e-mail à ${list.length} destinataire(s) (${audienceLabel()}) ? Les désabonnés sont automatiquement exclus.`, confirmLabel: "Envoyer" }))) return;
-
+    const tpl = selectedTemplate();
+    if (!tpl) { toast("Choisis un modèle d'e-mail.", "err"); return; }
+    const subject = (($("subject") as HTMLInputElement).value.trim()) || tpl.subject;
+    if (!subject) { toast("Renseigne l'objet.", "err"); return; }
     const s = selectedSession();
+    const sessionPayload = s ? { title: s.title, date: frDate(s.starts_at), lien: sessionUrl(s.slug) } : null;
+    const list = recipients();
+
+    // Programmation (envoi différé)
+    if (!test && sendMode === "later") return scheduleEmailCampaign(subject, tpl, s, list);
+
+    if (!test && !list.length) { toast("Aucun destinataire pour cette audience.", "err"); return; }
+    if (!test && !(await confirmModal({ title: "Envoyer la campagne", message: `Envoyer « ${subject} » à ${list.length} destinataire(s) (${audienceLabel()}) ? Les désabonnés sont exclus.`, confirmLabel: "Envoyer" }))) return;
+
     const btn = test ? ($("test") as HTMLButtonElement) : ($("send") as HTMLButtonElement);
     const prev = btn.textContent; btn.setAttribute("disabled", "true"); btn.textContent = "Envoi…";
     try {
@@ -245,8 +280,8 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
         body: JSON.stringify({
-          test, subject, message, audience: audienceLabel(), session_id: s?.id || null,
-          session: s ? { title: s.title, date: frDate(s.starts_at), lien: sessionUrl(s.slug) } : null,
+          test, subject, body_html: tpl.body_html, template_id: tpl.id,
+          audience: audienceLabel(), session_id: s?.id || null, session: sessionPayload,
           recipients: test ? [] : list.map((c) => ({ email: c.email, prenom: firstName(c.name) })),
         }),
       });
@@ -259,26 +294,61 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     finally { btn.removeAttribute("disabled"); btn.textContent = prev; }
   }
 
+  // Programmation : on fige les variables de session (reste {prenom}) + instantané des destinataires.
+  async function scheduleEmailCampaign(subject: string, tpl: Tpl, s: Sess | null, list: Client[]) {
+    const when = ($("sched-at") as HTMLInputElement).value;
+    if (!when) { toast("Choisis la date et l'heure d'envoi.", "err"); return; }
+    const at = new Date(when);
+    if (at.getTime() < Date.now() + 30_000) { toast("Choisis une date/heure future.", "err"); return; }
+    if (!list.length) { toast("Aucun destinataire pour cette audience.", "err"); return; }
+    if (!(await confirmModal({ title: "Programmer la campagne", message: `Programmer l'envoi à ${list.length} destinataire(s) le ${at.toLocaleString("fr-FR")} ? Les désabonnés seront exclus à l'envoi.`, confirmLabel: "Programmer" }))) return;
+
+    const sessVars = { prenom: "{prenom}", formation: s?.title || "", date: frDate(s?.starts_at), lien: sessionUrl(s?.slug) };
+    const { error } = await supabaseBrowser.from("campaigns").insert({
+      channel: "email", audience: audienceLabel(), session_id: s?.id || null, template_id: tpl.id,
+      subject: fill(subject, sessVars), message: "(modèle e-mail)", body_html: fill(tpl.body_html, sessVars),
+      status: "scheduled", scheduled_at: at.toISOString(),
+      recipients: list.map((c) => ({ email: c.email, prenom: firstName(c.name) })),
+      recipients_count: list.length, sent_count: 0,
+    });
+    if (error) { toast("Programmation impossible.", "err"); return; }
+    toast(`Campagne programmée pour le ${at.toLocaleDateString("fr-FR")} ✓`);
+    loadHistory();
+  }
+
   // ---- Historique ----
   async function loadHistory() {
-    const { data } = await supabaseBrowser.from("campaigns").select("channel,audience,subject,recipients_count,sent_count,created_at").order("created_at", { ascending: false }).limit(8);
+    const { data } = await supabaseBrowser.from("campaigns").select("channel,audience,subject,status,scheduled_at,recipients_count,sent_count,created_at").order("created_at", { ascending: false }).limit(8);
     const chIcon: Record<string, string> = { email: "✉️", whatsapp: "🟢" };
-    $("history").innerHTML = (data && data.length) ? data.map((c: any) => `
-      <div class="camp-hrow">
-        <div><b>${chIcon[c.channel] || ""} ${esc(c.audience)}</b><span class="hint">${c.channel === "email" ? "E-mail" : "WhatsApp"} · ${new Date(c.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}${c.subject ? " · " + esc(c.subject) : ""}</span></div>
-        <div class="camp-hcount">${c.channel === "email" ? `<span class="num">${c.sent_count}</span> envoyés` : `<span class="num">${c.recipients_count}</span> contacts`}</div>
-      </div>`).join("") : `<p class="cd-empty">Aucune campagne pour l'instant.</p>`;
+    const dfmt = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    $("history").innerHTML = (data && data.length) ? data.map((c: any) => {
+      const scheduled = c.status === "scheduled";
+      const badge = scheduled ? `<span class="tag-pill wait" style="margin-left:6px">Programmée</span>`
+        : c.status === "failed" ? `<span class="tag-pill full" style="margin-left:6px">Échec</span>` : "";
+      const meta = c.channel === "email" ? "E-mail" : "WhatsApp";
+      const dateStr = scheduled && c.scheduled_at ? `pour le ${dfmt(c.scheduled_at)}` : dfmt(c.created_at);
+      const count = scheduled ? `<span class="num">${c.recipients_count}</span> prévus`
+        : c.channel === "email" ? `<span class="num">${c.sent_count}</span> envoyés` : `<span class="num">${c.recipients_count}</span> contacts`;
+      return `<div class="camp-hrow">
+        <div><b>${chIcon[c.channel] || ""} ${esc(c.audience)}${badge}</b><span class="hint">${meta} · ${dateStr}${c.subject ? " · " + esc(c.subject) : ""}</span></div>
+        <div class="camp-hcount">${count}</div>
+      </div>`;
+    }).join("") : `<p class="cd-empty">Aucune campagne pour l'instant.</p>`;
   }
 
   // ---- Chargement ----
   async function load() {
-    const [{ data: bookings }, { data: custs }, { data: sess }, { data: themes }] = await Promise.all([
+    const [{ data: bookings }, { data: custs }, { data: sess }, { data: themes }, { data: tpls }] = await Promise.all([
       supabaseBrowser.from("bookings").select("full_name,email,phone,status,session_id,sessions(theme_id)").order("created_at", { ascending: false }),
       supabaseBrowser.from("customers").select("email,email_opt_in,whatsapp_opt_in"),
       supabaseBrowser.from("sessions").select("id,title,slug,starts_at,theme_id").order("starts_at", { ascending: false }),
       supabaseBrowser.from("themes").select("id,name").order("sort_order", { ascending: true }),
+      supabaseBrowser.from("email_templates").select("id,name,subject,body_html").order("updated_at", { ascending: false }),
     ]);
     sessions = (sess || []) as Sess[];
+    templates = (tpls || []) as Tpl[];
+    ($("tpl-sel") as HTMLSelectElement).innerHTML = '<option value="">— Choisir un modèle —</option>' +
+      templates.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
 
     // Options session + thème
     const now = Date.now();
@@ -324,6 +394,17 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   $("sess-sel").addEventListener("change", renderPreview);
   $("msg").addEventListener("input", renderPreview);
   $("subject").addEventListener("input", renderPreview);
+  $("tpl-sel").addEventListener("change", () => {
+    const t = selectedTemplate();
+    if (t) ($("subject") as HTMLInputElement).value = t.subject;
+    renderPreview();
+  });
+  document.querySelectorAll("#when button").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("#when button").forEach((x) => x.classList.remove("on"));
+    b.classList.add("on"); sendMode = (b as HTMLElement).dataset.when as "now" | "later";
+    ($("sched-at") as HTMLElement).style.display = sendMode === "later" ? "" : "none";
+    $("send-lbl").textContent = sendMode === "later" ? "Programmer l'envoi" : "Envoyer par e-mail";
+  }));
   $("send").addEventListener("click", () => { channel === "email" ? sendEmailCampaign(false) : openQueue(); });
   $("test").addEventListener("click", () => sendEmailCampaign(true));
 

@@ -2,10 +2,10 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 import { createAdminClient } from "../../../lib/supabaseAdmin";
-import { sendEmail, campaignEmailHtml } from "../../../lib/email";
+import { sendEmail, campaignEmailHtml, campaignEmailFromHtml } from "../../../lib/email";
+import { sendCampaignEmails, fillVars, MAX_RECIPIENTS } from "../../../lib/sendCampaign";
 
 const SITE = "https://www.bwebagence.com";
-const MAX_RECIPIENTS = 1000;
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -14,17 +14,14 @@ type Recipient = { email: string; prenom?: string };
 type Body = {
   subject?: string;
   message?: string;
+  body_html?: string;
+  template_id?: string | null;
   audience?: string;
   session_id?: string | null;
   session?: { title?: string; date?: string; lien?: string } | null;
   recipients?: Recipient[];
   test?: boolean;
 };
-
-// Remplace les variables {prenom} {formation} {date} {lien} dans un texte.
-function fill(tpl: string, vars: Record<string, string>): string {
-  return tpl.replace(/\{(prenom|formation|date|lien)\}/g, (_, k) => vars[k] ?? "");
-}
 
 /* Envoi d'une campagne e-mail à la base clients (réservé aux admins).
    - Exclut les désabonnés (email_opt_in = false) côté serveur.
@@ -49,7 +46,8 @@ export const POST: APIRoute = async ({ request }) => {
 
   const subject = (body.subject || "").trim();
   const message = (body.message || "").trim();
-  if (!subject || !message) return json({ ok: false, error: "missing_fields" }, 400);
+  const bodyHtml = (body.body_html || "").trim();
+  if (!subject || (!message && !bodyHtml)) return json({ ok: false, error: "missing_fields" }, 400);
 
   const sess = body.session || {};
   const sessVars = { formation: sess.title || "", date: sess.date || "", lien: sess.lien || "" };
@@ -57,49 +55,38 @@ export const POST: APIRoute = async ({ request }) => {
   // L'envoi passe par Bird ; si Bird n'est pas configuré, sendEmail renvoie false.
   // Mode test : un seul e-mail vers l'admin connecté.
   if (body.test) {
-    const html = campaignEmailHtml(fill(message, { prenom: (adminEmail.split("@")[0] || "toi"), ...sessVars }), `${SITE}/desabonnement`);
-    const ok = await sendEmail({ to: adminEmail, subject: fill(subject, { prenom: "", ...sessVars }), html });
+    const vars = { prenom: (adminEmail.split("@")[0] || "toi"), ...sessVars };
+    const html = bodyHtml
+      ? campaignEmailFromHtml(fillVars(bodyHtml, vars), `${SITE}/desabonnement`)
+      : campaignEmailHtml(fillVars(message, vars), `${SITE}/desabonnement`);
+    const ok = await sendEmail({ to: adminEmail, subject: fillVars(subject, vars), html });
     return json({ ok, test: true, sent: ok ? 1 : 0, total: 1, configured: ok });
   }
 
-  // Destinataires (fournis par l'admin) : normalisation + déduplication.
-  const wanted = new Map<string, Recipient>();
-  for (const r of body.recipients || []) {
-    const e = (r.email || "").trim().toLowerCase();
-    if (e && !wanted.has(e)) wanted.set(e, { email: e, prenom: r.prenom });
-  }
-  if (wanted.size === 0) return json({ ok: false, error: "no_recipients" }, 400);
-  if (wanted.size > MAX_RECIPIENTS) return json({ ok: false, error: "too_many" }, 400);
+  const list = (body.recipients || []).filter((r) => r.email);
+  if (list.length === 0) return json({ ok: false, error: "no_recipients" }, 400);
+  if (list.length > MAX_RECIPIENTS) return json({ ok: false, error: "too_many" }, 400);
 
-  // Récupère jetons + statut de consentement (autorité serveur sur l'opt-out).
-  const { data: custs } = await admin
-    .from("customers")
-    .select("email,email_opt_in,unsubscribe_token,full_name")
-    .in("email", [...wanted.keys()]);
-  const byEmail = new Map((custs || []).map((c: any) => [String(c.email).toLowerCase(), c]));
-
-  let sent = 0;
-  let excluded = 0;
-  for (const [email, r] of wanted) {
-    const cu = byEmail.get(email);
-    if (cu && cu.email_opt_in === false) { excluded++; continue; } // désabonné → jamais
-    const prenom = (r.prenom || (cu?.full_name ? String(cu.full_name).trim().split(/\s+/)[0] : "") || "").trim();
-    const unsub = cu?.unsubscribe_token ? `${SITE}/desabonnement?t=${cu.unsubscribe_token}` : `${SITE}/desabonnement`;
-    const html = campaignEmailHtml(fill(message, { prenom, ...sessVars }), unsub);
-    const ok = await sendEmail({ to: email, subject: fill(subject, { prenom, ...sessVars }), html });
-    if (ok) sent++;
-  }
+  const { sent, excluded, total } = await sendCampaignEmails(
+    admin,
+    { subject, message, bodyHtml: bodyHtml || undefined, session: body.session },
+    list,
+  );
 
   await admin.from("campaigns").insert({
     channel: "email",
     audience: body.audience || "—",
     session_id: body.session_id || null,
+    template_id: body.template_id || null,
     subject,
-    message,
-    recipients_count: wanted.size - excluded,
+    message: bodyHtml ? "(modèle e-mail)" : message,
+    body_html: bodyHtml || null,
+    status: "sent",
+    sent_at: new Date().toISOString(),
+    recipients_count: total - excluded,
     sent_count: sent,
     created_by: adminEmail,
   });
 
-  return json({ ok: true, sent, excluded, total: wanted.size, configured: sent > 0 || wanted.size === excluded });
+  return json({ ok: true, sent, excluded, total, configured: sent > 0 || total === excluded });
 };
