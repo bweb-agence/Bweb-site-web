@@ -1087,9 +1087,39 @@ body.rz-lock { overflow: hidden; }
 /* Le .eyebrow global porte un margin-bottom qui le décale verticalement dans la
    rangée ; on l'annule ici pour aligner le texte thème·format avec le badge niveau. */
 .sess-eyebrows .eyebrow { margin-bottom: 0; }
-.sess-formation-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; font-weight: 800;
-  font-size: 0.88rem; color: var(--c-blue); text-decoration: none; }
-.sess-formation-link:hover { text-decoration: underline; }
+.sess-formation-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; font-weight: 800;
+  font-size: 0.86rem; color: var(--c-blue); text-decoration: none; cursor: pointer;
+  background: color-mix(in srgb, var(--c-blue) 8%, transparent); border: 1px solid color-mix(in srgb, var(--c-blue) 22%, transparent);
+  border-radius: var(--radius-pill); padding: 8px 14px; font-family: inherit; transition: background .15s; }
+.sess-formation-link:hover { background: color-mix(in srgb, var(--c-blue) 14%, transparent); }
+
+/* Modale « Prochaines dates » */
+.dm-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(2, 11, 80, 0.55); backdrop-filter: blur(3px);
+  display: flex; align-items: flex-end; justify-content: center; padding: 0; }
+@media (min-width: 620px) { .dm-overlay { align-items: center; padding: 24px; } }
+.dm-panel { background: #fff; width: 100%; max-width: 560px; max-height: 86vh; display: flex; flex-direction: column;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden; box-shadow: var(--shadow-lg); }
+@media (min-width: 620px) { .dm-panel { border-radius: var(--radius-lg); } }
+.dm-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 20px 14px; border-bottom: 1px solid var(--c-border-soft); }
+.dm-title { font-family: var(--f-display); font-weight: 800; font-size: 1.15rem; margin: 0; color: var(--c-ink); }
+.dm-sub { margin: 3px 0 0; font-size: 0.84rem; color: var(--c-gray-500); }
+.dm-close { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--c-border); background: #fff; color: var(--c-gray-600); cursor: pointer; font-size: 0.95rem; }
+.dm-close:hover { color: var(--c-danger); border-color: var(--c-danger); }
+.dm-list { overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; overscroll-behavior: contain; }
+.dm-item { display: flex; align-items: center; gap: 13px; padding: 11px 12px; border: 1px solid var(--c-border); border-radius: var(--radius-md); text-decoration: none; transition: border-color .15s, background .15s; }
+.dm-item:hover { border-color: var(--c-blue); background: #f4f8ff; }
+.dm-item.is-current { border-color: color-mix(in srgb, var(--c-blue) 45%, var(--c-border)); background: #f4f8ff; }
+.dm-item.is-full { opacity: .7; }
+.dm-date { flex: none; width: 50px; text-align: center; line-height: 1; background: #fff; border: 1px solid var(--c-border); border-radius: 11px; padding: 7px 5px; }
+.dm-date .d { display: block; font-family: var(--f-display); font-weight: 800; font-size: 1.2rem; color: var(--c-ink); }
+.dm-date .m { display: block; font-size: 0.56rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-blue); margin-top: 2px; }
+.dm-body { flex: 1; min-width: 0; }
+.dm-when { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 800; font-size: 0.9rem; color: var(--c-ink); }
+.dm-tag { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: var(--c-blue); background: color-mix(in srgb, var(--c-blue) 14%, transparent); padding: 2px 7px; border-radius: var(--radius-pill); }
+.dm-meta { display: block; font-size: 0.78rem; color: var(--c-gray-600); margin-top: 2px; }
+.dm-price { flex: none; text-align: right; }
+.dm-price small { display: block; font-size: 0.64rem; font-weight: 700; color: var(--c-gray-400); }
+.dm-price b { font-family: var(--f-display); font-weight: 800; font-size: 0.98rem; color: var(--c-navy); font-variant-numeric: tabular-nums; }
 .sess-level {
   font-size: 0.7rem; font-weight: 800; letter-spacing: 0.02em; padding: 4px 11px;
   border-radius: var(--radius-pill); display: inline-flex; align-items: center; gap: 6px;
