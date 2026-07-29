@@ -1,0 +1,314 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Clients" active="clients">
+  <div class="crm-kpis">
+    <div class="stat"><div class="k">Clients payants</div><div class="v ok" data-kpi="clients">—</div></div>
+    <div class="stat"><div class="k">Prospects</div><div class="v" data-kpi="prospects">—</div></div>
+    <div class="stat"><div class="k">CA confirmé</div><div class="v" data-kpi="ca">—</div></div>
+    <div class="stat"><div class="k">Taux conversion</div><div class="v" data-kpi="taux">—</div></div>
+    <div class="stat"><div class="k">À relancer</div><div class="v warn" data-kpi="relance">—</div></div>
+  </div>
+
+  <div class="admin-toolbar">
+    <div class="left">
+      <input class="admin-search" id="c-search" type="search" placeholder="Nom, e-mail, téléphone…" />
+      <select class="admin-filter" id="c-status">
+        <option value="">Tous les statuts</option>
+        <option value="client">Clients payants</option>
+        <option value="prospect">Prospects</option>
+        <option value="relance">À relancer</option>
+      </select>
+      <select class="admin-filter" id="c-session"><option value="">Toutes les formations</option></select>
+      <select class="admin-filter" id="c-gateway">
+        <option value="">Toutes passerelles</option>
+        <option value="paystack">Paystack</option>
+        <option value="money_fusion">Money Fusion</option>
+      </select>
+    </div>
+    <button class="abtn" id="c-export">⬇ Exporter CSV</button>
+  </div>
+
+  <div class="panel">
+    <table class="admin-table">
+      <thead><tr><th>Client</th><th>Contact</th><th>Réserv.</th><th>Total dépensé</th><th>Dernière activité</th><th>Statut</th><th></th></tr></thead>
+      <tbody data-rows><tr class="a-loading-row"><td colspan="7">Chargement…</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- Tiroir : fiche client -->
+  <div class="a-drawer-overlay" id="overlay"></div>
+  <aside class="a-drawer" id="drawer" aria-hidden="true">
+    <div class="a-drawer-head">
+      <div class="cd-head">
+        <span class="avatar" data-d="avatar">—</span>
+        <div>
+          <h3 data-d="name">—</h3>
+          <div class="meta" data-d="meta">—</div>
+          <div style="margin-top:8px" data-d="badge"></div>
+        </div>
+      </div>
+      <button class="icon-btn" id="close-btn">✕</button>
+    </div>
+    <div class="a-drawer-body" data-d="body"></div>
+  </aside>
+</AdminLayout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+  import { esc, fmtFCFA, dshort, toast } from "../../scripts/adminUtils";
+  import { site } from "../../config/site";
+
+  const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+  const rows = document.querySelector("[data-rows]")!;
+
+  // ---- Types ----
+  type Booking = {
+    id: string; reference: string; session_id: string; quantity: number;
+    full_name: string; email: string | null; phone: string | null; company: string | null;
+    amount_due: number; amount_paid: number | null; is_deposit: boolean;
+    payment_method: string | null; payment_reference: string | null; status: string;
+    attendance_mode: string | null; created_at: string;
+    sessions?: { title: string; slug: string; starts_at: string | null; venue: string | null; city: string | null } | null;
+    ticket_types?: { name: string } | null;
+  };
+  type Client = {
+    key: string; name: string; email: string; phone: string; company: string;
+    bookings: Booking[]; status: "client" | "prospect" | "relance";
+    ca: number; nbConfirmed: number; lastActivity: string; sessionIds: Set<string>; gateways: Set<string>;
+  };
+
+  const PALETTE = ["#1f6ced,#00c89e", "#ff835f,#ffc72a", "#7b5cff,#1f6ced", "#00c89e,#0aa886", "#565d80,#8b91ae", "#f2971d,#ff835f", "#1550b8,#1f6ced"];
+  const methodLabel: Record<string, string> = { wave: "Wave", orange_money: "Orange Money", mobile_money: "Mobile Money", sur_place: "Sur place", money_fusion: "Money Fusion", paystack: "Paystack" };
+  const statusMeta: Record<string, { cls: string; label: string }> = {
+    client: { cls: "client", label: "Client" }, prospect: { cls: "prospect", label: "Prospect" }, relance: { cls: "relance", label: "À relancer" },
+  };
+  const modeLabel: Record<string, string> = { presentiel: "Présentiel", en_ligne: "En ligne" };
+  const txPill: Record<string, string> = {
+    confirmed: '<span class="tag-pill ok">Réussi</span>', pending: '<span class="tag-pill wait">En attente</span>',
+    cancelled: '<span class="tag-pill full">Annulé</span>', waitlist: '<span class="tag-pill pub">Liste d\'attente</span>',
+  };
+
+  const digits = (s: string | null) => (s || "").replace(/\D/g, "");
+  const firstName = (n: string) => (n || "").trim().split(/\s+/)[0] || "";
+  const initials = (n: string) => {
+    const p = (n || "").trim().split(/\s+/).filter(Boolean);
+    return ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || "?";
+  };
+  const hash = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); };
+  const avatarBg = (key: string) => `linear-gradient(135deg,${PALETTE[hash(key) % PALETTE.length]})`;
+  const paidOf = (b: Booking) => Number(b.amount_paid) || (b.is_deposit ? Math.ceil(b.amount_due / 2) : b.amount_due);
+  const nowMs = Date.now();
+
+  let clients: Client[] = [];
+
+  // ---- Agrégation : une ligne client = réservations regroupées par e-mail (repli : téléphone) ----
+  function aggregate(bookings: Booking[]): Client[] {
+    const map = new Map<string, Client>();
+    for (const b of bookings) {
+      const email = (b.email || "").trim().toLowerCase();
+      const key = email || (digits(b.phone) ? "tel:" + digits(b.phone) : "");
+      if (!key) continue;
+      let c = map.get(key);
+      if (!c) {
+        c = { key, name: b.full_name || email || b.phone || "—", email: b.email || "", phone: b.phone || "", company: b.company || "", bookings: [], status: "prospect", ca: 0, nbConfirmed: 0, lastActivity: b.created_at, sessionIds: new Set(), gateways: new Set() };
+        map.set(key, c);
+      }
+      // Les réservations arrivent triées du + récent au + ancien : la 1re non vide gagne pour l'identité
+      if (!c.email && b.email) c.email = b.email;
+      if (!c.phone && b.phone) c.phone = b.phone;
+      if (!c.company && b.company) c.company = b.company;
+      c.bookings.push(b);
+      if (b.session_id) c.sessionIds.add(b.session_id);
+      if (b.payment_method) c.gateways.add(b.payment_method);
+      if (b.created_at > c.lastActivity) c.lastActivity = b.created_at;
+    }
+    const list = [...map.values()];
+    for (const c of list) {
+      const confirmed = c.bookings.filter((b) => b.status === "confirmed");
+      c.nbConfirmed = confirmed.length;
+      c.ca = confirmed.reduce((a, b) => a + paidOf(b), 0);
+      const hasPending = c.bookings.some((b) => b.status === "pending");
+      c.status = confirmed.length ? "client" : hasPending ? "relance" : "prospect";
+    }
+    return list.sort((a, b) => (a.lastActivity < b.lastActivity ? 1 : -1));
+  }
+
+  function renderKpis() {
+    const nbClients = clients.filter((c) => c.status === "client").length;
+    const nbProspects = clients.filter((c) => c.status === "prospect").length;
+    const nbRelance = clients.filter((c) => c.status === "relance").length;
+    const ca = clients.reduce((a, c) => a + c.ca, 0);
+    const taux = clients.length ? Math.round((nbClients / clients.length) * 100) : 0;
+    const set = (k: string, v: string) => { const el = document.querySelector(`[data-kpi="${k}"]`); if (el) el.textContent = v; };
+    set("clients", String(nbClients)); set("prospects", String(nbProspects));
+    set("ca", fmtFCFA(ca)); set("taux", taux + " %"); set("relance", String(nbRelance));
+  }
+
+  function render(list: Client[]) {
+    rows.innerHTML = list.length ? list.map((c, idx) => {
+      const m = statusMeta[c.status];
+      const contact = c.phone || c.email || "—";
+      return `<tr class="rowclick" data-idx="${idx}">
+        <td><div class="cli"><span class="avatar" style="background:${avatarBg(c.key)}">${esc(initials(c.name))}</span><span><b>${esc(c.name)}</b><span class="sub">${esc(c.email || "—")}</span></span></div></td>
+        <td><span class="sub" style="color:var(--c-gray-600)">${esc(contact)}</span></td>
+        <td class="num">${c.bookings.length}</td>
+        <td class="money">${fmtFCFA(c.ca)}</td>
+        <td><span class="sub" style="color:var(--c-gray-500)">${dshort(c.lastActivity)}</span></td>
+        <td><span class="tag-pill ${m.cls} dot">${m.label}</span></td>
+        <td><div class="row-actions">
+          <button class="ic" data-view="${idx}" title="Voir la fiche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          ${digits(c.phone) ? `<button class="ic wa" data-wa="${idx}" title="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg></button>` : ""}
+        </div></td></tr>`;
+    }).join("") : `<tr><td class="empty" colspan="7">Aucun client.</td></tr>`;
+
+    rows.querySelectorAll<HTMLElement>("tr.rowclick").forEach((tr) =>
+      tr.addEventListener("click", (e) => { if (!(e.target as HTMLElement).closest("[data-wa]")) openDrawer(+tr.dataset.idx!); }));
+    rows.querySelectorAll<HTMLElement>("[data-wa]").forEach((el) =>
+      el.addEventListener("click", (e) => { e.stopPropagation(); waGeneric(list[+el.dataset.wa!]); }));
+  }
+
+  // ---- Liens de relance / contact (un-à-un) ----
+  const sessionUrl = (slug?: string | null) => slug ? `${site.url}/formations/session/${slug}` : `${site.url}/formations`;
+  function waGeneric(c: Client) {
+    const msg = `Bonjour ${firstName(c.name)} 👋 C'est l'équipe Bweb Agence.`;
+    window.open(`https://wa.me/${digits(c.phone)}?text=${encodeURIComponent(msg)}`, "_blank", "noopener");
+  }
+  function relanceMsg(c: Client, b: Booking) {
+    return `Bonjour ${firstName(c.name)} 👋 Vous aviez commencé à réserver « ${b.sessions?.title || "une formation"} » chez Bweb Agence, mais le paiement n'a pas été finalisé. Votre place est encore disponible — souhaitez-vous confirmer votre inscription ? Voici le lien : ${sessionUrl(b.sessions?.slug)}`;
+  }
+
+  // ---- Fiche client (tiroir) ----
+  const drawer = document.getElementById("drawer")!, overlay = document.getElementById("overlay")!;
+  const openD = () => { drawer.classList.add("open"); overlay.classList.add("open"); document.body.style.overflow = "hidden"; };
+  const closeD = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); document.body.style.overflow = ""; };
+
+  function openDrawer(idx: number) {
+    const c = clients[idx];
+    const m = statusMeta[c.status];
+    const setD = (k: string, html: string) => { const el = document.querySelector(`[data-d="${k}"]`)!; el.innerHTML = html; };
+    (document.querySelector('[data-d="avatar"]') as HTMLElement).style.background = avatarBg(c.key);
+    setD("avatar", esc(initials(c.name)));
+    setD("name", esc(c.name));
+    setD("meta", esc([c.email, c.phone].filter(Boolean).join(" · ") || "—") + (c.company ? ` · ${esc(c.company)}` : ""));
+    setD("badge", `<span class="tag-pill ${m.cls} dot">${m.label}</span>`);
+
+    // Stats
+    const panier = c.nbConfirmed ? Math.round(c.ca / c.nbConfirmed) : 0;
+    const confirmedSessions = new Map<string, Booking>();
+    c.bookings.filter((b) => b.status === "confirmed").forEach((b) => { if (b.session_id) confirmedSessions.set(b.session_id, b); });
+    const aVenir = [...confirmedSessions.values()].filter((b) => b.sessions?.starts_at && new Date(b.sessions.starts_at).getTime() > nowMs).length;
+
+    // Formations (sessions engagées, statut le + avancé)
+    const rank: Record<string, number> = { confirmed: 3, pending: 2, waitlist: 1, cancelled: 0 };
+    const bySession = new Map<string, Booking>();
+    for (const b of c.bookings) {
+      if (!b.session_id) continue;
+      const cur = bySession.get(b.session_id);
+      if (!cur || (rank[b.status] || 0) > (rank[cur.status] || 0)) bySession.set(b.session_id, b);
+    }
+    const formationsHtml = [...bySession.values()].map((b) => {
+      const d = b.sessions?.starts_at ? new Date(b.sessions.starts_at) : null;
+      const day = d ? d.toLocaleDateString("fr-FR", { day: "numeric" }) : "•";
+      const mon = d ? d.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "") : "";
+      const lieu = [b.attendance_mode ? modeLabel[b.attendance_mode] : "", b.sessions?.venue || b.sessions?.city || ""].filter(Boolean).join(" · ");
+      const upcoming = d && d.getTime() > nowMs;
+      const pill = b.status === "confirmed" && upcoming ? '<span class="tag-pill pub">À venir</span>' : (txPill[b.status] || "");
+      return `<div class="cd-line">
+        <span class="medal"><span class="d">${day}</span><span class="m">${esc(mon)}</span></span>
+        <div class="lbody"><div class="lt">${esc(b.sessions?.title || "Formation")}</div><div class="ls">${d ? dshort(b.sessions?.starts_at) : "Date à venir"}${lieu ? " · " + esc(lieu) : ""}</div></div>
+        <div class="lr">${pill}</div></div>`;
+    }).join("") || `<p class="cd-empty">Aucune formation pour l'instant.</p>`;
+
+    // Historique transactions
+    const txHtml = c.bookings.map((b) => {
+      const gw = b.payment_method ? methodLabel[b.payment_method] || b.payment_method : "—";
+      const extra = [dshort(b.created_at), gw, b.is_deposit ? "acompte" : "", b.payment_reference ? "réf " + b.payment_reference.slice(0, 8) + "…" : ""].filter(Boolean).join(" · ");
+      return `<div class="cd-line"${b.status === "cancelled" ? ' style="opacity:.7"' : ""}>
+        <div class="lbody"><div class="lt">${esc(b.reference)} · ${esc(b.ticket_types?.name || "")}</div><div class="ls">${esc(extra)}</div></div>
+        <div class="lr"><span class="money">${fmtFCFA(paidOf(b))}</span>${txPill[b.status] || esc(b.status)}</div></div>`;
+    }).join("");
+
+    // Relance (dernière réservation en attente)
+    const pending = c.bookings.find((b) => b.status === "pending");
+    let relanceHtml = "";
+    if (pending) {
+      const msg = relanceMsg(c, pending);
+      const wa = digits(c.phone) ? `<a class="abtn wa sm" target="_blank" rel="noopener" href="https://wa.me/${digits(c.phone)}?text=${encodeURIComponent(msg)}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>Relancer sur WhatsApp</a>` : "";
+      const mail = c.email ? `<a class="abtn sm" target="_blank" rel="noopener" href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent("Votre inscription chez Bweb Agence")}&body=${encodeURIComponent(msg)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Relancer par e-mail</a>` : "";
+      relanceHtml = `<div class="cd-relance">
+        <p><b>Relancer ce client</b> — une réservation en attente (${esc(pending.reference)}). Message pré-rempli avec son prénom et le lien de la formation.</p>
+        <div class="btns">${wa}${mail}</div></div>`;
+    }
+
+    // Actions de contact
+    const cWa = digits(c.phone) ? `<a class="abtn wa sm" target="_blank" rel="noopener" href="https://wa.me/${digits(c.phone)}?text=${encodeURIComponent("Bonjour " + firstName(c.name) + " 👋 C'est l'équipe Bweb Agence.")}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>WhatsApp</a>` : "";
+    const cMail = c.email ? `<a class="abtn sm" href="mailto:${encodeURIComponent(c.email)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>E-mail</a>` : "";
+    const cTel = c.phone ? `<a class="abtn sm" href="tel:${esc(c.phone.replace(/\s/g, ""))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>Appeler</a>` : "";
+
+    setD("body", `
+      <div class="cd-actions">${cWa}${cMail}${cTel}</div>
+      <div class="cd-stats">
+        <div class="cd-stat"><div class="k">CA confirmé</div><div class="v">${fmtFCFA(c.ca)}</div></div>
+        <div class="cd-stat"><div class="k">Panier moyen</div><div class="v">${c.nbConfirmed ? fmtFCFA(panier) : "—"}</div></div>
+        <div class="cd-stat"><div class="k">Formations</div><div class="v">${c.nbConfirmed}</div></div>
+        <div class="cd-stat"><div class="k">À venir</div><div class="v">${aVenir}</div></div>
+      </div>
+      <div class="cd-sect"><h4>Formations</h4>${formationsHtml}</div>
+      <div class="cd-sect"><h4>Historique des transactions</h4>${txHtml}</div>
+      ${relanceHtml}`);
+    openD();
+  }
+
+  document.getElementById("close-btn")!.addEventListener("click", closeD);
+  overlay.addEventListener("click", closeD);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeD(); });
+
+  // ---- Filtres ----
+  function applyFilters() {
+    const q = ($("c-search").value || "").toLowerCase().trim();
+    const st = $("c-status").value, sess = $("c-session").value, gw = $("c-gateway").value;
+    render(clients.filter((c) =>
+      (!st || c.status === st) &&
+      (!sess || c.sessionIds.has(sess)) &&
+      (!gw || c.gateways.has(gw)) &&
+      (!q || (c.name + " " + c.email + " " + c.phone).toLowerCase().includes(q))));
+  }
+
+  function exportCsv() {
+    const head = ["Nom", "E-mail", "Téléphone", "Entreprise", "Réservations", "Confirmées", "CA confirmé", "Statut", "Dernière activité", "Formations"];
+    const lines = clients.map((c) => {
+      const titles = [...new Set(c.bookings.map((b) => b.sessions?.title).filter(Boolean))].join(" | ");
+      return [c.name, c.email, c.phone, c.company, c.bookings.length, c.nbConfirmed, c.ca, statusMeta[c.status].label, new Date(c.lastActivity).toISOString(), titles]
+        .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",");
+    });
+    const csv = [head.join(","), ...lines].join("\n");
+    const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a"); a.href = url; a.download = "clients-bweb.csv"; a.click(); URL.revokeObjectURL(url);
+  }
+
+  $("c-search").addEventListener("input", applyFilters);
+  $("c-status").addEventListener("change", applyFilters);
+  $("c-session").addEventListener("change", applyFilters);
+  $("c-gateway").addEventListener("change", applyFilters);
+  document.getElementById("c-export")!.addEventListener("click", exportCsv);
+
+  async function load() {
+    const { data } = await supabaseBrowser.from("bookings")
+      .select("id,reference,session_id,quantity,full_name,email,phone,company,amount_due,amount_paid,is_deposit,payment_method,payment_reference,status,attendance_mode,created_at,sessions(title,slug,starts_at,venue,city),ticket_types(name)")
+      .order("created_at", { ascending: false });
+    clients = aggregate((data || []) as unknown as Booking[]);
+    renderKpis();
+    applyFilters();
+  }
+
+  (async () => {
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    if (!session) return; // AdminLayout gère la redirection
+    const { data: ss } = await supabaseBrowser.from("sessions").select("id,title").order("starts_at", { ascending: false });
+    $("c-session").innerHTML = '<option value="">Toutes les formations</option>' + (ss || []).map((s: any) => `<option value="${s.id}">${esc(s.title)}</option>`).join("");
+    await load();
+  })();
+</script>

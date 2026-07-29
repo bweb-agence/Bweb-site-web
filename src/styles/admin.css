@@ -67,6 +67,7 @@
 .abtn.primary { background: var(--c-blue); border-color: var(--c-blue); color: #fff; }
 .abtn.primary:hover { background: var(--c-blue-dark); color: #fff; }
 .abtn.sm { padding: 6px 11px; font-size: 0.76rem; }
+.abtn svg { width: 15px; height: 15px; flex: none; }
 
 /* ---------- Page de connexion ---------- */
 .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--g-navy); }
@@ -158,3 +159,65 @@
 .cm-actions { display: flex; justify-content: flex-end; gap: 10px; }
 .cm-danger { background: var(--c-danger); border-color: var(--c-danger); color: #fff; }
 .cm-danger:hover { filter: brightness(1.07); color: #fff; border-color: var(--c-danger); }
+
+/* =========================================================
+   CRM — base clients (liste + fiche)
+   ========================================================= */
+/* Bandeau KPI 5 colonnes (variante du .stat-grid) */
+.crm-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 18px; }
+@media (min-width: 640px) { .crm-kpis { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 960px) { .crm-kpis { grid-template-columns: repeat(5, 1fr); } }
+
+/* Statut client (pastilles) */
+.tag-pill.client { background: #dcf5ec; color: #0a7d5f; }
+.tag-pill.prospect { background: #e3edff; color: #1550b8; }
+.tag-pill.relance { background: #fbf1d6; color: #8a6400; }
+.tag-pill.dot { display: inline-flex; align-items: center; gap: 5px; }
+.tag-pill.dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* Cellule client avec avatar */
+.cli { display: flex; align-items: center; gap: 11px; }
+.cli b { font-weight: 800; color: var(--c-ink); display: block; font-size: 0.9rem; }
+.cli .sub { color: var(--c-gray-500); font-size: 0.76rem; }
+.avatar { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 0.82rem; color: #fff; }
+.admin-table tbody tr.rowclick { cursor: pointer; }
+.admin-table tbody tr.rowclick:hover { background: var(--surface-2, #f7f9fd); }
+
+/* Boutons icônes (voir / whatsapp) */
+.ic { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--c-border); background: #fff; display: grid; place-items: center; color: var(--c-gray-600); cursor: pointer; padding: 0; }
+.ic:hover { color: var(--c-blue); border-color: var(--c-blue); }
+.ic svg { width: 15px; height: 15px; }
+.ic.wa:hover { color: #25d366; border-color: #25d366; }
+
+/* Bouton WhatsApp (vert) */
+.abtn.wa { background: #25d366; border-color: #25d366; color: #fff; }
+.abtn.wa:hover { background: #1fbe5b; border-color: #1fbe5b; color: #fff; }
+
+/* ---------- Fiche client (contenu du tiroir) ---------- */
+.cd-head { display: flex; align-items: flex-start; gap: 14px; }
+.cd-head .avatar { width: 52px; height: 52px; font-size: 1.1rem; }
+.cd-head h3 { font-family: var(--f-display); font-weight: 800; font-size: 1.2rem; margin: 0; color: var(--c-ink); }
+.cd-head .meta { color: var(--c-gray-600); font-size: 0.82rem; margin-top: 3px; word-break: break-word; }
+.cd-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
+.cd-sect { margin-top: 20px; }
+.cd-sect h4 { font-family: var(--f-display); font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-gray-500); margin: 0 0 10px; }
+.cd-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+@media (max-width: 520px) { .cd-stats { grid-template-columns: repeat(2, 1fr); } }
+.cd-stat { background: var(--surface-2, #f7f9fd); border: 1px solid var(--c-border-soft); border-radius: 9px; padding: 11px; }
+.cd-stat .k { font-size: 0.63rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--c-gray-400, #8b91ae); }
+.cd-stat .v { font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; margin-top: 3px; font-variant-numeric: tabular-nums; color: var(--c-ink); }
+.cd-line { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid var(--c-border); border-radius: 9px; margin-bottom: 8px; }
+.cd-line .medal { flex: none; width: 44px; text-align: center; line-height: 1.1; background: #fff; border: 1px solid var(--c-border); border-radius: 9px; padding: 6px 4px; }
+.cd-line .medal .d { font-family: var(--f-display); font-weight: 800; font-size: 1.02rem; color: var(--c-ink); }
+.cd-line .medal .m { font-size: 0.52rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-blue); }
+.cd-line .lbody { flex: 1; min-width: 0; }
+.cd-line .lt { font-weight: 800; font-size: 0.86rem; color: var(--c-ink); }
+.cd-line .ls { font-size: 0.76rem; color: var(--c-gray-500); }
+.cd-line .lr { text-align: right; flex: none; }
+.cd-line .lr .money { font-family: var(--f-display); font-weight: 800; color: var(--c-navy); font-variant-numeric: tabular-nums; font-size: 0.92rem; display: block; }
+.cd-relance { background: linear-gradient(120deg, rgba(31, 108, 237, 0.06), rgba(0, 200, 158, 0.08)); border: 1px solid var(--c-border); border-radius: 12px; padding: 14px; margin-top: 20px; }
+.cd-relance p { margin: 0 0 10px; font-size: 0.85rem; color: var(--c-gray-700); }
+.cd-relance .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.cd-empty { color: var(--c-gray-500); font-size: 0.84rem; padding: 6px 0; }
+.money { font-family: var(--f-display); font-weight: 800; color: var(--c-navy); font-variant-numeric: tabular-nums; }
+.num { font-variant-numeric: tabular-nums; font-weight: 700; }
