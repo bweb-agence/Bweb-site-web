@@ -1,0 +1,84 @@
+---
+export const prerender = false;
+import EditorLayout from "../../../layouts/EditorLayout.astro";
+
+const { id } = Astro.params;
+const isNew = id === "nouveau";
+---
+
+<EditorLayout title={`${isNew ? "Nouvel" : "Édition"} · E-mail`}>
+  <div id="ed-root" data-id={isNew ? "" : id}>
+    <header class="ed-topbar">
+      <a class="ed-icon" href="/admin/emails" title="Retour aux e-mails" aria-label="Retour">←</a>
+      <div class="ed-crumb"><span>E-mails</span><span class="sep">/</span><b id="ed-crumb-doc">{isNew ? "Nouvel e-mail" : "…"}</b></div>
+      <div class="ed-spacer"></div>
+      <span class="ed-autostate" id="ed-autostate" aria-live="polite"></span>
+      <button class="ed-btn primary" id="ed-save">Enregistrer</button>
+    </header>
+
+    <div class="ed-layout">
+      <main class="ed-main" data-lenis-prevent>
+        <div class="ed-toolbar" id="ed-toolbar" role="toolbar" aria-label="Mise en forme">
+          <div class="ed-style" data-style></div>
+          <span class="ed-sep"></span>
+          <button class="ed-tb" data-cmd="bold" title="Gras (Ctrl+B)"><b>B</b></button>
+          <button class="ed-tb" data-cmd="italic" title="Italique (Ctrl+I)"><i>I</i></button>
+          <button class="ed-tb" data-cmd="underline" title="Souligné (Ctrl+U)"><u>U</u></button>
+          <button class="ed-tb" data-cmd="strike" title="Barré"><s>S</s></button>
+          <span class="ed-sep"></span>
+          <button class="ed-tb" data-cmd="bulletList" title="Liste à puces">☰</button>
+          <button class="ed-tb" data-cmd="orderedList" title="Liste numérotée">1.</button>
+          <button class="ed-tb" data-cmd="blockquote" title="Citation">❝</button>
+          <button class="ed-tb" data-cmd="callout" title="Encadré">💡</button>
+          <span class="ed-sep"></span>
+          <button class="ed-tb" data-cmd="link" title="Lien">🔗</button>
+          <button class="ed-tb" data-cmd="image" title="Image">🖼</button>
+          <button class="ed-tb" data-cmd="hr" title="Séparateur">―</button>
+          <span class="ed-sep"></span>
+          <button class="ed-tb" data-cmd="undo" title="Annuler">↺</button>
+          <button class="ed-tb" data-cmd="redo" title="Rétablir">↻</button>
+          <span class="ed-slashhint">Tapez <kbd>/</kbd> pour insérer un bloc</span>
+        </div>
+
+        <div class="ed-canvas-wrap">
+          <div class="ed-canvas">
+            <label class="ed-title-eyebrow" for="f-name">Nom du modèle (interne)</label>
+            <textarea class="ed-doc-title" id="f-name" rows="1" placeholder="Ex. Lancement session Produits digitaux"></textarea>
+            <div class="ed-field" style="margin:10px 0 6px">
+              <label class="ed-title-eyebrow" for="f-subject">Objet de l'e-mail</label>
+              <input class="ed-inp" id="f-subject" placeholder="Ex. Nouvelle session : {formation} 🎓" style="width:100%;font-size:1rem" />
+            </div>
+            <div class="ed-body-label">Contenu de l'e-mail</div>
+            <div id="ed-editor" class="ed-mount"></div>
+          </div>
+        </div>
+      </main>
+
+      <aside class="ed-aside" id="ed-aside" data-lenis-prevent>
+        <section class="ed-panel">
+          <h4>Variables de personnalisation</h4>
+          <p class="ed-help" style="margin:0 0 10px">Cliquez pour insérer au curseur. Elles seront remplacées pour chaque destinataire lors de l'envoi de la campagne.</p>
+          <div class="ev-vars">
+            <button type="button" class="ev-var" data-var="prenom">{"{prenom}"}</button>
+            <button type="button" class="ev-var" data-var="formation">{"{formation}"}</button>
+            <button type="button" class="ev-var" data-var="date">{"{date}"}</button>
+            <button type="button" class="ev-var" data-var="lien">{"{lien}"}</button>
+          </div>
+        </section>
+        <section class="ed-panel">
+          <h4>Bon à savoir</h4>
+          <p class="ed-help" style="margin:0">L'e-mail est automatiquement habillé de l'entête et du pied de page Bweb (logo, mentions légales) et d'un <b>lien de désabonnement</b> à l'envoi. Inutile de les ajouter ici.</p>
+        </section>
+        <section class="ed-panel">
+          <h4>Objet</h4>
+          <p class="ed-help" style="margin:0">L'objet accepte aussi les variables (ex. <code>{"{formation}"}</code>). Gardez-le court et concret.</p>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    import { initEmailEditor } from "../../../scripts/emailEditor";
+    initEmailEditor();
+  </script>
+</EditorLayout>

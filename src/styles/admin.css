@@ -245,6 +245,11 @@
 .ico-wa { display: inline-flex; color: #25d366; }
 .ico-wa svg { width: 15px; height: 15px; }
 
+/* ---------- Composeur d'e-mail : boutons variables ---------- */
+.ev-vars { display: flex; flex-wrap: wrap; gap: 7px; }
+.ev-var { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; font-weight: 700; color: var(--c-blue); background: rgba(31, 108, 237, 0.09); border: 1px solid rgba(31, 108, 237, 0.2); border-radius: 7px; padding: 5px 9px; cursor: pointer; }
+.ev-var:hover { background: var(--c-blue); color: #fff; }
+
 /* ---------- Campagnes (Phase 3) ---------- */
 .admin-sub { color: var(--c-gray-600); font-size: 0.9rem; margin: -6px 0 18px; max-width: 70ch; }
 .hint { color: var(--c-gray-500); font-size: 0.78rem; }
