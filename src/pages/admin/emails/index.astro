@@ -1,23 +1,29 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../../layouts/AdminLayout.astro";
+import Card from "../../../components/starwind/card/Card.astro";
+import Button from "../../../components/starwind/button/Button.astro";
 ---
 
 <AdminLayout title="E-mails" active="emails">
   <p class="admin-sub">Créez des e-mails riches avec l'éditeur, puis utilisez-les comme corps de campagne dans <a href="/admin/campagnes" style="color:var(--c-blue);font-weight:600">Campagnes</a>.</p>
 
-  <div class="admin-toolbar">
-    <div class="left">
-      <input class="admin-search" id="e-search" type="search" placeholder="Nom, objet…" />
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left">
+        <input class="admin-search" id="e-search" type="search" placeholder="Nom, objet…" />
+      </div>
+      <Button variant="primary" href="/admin/emails/nouveau">+ Nouvel e-mail</Button>
     </div>
-    <a class="abtn primary" href="/admin/emails/nouveau">+ Nouvel e-mail</a>
-  </div>
 
-  <div class="panel">
-    <table class="admin-table">
-      <thead><tr><th>Nom</th><th>Objet</th><th>Modifié</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="4">Chargement…</td></tr></tbody>
-    </table>
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[560px]">
+          <thead><tr><th>Nom</th><th>Objet</th><th>Modifié</th><th></th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="4">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 </AdminLayout>
 

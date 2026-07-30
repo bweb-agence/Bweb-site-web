@@ -1,16 +1,19 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
 ---
 
 <AdminLayout title="Importer une formation" active="formations">
-  <div class="admin-toolbar">
-    <div class="left"><a class="abtn" href="/admin/formations">← Formations</a></div>
-    <a class="abtn" href="/formation-template.json" download>⬇ Modèle JSON</a>
-  </div>
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left"><Button variant="ghost" size="sm" href="/admin/formations">← Formations</Button></div>
+      <Button variant="outline" size="sm" href="/formation-template.json" download>⬇ Modèle JSON</Button>
+    </div>
 
-  <div class="panel" style="padding:18px 20px">
-    <h2 style="margin:0 0 6px;font-size:1.05rem">Import en masse (JSON)</h2>
+    <Card class="p-5">
+      <h2 style="margin:0 0 6px;font-size:1.05rem">Import en masse (JSON)</h2>
     <p class="hint" style="margin:0 0 14px">
       Collez ou chargez un fichier JSON décrivant une formation (détails, session, tarifs, FAQ).
       Tout est créé <strong>en brouillon</strong> : la session est en <code>draft</code> (donc invisible au public),
@@ -26,12 +29,13 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       <textarea class="a-textarea code" id="imp-json" rows="16" placeholder='{ "formation": { "title": "…", "slug": "…" }, "sessions": [ … ], "faqs": [ … ] }'></textarea>
     </div>
 
-    <div style="display:flex;gap:10px;align-items:center">
-      <button class="abtn primary" id="imp-run">Importer en brouillon</button>
-      <span class="hint" id="imp-status"></span>
-    </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <Button variant="primary" id="imp-run">Importer en brouillon</Button>
+        <span class="hint" id="imp-status"></span>
+      </div>
 
-    <div id="imp-report" style="margin-top:16px"></div>
+      <div id="imp-report" style="margin-top:16px"></div>
+    </Card>
   </div>
 </AdminLayout>
 

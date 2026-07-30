@@ -1,6 +1,8 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
 ---
 
 <AdminLayout title="Campagnes" active="campagnes">
@@ -8,7 +10,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
   <div class="camp-grid">
     <!-- Composer -->
-    <div class="panel" style="padding:18px">
+    <Card class="p-[18px]">
       <div class="a-field">
         <label>Canal</label>
         <div class="camp-seg" id="chan">
@@ -60,22 +62,22 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       </div>
 
       <div class="camp-actions">
-        <button class="abtn primary" id="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg><span id="send-lbl">Préparer l'envoi</span></button>
-        <button class="abtn" id="test" style="display:none">Test sur moi</button>
+        <Button variant="primary" id="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg><span id="send-lbl">Préparer l'envoi</span></Button>
+        <Button variant="outline" id="test" style="display:none">Test sur moi</Button>
       </div>
       <p class="camp-note" id="note"></p>
-    </div>
+    </Card>
 
     <!-- Aperçu + historique -->
-    <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="panel">
+    <div class="flex flex-col gap-4">
+      <Card class="gap-0 overflow-hidden p-0">
         <div class="panel-head"><h2 id="prev-title">Aperçu WhatsApp</h2></div>
         <div id="preview"></div>
-      </div>
-      <div class="panel">
+      </Card>
+      <Card class="gap-0 overflow-hidden p-0">
         <div class="panel-head"><h2>Campagnes récentes</h2></div>
         <div id="history" style="padding:6px 16px 14px"><p class="cd-empty">Chargement…</p></div>
-      </div>
+      </Card>
     </div>
   </div>
 

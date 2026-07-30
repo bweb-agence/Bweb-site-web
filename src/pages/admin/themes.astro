@@ -1,22 +1,28 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
 ---
 
 <AdminLayout title="Thèmes" active="themes">
-  <div class="admin-toolbar">
-    <div class="left">
-      <input class="admin-search" id="th-search" type="search" placeholder="Rechercher un thème…" />
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left">
+        <input class="admin-search" id="th-search" type="search" placeholder="Rechercher un thème…" />
+      </div>
+      <Button variant="primary" id="th-new">+ Nouveau thème</Button>
     </div>
-    <button class="abtn primary" id="th-new">+ Nouveau thème</button>
-  </div>
 
-  <div class="panel">
-    <p class="hint" style="padding:12px 16px 0">Ces thèmes sont partagés par les formations, les sessions et les articles. Les couleurs pilotent les badges et dégradés du site.</p>
-    <table class="admin-table">
-      <thead><tr><th>Thème</th><th>Couleur</th><th>Utilisations</th><th>Ordre</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
-    </table>
+    <Card class="gap-0 overflow-hidden p-0">
+      <p class="hint" style="padding:14px 18px 0">Ces thèmes sont partagés par les formations, les sessions et les articles. Les couleurs pilotent les badges et dégradés du site.</p>
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[560px]">
+          <thead><tr><th>Thème</th><th>Couleur</th><th>Utilisations</th><th>Ordre</th><th></th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 
   <!-- Tiroir éditeur -->
