@@ -130,6 +130,7 @@ export function initReservation() {
       opt.setAttribute("aria-pressed", "true");
       attendance = opt.dataset.attend || "";
       errEl.textContent = "";
+      syncDepositOption(); // masque/affiche l'acompte selon présentiel/en ligne
     });
   });
 
@@ -220,6 +221,28 @@ export function initReservation() {
   // Money Fusion mis en avant : présélectionné par défaut (classe .sel dans le markup).
   const preselected = overlay.querySelector<HTMLElement>(".rz-payopt.sel");
   if (preselected) method = preselected.dataset.method || "";
+
+  // L'acompte 50 % = « je règle le solde SUR PLACE le jour J » → n'a de sens que
+  // pour une participation présentielle. On masque donc l'option pour une formation
+  // en ligne (et pour une hybride tant que « en ligne » est choisi).
+  const sessionMode = overlay.dataset.mode || "";
+  const depositOpt = overlay.querySelector<HTMLElement>('.rz-payopt[data-method="money_fusion_acompte"]');
+  const canDeposit = () => sessionMode === "presentiel" || (isHybrid && attendance === "presentiel");
+  function selectPay(m: string) {
+    const el = overlay.querySelector<HTMLElement>(`.rz-payopt[data-method="${m}"]`);
+    if (!el) return;
+    overlay.querySelectorAll(".rz-payopt").forEach((p) => { p.classList.remove("sel"); p.setAttribute("aria-checked", "false"); });
+    el.classList.add("sel"); el.setAttribute("aria-checked", "true");
+    method = m;
+    updateNextLabel();
+  }
+  function syncDepositOption() {
+    const ok = canDeposit();
+    if (depositOpt) depositOpt.style.display = ok ? "" : "none";
+    // Repli sur le paiement plein si l'acompte était choisi mais n'est plus permis.
+    if (!ok && method === "money_fusion_acompte") selectPay("money_fusion");
+  }
+  syncDepositOption();
   // Le paiement en ligne (Money Fusion) se règle directement à l'étape 3 :
   // pas d'étape justificatif → le bouton « Continuer » devient « Payer <montant> ».
   function updateNextLabel() {
@@ -279,7 +302,7 @@ export function initReservation() {
     doneBtn.style.display = n > FORM_STEPS ? "inline-flex" : "none";
     nextBtn.textContent = n === FORM_STEPS ? "Valider mon inscription" : "Continuer ›";
     errEl.textContent = "";
-    if (n === 3) { renderPayAmounts(); updateNextLabel(); }
+    if (n === 3) { syncDepositOption(); renderPayAmounts(); updateNextLabel(); }
     if (n === 4) renderSummary2();
     overlay.querySelector(".rz-scroll")!.scrollTop = 0;
   }
