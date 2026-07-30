@@ -5,7 +5,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import IllusFormations from "../components/illus/IllusFormations.astro";
 import SessionCard from "../components/SessionCard.astro";
 import { supabase } from "../lib/supabase";
-import { themeColorMap } from "../lib/format";
+import { themeColorMap, priceFCFA } from "../lib/format";
 
 // Les 3 prochaines sessions (à venir), pour un aperçu du calendrier.
 const { data: nextSessions } = await supabase
@@ -18,13 +18,33 @@ const { data: nextSessions } = await supabase
 const sessions = nextSessions ?? [];
 
 // Formations « bientôt » (à venir) — visibles même sans date publiée.
+// Ordre croissant = ordre du parcours (l'Initiation = étape 01, la suite ici).
 const { data: soonData } = await supabase
   .from("formations")
-  .select("slug,title,summary,theme")
+  .select("slug,title,summary,theme,level,duration,default_price")
   .eq("coming_soon", true)
-  .order("created_at", { ascending: false })
+  .order("created_at", { ascending: true })
   .limit(6);
 const comingSoon = soonData ?? [];
+const soonTotal = comingSoon.length + 1; // +1 : l'Initiation déjà en ligne (étape 01)
+
+// Accent par niveau (raconte la progression du parcours).
+const levelClass = (lvl?: string | null) => {
+  const l = (lvl || "").toLowerCase();
+  if (l.includes("débutant") || l.includes("debutant")) return "deb";
+  if (l.includes("avancé") || l.includes("avance")) return "adv";
+  return "int";
+};
+// Une icône par formation (repli : la boîte « produit »).
+const soonIcons: Record<string, string> = {
+  "creer-produit-digital": '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/>',
+  "creer-offre-irresistible": '<path d="m12 3 2.35 4.76 5.25.76-3.8 3.7.9 5.23L12 15.9l-4.7 2.47.9-5.23-3.8-3.7 5.25-.76z"/>',
+  "creer-gerer-boutique-produits-digitaux": '<path d="M3 9 4.2 4.4A1.5 1.5 0 0 1 5.65 3.3h12.7a1.5 1.5 0 0 1 1.45 1.1L21 9M3 9v10a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 19V9M3 9h18M8 13h8"/>',
+  "vendre-publicite-contenu-organique": '<path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M14 8a4 4 0 0 1 0 8M17 5a7 7 0 0 1 0 14"/>',
+  "passer-100000-a-500000-fcfa-produits-digitaux": '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 14l3.5-3.5 2.5 2.5L20 6M20 6h-4M20 6v4"/>',
+  "passer-500000-a-1500000-fcfa-produits-digitaux": '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15 9 12a11 11 0 0 1 5-8c2.53-1.53 5-1.5 6-1.5.09 1 .1 3.47-1.5 6a11 11 0 0 1-8 5z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
+};
+const soonIcon = (slug: string) => soonIcons[slug] || soonIcons["creer-produit-digital"];
 
 // Couleurs des thèmes (source de vérité) pour des badges/dégradés uniformes.
 const { data: themesData } = await supabase.from("themes").select("name,color");
@@ -95,16 +115,36 @@ const tmap = themeColorMap(themesData);
         <h2>Des formations qui arrivent.</h2>
         <p class="lead" style="margin-top:14px">Découvrez-les et soyez prévenu·e dès l'ouverture des dates.</p>
       </div>
-      <div class="grid grid-3" style="margin-top:var(--space-lg)">
-        {comingSoon.map((f) => (
-          <a class="soon-card" href={`/formations/${f.slug}`}>
-            <span class="soon-card__badge">● Bientôt</span>
-            {f.theme && <span class="soon-card__theme">{f.theme}</span>}
+      <div class="soon-grid" style="margin-top:var(--space-lg)">
+        {comingSoon.map((f, i) => (
+          <a class={`soon-card ${levelClass(f.level)}`} href={`/formations/${f.slug}`}>
+            <span class="soon-card__grid" aria-hidden="true"></span>
+            <div class="soon-card__top">
+              <span class="soon-card__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" set:html={soonIcon(f.slug)} /></span>
+              <span class="soon-card__badge">Bientôt</span>
+            </div>
+            <div class="soon-card__meta">
+              {f.level && <span class="soon-card__lvl">{f.level}</span>}
+              {f.theme && <span class="soon-card__theme">{f.theme}</span>}
+            </div>
             <h3>{f.title}</h3>
             {f.summary && <p>{f.summary}</p>}
-            <span class="soon-card__go">Voir la formation
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            </span>
+            {(f.duration || f.default_price != null) && (
+              <div class="soon-card__facts">
+                {f.duration && (
+                  <span class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{f.duration}</span>
+                )}
+                {f.default_price != null && (
+                  <span class="f price"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 12.5 12.5 20.6a2 2 0 0 1-2.8 0l-6.3-6.3a2 2 0 0 1-.6-1.4V4.5A1.5 1.5 0 0 1 4.3 3h8.4a2 2 0 0 1 1.4.6l6.5 6.5a1.9 1.9 0 0 1 0 2.4z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>{priceFCFA(f.default_price)}</span>
+                )}
+              </div>
+            )}
+            <div class="soon-card__foot">
+              <span class="soon-card__step">Étape <b>{String(i + 2).padStart(2, "0")}</b>/{String(soonTotal).padStart(2, "0")}</span>
+              <span class="soon-card__go">Voir la formation
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </span>
+            </div>
           </a>
         ))}
       </div>
@@ -257,14 +297,71 @@ const tmap = themeColorMap(themesData);
 </section>
 
 <style>
-  .soon-card { position: relative; display: flex; flex-direction: column; gap: 8px; background: #fff;
-    border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: 22px 20px; text-decoration: none;
-    box-shadow: var(--shadow-sm); transition: transform .15s var(--ease), box-shadow .15s var(--ease), border-color .15s; }
-  .soon-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--c-blue) 35%, var(--c-border)); }
-  .soon-card__badge { align-self: flex-start; font-size: .7rem; font-weight: 800; color: #8a5a00; background: #fff2d6; padding: 4px 10px; border-radius: var(--radius-pill); }
-  .soon-card__theme { font-size: .74rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--c-blue); }
-  .soon-card h3 { font-family: var(--f-display); font-weight: 800; font-size: 1.12rem; line-height: 1.15; color: var(--c-ink); margin: 2px 0 0; }
-  .soon-card p { margin: 0; font-size: .88rem; color: var(--c-gray-600); line-height: 1.5; }
-  .soon-card__go { margin-top: auto; padding-top: 8px; display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: .86rem; color: var(--c-blue); }
+  .soon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  @media (max-width: 900px) { .soon-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .soon-grid { grid-template-columns: 1fr; } }
+
+  .soon-card { --acc: var(--c-blue); position: relative; display: flex; flex-direction: column; background: #fff;
+    border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: 24px 22px 20px; text-decoration: none;
+    overflow: hidden; isolation: isolate; box-shadow: var(--shadow-sm);
+    transition: transform .28s var(--ease), box-shadow .28s var(--ease), border-color .28s var(--ease); }
+  .soon-card.deb { --acc: var(--c-green); }
+  .soon-card.int { --acc: var(--c-blue); }
+  .soon-card.adv { --acc: var(--c-orange); }
+  /* rail d'accent en haut */
+  .soon-card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; border-radius: 4px;
+    background: linear-gradient(90deg, var(--acc), color-mix(in srgb, var(--acc) 40%, transparent));
+    transform: scaleX(.28); transform-origin: left; transition: transform .4s var(--ease); }
+  /* halo diffus au survol */
+  .soon-card::after { content: ""; position: absolute; top: -40%; right: -30%; width: 260px; height: 260px; z-index: -1;
+    background: radial-gradient(circle, color-mix(in srgb, var(--acc) 22%, transparent), transparent 70%);
+    opacity: 0; transition: opacity .4s var(--ease); }
+  /* trame de grille (comme les sections .grid-lines) */
+  .soon-card__grid { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
+    background-image: linear-gradient(color-mix(in srgb, var(--acc) 14%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--acc) 14%, transparent) 1px, transparent 1px);
+    background-size: 26px 26px;
+    -webkit-mask-image: radial-gradient(135% 95% at 0% 0%, #000 0%, transparent 62%);
+    mask-image: radial-gradient(135% 95% at 0% 0%, #000 0%, transparent 62%);
+    transition: opacity .4s var(--ease); }
+  .soon-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); border-color: color-mix(in srgb, var(--acc) 45%, var(--c-border)); }
+  .soon-card:hover::before { transform: scaleX(1); }
+  .soon-card:hover::after { opacity: 1; }
+  .soon-card:hover .soon-card__grid { opacity: .95; }
+  .soon-card:focus-visible { outline: 3px solid color-mix(in srgb, var(--acc) 55%, transparent); outline-offset: 3px; }
+
+  .soon-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  .soon-card__ic { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; flex: none; color: var(--acc);
+    background: color-mix(in srgb, var(--acc) 12%, #fff); border: 1px solid color-mix(in srgb, var(--acc) 24%, transparent);
+    transition: background .28s var(--ease), transform .28s var(--ease); }
+  .soon-card__ic svg { width: 24px; height: 24px; }
+  .soon-card:hover .soon-card__ic { background: color-mix(in srgb, var(--acc) 20%, #fff); transform: scale(1.05) rotate(-3deg); }
+  .soon-card__badge { display: inline-flex; align-items: center; gap: 7px; font-size: .72rem; font-weight: 800;
+    color: #8a5a00; background: #fdf1cf; padding: 6px 12px; border-radius: var(--radius-pill); }
+  .soon-card__badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c-orange); }
+  .soon-card__meta { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 9px; }
+  .soon-card__lvl { display: inline-flex; align-items: center; gap: 6px; font-size: .72rem; font-weight: 800; letter-spacing: .02em;
+    padding: 4px 10px; border-radius: var(--radius-pill); color: var(--acc); background: color-mix(in srgb, var(--acc) 12%, transparent); }
+  .soon-card__lvl::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--acc); }
+  .soon-card__theme { font-size: .7rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--c-gray-400); }
+  .soon-card h3 { font-family: var(--f-display); font-weight: 800; font-size: 1.16rem; line-height: 1.2; letter-spacing: -.01em;
+    color: var(--c-ink); margin: 0 0 9px; text-wrap: balance; }
+  .soon-card p { margin: 0; font-size: .9rem; color: var(--c-gray-600); line-height: 1.55; }
+  .soon-card__facts { display: flex; align-items: center; gap: 16px; margin-top: 16px; font-size: .82rem; font-weight: 700; color: var(--c-gray-600); }
+  .soon-card__facts .f { display: inline-flex; align-items: center; gap: 6px; }
+  .soon-card__facts svg { width: 15px; height: 15px; opacity: .75; }
+  .soon-card__facts .price { color: var(--c-ink); font-weight: 800; font-variant-numeric: tabular-nums; }
+  .soon-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-top: 18px; padding-top: 15px; border-top: 1px solid var(--c-border-soft); }
+  .soon-card__step { font-family: var(--f-display); font-weight: 800; font-size: .78rem; letter-spacing: .06em;
+    color: var(--c-gray-400); font-variant-numeric: tabular-nums; }
+  .soon-card__step b { color: var(--acc); }
+  .soon-card__go { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: .86rem; color: var(--acc); }
+  .soon-card__go svg { transition: transform .3s var(--ease); }
+  .soon-card:hover .soon-card__go svg { transform: translateX(4px); }
+  @media (prefers-reduced-motion: reduce) {
+    .soon-card, .soon-card::before, .soon-card__ic, .soon-card__go svg { transition: none; }
+    .soon-card:hover { transform: none; }
+  }
 </style>
 </BaseLayout>
