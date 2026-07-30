@@ -1,24 +1,30 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
 ---
 
 <AdminLayout title="Sessions" active="sessions">
-  <div class="admin-toolbar">
-    <div class="left">
-      <input class="admin-search" id="s-search" type="search" placeholder="Rechercher une session…" />
-      <select class="admin-filter" id="s-status-filter">
-        <option value="">Tous les statuts</option><option value="published">Publiées</option><option value="draft">Brouillons</option><option value="full">Complètes</option><option value="cancelled">Annulées</option><option value="archived">Archivées</option>
-      </select>
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left">
+        <input class="admin-search" id="s-search" type="search" placeholder="Rechercher une session…" />
+        <select class="admin-filter" id="s-status-filter">
+          <option value="">Tous les statuts</option><option value="published">Publiées</option><option value="draft">Brouillons</option><option value="full">Complètes</option><option value="cancelled">Annulées</option><option value="archived">Archivées</option>
+        </select>
+      </div>
+      <Button variant="primary" id="new-btn">+ Nouvelle session</Button>
     </div>
-    <button class="abtn primary" id="new-btn">+ Nouvelle session</button>
-  </div>
 
-  <div class="panel">
-    <table class="admin-table">
-      <thead><tr><th>Session</th><th>Date</th><th>Remplissage</th><th>Statut</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
-    </table>
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[640px]">
+          <thead><tr><th>Session</th><th>Date</th><th>Remplissage</th><th>Statut</th><th></th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 
   <div class="a-drawer-overlay" id="overlay"></div>
