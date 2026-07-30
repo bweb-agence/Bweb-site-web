@@ -15,6 +15,14 @@ export function initMotion(): void {
   // Marqueur : le JS a bien démarré (voir failsafe inline dans le <head>).
   (window as unknown as { __bwebReady?: boolean }).__bwebReady = true;
 
+  // JAMAIS de smooth-scroll (Lenis) ni d'animations de défilement dans le
+  // back-office : le dashboard admin utilise le défilement natif (tiroirs qui
+  // défilent en interne, tables). Lenis capterait la molette et empêcherait le
+  // tiroir de scroller. Garde-fou global même si un layout admin importait ce
+  // module par erreur.
+  if (typeof location !== "undefined" && location.pathname.startsWith("/admin")) return;
+  if (typeof document !== "undefined" && document.body?.classList.contains("admin-body")) return;
+
   const mm = gsap.matchMedia();
 
   mm.add("(prefers-reduced-motion: no-preference)", () => {
