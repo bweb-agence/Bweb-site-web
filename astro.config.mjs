@@ -2,13 +2,14 @@
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
 import vercel from "@astrojs/vercel";
+import tailwindcss from "@tailwindcss/vite";
 
 // URL de production — à ajuster au domaine final.
 // Sert au sitemap, aux URLs canoniques et aux métadonnées Open Graph.
 const SITE = "https://www.bwebagence.com";
 
 export default defineConfig({
-  site: SITE,
+	site: SITE,
   trailingSlash: "ignore",
   integrations: [
     sitemap({
@@ -29,5 +30,11 @@ export default defineConfig({
   build: {
     // Génère /services/index.html -> URL propre /services
     format: "directory",
+  },
+  // Tailwind v4 + Starwind chargés UNIQUEMENT dans les layouts admin (voir
+  // src/styles/starwind.css importé par AdminLayout/EditorLayout).
+  // La vitrine n'importe pas ce CSS → aucun reset Tailwind en production.
+  vite: {
+    plugins: [tailwindcss()],
   },
 });
