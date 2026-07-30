@@ -1,25 +1,31 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
 ---
 
 <AdminLayout title="Réservations" active="reservations">
-  <div class="admin-toolbar">
-    <div class="left">
-      <input class="admin-search" id="r-search" type="search" placeholder="Nom, e-mail, référence…" />
-      <select class="admin-filter" id="r-status">
-        <option value="">Tous les statuts</option><option value="pending" selected>En attente</option><option value="confirmed">Confirmées</option><option value="cancelled">Annulées</option>
-      </select>
-      <select class="admin-filter" id="r-session"><option value="">Toutes les sessions</option></select>
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left">
+        <input class="admin-search" id="r-search" type="search" placeholder="Nom, e-mail, référence…" />
+        <select class="admin-filter" id="r-status">
+          <option value="">Tous les statuts</option><option value="pending" selected>En attente</option><option value="confirmed">Confirmées</option><option value="cancelled">Annulées</option>
+        </select>
+        <select class="admin-filter" id="r-session"><option value="">Toutes les sessions</option></select>
+      </div>
+      <Button id="r-export" variant="outline" size="sm">⬇ Exporter CSV</Button>
     </div>
-    <button class="abtn" id="r-export">⬇ Exporter CSV</button>
-  </div>
 
-  <div class="panel">
-    <table class="admin-table">
-      <thead><tr><th>Participant</th><th>Session · Tarif</th><th>Moyen</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
-    </table>
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[720px]">
+          <thead><tr><th>Participant</th><th>Session · Tarif</th><th>Moyen</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 </AdminLayout>
 

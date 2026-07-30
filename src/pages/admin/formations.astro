@@ -1,22 +1,28 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
 ---
 
 <AdminLayout title="Formations" active="formations">
-  <div class="admin-toolbar">
-    <div class="left"><input class="admin-search" id="f-search" type="search" placeholder="Rechercher une formation…" /></div>
-    <div style="display:flex;gap:8px">
-      <a class="abtn" href="/admin/import">⬆ Importer (JSON)</a>
-      <button class="abtn primary" id="new-btn">+ Nouvelle formation</button>
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left"><input class="admin-search" id="f-search" type="search" placeholder="Rechercher une formation…" /></div>
+      <div class="flex gap-2">
+        <Button variant="outline" size="sm" href="/admin/import">⬆ Importer (JSON)</Button>
+        <Button variant="primary" id="new-btn">+ Nouvelle formation</Button>
+      </div>
     </div>
-  </div>
 
-  <div class="panel">
-    <table class="admin-table">
-      <thead><tr><th>Titre</th><th>Thème</th><th>Durée</th><th>Prix indicatif</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
-    </table>
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[600px]">
+          <thead><tr><th>Titre</th><th>Thème</th><th>Durée</th><th>Prix indicatif</th><th></th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 
   <div class="a-drawer-overlay" id="overlay"></div>

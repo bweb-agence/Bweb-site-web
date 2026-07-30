@@ -61,6 +61,36 @@ Marque directe si besoin : `text-blue`, `bg-navy`, `text-green`…
   les scripts) continue d'utiliser les classes maison (les composants `.astro` n'y
   sont pas utilisables) ; la CSS reste partagée.
 
+## Responsive & anti-débordement (règles)
+
+> **Règle d'or : un élément ne doit JAMAIS déborder de son parent.** Si ça casse
+> le design, on contient (troncature/retour à la ligne/scroll interne), on ne
+> laisse pas la page défiler horizontalement.
+
+Garde-fous déjà en place dans `admin.css` (section « Garde-fous responsive ») :
+- `.admin-content { overflow-x: clip }` → **la page ne défile jamais en
+  horizontal**. Les zones scrollables volontaires (tables) utilisent un wrapper
+  `.overflow-x-auto` qui scrolle **en interne**.
+- `min-width: 0` sur les enfants de flex/grid (`.sw :where(.grid,.flex) > *`) →
+  corrige le débordement flex (sinon un enfant refuse de rétrécir).
+- `max-width: 100%` sur `img/svg/video/canvas`.
+- `overflow-wrap: anywhere` **ciblé** sur les champs à longue chaîne sans espace
+  (e-mails, URLs). **Jamais globalement** — ça couperait nombres et titres en
+  plein milieu (« 83 00·0 F CFA », « PROSPEC·TS »).
+
+**Réduire les polices pour la responsivité.** Sur petits écrans, on réduit les
+tailles plutôt que de laisser déborder :
+- Utilitaires responsives Tailwind : `text-lg sm:text-xl md:text-2xl`,
+  `p-3.5 sm:p-5`, `size-9 sm:size-11`, `gap-2.5 sm:gap-3.5`.
+- Media query `@media (max-width: 640px)` dans `admin.css` : réduit `.admin-table`,
+  titres de la topbar, valeurs KPI, etc.
+- Les **valeurs longues** (montants « 83 000 F CFA ») : réduire la police ET
+  resserrer le conteneur (icône/padding plus petits) pour éviter les retours à
+  la ligne disgracieux.
+- Le **texte identifiant** (e-mail, nom) tronque avec ellipsis
+  (`overflow: hidden; text-overflow: ellipsis; white-space: nowrap`) plutôt que
+  de pousser la mise en page.
+
 ## Checklist de cohérence (avant de livrer un écran)
 
 - [ ] Rythme vertical en `space-y-*` (pas de marges isolées).
@@ -69,6 +99,8 @@ Marque directe si besoin : `text-blue`, `bg-navy`, `text-green`…
 - [ ] Rayons via l'échelle (`rounded-md/lg/xl`).
 - [ ] Composants Starwind pour tout élément interactif nouveau.
 - [ ] Testé responsive (mobile 375 / tablette 768 / desktop).
+- [ ] **Aucun débordement horizontal** (`document.documentElement.scrollWidth === clientWidth`).
+- [ ] Polices réduites sur mobile (utilitaires `sm:`/`md:`), rien qui casse en pleine page.
 - [ ] `font-display` sur les titres.
 
 ## Référence
