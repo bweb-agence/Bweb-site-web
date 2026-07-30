@@ -15,6 +15,27 @@ const SITE = "https://www.bwebagence.com";
 
 export type ConfirmResult = { confirmed: number; booking: any | null };
 
+/** État d'une opération de paiement encore non aboutie. */
+export type PendingPaymentState = "attente" | "echoue" | "abandon";
+
+/**
+ * Met à jour l'état de paiement des réservations liées à une référence, SANS
+ * les confirmer (paiement non abouti). N'affecte que les réservations encore
+ * « pending » : une réservation déjà confirmée (payée) n'est jamais rétrogradée.
+ */
+export async function setPaymentStatusByReference(
+  reference: string,
+  state: PendingPaymentState,
+): Promise<void> {
+  if (!reference) return;
+  const admin = createAdminClient();
+  await admin
+    .from("bookings")
+    .update({ payment_status: state })
+    .eq("payment_reference", reference)
+    .eq("status", "pending");
+}
+
 export async function confirmBookingsByReference(reference: string): Promise<ConfirmResult> {
   if (!reference) return { confirmed: 0, booking: null };
   const admin = createAdminClient();
@@ -34,7 +55,7 @@ export async function confirmBookingsByReference(reference: string): Promise<Con
     // en amont. Le passage à « confirmed » déclenche la réduction des places (trigger).
     const { error } = await admin
       .from("bookings")
-      .update({ status: "confirmed", amount_paid: amountPaid })
+      .update({ status: "confirmed", amount_paid: amountPaid, payment_status: "paye" })
       .eq("id", b.id)
       .eq("status", "pending");
     if (error) continue;
