@@ -40,35 +40,36 @@ const accentClass: Record<string, string> = {
       ))}
     </div>
 
-    <!-- Filtres -->
-    <div class="admin-toolbar">
-      <div class="left">
-        <input class="admin-search" id="c-search" type="search" placeholder="Nom, e-mail, téléphone…" />
-        <select class="admin-filter" id="c-status">
-          <option value="">Tous les statuts</option>
-          <option value="client">Clients payants</option>
-          <option value="prospect">Prospects</option>
-          <option value="relance">À relancer</option>
-        </select>
-        <select class="admin-filter" id="c-session"><option value="">Toutes les formations</option></select>
-        <select class="admin-filter" id="c-gateway">
-          <option value="">Toutes passerelles</option>
-          <option value="paystack">Paystack</option>
-          <option value="money_fusion">Money Fusion</option>
-        </select>
-        <select class="admin-filter" id="c-tag"><option value="">Tous les tags</option></select>
-      </div>
-      <Button id="c-export" variant="outline" size="sm">⬇ Exporter CSV</Button>
+    <!-- Filtres + export : une seule ligne -->
+    <div class="admin-toolbar crm-toolbar">
+      <input class="admin-search" id="c-search" type="search" placeholder="Nom, e-mail, téléphone…" />
+      <select class="admin-filter" id="c-status">
+        <option value="">Tous les statuts</option>
+        <option value="client">Clients payants</option>
+        <option value="prospect">Prospects</option>
+        <option value="relance">À relancer</option>
+      </select>
+      <select class="admin-filter" id="c-session"><option value="">Toutes les formations</option></select>
+      <select class="admin-filter" id="c-gateway">
+        <option value="">Toutes passerelles</option>
+        <option value="paystack">Paystack</option>
+        <option value="money_fusion">Money Fusion</option>
+      </select>
+      <select class="admin-filter" id="c-tag"><option value="">Tous les tags</option></select>
+      <Button id="c-export" variant="outline" size="sm" class="crm-export">⬇ Exporter CSV</Button>
     </div>
 
     <!-- Liste -->
     <Card class="gap-0 overflow-hidden p-0">
       <div class="crm-head">
-        <span></span><span>Client</span><span>Contact</span><span>Activité</span><span>Total dépensé</span><span>Statut</span><span></span>
+        <span></span><span>Client</span><span>Contact</span><span>Activité</span><span class="ta-r">Total dépensé</span><span class="ta-c">Statut</span><span></span>
       </div>
       <div class="crm-list" data-rows><div class="crm-loading">Chargement…</div></div>
     </Card>
   </div>
+
+  <!-- Menu d'actions rapides (kebab) — position calculée, hors des cartes pour éviter le clip -->
+  <div class="crm-rowmenu" id="crm-rowmenu" role="menu" hidden></div>
 
   <!-- Tiroir : fiche client -->
   <div class="a-drawer-overlay" id="overlay"></div>
@@ -101,7 +102,7 @@ const accentClass: Record<string, string> = {
     id: string; reference: string; session_id: string; quantity: number;
     full_name: string; email: string | null; phone: string | null; company: string | null;
     amount_due: number; amount_paid: number | null; is_deposit: boolean;
-    payment_method: string | null; payment_reference: string | null; status: string;
+    payment_method: string | null; payment_reference: string | null; status: string; payment_status: string | null;
     attendance_mode: string | null; created_at: string;
     sessions?: { title: string; slug: string; starts_at: string | null; venue: string | null; city: string | null } | null;
     ticket_types?: { name: string } | null;
@@ -129,6 +130,15 @@ const accentClass: Record<string, string> = {
   const txPill: Record<string, string> = {
     confirmed: '<span class="tag-pill ok">Réussi</span>', pending: '<span class="tag-pill wait">En attente</span>',
     cancelled: '<span class="tag-pill full">Annulé</span>', waitlist: '<span class="tag-pill pub">Liste d\'attente</span>',
+  };
+  // État réel d'une transaction (paiement automatique) : payé / en attente /
+  // échoué / abandon / annulé — cf. bookings.payment_status (migration 0024).
+  const txStateOf = (b: Booking): string =>
+    b.status === "confirmed" ? "paye" : b.status === "cancelled" ? "annule" : (b.payment_status || "attente");
+  const txStatePill: Record<string, string> = {
+    paye: '<span class="tag-pill ok">Réussi</span>', attente: '<span class="tag-pill wait">En attente</span>',
+    echoue: '<span class="tag-pill fail">Échoué</span>', abandon: '<span class="tag-pill abandon">Abandon</span>',
+    annule: '<span class="tag-pill full">Annulé</span>',
   };
 
   const digits = (s: string | null) => (s || "").replace(/\D/g, "");
@@ -202,20 +212,57 @@ const accentClass: Record<string, string> = {
         <div class="crm-ca money">${fmtFCFA(c.ca)}</div>
         <div class="crm-status"><span class="tag-pill ${m.cls} dot">${m.label}</span></div>
         <div class="crm-actions">
-          <button class="ic" data-view="${idx}" title="Voir la fiche" aria-label="Voir la fiche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-          ${digits(c.phone) ? `<button class="ic wa" data-wa="${idx}" title="WhatsApp" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg></button>` : ""}
+          <button class="ic crm-kebab" data-menu="${idx}" title="Actions rapides" aria-label="Actions rapides" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button>
         </div>
       </div>`;
     }).join("") : `<div class="crm-empty">Aucun client.</div>`;
 
-    const open = (el: HTMLElement, e: Event) => { if (!(e.target as HTMLElement).closest("[data-wa]")) openDrawer(+el.dataset.idx!); };
+    const open = (el: HTMLElement, e: Event) => { if (!(e.target as HTMLElement).closest("[data-menu]")) openDrawer(+el.dataset.idx!); };
     rows.querySelectorAll<HTMLElement>(".crm-row").forEach((row) => {
       row.addEventListener("click", (e) => open(row, e));
       row.addEventListener("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter") open(row, e); });
     });
-    rows.querySelectorAll<HTMLElement>("[data-wa]").forEach((el) =>
-      el.addEventListener("click", (e) => { e.stopPropagation(); waGeneric(list[+el.dataset.wa!]); }));
+    rows.querySelectorAll<HTMLElement>("[data-menu]").forEach((el) =>
+      el.addEventListener("click", (e) => { e.stopPropagation(); openRowMenu(list[+el.dataset.menu!], +el.dataset.menu!, el); }));
   }
+
+  // ---- Menu d'actions rapides (kebab) ----
+  const rowMenu = document.getElementById("crm-rowmenu")!;
+  function closeRowMenu() { rowMenu.hidden = true; rowMenu.innerHTML = ""; rowMenu.classList.remove("open"); }
+  function openRowMenu(c: Client, idx: number, btn: HTMLElement) {
+    if (rowMenu.classList.contains("open") && rowMenu.dataset.idx === String(idx)) { closeRowMenu(); return; }
+    const waOk = c.customer?.whatsapp_opt_in !== false;
+    const mailOk = c.customer?.email_opt_in !== false;
+    const svgEye = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const svgWa = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>';
+    const svgMail = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
+    const svgTel = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>';
+    const items: string[] = [`<button type="button" role="menuitem" data-act="view">${svgEye}Voir la fiche</button>`];
+    if (digits(c.phone) && waOk) items.push(`<button type="button" role="menuitem" data-act="wa">${svgWa}WhatsApp</button>`);
+    if (c.email && mailOk) items.push(`<a role="menuitem" data-act="mail" href="mailto:${encodeURIComponent(c.email)}">${svgMail}E-mail</a>`);
+    if (c.phone) items.push(`<a role="menuitem" data-act="tel" href="tel:${esc(c.phone.replace(/\s/g, ""))}">${svgTel}Appeler</a>`);
+    rowMenu.innerHTML = items.join("");
+    rowMenu.dataset.idx = String(idx);
+    rowMenu.hidden = false;
+    rowMenu.classList.add("open");
+    // Positionnement fixe sous le bouton (aligné à droite ; bascule vers le haut si besoin)
+    const r = btn.getBoundingClientRect();
+    const mw = rowMenu.offsetWidth, mh = rowMenu.offsetHeight;
+    let left = Math.max(8, r.right - mw);
+    let top = r.bottom + 6;
+    if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 6);
+    rowMenu.style.left = left + "px";
+    rowMenu.style.top = top + "px";
+    // Actions
+    rowMenu.querySelector('[data-act="view"]')?.addEventListener("click", () => { closeRowMenu(); openDrawer(idx); });
+    rowMenu.querySelector('[data-act="wa"]')?.addEventListener("click", () => { closeRowMenu(); markContacted(c); waGeneric(c); });
+    rowMenu.querySelector('[data-act="mail"]')?.addEventListener("click", () => { markContacted(c); closeRowMenu(); });
+    rowMenu.querySelector('[data-act="tel"]')?.addEventListener("click", () => { markContacted(c); closeRowMenu(); });
+  }
+  document.addEventListener("click", (e) => { if (!rowMenu.hidden && !(e.target as HTMLElement).closest("#crm-rowmenu, .crm-kebab")) closeRowMenu(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeRowMenu(); });
+  window.addEventListener("resize", closeRowMenu);
+  rows.addEventListener("scroll", closeRowMenu, true);
 
   // ---- Liens de relance / contact (un-à-un) ----
   const sessionUrl = (slug?: string | null) => slug ? `${site.url}/formations/session/${slug}` : `${site.url}/formations`;
@@ -296,7 +343,7 @@ const accentClass: Record<string, string> = {
       const extra = [dshort(b.created_at), gw, b.is_deposit ? "acompte" : "", b.payment_reference ? "réf " + b.payment_reference.slice(0, 8) + "…" : ""].filter(Boolean).join(" · ");
       return `<div class="cd-line"${b.status === "cancelled" ? ' style="opacity:.7"' : ""}>
         <div class="lbody"><div class="lt">${esc(b.reference)} · ${esc(b.ticket_types?.name || "")}</div><div class="ls">${esc(extra)}</div></div>
-        <div class="lr"><span class="money">${fmtFCFA(paidOf(b))}</span>${txPill[b.status] || esc(b.status)}</div></div>`;
+        <div class="lr"><span class="money">${fmtFCFA(paidOf(b))}</span>${txStatePill[txStateOf(b)] || esc(b.status)}</div></div>`;
     }).join("");
 
     // Consentement (par défaut : accepte, tant que non explicitement désabonné)
@@ -308,11 +355,19 @@ const accentClass: Record<string, string> = {
     const svgWa = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>';
     const svgMail = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
 
-    // Relance (dernière réservation en attente)
-    const pending = c.bookings.find((b) => b.status === "pending");
+    // Relance : la dernière transaction non aboutie — en priorité une qui a
+    // ÉCHOUÉ (paiement tenté sans être finalisé), sinon abandon, sinon en attente.
+    const relanceBooking =
+      c.bookings.find((b) => txStateOf(b) === "echoue") ||
+      c.bookings.find((b) => txStateOf(b) === "abandon") ||
+      c.bookings.find((b) => txStateOf(b) === "attente");
     let relanceHtml = "";
-    if (pending) {
-      const msg = relanceMsg(c, pending);
+    if (relanceBooking) {
+      const st = txStateOf(relanceBooking);
+      const stLabel = st === "echoue" ? "Paiement échoué" : st === "abandon" ? "Paiement abandonné" : "Réservation en attente";
+      const relanceDesc = `${stLabel} sur sa dernière transaction (${relanceBooking.reference}). Message pré-rempli avec son prénom et le lien de la formation.`;
+      const svgInfo = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6h.01"/></svg>';
+      const msg = relanceMsg(c, relanceBooking);
       const wa = hasPhone
         ? (waOk ? `<a class="abtn wa sm" data-track target="_blank" rel="noopener" href="https://wa.me/${digits(c.phone)}?text=${encodeURIComponent(msg)}">${svgWa}Relancer sur WhatsApp</a>` : `<span class="crm-optout">🔕 Désabonné WhatsApp</span>`)
         : "";
@@ -320,8 +375,10 @@ const accentClass: Record<string, string> = {
         ? (mailOk ? `<a class="abtn sm" data-track target="_blank" rel="noopener" href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent("Votre inscription chez Bweb Agence")}&body=${encodeURIComponent(msg)}">${svgMail}Relancer par e-mail</a>` : `<span class="crm-optout">🔕 Désabonné e-mail</span>`)
         : "";
       relanceHtml = `<div class="cd-relance">
-        <p><b>Relancer ce client</b> — une réservation en attente (${esc(pending.reference)}). Message pré-rempli avec son prénom et le lien de la formation.</p>
-        <div class="btns">${wa}${mail}</div></div>`;
+        <div class="cd-relance-top">
+          <b class="cd-relance-title" title="${esc(relanceDesc)}">Relancer ce client<span class="cd-relance-i" aria-hidden="true">${svgInfo}</span></b>
+          <div class="btns">${wa}${mail}</div>
+        </div></div>`;
     }
 
     // Actions de contact rapides — style secondaire (outline) pour laisser la
@@ -360,10 +417,10 @@ const accentClass: Record<string, string> = {
         <div class="cd-stat"><div class="k">Formations</div><div class="v">${c.nbConfirmed}</div></div>
         <div class="cd-stat"><div class="k">À venir</div><div class="v">${aVenir}</div></div>
       </div>
+      ${relanceHtml}
       <div class="cd-sect"><h4>Suivi client</h4>${enrichHtml}</div>
       <div class="cd-sect"><h4>Formations</h4>${formationsHtml}</div>
-      <div class="cd-sect"><h4>Historique des transactions</h4>${txHtml}</div>
-      ${relanceHtml}`);
+      <div class="cd-sect"><h4>Historique des transactions</h4>${txHtml}</div>`);
     wireDrawer(c, idx);
     if (keepScroll) bodyEl.scrollTop = savedScroll;
     openD();
@@ -467,7 +524,7 @@ const accentClass: Record<string, string> = {
   async function load() {
     const [{ data }, { data: custs }] = await Promise.all([
       supabaseBrowser.from("bookings")
-        .select("id,reference,session_id,quantity,full_name,email,phone,company,amount_due,amount_paid,is_deposit,payment_method,payment_reference,status,attendance_mode,created_at,sessions(title,slug,starts_at,venue,city),ticket_types(name)")
+        .select("id,reference,session_id,quantity,full_name,email,phone,company,amount_due,amount_paid,is_deposit,payment_method,payment_reference,status,payment_status,attendance_mode,created_at,sessions(title,slug,starts_at,venue,city),ticket_types(name)")
         .order("created_at", { ascending: false }),
       supabaseBrowser.from("customers").select("id,email,tags,notes,whatsapp_opt_in,email_opt_in,last_contacted_at"),
     ]);

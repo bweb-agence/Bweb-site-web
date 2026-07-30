@@ -244,9 +244,11 @@
 
 /* -------- Liste clients (grille alignée desktop → cartes mobile) -------- */
 .crm-panel { overflow: visible; }
-.crm-head, .crm-row { display: grid; grid-template-columns: 44px minmax(0, 2.3fr) minmax(0, 1.2fr) minmax(0, 1.35fr) minmax(0, 1fr) auto auto; align-items: center; gap: 14px; }
+.crm-head, .crm-row { display: grid; grid-template-columns: 44px minmax(0, 2.2fr) minmax(0, 1.25fr) minmax(0, 1.2fr) minmax(0, 0.95fr) 120px 40px; align-items: center; gap: 14px; }
 .crm-head { padding: 11px 18px; border-bottom: 1px solid var(--c-border); }
 .crm-head span { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-gray-500); }
+.crm-head .ta-r { text-align: right; }
+.crm-head .ta-c { text-align: center; }
 .crm-row { padding: 13px 18px; border-bottom: 1px solid var(--c-border-soft); cursor: pointer; transition: background var(--dur-fast) var(--ease); }
 .crm-row:last-child { border-bottom: 0; }
 .crm-row:hover { background: var(--surface-2); }
@@ -258,7 +260,9 @@
 .crm-activity { color: var(--c-gray-500); font-size: 0.8rem; }
 .crm-activity b { color: var(--c-gray-700); font-weight: 700; }
 .crm-activity .crm-dot { margin: 0 5px; opacity: 0.5; }
-.crm-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.crm-ca { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.crm-status { text-align: center; }
+.crm-actions { display: flex; gap: 6px; justify-content: center; }
 .crm-loading, .crm-empty { padding: 30px 18px; text-align: center; color: var(--c-gray-500); }
 
 /* Boutons icônes (voir / whatsapp) */
@@ -266,6 +270,23 @@
 .ic:hover { color: var(--c-blue); border-color: var(--c-blue); background: color-mix(in srgb, var(--c-blue) 6%, #fff); }
 .ic svg { width: 16px; height: 16px; }
 .ic.wa:hover { color: #25d366; border-color: #25d366; background: color-mix(in srgb, #25d366 8%, #fff); }
+
+/* Barre d'outils Clients : recherche + filtres + export sur UNE SEULE ligne */
+.crm-toolbar { justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
+.crm-toolbar .admin-search { flex: 0 1 240px; min-width: 150px; }
+/* Les selects se dimensionnent sur leur option la plus longue (ex. le titre de
+   session) ; on plafonne pour tout garder sur une ligne — l'option complète reste
+   lisible dans la liste déroulante native. */
+.crm-toolbar .admin-filter { flex: 0 1 auto; min-width: 0; max-width: 190px; text-overflow: ellipsis; }
+.crm-toolbar .crm-export { margin-left: auto; flex: none; white-space: nowrap; }
+
+/* Menu d'actions rapides (kebab ⋮) — positionné en fixed pour ne pas être clippé par la carte */
+.crm-rowmenu { position: fixed; z-index: 80; min-width: 190px; background: #fff; border: 1px solid var(--c-border); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 6px; }
+.crm-rowmenu[hidden] { display: none; }
+.crm-rowmenu button, .crm-rowmenu a { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 11px; border: 0; background: none; border-radius: 8px; font: inherit; font-size: 0.84rem; font-weight: 600; color: var(--c-gray-700); cursor: pointer; text-decoration: none; text-align: left; }
+.crm-rowmenu button:hover, .crm-rowmenu a:hover { background: var(--surface-2); color: var(--c-navy); }
+.crm-rowmenu svg { width: 16px; height: 16px; flex: none; color: var(--c-gray-500); }
+.crm-rowmenu button:hover svg, .crm-rowmenu a:hover svg { color: var(--c-blue); }
 
 /* Cartes empilées sur mobile/tablette */
 @media (max-width: 780px) {
@@ -291,6 +312,11 @@
   .admin-toolbar .admin-search { grid-column: 1 / -1; min-width: 0; width: 100%; }
   .admin-toolbar .admin-filter { min-width: 0; width: 100%; }
   .admin-toolbar > .abtn { width: 100%; justify-content: center; }
+  /* Clients : grille 2 colonnes sur mobile (recherche + export pleine largeur) */
+  .crm-toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .crm-toolbar .admin-search { grid-column: 1 / -1; flex: none; min-width: 0; width: 100%; }
+  .crm-toolbar .admin-filter { min-width: 0; width: 100%; }
+  .crm-toolbar .crm-export { grid-column: 1 / -1; margin-left: 0; width: 100%; }
 }
 
 /* ---------- Fiche client (contenu du tiroir) ---------- */
@@ -315,8 +341,12 @@
 .cd-line .ls { font-size: 0.76rem; color: var(--c-gray-500); }
 .cd-line .lr { text-align: right; flex: none; }
 .cd-line .lr .money { font-family: var(--f-display); font-weight: 800; color: var(--c-navy); font-variant-numeric: tabular-nums; font-size: 0.92rem; display: block; }
-.cd-relance { background: linear-gradient(120deg, rgba(31, 108, 237, 0.06), rgba(0, 200, 158, 0.08)); border: 1px solid var(--c-border); border-radius: 12px; padding: 14px; margin-top: 20px; }
-.cd-relance p { margin: 0 0 10px; font-size: 0.85rem; color: var(--c-gray-700); }
+.cd-relance { background: linear-gradient(120deg, rgba(31, 108, 237, 0.06), rgba(0, 200, 158, 0.08)); border: 1px solid var(--c-border); border-radius: 12px; padding: 11px 13px; margin-top: 16px; }
+.cd-relance-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cd-relance-title { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 800; color: var(--c-navy); cursor: help; }
+.cd-relance-i { display: inline-flex; color: var(--c-gray-400); }
+.cd-relance-i svg { width: 15px; height: 15px; }
+.cd-relance-title:hover .cd-relance-i { color: var(--c-blue); }
 .cd-relance .btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .cd-empty { color: var(--c-gray-500); font-size: 0.84rem; padding: 6px 0; }
 .money { font-family: var(--f-display); font-weight: 800; color: var(--c-navy); font-variant-numeric: tabular-nums; }
