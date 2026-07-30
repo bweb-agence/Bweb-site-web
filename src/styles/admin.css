@@ -379,3 +379,36 @@
 .camp-hrow b { font-size: 0.86rem; color: var(--c-ink); display: block; }
 .camp-hrow .hint { display: block; margin-top: 2px; }
 .camp-hcount { font-size: 0.8rem; color: var(--c-gray-600); white-space: nowrap; }
+
+/* =========================================================
+   Garde-fous responsive & anti-débordement (admin)
+   Règle : un élément ne doit jamais déborder de son parent.
+   ========================================================= */
+/* La zone de contenu ne défile jamais horizontalement (les zones
+   scrollables volontaires — tables — utilisent .overflow-x-auto en interne). */
+.admin-main { min-width: 0; }
+.admin-content { max-width: 100%; overflow-x: clip; }
+
+/* Fix débordement flex/grid : les enfants peuvent rétrécir sous leur
+   contenu au lieu de forcer l'élargissement du parent. */
+.sw :where(.grid, .flex) > * { min-width: 0; }
+
+/* Le texte long SANS espaces (e-mails, URLs) se coupe au lieu de déborder —
+   ciblé (pas globalement, pour ne pas casser nombres/titres). */
+.crm-id .sub, .cd-head .meta, .camp-note, .cd-line .ls { overflow-wrap: anywhere; }
+
+/* Un média n'est jamais plus large que son parent. */
+.admin-content :where(img, svg, video, canvas) { max-width: 100%; }
+
+/* Réduction des polices sur petits écrans : meilleure lisibilité et
+   moins de risques de débordement (montants, titres, cellules). */
+@media (max-width: 640px) {
+  .admin-topbar h1 { font-size: 1.05rem; }
+  .admin-table { font-size: 0.82rem; }
+  .admin-table th, .admin-table td { padding: 10px 12px; }
+  .kpi-v { font-size: 1.25rem; }
+  .kpi-k { font-size: 0.64rem; }
+  .crm-id b { font-size: 0.86rem; }
+  .crm-contact, .crm-activity { font-size: 0.78rem; }
+  .cd-head h3 { font-size: 1.1rem; }
+}
