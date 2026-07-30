@@ -78,6 +78,12 @@ const nav = [
     <script>
       import { supabaseBrowser } from "../lib/supabaseBrowser";
 
+      // Défense en profondeur : le back-office n'utilise jamais le smooth-scroll
+      // (Lenis) — marque explicitement les tiroirs comme « défilement natif » pour
+      // que, même si Lenis était présent, il ne capte pas la molette (le tiroir doit
+      // défiler en interne, pas le fond). Couvre toutes les pages admin à tiroir.
+      document.querySelectorAll(".a-drawer, .a-drawer-body").forEach((el) => el.setAttribute("data-lenis-prevent", ""));
+
       // Filet anti-blocage : si la vérification n'aboutit pas, on propose de recharger
       // plutôt que de laisser un spinner infini.
       const failsafe = setTimeout(() => {
