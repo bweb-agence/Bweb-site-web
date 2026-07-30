@@ -1,7 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
-import { confirmBookingsByReference } from "../../lib/confirmBooking";
+import { confirmBookingsByReference, setPaymentStatusByReference } from "../../lib/confirmBooking";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -64,8 +64,17 @@ export const POST: APIRoute = async ({ request }) => {
     }
   }
 
-  // Pas encore payé : rien à confirmer (le webhook/retour rappellera).
-  if (!paid) return json({ ok: true, statut, montant, confirmed: 0 });
+  // Pas encore payé : rien à confirmer, mais on enregistre l'état réel de
+  // l'opération pour l'admin (attente / échoué / abandon). Le libellé de la
+  // passerelle décide (Paystack : success/ongoing/pending/failed/abandoned/reversed).
+  if (!paid) {
+    const ongoing = ["ongoing", "pending", "processing", "queued", "en attente", "en_cours", ""].includes(statut);
+    const abandoned = ["abandoned", "abandon", "cancelled", "canceled", "annulé", "annule"].includes(statut);
+    if (!ongoing) {
+      await setPaymentStatusByReference(token, abandoned ? "abandon" : "echoue");
+    }
+    return json({ ok: true, statut, montant, confirmed: 0 });
+  }
 
   // 2) Confirmer les réservations liées à cette référence de paiement.
   const { confirmed, booking } = await confirmBookingsByReference(token);
