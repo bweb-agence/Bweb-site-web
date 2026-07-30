@@ -1,0 +1,19 @@
+---
+/**
+ * Tuile statistique simple (tableau de bord). Valeur dans le slot par défaut
+ * ou prop `value`. `tone` colore la valeur (ok = vert, warn = orange).
+ *
+ * @example <StatTile label="Réservations confirmées" value="128" tone="ok" />
+ */
+interface Props {
+  label: string;
+  value?: string;
+  tone?: "default" | "ok" | "warn";
+}
+const { label, value, tone = "default" } = Astro.props;
+---
+
+<div class="stat">
+  <div class="k">{label}</div>
+  <div class:list={["v", tone !== "default" && tone]}><slot>{value}</slot></div>
+</div>

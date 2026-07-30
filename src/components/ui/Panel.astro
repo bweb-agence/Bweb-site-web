@@ -1,0 +1,28 @@
+---
+/**
+ * Panneau/carte de contenu (fond blanc, bordure, ombre). En-tête optionnel
+ * avec titre + actions (slot `actions`).
+ *
+ * @example
+ *   <Panel title="Paiements à vérifier">
+ *     <Button slot="actions" size="sm" href="/admin/reservations">Tout voir</Button>
+ *     …contenu…
+ *   </Panel>
+ */
+interface Props {
+  title?: string;
+  class?: string;
+}
+const { title, class: cls } = Astro.props;
+const hasActions = Astro.slots.has("actions");
+---
+
+<div class:list={["panel", cls]}>
+  {(title || hasActions) && (
+    <div class="panel-head">
+      {title && <h2>{title}</h2>}
+      {hasActions && <div class="panel-actions"><slot name="actions" /></div>}
+    </div>
+  )}
+  <slot />
+</div>

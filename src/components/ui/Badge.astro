@@ -1,0 +1,20 @@
+---
+/**
+ * Pastille de statut / étiquette. S'appuie sur les classes .tag-pill.
+ * Variantes d'état : ok · wait · pub · draft · full · archived
+ * Variantes CRM   : client · prospect · relance
+ *
+ * @example <Badge variant="ok" dot>Confirmée</Badge>
+ */
+interface Props {
+  variant?:
+    | "ok" | "wait" | "pub" | "draft" | "full" | "archived"
+    | "client" | "prospect" | "relance" | "";
+  dot?: boolean;
+  class?: string;
+}
+const { variant = "", dot = false, class: cls } = Astro.props;
+const classList = ["tag-pill", variant, dot && "dot", cls].filter(Boolean).join(" ");
+---
+
+<span class={classList}><slot /></span>

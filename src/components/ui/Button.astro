@@ -1,0 +1,24 @@
+---
+/**
+ * Bouton du design system admin. Rend un <a> si `href` est fourni, sinon un
+ * <button>. S'appuie sur les classes .abtn (voir admin.css).
+ *
+ * @example
+ *   <Button variant="primary">Enregistrer</Button>
+ *   <Button variant="wa" size="sm" href="https://wa.me/…">WhatsApp</Button>
+ */
+interface Props {
+  variant?: "default" | "primary" | "wa" | "danger" | "ghost";
+  size?: "md" | "sm";
+  href?: string;
+  type?: "button" | "submit" | "reset";
+  class?: string;
+  [key: string]: unknown;
+}
+const { variant = "default", size = "md", href, type = "button", class: cls, ...rest } = Astro.props;
+const classList = ["abtn", variant !== "default" && variant, size === "sm" && "sm", cls].filter(Boolean).join(" ");
+const Tag = href ? "a" : "button";
+const tagProps = href ? { href } : { type };
+---
+
+<Tag class={classList} {...tagProps} {...rest}><slot /></Tag>
