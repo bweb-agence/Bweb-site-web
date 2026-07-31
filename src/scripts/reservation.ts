@@ -167,7 +167,11 @@ export function initReservation() {
   }
   tickets.forEach((t) => {
     const max = parseInt(t.dataset.remaining || "0");
-    const valEl = t.querySelector<HTMLElement>("[data-val]")!;
+    const valEl = t.querySelector<HTMLElement>("[data-val]");
+    // Tarif épuisé : rendu SANS sélecteur (badge « Épuisé »). Sans ce garde-fou,
+    // `apply()` plantait sur `valEl` null → toute l'init du tunnel échouait et le
+    // bouton « Réserver ma place » ne s'ouvrait plus (bug bloquant en prod).
+    if (!valEl) return;
     const dec = t.querySelector<HTMLButtonElement>("[data-dec]");
     const inc = t.querySelector<HTMLButtonElement>("[data-inc]");
     if (max > 0) t.classList.add("is-tappable");
