@@ -2,7 +2,6 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 import { createAdminClient } from "../../lib/supabaseAdmin";
-import { sendEmail, ackEmail } from "../../lib/email";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -67,12 +66,10 @@ export const POST: APIRoute = async ({ request }) => {
       refs.push(data.reference);
     }
 
-    // Accusé de réception par e-mail (Bird) — silencieux si non configuré.
-    const { data: sessRow } = await admin
-      .from("bookings").select("sessions(title)").eq("reference", refs[0]).maybeSingle();
-    const sessionTitle = (sessRow as any)?.sessions?.title || "votre formation";
-    const ack = ackEmail({ reference: refs[0], full_name: name, session_title: sessionTitle });
-    await sendEmail({ to: email, subject: ack.subject, html: ack.html });
+    // Un seul e-mail est envoyé au client sur tout le parcours : l'e-mail de
+    // CONFIRMATION avec le billet (infos d'accès), une fois le paiement vérifié
+    // (voir lib/confirmBooking). On n'envoie donc AUCUN accusé de réception ici,
+    // quand l'acheteur n'a fait que tenter/initier son paiement.
     return json({ ok: true, reference: refs[0], references: refs });
   } catch {
     return json({ ok: false, error: "server" }, 500);

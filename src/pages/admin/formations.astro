@@ -1,19 +1,28 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
 ---
 
 <AdminLayout title="Formations" active="formations">
-  <div class="admin-toolbar">
-    <div class="left"><input class="admin-search" id="f-search" type="search" placeholder="Rechercher une formation…" /></div>
-    <button class="abtn primary" id="new-btn">+ Nouvelle formation</button>
-  </div>
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left"><input class="admin-search" id="f-search" type="search" placeholder="Rechercher une formation…" /></div>
+      <div class="flex gap-2">
+        <Button variant="outline" size="sm" href="/admin/import">⬆ Importer (JSON)</Button>
+        <Button variant="primary" id="new-btn">+ Nouvelle formation</Button>
+      </div>
+    </div>
 
-  <div class="panel">
-    <table class="admin-table">
-      <thead><tr><th>Titre</th><th>Thème</th><th>Durée</th><th>Prix indicatif</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
-    </table>
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[600px]">
+          <thead><tr><th>Titre</th><th>Thème</th><th>Durée</th><th>Prix indicatif</th><th></th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 
   <div class="a-drawer-overlay" id="overlay"></div>
@@ -41,7 +50,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { slugify, esc, fmtFCFA, toast } from "../../scripts/adminUtils";
+  import { slugify, esc, fmtFCFA, toast, confirmModal } from "../../scripts/adminUtils";
 
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
@@ -58,10 +67,12 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         <td>${esc(f.theme || "—")}</td><td>${esc(f.duration || "—")}</td><td>${f.default_price ? fmtFCFA(f.default_price) : "—"}</td>
         <td><div class="row-actions">
           <button class="icon-btn" data-edit="${f.id}" title="Éditer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="icon-btn" data-dup="${f.id}" title="Dupliquer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
           <button class="icon-btn danger" data-del="${f.id}" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
         </div></td>
       </tr>`).join("") : `<tr><td class="empty" colspan="5">Aucune formation.</td></tr>`;
     rows.querySelectorAll<HTMLElement>("[data-edit]").forEach((b) => b.addEventListener("click", () => edit(b.dataset.edit!)));
+    rows.querySelectorAll<HTMLElement>("[data-dup]").forEach((b) => b.addEventListener("click", () => dup(b.dataset.dup!)));
     rows.querySelectorAll<HTMLElement>("[data-del]").forEach((b) => b.addEventListener("click", () => del(b.dataset.del!)));
   }
   const applySearch = () => { const q = ($("f-search").value || "").toLowerCase(); render(all.filter((f) => !q || (f.title + " " + (f.theme || "")).toLowerCase().includes(q))); };
@@ -78,12 +89,45 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   }
   const openNew = () => { location.href = "/admin/editeur/formation/nouveau"; };
   const edit = (id: string) => { location.href = "/admin/editeur/formation/" + id; };
+  async function dup(id: string) {
+    const f = all.find((x) => x.id === id);
+    if (!f) return;
+    const copy: any = { ...f };
+    delete copy.id; delete copy.created_at; delete copy.updated_at;
+    copy.title = `${f.title} (copie)`;
+    copy.slug = `${f.slug}-copie`;
+    let { error } = await supabaseBrowser.from("formations").insert(copy);
+    if (error) { // slug déjà pris -> suffixe aléatoire
+      copy.slug = `${f.slug}-copie-${Math.random().toString(36).slice(2, 6)}`;
+      ({ error } = await supabaseBrowser.from("formations").insert(copy));
+    }
+    if (error) { toast("Duplication impossible.", "err"); return; }
+    toast("Formation dupliquée. ✅");
+    await load();
+  }
   async function del(id: string) {
     const f = all.find((x) => x.id === id);
-    if (!window.confirm(`Supprimer « ${f?.title} » ? Les sessions liées ne seront pas supprimées.`)) return;
+    // Les dates (sessions) sont les disponibilités de la formation : on les supprime avec elle.
+    const { data: sess } = await supabaseBrowser.from("sessions").select("id").eq("formation_id", id);
+    const sessionIds = (sess || []).map((s: any) => s.id);
+    // Garde-fou : on ne supprime jamais des dates qui ont des réservations.
+    if (sessionIds.length) {
+      const { count } = await supabaseBrowser.from("bookings").select("id", { count: "exact", head: true }).in("session_id", sessionIds);
+      if ((count || 0) > 0) {
+        toast(`Impossible : cette formation a des dates avec ${count} réservation(s). Gérez-les d'abord dans les dates.`, "err");
+        return;
+      }
+    }
+    const suffix = sessionIds.length ? ` et ses ${sessionIds.length} date(s)` : "";
+    if (!(await confirmModal({ title: "Supprimer la formation", message: `Supprimer « ${f?.title} »${suffix} ?\nAction irréversible.`, danger: true, confirmLabel: "Supprimer" }))) return;
+    if (sessionIds.length) {
+      const { error: se } = await supabaseBrowser.from("sessions").delete().eq("formation_id", id);
+      if (se) { toast("Suppression des dates impossible.", "err"); return; }
+    }
     const { error } = await supabaseBrowser.from("formations").delete().eq("id", id);
     if (error) { toast("Suppression impossible.", "err"); return; }
-    toast("Formation supprimée."); await load();
+    toast(sessionIds.length ? "Formation et ses dates supprimées." : "Formation supprimée.");
+    await load();
   }
   async function save() {
     const title = $("f-title").value.trim(); const slug = $("f-slug").value.trim() || slugify(title);

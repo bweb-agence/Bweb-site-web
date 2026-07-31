@@ -61,3 +61,52 @@ export function toast(message: string, kind: "ok" | "err" = "ok") {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el!.className = "a-toast " + kind; }, 3200);
 }
+
+/**
+ * Modale de confirmation (remplace window.confirm, souvent bloqué par le navigateur).
+ * Renvoie une promesse : true si confirmé, false sinon. Échap / clic-fond = annuler,
+ * Entrée = confirmer. Utiliser `danger: true` pour les actions destructives.
+ */
+export function confirmModal(opts: {
+  message: string;
+  title?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  danger?: boolean;
+}): Promise<boolean> {
+  return new Promise((resolve) => {
+    const prev = document.activeElement as HTMLElement | null;
+    const overlay = document.createElement("div");
+    overlay.className = "cm-overlay";
+    const msgHtml = esc(opts.message).replace(/\n/g, "<br>");
+    overlay.innerHTML =
+      `<div class="cm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="cm-title" aria-describedby="cm-msg">
+        <h3 id="cm-title" class="cm-title">${esc(opts.title || "Confirmer l'action")}</h3>
+        <p id="cm-msg" class="cm-msg">${msgHtml}</p>
+        <div class="cm-actions">
+          <button type="button" class="abtn cm-cancel">${esc(opts.cancelLabel || "Annuler")}</button>
+          <button type="button" class="abtn ${opts.danger ? "cm-danger" : "primary"} cm-ok">${esc(opts.confirmLabel || (opts.danger ? "Supprimer" : "Confirmer"))}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.body.style.overflow = "hidden";
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    const done = (val: boolean) => {
+      document.removeEventListener("keydown", onKey, true);
+      overlay.classList.remove("show");
+      setTimeout(() => overlay.remove(), 160);
+      document.body.style.overflow = "";
+      try { prev?.focus?.(); } catch { /* ignore */ }
+      resolve(val);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); done(false); }
+      else if (e.key === "Enter") { e.preventDefault(); done(true); }
+    };
+    overlay.querySelector(".cm-cancel")!.addEventListener("click", () => done(false));
+    overlay.querySelector(".cm-ok")!.addEventListener("click", () => done(true));
+    overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) done(false); });
+    document.addEventListener("keydown", onKey, true);
+    (overlay.querySelector(".cm-ok") as HTMLElement).focus();
+  });
+}

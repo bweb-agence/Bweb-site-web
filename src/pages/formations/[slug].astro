@@ -1,0 +1,218 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { supabase } from "../../lib/supabase";
+import { site, contact } from "../../config/site";
+import { gradClass, gradSuffix, themeColorMap } from "../../lib/format";
+import { marked } from "marked";
+import "../../styles/formations.css";
+
+const { slug } = Astro.params;
+
+const { data: formation } = await supabase.from("formations").select("*").eq("slug", slug).maybeSingle();
+
+// Cette page n'existe QUE pour les formations « Bientôt » (sans date publiée).
+// Dès qu'une date est en ligne, on redirige vers la prochaine date (pas de doublon
+// avec la page de session, qui présente déjà toute la formation).
+if (formation) {
+  const { data: sess } = await supabase
+    .from("sessions")
+    .select("slug")
+    .eq("formation_id", formation.id)
+    .in("status", ["published", "full"])
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true })
+    .limit(1);
+  const soonest = sess?.[0];
+  if (soonest) return Astro.redirect(`/formations/session/${soonest.slug}`, 307);
+  if (!formation.coming_soon) return Astro.redirect("/formations/calendrier", 307);
+}
+if (!formation) Astro.response.status = 404;
+
+const { data: themesData } = await supabase.from("themes").select("name,color");
+const tmap = themeColorMap(themesData);
+
+let faqs: { question: string; answer_md: string }[] = [];
+if (formation) {
+  const { data: fq } = await supabase
+    .from("faqs").select("question,answer_md,sort")
+    .or(`formation_id.is.null,formation_id.eq.${formation.id}`).order("sort", { ascending: true });
+  faqs = fq ?? [];
+}
+
+const levelText = (formation?.level || "Tous niveaux").trim();
+const levelSlug = (() => {
+  const l = levelText.toLowerCase();
+  if (l.includes("débutant") || l.includes("debutant")) return "debutant";
+  if (l.includes("intermédiaire") || l.includes("intermediaire")) return "intermediaire";
+  if (l.includes("avancé") || l.includes("avance")) return "avance";
+  if (l.includes("prérequis") || l.includes("prerequis")) return "prerequis";
+  return "tous";
+})();
+
+const desc = formation?.description_md ?? "";
+const [introRaw, progRaw] = desc.split(/##\s*Au programme/i);
+const intro = (introRaw || formation?.summary || "").trim();
+const learnItems = (progRaw || "").split("\n").map((l) => l.trim()).filter((l) => l.startsWith("- ")).map((l) => l.slice(2).trim());
+const richHtml = formation?.description_html || "";
+let detailHtml = richHtml || (intro ? (marked.parse(intro, { async: false }) as string) : "");
+if (learnItems.length > 0 && richHtml) detailHtml = detailHtml.replace(/<h[1-6][^>]*>\s*au programme[\s\S]*$/i, "").trim();
+
+const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+const waNotify = `https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("Bonjour Bweb Agence, je souhaite être prévenu·e des prochaines dates de la formation « " + (formation?.title || "") + " ».")}`;
+
+const crumbs = formation ? [
+  { name: "Accueil", path: "/" },
+  { name: "Formations", path: "/formations" },
+  { name: formation.title, path: `/formations/${formation.slug}` },
+] : undefined;
+---
+
+{formation ? (
+  <BaseLayout
+    title={formation.seo_title || `${formation.title} — Formation à Abidjan (bientôt) | Bweb`}
+    description={formation.seo_description || formation.summary || `Formation ${formation.title} à Abidjan — dates bientôt annoncées.`}
+    breadcrumbs={crumbs}
+    hideWhatsApp={true}
+  >
+    <article class="section" style="padding-top:calc(var(--header-h) + var(--space-lg))">
+      <div class="container">
+        <a class="sess-back" href="/formations">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6" /></svg>
+          Toutes les formations
+        </a>
+
+        <div class="fmp-head">
+          <div class="fmp-head__text">
+            <div class="sess-eyebrows">
+              {formation.theme && <span class="eyebrow">{formation.theme}</span>}
+              <span class={`sess-level ${levelSlug}`}>{levelText}</span>
+              <span class="fmp-soon-badge">● Bientôt</span>
+            </div>
+            <h1 class="fmp-title">{formation.title}</h1>
+            {formation.summary && <p class="sess-desc" style="max-width:60ch">{formation.summary}</p>}
+            <div class="sess-meta">
+              {formation.duration && <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{formation.duration}</span>}
+              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg>{formation.instructor_name ?? "Expert Bweb"}</span>
+            </div>
+          </div>
+          <div class={`fmp-head__media ev-media ${gradClass(formation.theme, tmap)}`} data-grad={gradSuffix(formation.theme, tmap)}>
+            {formation.image_url && <img src={formation.image_url} alt="" />}
+            <span class="ev-scrim"></span>
+            {formation.theme && <span class="ev-theme"><span class="dot"></span>{formation.theme}</span>}
+          </div>
+        </div>
+
+        <section class="fmp-dates">
+          <div class="fmp-soon">
+            <div class="fmp-soon__ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+            <div class="fmp-soon__body">
+              <h2>Cette formation arrive bientôt.</h2>
+              <p>Les prochaines dates ne sont pas encore ouvertes. Laissez-nous un message sur WhatsApp : on vous prévient dès qu'une session est programmée.</p>
+            </div>
+            <a class="btn btn-wa btn-lg" href={waNotify} target="_blank" rel="noopener">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1012 2z"/></svg>
+              Être prévenu·e
+            </a>
+          </div>
+        </section>
+
+        <div class="fmp-body">
+          {learnItems.length > 0 && (
+            <div class="learn-box">
+              <h2>Ce que vous apprendrez</h2>
+              <ul class="learn-grid">
+                {learnItems.map((it) => (<li><Fragment set:html={ck} />{it}</li>))}
+              </ul>
+            </div>
+          )}
+
+          {detailHtml && (
+            <>
+              <h2 class="sectitle">À propos de cette formation</h2>
+              <div class="sess-prose" set:html={detailHtml} />
+            </>
+          )}
+
+          {(formation.audience || formation.prerequisites) && (
+            <>
+              <h2 class="sectitle">À qui s'adresse cette formation</h2>
+              <div class="audience-grid">
+                {formation.audience && (
+                  <div class="ag-card">
+                    <div class="ag-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M22 20a6.5 6.5 0 0 0-4-6"/></svg>Public visé</div>
+                    <p>{formation.audience}</p>
+                  </div>
+                )}
+                {formation.prerequisites && (
+                  <div class="ag-card">
+                    <div class="ag-h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Prérequis</div>
+                    <p>{formation.prerequisites}</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {formation.instructor_name && (formation.instructor_bio || formation.instructor_photo_url) && (
+            <>
+              <h2 class="sectitle">Votre formateur</h2>
+              <div class="instructor">
+                {formation.instructor_photo_url && <img class="instructor__photo" src={formation.instructor_photo_url} alt={formation.instructor_name} loading="lazy" />}
+                <div class="instructor__body">
+                  <div class="instructor__name">{formation.instructor_name}</div>
+                  {formation.instructor_role && <div class="instructor__role">{formation.instructor_role}</div>}
+                  {formation.instructor_bio && <p class="instructor__bio">{formation.instructor_bio}</p>}
+                </div>
+              </div>
+            </>
+          )}
+
+          {faqs.length > 0 && (
+            <>
+              <h2 class="sectitle">Questions fréquentes</h2>
+              <div class="faq">
+                {faqs.map((f, i) => (
+                  <details class="faq-item" open={i === 0}>
+                    <summary>{f.question}</summary>
+                    <div class="faq-answer" set:html={marked.parse(f.answer_md, { async: false }) as string} />
+                  </details>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </article>
+  </BaseLayout>
+) : (
+  <BaseLayout title="Formation introuvable | Bweb Agence" noindex={true}>
+    <section class="section" style="padding-top:calc(var(--header-h) + var(--space-xl))">
+      <div class="container" style="text-align:center">
+        <div class="eyebrow" style="justify-content:center">Erreur 404</div>
+        <h1>Cette formation n'existe pas (ou plus).</h1>
+        <p class="lead">Découvrez toutes nos formations au calendrier.</p>
+        <p style="margin-top:var(--space-md)"><a class="btn btn-primary" href="/formations/calendrier">Voir le calendrier</a></p>
+      </div>
+    </section>
+  </BaseLayout>
+)}
+
+<style>
+  .fmp-head { display: grid; grid-template-columns: 1fr; gap: 22px; margin: 18px 0 8px; }
+  @media (min-width: 860px) { .fmp-head { grid-template-columns: 1fr 340px; align-items: start; gap: 30px; } }
+  .fmp-title { font-family: var(--f-display); font-weight: 800; font-size: var(--fs-h1); line-height: 1.06; letter-spacing: -.02em; margin: 10px 0 12px; color: var(--c-ink); }
+  .fmp-head__media { aspect-ratio: 16 / 9; border-radius: var(--radius-lg); overflow: hidden; position: relative; box-shadow: var(--shadow-md); }
+  .fmp-head__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .fmp-soon-badge { font-size: .72rem; font-weight: 800; letter-spacing: .02em; color: #8a5a00; background: #fff2d6; padding: 4px 11px; border-radius: var(--radius-pill); }
+  .fmp-dates { margin: 26px 0 8px; }
+  .fmp-soon { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: linear-gradient(120deg, rgba(31,108,237,.06), rgba(255,199,42,.10)); border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: 20px 22px; }
+  .fmp-soon__ic { flex: none; width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; color: #fff; background: var(--g-navy); }
+  .fmp-soon__body { flex: 1; min-width: 220px; }
+  .fmp-soon__body h2 { font-family: var(--f-display); font-weight: 800; font-size: var(--fs-h4); margin: 0 0 4px; color: var(--c-ink); }
+  .fmp-soon__body p { margin: 0; color: var(--c-gray-600); font-size: .9rem; max-width: 58ch; }
+  .fmp-body { max-width: 760px; margin-top: 20px; }
+  .fmp-body .learn-box { margin-top: 0; }
+</style>

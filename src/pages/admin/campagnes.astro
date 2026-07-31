@@ -1,0 +1,419 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
+---
+
+<AdminLayout title="Campagnes" active="campagnes">
+  <p class="admin-sub">Préviens ta base clients d'une nouvelle session ou formation — par WhatsApp (liens un-à-un) ou par e-mail. Doublons dédupliqués, désabonnés exclus.</p>
+
+  <div class="camp-grid">
+    <!-- Composer -->
+    <Card class="p-[18px]">
+      <div class="a-field">
+        <label>Canal</label>
+        <div class="camp-seg" id="chan">
+          <button type="button" class="on" data-ch="whatsapp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>WhatsApp</button>
+          <button type="button" data-ch="email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>E-mail</button>
+        </div>
+      </div>
+
+      <div class="a-field">
+        <label>Cible (audience)</label>
+        <div class="camp-aud" id="aud">
+          <button type="button" class="camp-chip on" data-a="clients">Clients payants <span class="n" data-n="clients">0</span></button>
+          <button type="button" class="camp-chip" data-a="prospects">Prospects <span class="n" data-n="prospects">0</span></button>
+          <button type="button" class="camp-chip" data-a="abandons">Abandons <span class="n" data-n="abandons">0</span></button>
+          <button type="button" class="camp-chip" data-a="theme">Intéressés par un thème <span class="n" data-n="theme">0</span></button>
+          <button type="button" class="camp-chip" data-a="all">Toute la base <span class="n" data-n="all">0</span></button>
+        </div>
+        <select class="a-select" id="theme-sel" style="margin-top:8px;display:none"></select>
+        <div class="camp-recipients"><span class="big" id="rcount">0</span><span class="hint" id="rhint">destinataires estimés pour ce canal</span></div>
+      </div>
+
+      <div class="a-field">
+        <label>Formation / session à mettre en avant</label>
+        <select class="a-select" id="sess-sel"><option value="">— Aucune (message libre) —</option></select>
+      </div>
+
+      <div class="a-field" id="tpl-field" style="display:none">
+        <label>Modèle d'e-mail <span class="hint" style="font-weight:600">— créez-en dans <a href="/admin/emails" style="color:var(--c-blue)">E-mails</a></span></label>
+        <select class="a-select" id="tpl-sel"><option value="">— Choisir un modèle —</option></select>
+      </div>
+
+      <div class="a-field" id="subj-field" style="display:none">
+        <label>Objet de l'e-mail</label>
+        <input class="a-input" id="subject" placeholder="Nouvelle session : {formation}" />
+      </div>
+
+      <div class="a-field" id="msg-field">
+        <label>Message <span class="hint" style="font-weight:600">{"— variables : {prenom} {formation} {date} {lien}"}</span></label>
+        <textarea class="a-textarea" id="msg" style="min-height:120px">{"Bonjour {prenom} 👋 Une nouvelle session « {formation} » est ouverte le {date} à Abidjan. Places limitées — réservez la vôtre ici : {lien}"}</textarea>
+      </div>
+
+      <div class="a-field" id="sched-field" style="display:none">
+        <label>Envoi</label>
+        <div class="camp-seg" id="when">
+          <button type="button" class="on" data-when="now">Maintenant</button>
+          <button type="button" data-when="later">Programmer</button>
+        </div>
+        <input class="a-input" id="sched-at" type="datetime-local" style="margin-top:8px;display:none" />
+      </div>
+
+      <div class="camp-actions">
+        <Button variant="primary" id="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg><span id="send-lbl">Préparer l'envoi</span></Button>
+        <Button variant="outline" id="test" style="display:none">Test sur moi</Button>
+      </div>
+      <p class="camp-note" id="note"></p>
+    </Card>
+
+    <!-- Aperçu + historique -->
+    <div class="flex flex-col gap-4">
+      <Card class="gap-0 overflow-hidden p-0">
+        <div class="panel-head"><h2 id="prev-title">Aperçu WhatsApp</h2></div>
+        <div id="preview"></div>
+      </Card>
+      <Card class="gap-0 overflow-hidden p-0">
+        <div class="panel-head"><h2>Campagnes récentes</h2></div>
+        <div id="history" style="padding:6px 16px 14px"><p class="cd-empty">Chargement…</p></div>
+      </Card>
+    </div>
+  </div>
+
+  <!-- File d'envoi WhatsApp (un-à-un) -->
+  <div class="a-drawer-overlay" id="q-overlay"></div>
+  <aside class="a-drawer" id="q-drawer" aria-hidden="true">
+    <div class="a-drawer-head"><h2>Envoi WhatsApp un-à-un</h2><button class="icon-btn" id="q-close">✕</button></div>
+    <div class="a-drawer-body">
+      <p class="hint" style="margin:0 0 14px">Clique « Ouvrir » pour chaque contact : WhatsApp s'ouvre avec le message pré-rempli, tu n'as qu'à envoyer. Marque « Envoyé » pour suivre ta progression.</p>
+      <div class="camp-qprogress"><div class="bar"><span id="q-bar"></span></div><span id="q-count">0 / 0 envoyés</span></div>
+      <div id="q-list" class="camp-qlist"></div>
+    </div>
+  </aside>
+</AdminLayout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+  import { esc, toast, confirmModal } from "../../scripts/adminUtils";
+  import { site } from "../../config/site";
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const digits = (s: string | null) => (s || "").replace(/\D/g, "");
+  const firstName = (n: string) => (n || "").trim().split(/\s+/)[0] || "";
+
+  type Client = {
+    name: string; email: string; phone: string; status: "client" | "prospect" | "relance";
+    themeIds: Set<string>; email_opt_in: boolean; whatsapp_opt_in: boolean;
+  };
+  type Sess = { id: string; title: string; slug: string; starts_at: string | null; theme_id: string | null };
+  type Tpl = { id: string; name: string; subject: string; body_html: string };
+
+  let clients: Client[] = [];
+  let sessions: Sess[] = [];
+  let templates: Tpl[] = [];
+  let channel: "whatsapp" | "email" = "whatsapp";
+  let audience = "clients";
+  let sendMode: "now" | "later" = "now";
+
+  const selectedTemplate = () => templates.find((t) => t.id === ($("tpl-sel") as HTMLSelectElement).value) || null;
+
+  const frDate = (d?: string | null) => d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
+  const sessionUrl = (slug?: string) => slug ? `${site.url}/formations/session/${slug}` : `${site.url}/formations`;
+  const selectedSession = () => sessions.find((s) => s.id === ($("sess-sel") as HTMLSelectElement).value) || null;
+
+  // ---- Audiences ----
+  function inAudience(c: Client): boolean {
+    if (audience === "clients") return c.status === "client";
+    if (audience === "prospects") return c.status === "prospect";
+    if (audience === "abandons") return c.status === "relance";
+    if (audience === "all") return true;
+    if (audience === "theme") { const t = ($("theme-sel") as HTMLSelectElement).value; return !!t && c.themeIds.has(t); }
+    return false;
+  }
+  // Destinataires joignables sur le canal courant (dédup + consentement)
+  function recipients(): Client[] {
+    const seen = new Set<string>();
+    return clients.filter((c) => {
+      if (!inAudience(c)) return false;
+      if (channel === "email") {
+        const e = c.email.trim().toLowerCase();
+        if (!e || c.email_opt_in === false || seen.has(e)) return false;
+        seen.add(e); return true;
+      } else {
+        const p = digits(c.phone);
+        if (!p || c.whatsapp_opt_in === false || seen.has(p)) return false;
+        seen.add(p); return true;
+      }
+    });
+  }
+  function audienceCount(a: string): number {
+    const prev = audience; audience = a;
+    const n = recipients().length; audience = prev; return n;
+  }
+  const audienceLabel = () => ({ clients: "Clients payants", prospects: "Prospects", abandons: "Abandons", theme: "Intéressés par un thème", all: "Toute la base" }[audience] || audience);
+
+  // ---- Rendu ----
+  function refreshCounts() {
+    ["clients", "prospects", "abandons", "theme", "all"].forEach((a) => {
+      const el = document.querySelector(`[data-n="${a}"]`); if (el) el.textContent = String(audienceCount(a));
+    });
+    $("rcount").textContent = String(recipients().length);
+  }
+  function msgVars(prenom: string) {
+    const s = selectedSession();
+    return { prenom, formation: s?.title || "", date: frDate(s?.starts_at), lien: sessionUrl(s?.slug) };
+  }
+  const fill = (tpl: string, v: Record<string, string>) => tpl.replace(/\{(prenom|formation|date|lien)\}/g, (_, k) => v[k] ?? "");
+
+  // Rendu d'aperçu : les variables non renseignées (pas de session choisie)
+  // apparaissent comme des jetons stylés plutôt qu'un vide « ».
+  const PH = "", PHE = "";
+  function previewVars(prenom: string) {
+    const s = selectedSession();
+    return {
+      prenom,
+      formation: s?.title || `${PH}formation${PHE}`,
+      date: s?.starts_at ? frDate(s.starts_at) : `${PH}date${PHE}`,
+      lien: s?.slug ? sessionUrl(s.slug) : `${PH}lien${PHE}`,
+    };
+  }
+  const phSpan = (t: string) => t.replace(new RegExp(PH + "(formation|date|lien)" + PHE, "g"), (_, k) => `<span class="var-ph">{${k}}</span>`);
+  function previewHtml(tpl: string, prenom: string) {
+    return phSpan(esc(fill(tpl, previewVars(prenom))).replace(/\n/g, "<br>"));
+  }
+  // Corps HTML riche (modèle) : on n'échappe pas — contenu de confiance (admin).
+  function previewRich(html: string, prenom: string) {
+    return phSpan(fill(html, previewVars(prenom)));
+  }
+  function renderPreview() {
+    const sample = recipients()[0];
+    const prenom = sample ? firstName(sample.name) : "Awa";
+    if (channel === "whatsapp") {
+      $("prev-title").textContent = "Aperçu WhatsApp";
+      $("preview").innerHTML = `<div class="wa-wrap"><div class="wa-bubble">${previewHtml(($("msg") as HTMLTextAreaElement).value, prenom)}<div class="t">10:24 ✓✓</div></div></div>`;
+    } else {
+      $("prev-title").textContent = "Aperçu e-mail";
+      const tpl = selectedTemplate();
+      const subj = previewHtml((tpl?.subject || ($("subject") as HTMLInputElement).value) || "(objet vide)", prenom);
+      const body = tpl
+        ? `<div class="mail-body rich">${previewRich(tpl.body_html, prenom)}<p class="mail-unsub">Se désabonner</p></div>`
+        : `<div class="mail-body"><p class="cd-empty" style="padding:8px 0">Choisissez un modèle d'e-mail pour l'aperçu.</p></div>`;
+      $("preview").innerHTML = `<div class="mail-prev"><div class="mail-subj">${subj}</div>${body}</div>`;
+    }
+  }
+
+  function setChannel(ch: "whatsapp" | "email") {
+    channel = ch;
+    const email = ch === "email";
+    document.querySelectorAll("#chan button").forEach((b) => b.classList.toggle("on", (b as HTMLElement).dataset.ch === ch));
+    ($("tpl-field") as HTMLElement).style.display = email ? "" : "none";
+    ($("subj-field") as HTMLElement).style.display = email ? "" : "none";
+    ($("sched-field") as HTMLElement).style.display = email ? "" : "none";
+    ($("msg-field") as HTMLElement).style.display = email ? "none" : "";   // e-mail = corps via modèle
+    ($("test") as HTMLElement).style.display = email ? "" : "none";
+    $("send-lbl").textContent = email ? (sendMode === "later" ? "Programmer l'envoi" : "Envoyer par e-mail") : "Préparer les envois WhatsApp";
+    $("note").innerHTML = email
+      ? "L'e-mail part via l'expéditeur Bird (no-reply@mail.bwebagence.com), habillé de l'entête Bweb + lien de désabonnement."
+      : "WhatsApp s'ouvre pré-rempli pour chaque contact — tu valides l'envoi manuellement (aucun envoi automatique).";
+    refreshCounts(); renderPreview();
+  }
+
+  // ---- File WhatsApp ----
+  const qOverlay = $("q-overlay"), qDrawer = $("q-drawer");
+  function openQueue() {
+    const list = recipients();
+    if (!list.length) { toast("Aucun destinataire pour cette audience.", "err"); return; }
+    let done = 0;
+    const setBar = () => { $("q-count").textContent = `${done} / ${list.length} envoyés`; ($("q-bar") as HTMLElement).style.width = `${Math.round((done / list.length) * 100)}%`; };
+    $("q-list").innerHTML = list.map((c, i) => {
+      const text = fill(($("msg") as HTMLTextAreaElement).value, msgVars(firstName(c.name)));
+      const url = `https://wa.me/${digits(c.phone)}?text=${encodeURIComponent(text)}`;
+      return `<div class="camp-qrow" data-i="${i}">
+        <div class="qinfo"><b>${esc(c.name)}</b><span>${esc(c.phone)}</span></div>
+        <a class="abtn wa sm" target="_blank" rel="noopener" href="${url}" data-open><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>Ouvrir</a>
+        <button class="abtn sm" data-mark>Envoyé</button>
+      </div>`;
+    }).join("");
+    setBar();
+    $("q-list").querySelectorAll<HTMLElement>(".camp-qrow").forEach((row) => {
+      const mark = row.querySelector<HTMLElement>("[data-mark]")!;
+      const open = row.querySelector<HTMLElement>("[data-open]")!;
+      open.addEventListener("click", () => { if (!row.classList.contains("done")) { /* pré-marque à l'ouverture */ } });
+      mark.addEventListener("click", () => {
+        if (row.classList.contains("done")) return;
+        row.classList.add("done"); mark.textContent = "✓ Envoyé"; mark.setAttribute("disabled", "true");
+        done++; setBar();
+      });
+    });
+    qOverlay.classList.add("open"); qDrawer.classList.add("open"); document.body.style.overflow = "hidden";
+    // Trace la campagne WhatsApp (historique)
+    supabaseBrowser.from("campaigns").insert({
+      channel: "whatsapp", audience: audienceLabel(),
+      session_id: selectedSession()?.id || null, message: ($("msg") as HTMLTextAreaElement).value,
+      recipients_count: list.length, sent_count: 0,
+    }).then(() => loadHistory());
+  }
+  const closeQueue = () => { qOverlay.classList.remove("open"); qDrawer.classList.remove("open"); document.body.style.overflow = ""; };
+  $("q-close").addEventListener("click", closeQueue);
+  qOverlay.addEventListener("click", closeQueue);
+
+  // ---- Envoi / programmation e-mail (corps = modèle) ----
+  async function sendEmailCampaign(test: boolean) {
+    const tpl = selectedTemplate();
+    if (!tpl) { toast("Choisis un modèle d'e-mail.", "err"); return; }
+    const subject = (($("subject") as HTMLInputElement).value.trim()) || tpl.subject;
+    if (!subject) { toast("Renseigne l'objet.", "err"); return; }
+    const s = selectedSession();
+    const sessionPayload = s ? { title: s.title, date: frDate(s.starts_at), lien: sessionUrl(s.slug) } : null;
+    const list = recipients();
+
+    // Programmation (envoi différé)
+    if (!test && sendMode === "later") return scheduleEmailCampaign(subject, tpl, s, list);
+
+    if (!test && !list.length) { toast("Aucun destinataire pour cette audience.", "err"); return; }
+    if (!test && !(await confirmModal({ title: "Envoyer la campagne", message: `Envoyer « ${subject} » à ${list.length} destinataire(s) (${audienceLabel()}) ? Les désabonnés sont exclus.`, confirmLabel: "Envoyer" }))) return;
+
+    const btn = test ? ($("test") as HTMLButtonElement) : ($("send") as HTMLButtonElement);
+    const prev = btn.textContent; btn.setAttribute("disabled", "true"); btn.textContent = "Envoi…";
+    try {
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      const res = await fetch("/api/admin/campagne", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({
+          test, subject, body_html: tpl.body_html, template_id: tpl.id,
+          audience: audienceLabel(), session_id: s?.id || null, session: sessionPayload,
+          recipients: test ? [] : list.map((c) => ({ email: c.email, prenom: firstName(c.name) })),
+        }),
+      });
+      const j = await res.json();
+      if (!j.ok && j.error === "not_configured") { toast("Envoi e-mail non configuré (clé Bird manquante).", "err"); return; }
+      if (!j.ok) { toast("Échec de l'envoi.", "err"); return; }
+      if (test) toast(j.sent ? "E-mail de test envoyé ✓" : "Test non envoyé (Bird non configuré).", j.sent ? "ok" : "err");
+      else { toast(`Campagne envoyée : ${j.sent}/${j.total} e-mails ✓`); loadHistory(); }
+    } catch { toast("Erreur réseau.", "err"); }
+    finally { btn.removeAttribute("disabled"); btn.textContent = prev; }
+  }
+
+  // Programmation : on fige les variables de session (reste {prenom}) + instantané des destinataires.
+  async function scheduleEmailCampaign(subject: string, tpl: Tpl, s: Sess | null, list: Client[]) {
+    const when = ($("sched-at") as HTMLInputElement).value;
+    if (!when) { toast("Choisis la date et l'heure d'envoi.", "err"); return; }
+    const at = new Date(when);
+    if (at.getTime() < Date.now() + 30_000) { toast("Choisis une date/heure future.", "err"); return; }
+    if (!list.length) { toast("Aucun destinataire pour cette audience.", "err"); return; }
+    if (!(await confirmModal({ title: "Programmer la campagne", message: `Programmer l'envoi à ${list.length} destinataire(s) le ${at.toLocaleString("fr-FR")} ? Les désabonnés seront exclus à l'envoi.`, confirmLabel: "Programmer" }))) return;
+
+    const sessVars = { prenom: "{prenom}", formation: s?.title || "", date: frDate(s?.starts_at), lien: sessionUrl(s?.slug) };
+    const { error } = await supabaseBrowser.from("campaigns").insert({
+      channel: "email", audience: audienceLabel(), session_id: s?.id || null, template_id: tpl.id,
+      subject: fill(subject, sessVars), message: "(modèle e-mail)", body_html: fill(tpl.body_html, sessVars),
+      status: "scheduled", scheduled_at: at.toISOString(),
+      recipients: list.map((c) => ({ email: c.email, prenom: firstName(c.name) })),
+      recipients_count: list.length, sent_count: 0,
+    });
+    if (error) { toast("Programmation impossible.", "err"); return; }
+    toast(`Campagne programmée pour le ${at.toLocaleDateString("fr-FR")} ✓`);
+    loadHistory();
+  }
+
+  // ---- Historique ----
+  async function loadHistory() {
+    const { data } = await supabaseBrowser.from("campaigns").select("channel,audience,subject,status,scheduled_at,recipients_count,sent_count,created_at").order("created_at", { ascending: false }).limit(8);
+    const chIcon: Record<string, string> = { email: "✉️", whatsapp: "🟢" };
+    const dfmt = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    $("history").innerHTML = (data && data.length) ? data.map((c: any) => {
+      const scheduled = c.status === "scheduled";
+      const badge = scheduled ? `<span class="tag-pill wait" style="margin-left:6px">Programmée</span>`
+        : c.status === "failed" ? `<span class="tag-pill full" style="margin-left:6px">Échec</span>` : "";
+      const meta = c.channel === "email" ? "E-mail" : "WhatsApp";
+      const dateStr = scheduled && c.scheduled_at ? `pour le ${dfmt(c.scheduled_at)}` : dfmt(c.created_at);
+      const count = scheduled ? `<span class="num">${c.recipients_count}</span> prévus`
+        : c.channel === "email" ? `<span class="num">${c.sent_count}</span> envoyés` : `<span class="num">${c.recipients_count}</span> contacts`;
+      return `<div class="camp-hrow">
+        <div><b>${chIcon[c.channel] || ""} ${esc(c.audience)}${badge}</b><span class="hint">${meta} · ${dateStr}${c.subject ? " · " + esc(c.subject) : ""}</span></div>
+        <div class="camp-hcount">${count}</div>
+      </div>`;
+    }).join("") : `<p class="cd-empty">Aucune campagne pour l'instant.</p>`;
+  }
+
+  // ---- Chargement ----
+  async function load() {
+    const [{ data: bookings }, { data: custs }, { data: sess }, { data: themes }, { data: tpls }] = await Promise.all([
+      supabaseBrowser.from("bookings").select("full_name,email,phone,status,session_id,sessions(theme_id)").order("created_at", { ascending: false }),
+      supabaseBrowser.from("customers").select("email,email_opt_in,whatsapp_opt_in"),
+      supabaseBrowser.from("sessions").select("id,title,slug,starts_at,theme_id").order("starts_at", { ascending: false }),
+      supabaseBrowser.from("themes").select("id,name").order("sort_order", { ascending: true }),
+      supabaseBrowser.from("email_templates").select("id,name,subject,body_html").order("updated_at", { ascending: false }),
+    ]);
+    sessions = (sess || []) as Sess[];
+    templates = (tpls || []) as Tpl[];
+    ($("tpl-sel") as HTMLSelectElement).innerHTML = '<option value="">— Choisir un modèle —</option>' +
+      templates.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+
+    // Options session + thème
+    const now = Date.now();
+    const upcoming = sessions.filter((s) => s.starts_at && new Date(s.starts_at).getTime() > now);
+    ($("sess-sel") as HTMLSelectElement).innerHTML = '<option value="">— Aucune (message libre) —</option>' +
+      (upcoming.length ? upcoming : sessions).map((s) => `<option value="${s.id}">${esc(s.title)}${s.starts_at ? " — " + frDate(s.starts_at) : ""}</option>`).join("");
+    ($("theme-sel") as HTMLSelectElement).innerHTML = '<option value="">Choisir un thème…</option>' + (themes || []).map((t: any) => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+
+    // Consentement par e-mail
+    const cons = new Map((custs || []).map((c: any) => [String(c.email).toLowerCase(), c]));
+    // Agrégation clients par e-mail (repli téléphone)
+    const map = new Map<string, Client>();
+    for (const b of (bookings || []) as any[]) {
+      const email = (b.email || "").trim().toLowerCase();
+      const key = email || (digits(b.phone) ? "tel:" + digits(b.phone) : "");
+      if (!key) continue;
+      let c = map.get(key);
+      if (!c) { c = { name: b.full_name || email || b.phone || "—", email: b.email || "", phone: b.phone || "", status: "prospect", themeIds: new Set(), email_opt_in: true, whatsapp_opt_in: true }; map.set(key, c); }
+      if (!c.email && b.email) c.email = b.email;
+      if (!c.phone && b.phone) c.phone = b.phone;
+      if (b.sessions?.theme_id) c.themeIds.add(b.sessions.theme_id);
+      // statut : confirmé > en attente > prospect
+      if (b.status === "confirmed") c.status = "client";
+      else if (b.status === "pending" && c.status !== "client") c.status = "relance";
+    }
+    for (const c of map.values()) {
+      const cu = cons.get(c.email.trim().toLowerCase());
+      if (cu) { c.email_opt_in = cu.email_opt_in !== false; c.whatsapp_opt_in = cu.whatsapp_opt_in !== false; }
+    }
+    clients = [...map.values()];
+    refreshCounts(); renderPreview();
+  }
+
+  // ---- Événements ----
+  document.querySelectorAll("#chan button").forEach((b) => b.addEventListener("click", () => setChannel((b as HTMLElement).dataset.ch as any)));
+  document.querySelectorAll("#aud .camp-chip").forEach((ch) => ch.addEventListener("click", () => {
+    document.querySelectorAll("#aud .camp-chip").forEach((x) => x.classList.remove("on"));
+    ch.classList.add("on"); audience = (ch as HTMLElement).dataset.a!;
+    ($("theme-sel") as HTMLElement).style.display = audience === "theme" ? "" : "none";
+    refreshCounts(); renderPreview();
+  }));
+  $("theme-sel").addEventListener("change", () => { refreshCounts(); renderPreview(); });
+  $("sess-sel").addEventListener("change", renderPreview);
+  $("msg").addEventListener("input", renderPreview);
+  $("subject").addEventListener("input", renderPreview);
+  $("tpl-sel").addEventListener("change", () => {
+    const t = selectedTemplate();
+    if (t) ($("subject") as HTMLInputElement).value = t.subject;
+    renderPreview();
+  });
+  document.querySelectorAll("#when button").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("#when button").forEach((x) => x.classList.remove("on"));
+    b.classList.add("on"); sendMode = (b as HTMLElement).dataset.when as "now" | "later";
+    ($("sched-at") as HTMLElement).style.display = sendMode === "later" ? "" : "none";
+    $("send-lbl").textContent = sendMode === "later" ? "Programmer l'envoi" : "Envoyer par e-mail";
+  }));
+  $("send").addEventListener("click", () => { channel === "email" ? sendEmailCampaign(false) : openQueue(); });
+  $("test").addEventListener("click", () => sendEmailCampaign(true));
+
+  (async () => {
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    if (!session) return;
+    await load();
+    await loadHistory();
+  })();
+</script>

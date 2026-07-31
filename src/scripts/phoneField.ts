@@ -43,7 +43,7 @@ export function initPhoneField(): void {
     pop.setAttribute("data-lenis-prevent", ""); // laisse le défilement natif (sinon Lenis capte la molette au desktop)
     pop.innerHTML =
       `<div class="pf-search-wrap">${SEARCH_ICON}<input type="text" class="pf-search" placeholder="Rechercher un pays…" aria-label="Rechercher un pays" autocomplete="off"></div>` +
-      `<ul class="pf-list" role="listbox" tabindex="-1" aria-label="Pays"></ul><p class="pf-empty" hidden>Aucun pays trouvé.</p>`;
+      `<ul class="pf-list" role="listbox" tabindex="-1" aria-label="Pays" data-lenis-prevent></ul><p class="pf-empty" hidden>Aucun pays trouvé.</p>`;
 
     combo.appendChild(trigger);
     select.after(combo);

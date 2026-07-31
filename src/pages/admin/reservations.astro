@@ -1,31 +1,37 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
 ---
 
 <AdminLayout title="Réservations" active="reservations">
-  <div class="admin-toolbar">
-    <div class="left">
-      <input class="admin-search" id="r-search" type="search" placeholder="Nom, e-mail, référence…" />
-      <select class="admin-filter" id="r-status">
-        <option value="">Tous les statuts</option><option value="pending" selected>En attente</option><option value="confirmed">Confirmées</option><option value="cancelled">Annulées</option>
-      </select>
-      <select class="admin-filter" id="r-session"><option value="">Toutes les sessions</option></select>
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left">
+        <input class="admin-search" id="r-search" type="search" placeholder="Nom, e-mail, référence…" />
+        <select class="admin-filter" id="r-status">
+          <option value="" selected>Tous les statuts</option><option value="attente">En attente</option><option value="paye">Confirmées</option><option value="echoue">Échouées</option><option value="abandon">Abandons</option>
+        </select>
+        <select class="admin-filter" id="r-session"><option value="">Toutes les sessions</option></select>
+      </div>
+      <Button id="r-export" variant="outline" size="sm">⬇ Exporter CSV</Button>
     </div>
-    <button class="abtn" id="r-export">⬇ Exporter CSV</button>
-  </div>
 
-  <div class="panel">
-    <table class="admin-table">
-      <thead><tr><th>Participant</th><th>Session · Tarif</th><th>Moyen</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
-    </table>
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[720px]">
+          <thead><tr><th>Participant</th><th>Session · Tarif</th><th>Moyen</th><th>Montant</th><th>Statut</th><th>Réf. / Reçu</th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 </AdminLayout>
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { esc, fmtFCFA, dshort, toast, confirmBooking } from "../../scripts/adminUtils";
+  import { esc, fmtFCFA, dshort, toast } from "../../scripts/adminUtils";
 
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
@@ -36,10 +42,17 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     en_ligne: '<span class="tag-pill pub">💻 En ligne</span>',
   };
   const attendCsv: Record<string, string> = { presentiel: "Sur place", en_ligne: "En ligne" };
-  const statusPill: Record<string, string> = {
-    pending: '<span class="tag-pill wait">En attente</span>', confirmed: '<span class="tag-pill ok">Confirmée</span>',
-    cancelled: '<span class="tag-pill draft">Annulée</span>', waitlist: '<span class="tag-pill pub">Liste d\'attente</span>',
+  // Paiement 100 % automatique : le « statut » reflète l'état réel de l'opération
+  // de paiement, piloté par la passerelle — l'admin ne valide/refuse plus rien.
+  const payPill: Record<string, string> = {
+    attente: '<span class="tag-pill wait">En attente</span>', paye: '<span class="tag-pill ok">Confirmée</span>',
+    echoue: '<span class="tag-pill fail">Échoué</span>', abandon: '<span class="tag-pill abandon">Abandon</span>',
+    annule: '<span class="tag-pill draft">Annulée</span>',
   };
+  // État affiché : réservation confirmée → payé ; annulée (héritage) → annulé ;
+  // sinon l'état de paiement (attente / échoué / abandon).
+  const stateOf = (b: any): string =>
+    b.status === "confirmed" ? "paye" : b.status === "cancelled" ? "annule" : (b.payment_status || "attente");
 
   async function viewProof(path: string) {
     const { data } = await supabaseBrowser.storage.from("payment-proofs").createSignedUrl(path, 120);
@@ -49,39 +62,28 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   function render(list: any[]) {
     rows.innerHTML = list.length ? list.map((b) => {
       const due = b.is_deposit ? Math.ceil(b.amount_due / 2) : b.amount_due;
-      const proof = b.payment_proof_url ? `<button class="abtn sm" data-proof="${esc(b.payment_proof_url)}">Reçu</button>` : (b.payment_reference ? `<span title="${esc(b.payment_reference)}" style="color:var(--c-gray-500)">réf.</span>` : "—");
-      let actions = proof;
-      if (b.status === "pending") actions += ` <button class="abtn primary sm" data-confirm="${b.id}">Valider</button> <button class="abtn sm" data-cancel="${b.id}">Refuser</button>`;
-      else if (b.status === "confirmed") actions += ` <button class="abtn sm" data-cancel="${b.id}">Annuler</button>`;
+      // Référence de paiement (jeton passerelle) + justificatif éventuel.
+      const receipt = b.payment_proof_url ? `<button class="abtn sm" data-proof="${esc(b.payment_proof_url)}">Reçu</button>` : "";
+      const payRef = b.payment_reference
+        ? `<span class="pay-ref" title="Référence de paiement">${esc(b.payment_reference)}</span>`
+        : (receipt ? "" : '<span style="color:var(--c-gray-400)">—</span>');
       return `<tr>
-        <td><strong>${esc(b.full_name)}</strong><br><span style="color:var(--c-gray-500);font-size:.76rem">${esc(b.reference)} · ${esc(b.email || b.phone || "")}</span></td>
+        <td><strong>${esc(b.full_name)}</strong><br><span class="mono-ref">${esc(b.reference)}</span> <span style="color:var(--c-gray-500);font-size:.76rem">· ${esc(b.email || b.phone || "")}</span></td>
         <td>${esc(b.sessions?.title || "")}${b.attendance_mode ? " " + attendPill[b.attendance_mode] : ""}<br><span style="color:var(--c-gray-500);font-size:.76rem">${b.quantity}× ${esc(b.ticket_types?.name || "")} · ${dshort(b.created_at)}</span></td>
         <td>${esc(methodLabel[b.payment_method] || "—")}${b.is_deposit ? ' <span class="tag-pill wait">acompte</span>' : ""}</td>
         <td style="font-variant-numeric:tabular-nums">${fmtFCFA(due)}</td>
-        <td>${statusPill[b.status] || b.status}</td>
-        <td><div class="row-actions">${actions}</div></td></tr>`;
+        <td>${payPill[stateOf(b)] || esc(b.status)}</td>
+        <td><div class="row-actions">${payRef}${receipt}</div></td></tr>`;
     }).join("") : `<tr><td class="empty" colspan="6">Aucune réservation.</td></tr>`;
 
     rows.querySelectorAll<HTMLElement>("[data-proof]").forEach((el) => el.addEventListener("click", () => viewProof(el.dataset.proof!)));
-    rows.querySelectorAll<HTMLElement>("[data-confirm]").forEach((el) => el.addEventListener("click", async () => {
-      el.setAttribute("disabled", "true"); el.textContent = "…";
-      const ok = await confirmBooking(supabaseBrowser, el.dataset.confirm!);
-      if (!ok) { toast("Action impossible.", "err"); el.removeAttribute("disabled"); el.textContent = "Valider"; return; }
-      toast("Réservation confirmée — e-mail envoyé. ✓"); await load();
-    }));
-    rows.querySelectorAll<HTMLElement>("[data-cancel]").forEach((el) => el.addEventListener("click", async () => {
-      if (!window.confirm("Annuler cette réservation ? La place sera libérée.")) return;
-      const { error } = await supabaseBrowser.rpc("cancel_booking", { p_booking_id: el.dataset.cancel });
-      if (error) { toast("Action impossible.", "err"); return; }
-      toast("Réservation annulée."); await load();
-    }));
   }
 
   function applyFilters() {
     const q = ($("r-search").value || "").toLowerCase(); const st = $("r-status").value; const sess = $("r-session").value;
     render(all.filter((b) =>
-      (!st || b.status === st) && (!sess || b.session_id === sess) &&
-      (!q || (b.full_name + " " + (b.email || "") + " " + b.reference).toLowerCase().includes(q))));
+      (!st || stateOf(b) === st) && (!sess || b.session_id === sess) &&
+      (!q || (b.full_name + " " + (b.email || "") + " " + b.reference + " " + (b.payment_reference || "")).toLowerCase().includes(q))));
   }
 
   async function load() {
@@ -93,8 +95,9 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
   function exportCsv() {
     const list = all;
-    const head = ["Référence", "Date", "Nom", "E-mail", "Téléphone", "Session", "Participation", "Tarif", "Places", "Moyen", "Montant dû", "Payé", "Statut"];
-    const lines = list.map((b) => [b.reference, new Date(b.created_at).toISOString(), b.full_name, b.email, b.phone, b.sessions?.title, attendCsv[b.attendance_mode] || "", b.ticket_types?.name, b.quantity, methodLabel[b.payment_method] || "", b.amount_due, b.amount_paid, b.status]
+    const stateCsv: Record<string, string> = { attente: "En attente", paye: "Confirmée", echoue: "Échoué", abandon: "Abandon", annule: "Annulée" };
+    const head = ["Référence", "Réf. paiement", "Date", "Nom", "E-mail", "Téléphone", "Session", "Participation", "Tarif", "Places", "Moyen", "Montant dû", "Payé", "Statut"];
+    const lines = list.map((b) => [b.reference, b.payment_reference || "", new Date(b.created_at).toISOString(), b.full_name, b.email, b.phone, b.sessions?.title, attendCsv[b.attendance_mode] || "", b.ticket_types?.name, b.quantity, methodLabel[b.payment_method] || "", b.amount_due, b.amount_paid, stateCsv[stateOf(b)] || b.status]
       .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","));
     const csv = [head.join(","), ...lines].join("\n");
     const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));

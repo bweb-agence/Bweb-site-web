@@ -42,6 +42,17 @@
   --c-danger-bg: #fbe7e7;
   --c-info: var(--c-blue);
 
+  /* ---------- Couleurs utilitaires ---------- */
+  --c-whatsapp: #25d366;
+  --c-whatsapp-dark: #1fbe5b;
+
+  /* ---------- Accents (cartes KPI admin) ---------- */
+  --acc-green: #0a9d76;
+  --acc-blue: #1f6ced;
+  --acc-navy: #050a3a;
+  --acc-violet: #6b4df0;
+  --acc-amber: #d98a00;
+
   /* ---------- Alias sémantiques (surface / texte) ---------- */
   --bg: var(--c-white);
   --surface: var(--c-white);

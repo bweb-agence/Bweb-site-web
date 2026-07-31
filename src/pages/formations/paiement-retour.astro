@@ -2,7 +2,7 @@
 // Page de retour après paiement Money Fusion.
 // Money Fusion redirige l'acheteur ici avec un jeton : ?token=xxxx
 // On vérifie le statut CÔTÉ SERVEUR (jamais se fier au seul retour navigateur),
-// puis on affiche succès / échec / en attente.
+// puis on affiche succès / échec / en attente + le billet (façon ticket).
 //
 // Rendu à la demande (SSR) — obligatoire pour lire l'URL et appeler l'API.
 export const prerender = false;
@@ -10,31 +10,48 @@ export const prerender = false;
 import { whatsappLink } from "../../config/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
-// Le jeton renvoyé par Money Fusion (nom de paramètre selon leur config : token/paiementId).
-const token =
-  Astro.url.searchParams.get("token") ||
-  Astro.url.searchParams.get("paiementId") ||
-  Astro.url.searchParams.get("tokenPay") ||
-  "";
+// Passerelle : Paystack (numéros +225, callback ?gw=paystack&reference=…) ou Money Fusion.
+const isPaystack = Astro.url.searchParams.get("gw") === "paystack";
+const token = isPaystack
+  ? (Astro.url.searchParams.get("reference") || Astro.url.searchParams.get("trxref") || "")
+  : (Astro.url.searchParams.get("token") ||
+     Astro.url.searchParams.get("paiementId") ||
+     Astro.url.searchParams.get("tokenPay") ||
+     "");
 
 // On appelle l'endpoint de confirmation du site : il re-vérifie le paiement
 // auprès de Money Fusion (via le relais IP fixe), confirme la réservation si
-// besoin (idempotent) et renvoie le statut à afficher.
+// besoin (idempotent) et renvoie le statut + un résumé du billet à afficher.
 type Etat = "success" | "failed" | "pending" | "unknown";
 let etat: Etat = "unknown";
 let montant: number | null = null;
+
+type Billet = {
+  reference: string;
+  full_name: string;
+  session_title: string;
+  session_date?: string | null;
+  session_venue?: string | null;
+  ticket_name?: string | null;
+  quantity?: number;
+  is_deposit?: boolean;
+  amount_paid?: number;
+  balance?: number;
+};
+let billet: Billet | null = null;
 
 if (token) {
   try {
     const res = await fetch(`${Astro.url.origin}/api/paiement-confirme`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ token, gateway: isPaystack ? "paystack" : "money_fusion" }),
     });
     if (res.ok) {
       const data: any = await res.json();
       const statut = String(data?.statut ?? "").toLowerCase();
       montant = Number(data?.montant) || null;
+      billet = data?.booking || null;
       if (["paid", "payé", "paye", "success", "successful"].includes(statut)) etat = "success";
       else if (["pending", "en attente", "processing"].includes(statut)) etat = "pending";
       else if (statut) etat = "failed";
@@ -45,18 +62,23 @@ if (token) {
   }
 }
 
+const isDeposit = etat === "success" && !!billet?.is_deposit && Number(billet?.balance) > 0;
+const accent = isDeposit ? "#f0a500" : "#00c89e"; // ambre (acompte) / menthe (payé)
+const fmt = (n?: number | null) => (Number(n) || 0).toLocaleString("fr-FR") + " F CFA";
+
 const M: Record<Etat, { titre: string; texte: string; couleur: string }> = {
   success: {
-    titre: "Paiement confirmé 🎉",
-    texte:
-      "Merci ! Ton paiement a bien été reçu. Tu vas recevoir un e-mail de confirmation avec les accès à ta formation. Pense à vérifier tes spams.",
-    couleur: "var(--c-green)",
+    titre: isDeposit ? "Acompte reçu, place réservée 🎉" : "Paiement confirmé 🎉",
+    texte: isDeposit
+      ? "Merci ! Ton acompte a bien été reçu et ta place est bloquée. Ton billet part par e-mail — le solde se règle sur place le jour J. Pense à vérifier tes spams."
+      : "Merci ! Ton paiement a bien été reçu. Ton billet vient de partir par e-mail — pense à vérifier tes spams.",
+    couleur: accent,
   },
   pending: {
     titre: "Paiement en cours de validation",
     texte:
-      "Ton paiement est en cours de traitement chez l'opérateur. Dès qu'il est confirmé, tu reçois un e-mail avec tes accès. Cela prend en général quelques minutes.",
-    couleur: "var(--c-warm, #f0a500)",
+      "Ton paiement est en cours de traitement chez l'opérateur. Dès qu'il est confirmé, tu reçois un e-mail avec ton billet. Cela prend en général quelques minutes.",
+    couleur: "#f0a500",
   },
   failed: {
     titre: "Le paiement n'a pas abouti",
@@ -67,12 +89,13 @@ const M: Record<Etat, { titre: string; texte: string; couleur: string }> = {
   unknown: {
     titre: "Merci pour ta commande",
     texte:
-      "Nous vérifions le statut de ton paiement. Si tu as bien été débité(e) sans recevoir tes accès sous quelques minutes, écris-nous sur WhatsApp avec ta référence de paiement.",
-    couleur: "var(--c-green)",
+      "Nous vérifions le statut de ton paiement. Si tu as bien été débité(e) sans recevoir ton billet sous quelques minutes, écris-nous sur WhatsApp avec ta référence de paiement.",
+    couleur: "#00c89e",
   },
 };
 
 const v = M[etat];
+const showTicket = etat === "success" && !!billet;
 ---
 
 <BaseLayout
@@ -80,14 +103,12 @@ const v = M[etat];
   description="Confirmation de votre paiement pour la formation Bweb Agence."
   noindex
 >
-  <section class="hero" style="padding-bottom:clamp(80px,8vw,120px)">
+  <section class="hero pay-return" style="padding-bottom:clamp(80px,8vw,120px)">
     <div class="mesh-bg"></div>
     <div class="grid-lines"></div>
     <div class="container">
       <div class="text-center text-white" style="max-width:640px;margin:0 auto" data-hero-in>
-        <div
-          style={`width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 28px`}
-        >
+        <div class="pr-halo">
           {etat === "failed" ? (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style={`width:36px;height:36px;color:${v.couleur}`}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           ) : etat === "pending" ? (
@@ -98,11 +119,33 @@ const v = M[etat];
         </div>
         <h1>{v.titre}</h1>
         <p class="lead" style="margin:20px auto 12px">{v.texte}</p>
-        {montant && etat === "success" && (
-          <p class="text-white" style="opacity:.8;margin:0 auto 28px">Montant réglé : <strong>{montant.toLocaleString("fr-FR")} FCFA</strong></p>
+
+        {showTicket && billet && (
+          <div class="pr-stub" style={`--accent:${accent}`}>
+            <div class="pr-stub-head">
+              <span class="pr-tag">{isDeposit ? `Acompte · ${fmt(billet.amount_paid)}` : `Payé · ${fmt(billet.amount_paid)}`}</span>
+              <span class="pr-ref">{billet.reference}</span>
+            </div>
+            <div class="pr-row"><span>Formation</span><b>{billet.session_title}</b></div>
+            {billet.session_date && (<div class="pr-row"><span>Date</span><b>{billet.session_date}</b></div>)}
+            {billet.session_venue && (<div class="pr-row"><span>Lieu</span><b>{billet.session_venue}</b></div>)}
+            <div class="pr-row"><span>Participant</span><b>{billet.full_name}</b></div>
+            {isDeposit && (<div class="pr-row"><span>Solde sur place</span><b style={`color:${accent}`}>{fmt(billet.balance)}</b></div>)}
+          </div>
         )}
+
+        {!showTicket && montant && etat === "success" && (
+          <p class="text-white" style="opacity:.8;margin:0 auto 28px">Montant réglé : <strong>{fmt(montant)}</strong></p>
+        )}
+
         <div class="hero-actions" style="justify-content:center;margin-top:28px;margin-bottom:0">
-          <a href="/formations" class="btn btn-warm">Voir les formations</a>
+          {showTicket && (
+            <a href={`/api/billet?token=${encodeURIComponent(token)}`} class="btn btn-warm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+              Télécharger mon billet (PDF)
+            </a>
+          )}
+          <a href="/formations" class={showTicket ? "btn btn-outline-light" : "btn btn-warm"}>Voir les formations</a>
           {etat === "failed" && (
             <a href="/formations/calendrier" class="btn btn-outline-light">Réessayer</a>
           )}
@@ -111,7 +154,40 @@ const v = M[etat];
             Besoin d'aide ? WhatsApp
           </a>
         </div>
+
+        {showTicket && (
+          <p class="pr-legal">
+            <a href="/conditions-generales">CGV</a><span>·</span><a href="/politique-confidentialite">Confidentialité</a><span>·</span><a href="/mentions-legales">Mentions légales</a>
+          </p>
+        )}
       </div>
     </div>
   </section>
 </BaseLayout>
+
+<style is:global>
+  /* -------- Récap billet sur la page (fond navy du hero) -------- */
+  .pay-return .pr-halo{
+    width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.1);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 28px;
+  }
+  .pay-return .pr-stub{
+    max-width:380px;margin:6px auto 4px;text-align:left;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);
+    border-radius:14px;padding:16px 18px;backdrop-filter:blur(4px);
+  }
+  .pay-return .pr-stub-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .pay-return .pr-tag{
+    font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;
+    color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent);
+    border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);white-space:nowrap;
+  }
+  .pay-return .pr-ref{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-weight:700;font-size:15px;color:#fff;letter-spacing:.03em}
+  .pay-return .pr-row{display:flex;justify-content:space-between;gap:14px;font-size:13px;color:#c3cbf0;padding:7px 0}
+  .pay-return .pr-row + .pr-row{border-top:1px solid rgba(255,255,255,.1)}
+  .pay-return .pr-row b{color:#fff;font-weight:600;text-align:right}
+  .pay-return .pr-legal{margin:18px auto 0;font-size:12.5px;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}
+  .pay-return .pr-legal a{color:rgba(255,255,255,.82);text-decoration:none;font-weight:600}
+  .pay-return .pr-legal a:hover{text-decoration:underline}
+  .pay-return .pr-legal span{color:rgba(255,255,255,.35)}
+</style>

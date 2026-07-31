@@ -5,6 +5,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import IllusFormations from "../components/illus/IllusFormations.astro";
 import SessionCard from "../components/SessionCard.astro";
 import { supabase } from "../lib/supabase";
+import { themeColorMap } from "../lib/format";
 
 // Les 3 prochaines sessions (à venir), pour un aperçu du calendrier.
 const { data: nextSessions } = await supabase
@@ -15,6 +16,19 @@ const { data: nextSessions } = await supabase
   .order("starts_at", { ascending: true })
   .limit(3);
 const sessions = nextSessions ?? [];
+
+// Formations « bientôt » (à venir) — visibles même sans date publiée.
+const { data: soonData } = await supabase
+  .from("formations")
+  .select("slug,title,summary,theme")
+  .eq("coming_soon", true)
+  .order("created_at", { ascending: false })
+  .limit(6);
+const comingSoon = soonData ?? [];
+
+// Couleurs des thèmes (source de vérité) pour des badges/dégradés uniformes.
+const { data: themesData } = await supabase.from("themes").select("name,color");
+const tmap = themeColorMap(themesData);
 ---
 
 <BaseLayout title="Formations IA & digital pour entreprises | Bweb" description="Formations en IA, marketing digital, vente en ligne et productivité : Bweb rend vos équipes autonomes sur les nouvelles technologies." breadcrumbs={[{ name: "Accueil", path: "/" }, { name: "Formations", path: "/formations" }]}>
@@ -32,7 +46,7 @@ const sessions = nextSessions ?? [];
         <h1>Montez en compétence sur l'IA.</h1>
         <p class="lead">Bweb forme entreprises, associations et institutions aux compétences en IA et en digital qui font vraiment la différence au quotidien.</p>
         <div class="hero-actions" style="margin-top:32px;margin-bottom:0">
-          <a href="/formations/calendrier" class="btn btn-warm">Voir le calendrier des sessions</a>
+          <a href="/formations/calendrier" class="btn btn-warm">Voir le calendrier des formations</a>
           <a href="/devis" class="btn btn-outline-light">Demander le catalogue</a>
         </div>
       </div>
@@ -44,34 +58,59 @@ const sessions = nextSessions ?? [];
 </section>
 
 <!-- ===== Prochaines sessions (aperçu du calendrier) ===== -->
-<section class="section" data-nav-section="Prochaines sessions">
+<section class="section" data-nav-section="Prochaines dates">
   <div class="container">
     <div class="section-head center reveal">
-      <div class="eyebrow" style="justify-content:center">Prochaines sessions</div>
+      <div class="eyebrow" style="justify-content:center">Prochaines dates</div>
       <h2>Les prochaines formations au calendrier.</h2>
-      <p class="lead" style="margin-top:16px">Réservez votre place aux sessions en présentiel à venir à Abidjan.</p>
+      <p class="lead" style="margin-top:16px">Réservez votre place aux prochaines dates en présentiel à Abidjan.</p>
     </div>
 
     {sessions.length > 0 ? (
       <>
         <div class="ev-grid" style="margin-top:var(--space-lg)">
-          {sessions.map((s) => <SessionCard session={s} />)}
+          {sessions.map((s) => <SessionCard session={s} map={tmap} />)}
         </div>
         <div style="text-align:center;margin-top:var(--space-lg)">
           <a class="btn btn-outline" href="/formations/calendrier">
-            Voir toutes les sessions
+            Voir toutes les dates
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:8px"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
         </div>
       </>
     ) : (
       <div style="text-align:center;margin-top:var(--space-lg)">
-        <p class="form-note">Les prochaines sessions seront bientôt annoncées.</p>
-        <a class="btn btn-outline" href="/formations/calendrier" style="margin-top:14px">Voir le calendrier des sessions</a>
+        <p class="form-note">Les prochaines dates seront bientôt annoncées.</p>
+        <a class="btn btn-outline" href="/formations/calendrier" style="margin-top:14px">Voir le calendrier des formations</a>
       </div>
     )}
   </div>
 </section>
+
+{comingSoon.length > 0 && (
+  <section class="section section-gray" data-nav-section="Bientôt">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Bientôt</div>
+        <h2>Des formations qui arrivent.</h2>
+        <p class="lead" style="margin-top:14px">Découvrez-les et soyez prévenu·e dès l'ouverture des dates.</p>
+      </div>
+      <div class="grid grid-3" style="margin-top:var(--space-lg)">
+        {comingSoon.map((f) => (
+          <a class="soon-card" href={`/formations/${f.slug}`}>
+            <span class="soon-card__badge">● Bientôt</span>
+            {f.theme && <span class="soon-card__theme">{f.theme}</span>}
+            <h3>{f.title}</h3>
+            {f.summary && <p>{f.summary}</p>}
+            <span class="soon-card__go">Voir la formation
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
 
 <div class="ticker-band alt">
   <div class="marquee-track">
@@ -216,4 +255,16 @@ const sessions = nextSessions ?? [];
     </div>
   </div>
 </section>
+
+<style>
+  .soon-card { position: relative; display: flex; flex-direction: column; gap: 8px; background: #fff;
+    border: 1px solid var(--c-border); border-radius: var(--radius-lg); padding: 22px 20px; text-decoration: none;
+    box-shadow: var(--shadow-sm); transition: transform .15s var(--ease), box-shadow .15s var(--ease), border-color .15s; }
+  .soon-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--c-blue) 35%, var(--c-border)); }
+  .soon-card__badge { align-self: flex-start; font-size: .7rem; font-weight: 800; color: #8a5a00; background: #fff2d6; padding: 4px 10px; border-radius: var(--radius-pill); }
+  .soon-card__theme { font-size: .74rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--c-blue); }
+  .soon-card h3 { font-family: var(--f-display); font-weight: 800; font-size: 1.12rem; line-height: 1.15; color: var(--c-ink); margin: 2px 0 0; }
+  .soon-card p { margin: 0; font-size: .88rem; color: var(--c-gray-600); line-height: 1.5; }
+  .soon-card__go { margin-top: auto; padding-top: 8px; display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: .86rem; color: var(--c-blue); }
+</style>
 </BaseLayout>

@@ -32,16 +32,29 @@
 .ed-btn.primary:hover { filter: brightness(1.07); color: #fff; }
 .ed-btn.ghost { border-color: transparent; background: transparent; color: var(--c-gray-600); text-decoration: none; }
 .ed-btn.ghost:hover { background: #eef4ff; color: var(--c-blue); }
+/* Action destructive (Supprimer) — toujours en rouge. */
+.ed-btn.danger { border-color: transparent; background: transparent; color: var(--c-danger); }
+.ed-btn.danger:hover { background: var(--c-danger-bg); border-color: var(--c-danger); color: var(--c-danger); }
+.ed-fscard-dup:hover { opacity: 1 !important; color: var(--c-blue); }
 .ed-btn[disabled] { opacity: .6; pointer-events: none; }
 
 /* ---------- Disposition ---------- */
-.ed-layout { display: grid; grid-template-columns: minmax(0,1fr) 348px; align-items: start; }
-.ed-main { min-width: 0; }
-.ed-aside { border-left: 1px solid var(--c-border); background: var(--surface); position: sticky; top: 58px;
-  max-height: calc(100vh - 58px); overflow-y: auto; }
+/* L'éditeur occupe la hauteur du viewport (sous la barre supérieure de 58px) :
+   la PAGE ne défile pas. Le canevas de gauche reste fixe ; seul le panneau de
+   réglages de droite (onglets Détails / Sessions) défile en interne quand son
+   contenu dépasse la vue, la barre d'onglets restant épinglée en haut. */
+.ed-layout { display: grid; grid-template-columns: minmax(0,1fr) 348px;
+  grid-template-rows: minmax(0, 1fr); height: calc(100vh - 58px); min-height: 0; }
+.ed-main { min-width: 0; min-height: 0; overflow-y: auto; }
+/* min-height:0 lève le min-height:auto implicite des items de grille : sans lui, le
+   panneau grandit à la taille de son contenu et le scroll interne ne s'active pas. */
+.ed-aside { border-left: 1px solid var(--c-border); background: var(--surface);
+  height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 24px; }
+/* La barre d'onglets reste en haut du panneau pendant son défilement interne. */
+.ed-ftabs { position: sticky; top: 0; z-index: 2; background: var(--surface); }
 
 /* ---------- Barre d'outils WYSIWYG ---------- */
-.ed-toolbar { position: sticky; top: 58px; z-index: var(--z-float); display: flex; flex-wrap: wrap; align-items: center; gap: 3px;
+.ed-toolbar { position: sticky; top: 0; z-index: var(--z-float); display: flex; flex-wrap: wrap; align-items: center; gap: 3px;
   padding: 9px 18px; background: rgba(255,255,255,.9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--c-border); }
 .ed-tb { height: 34px; min-width: 34px; padding: 0 9px; border: 1px solid transparent; border-radius: 8px; background: transparent;
   color: var(--c-gray-800); font-family: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; transition: var(--dur-fast);
@@ -150,6 +163,13 @@
 /* ---------- Réglages (aside) ---------- */
 .ed-panel { padding: 18px 20px; border-bottom: 1px solid var(--c-border-soft); }
 .ed-panel h4 { margin: 0 0 14px; font-size: 11.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--c-gray-400); }
+/* En-tête de section cliquable (accordéon pliable/dépliable) */
+.ed-panel > h4 { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; transition: color var(--dur-fast); }
+.ed-panel > h4::after { content: "▾"; margin-left: auto; font-size: 1.1em; opacity: .5; transition: transform var(--dur-fast); }
+.ed-panel > h4:hover { color: var(--c-blue); }
+.ed-panel.is-collapsed > h4 { margin-bottom: 0; }
+.ed-panel.is-collapsed > h4::after { transform: rotate(-90deg); }
+.ed-panel.is-collapsed > *:not(h4) { display: none !important; }
 .ed-field { margin-bottom: 14px; }
 .ed-field:last-child { margin-bottom: 0; }
 .ed-field > label { display: block; font-size: 12.5px; font-weight: 600; color: var(--c-gray-600); margin-bottom: 6px; }
@@ -188,12 +208,16 @@
   color: var(--c-gray-700); font-size: 11.5px; font-weight: 700; padding: 4px 9px; border-radius: 7px; cursor: pointer; }
 .ed-cover-rm:hover { color: var(--c-danger); border-color: var(--c-danger); }
 .ed-cover.busy { opacity: .6; pointer-events: none; }
+/* Variante « avatar » (photo formateur) : vignette carrée et compacte. */
+.ed-cover--avatar { max-width: 150px; }
+.ed-cover--avatar .ed-cover-thumb img { aspect-ratio: 1 / 1; }
+.ed-cover--avatar .ed-cover-drop { padding: 18px 10px; border-radius: 50%; aspect-ratio: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 3px; }
 
 /* tarifs */
 .ed-tt { border: 1px solid var(--c-border); border-radius: 12px; padding: 12px; margin-bottom: 10px; background: var(--surface-2); }
 .ed-tt-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; font-weight: 700; color: var(--c-gray-500); }
-.ed-tt-del { border: 1px solid var(--c-border); background: var(--surface); color: var(--c-gray-500); width: 26px; height: 26px; border-radius: 7px; cursor: pointer; }
-.ed-tt-del:hover { border-color: var(--c-danger); color: var(--c-danger); }
+.ed-tt-del { border: 1px solid var(--c-border); background: var(--surface); color: var(--c-danger); width: 26px; height: 26px; border-radius: 7px; cursor: pointer; }
+.ed-tt-del:hover { border-color: var(--c-danger); color: var(--c-danger); background: var(--c-danger-bg); }
 .ed-addline { width: 100%; border: 1px dashed var(--c-border); background: transparent; color: var(--c-blue); font-family: inherit;
   font-weight: 700; font-size: 13px; padding: 9px; border-radius: 9px; cursor: pointer; }
 .ed-addline:hover { background: #eef4ff; }
@@ -219,8 +243,12 @@
 .ed-seo-check.bad .dot { background: var(--c-danger); }
 
 @media (max-width: 1000px) {
-  .ed-layout { grid-template-columns: 1fr; }
-  .ed-aside { position: static; max-height: none; border-left: 0; border-top: 1px solid var(--c-border); }
+  /* Mobile : colonnes empilées, la PAGE défile normalement (pas de scroll interne). */
+  .ed-layout { grid-template-columns: 1fr; grid-template-rows: none; height: auto; }
+  .ed-main { overflow: visible; }
+  .ed-aside { height: auto; overflow: visible; border-left: 0; border-top: 1px solid var(--c-border); padding-bottom: 0; }
+  .ed-ftabs { position: static; }
+  .ed-toolbar { top: 58px; }
   .ed-crumb { display: none; }
 }
 @media (max-width: 560px) {

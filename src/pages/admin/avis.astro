@@ -1,33 +1,38 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
 ---
 
 <AdminLayout title="Avis" active="avis">
-  <div class="admin-toolbar">
-    <div class="left">
-      <input class="admin-search" id="a-search" type="search" placeholder="Nom, avis, formation…" />
-      <select class="admin-filter" id="a-status">
-        <option value="pending" selected>En attente</option>
-        <option value="approved">Publiés</option>
-        <option value="rejected">Rejetés</option>
-        <option value="">Tous</option>
-      </select>
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left">
+        <input class="admin-search" id="a-search" type="search" placeholder="Nom, avis, formation…" />
+        <select class="admin-filter" id="a-status">
+          <option value="pending" selected>En attente</option>
+          <option value="approved">Publiés</option>
+          <option value="rejected">Rejetés</option>
+          <option value="">Tous</option>
+        </select>
+      </div>
+      <span class="admin-user" id="a-count" style="font-size:.82rem">—</span>
     </div>
-    <span class="admin-user" id="a-count" style="font-size:.82rem">—</span>
-  </div>
 
-  <div class="panel">
-    <table class="admin-table">
-      <thead><tr><th>Auteur</th><th>Note</th><th>Avis</th><th>Formation</th><th>Statut</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
-    </table>
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[700px]">
+          <thead><tr><th>Auteur</th><th>Note</th><th>Avis</th><th>Formation</th><th>Statut</th><th></th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 </AdminLayout>
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { esc, dshort, toast } from "../../scripts/adminUtils";
+  import { esc, dshort, toast, confirmModal } from "../../scripts/adminUtils";
 
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
@@ -47,7 +52,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     await load();
   }
   async function remove(id: string) {
-    if (!window.confirm("Supprimer définitivement cet avis ?")) return;
+    if (!(await confirmModal({ title: "Supprimer l'avis", message: "Supprimer définitivement cet avis ?", danger: true, confirmLabel: "Supprimer" }))) return;
     const { error } = await supabaseBrowser.from("reviews").delete().eq("id", id);
     if (error) { toast("Suppression impossible.", "err"); return; }
     toast("Avis supprimé."); await load();

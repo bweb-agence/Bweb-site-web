@@ -1,24 +1,30 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
 ---
 
 <AdminLayout title="Sessions" active="sessions">
-  <div class="admin-toolbar">
-    <div class="left">
-      <input class="admin-search" id="s-search" type="search" placeholder="Rechercher une session…" />
-      <select class="admin-filter" id="s-status-filter">
-        <option value="">Tous les statuts</option><option value="published">Publiées</option><option value="draft">Brouillons</option><option value="full">Complètes</option><option value="cancelled">Annulées</option>
-      </select>
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left">
+        <input class="admin-search" id="s-search" type="search" placeholder="Rechercher une session…" />
+        <select class="admin-filter" id="s-status-filter">
+          <option value="">Tous les statuts</option><option value="published">Publiées</option><option value="draft">Brouillons</option><option value="full">Complètes</option><option value="cancelled">Annulées</option><option value="archived">Archivées</option>
+        </select>
+      </div>
+      <Button variant="primary" id="new-btn">+ Nouvelle session</Button>
     </div>
-    <button class="abtn primary" id="new-btn">+ Nouvelle session</button>
-  </div>
 
-  <div class="panel">
-    <table class="admin-table">
-      <thead><tr><th>Session</th><th>Date</th><th>Remplissage</th><th>Statut</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
-    </table>
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[640px]">
+          <thead><tr><th>Session</th><th>Date</th><th>Remplissage</th><th>Statut</th><th></th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="5">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 
   <div class="a-drawer-overlay" id="overlay"></div>
@@ -31,7 +37,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       <div class="a-field"><label for="s-slug">Slug *</label><input class="a-input" id="s-slug" /></div>
       <div class="a-row2">
         <div class="a-field"><label for="s-theme">Thème</label><input class="a-input" id="s-theme" list="th-list" /><datalist id="th-list"><option value="IA"></option><option value="Marketing"></option><option value="Vente en ligne"></option><option value="Automatisation"></option></datalist></div>
-        <div class="a-field"><label for="s-status">Statut</label><select class="a-select" id="s-status"><option value="draft">Brouillon</option><option value="published">Publiée</option><option value="full">Complète</option><option value="cancelled">Annulée</option></select></div>
+        <div class="a-field"><label for="s-status">Statut</label><select class="a-select" id="s-status"><option value="draft">Brouillon</option><option value="published">Publiée</option><option value="full">Complète</option><option value="cancelled">Annulée</option><option value="archived">Archivée</option></select></div>
       </div>
       <div class="a-row2">
         <div class="a-field"><label for="s-city">Ville</label><input class="a-input" id="s-city" value="Abidjan" /></div>
@@ -53,7 +59,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { slugify, esc, dshort, dtLocalValue, toast } from "../../scripts/adminUtils";
+  import { slugify, esc, dshort, dtLocalValue, toast, confirmModal } from "../../scripts/adminUtils";
 
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
@@ -66,7 +72,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   const BADGES = [["", "— Aucun —"], ["hot", "Forte demande"], ["limited", "Places limitées"], ["ok", "Avantageux"]];
 
   function statusPill(s: string) {
-    return { published: '<span class="tag-pill pub">Publiée</span>', draft: '<span class="tag-pill draft">Brouillon</span>', full: '<span class="tag-pill full">Complète</span>', cancelled: '<span class="tag-pill wait">Annulée</span>' }[s] || s;
+    return { published: '<span class="tag-pill pub">Publiée</span>', draft: '<span class="tag-pill draft">Brouillon</span>', full: '<span class="tag-pill full">Complète</span>', cancelled: '<span class="tag-pill wait">Annulée</span>', archived: '<span class="tag-pill archived">Archivée</span>' }[s] || s;
   }
   function render(list: any[]) {
     rows.innerHTML = list.length ? list.map((s) => {
@@ -80,10 +86,14 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         <td><div class="row-actions">
           <a class="icon-btn" href="/formations/session/${esc(s.slug)}" target="_blank" title="Voir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
           <button class="icon-btn" data-edit="${s.id}" title="Éditer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="icon-btn" data-dup="${s.id}" title="Dupliquer (nouvelle date, en brouillon)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+          <button class="icon-btn" data-arch="${s.id}" title="${s.status === "archived" ? "Désarchiver (repasser en brouillon)" : "Archiver (retirer du site)"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M9 12h6"/></svg></button>
           <button class="icon-btn danger" data-del="${s.id}" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
         </div></td></tr>`;
     }).join("") : `<tr><td class="empty" colspan="5">Aucune session.</td></tr>`;
     rows.querySelectorAll<HTMLElement>("[data-edit]").forEach((b) => b.addEventListener("click", () => edit(b.dataset.edit!)));
+    rows.querySelectorAll<HTMLElement>("[data-dup]").forEach((b) => b.addEventListener("click", () => duplicate(b.dataset.dup!)));
+    rows.querySelectorAll<HTMLElement>("[data-arch]").forEach((b) => b.addEventListener("click", () => archive(b.dataset.arch!)));
     rows.querySelectorAll<HTMLElement>("[data-del]").forEach((b) => b.addEventListener("click", () => del(b.dataset.del!)));
   }
   function applyFilters() {
@@ -91,7 +101,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     render(all.filter((s) => (!q || s.title.toLowerCase().includes(q)) && (!st || s.status === st)));
   }
   async function load() {
-    const { data } = await supabaseBrowser.from("sessions").select("*, ticket_types(id,name,price,capacity,sold,badge,sales_end,sort)").order("starts_at", { ascending: false });
+    const { data } = await supabaseBrowser.from("sessions").select("*, ticket_types(id,name,price,compare_at_price,capacity,sold,badge,sales_end,sort)").order("starts_at", { ascending: false });
     all = (data || []).map((s: any) => ({ ...s, ticket_types: (s.ticket_types || []).sort((a: any, b: any) => a.sort - b.sort) }));
     applyFilters();
   }
@@ -132,10 +142,47 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
   async function del(id: string) {
     const s = all.find((x) => x.id === id);
-    if (!window.confirm(`Supprimer « ${s?.title} » et ses tarifs ? (Impossible s'il existe des réservations.)`)) return;
+    if (!(await confirmModal({ title: "Supprimer la date", message: `Supprimer « ${s?.title} » et ses tarifs ?\nImpossible s'il existe des réservations.`, danger: true, confirmLabel: "Supprimer" }))) return;
     const { error } = await supabaseBrowser.from("sessions").delete().eq("id", id);
     if (error) { toast("Suppression impossible (réservations existantes ?).", "err"); return; }
     toast("Session supprimée."); await load();
+  }
+
+  // Archiver : retire du site sans supprimer (réversible). Une session terminée s'archive.
+  async function archive(id: string) {
+    const s = all.find((x) => x.id === id);
+    const back = s?.status === "archived";
+    if (!(await confirmModal({
+      title: back ? "Désarchiver la session" : "Archiver la session",
+      message: back ? `Remettre « ${s?.title} » en brouillon ?` : `Archiver « ${s?.title} » ? Elle sera retirée du site (réversible).`,
+      confirmLabel: back ? "Désarchiver" : "Archiver",
+    }))) return;
+    const { error } = await supabaseBrowser.from("sessions").update({ status: back ? "draft" : "archived" }).eq("id", id);
+    if (error) { toast("Action impossible.", "err"); return; }
+    toast(back ? "Session désarchivée (brouillon)." : "Session archivée."); await load();
+  }
+
+  // Dupliquer : nouvelle session en brouillon (slug horodaté), tarifs copiés, ventes remises à 0.
+  async function duplicate(id: string) {
+    const s = all.find((x) => x.id === id);
+    if (!s) return;
+    if (!(await confirmModal({ title: "Dupliquer la session", message: `Créer une copie de « ${s.title} » en brouillon ?\nVous ajusterez la nouvelle date ensuite.`, confirmLabel: "Dupliquer" }))) return;
+    const suffix = "-copie-" + Date.now().toString(36);
+    const payload: any = {
+      formation_id: s.formation_id, title: s.title + " (copie)", slug: (s.slug || slugify(s.title)) + suffix,
+      theme: s.theme, theme_id: s.theme_id, status: "draft", mode: s.mode, level: s.level,
+      starts_at: s.starts_at, ends_at: s.ends_at, city: s.city, venue: s.venue, address: s.address,
+      meeting_url: s.meeting_url, meeting_info: s.meeting_info, image_url: s.image_url,
+    };
+    const { data: ns, error } = await supabaseBrowser.from("sessions").insert(payload).select("id").single();
+    if (error || !ns) { toast("Duplication impossible.", "err"); return; }
+    const tts = (s.ticket_types || []).map((t: any, i: number) => ({
+      session_id: ns.id, name: t.name, price: t.price, compare_at_price: t.compare_at_price ?? null,
+      capacity: t.capacity, badge: t.badge || null, sales_end: t.sales_end || null, sort: t.sort ?? i,
+    }));
+    if (tts.length) await supabaseBrowser.from("ticket_types").insert(tts);
+    toast("Session dupliquée (brouillon). Ajustez la date puis publiez.");
+    location.href = "/admin/editeur/session/" + ns.id;
   }
 
   async function save() {

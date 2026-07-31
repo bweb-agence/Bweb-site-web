@@ -1,21 +1,27 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
 ---
 
 <AdminLayout title="Articles" active="articles">
-  <div class="admin-toolbar">
-    <div class="left">
-      <input class="admin-search" id="art-search" type="search" placeholder="Rechercher un article…" />
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left">
+        <input class="admin-search" id="art-search" type="search" placeholder="Rechercher un article…" />
+      </div>
+      <Button variant="primary" id="art-new">+ Nouvel article</Button>
     </div>
-    <button class="abtn primary" id="art-new">+ Nouvel article</button>
-  </div>
 
-  <div class="panel">
-    <table class="admin-table">
-      <thead><tr><th>Titre</th><th>Catégorie</th><th>SEO</th><th>Statut</th><th>Publié le</th><th></th></tr></thead>
-      <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
-    </table>
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[700px]">
+          <thead><tr><th>Titre</th><th>Catégorie</th><th>SEO</th><th>Statut</th><th>Publié le</th><th></th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
   </div>
 
   <!-- Tiroir éditeur -->
@@ -59,7 +65,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { slugify, esc, dshort, dtLocalValue, toast } from "../../scripts/adminUtils";
+  import { slugify, esc, dshort, dtLocalValue, toast, confirmModal } from "../../scripts/adminUtils";
   import { analyzeSeo } from "../../scripts/editor/seo";
   import { marked } from "marked";
 
@@ -136,7 +142,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
   async function del(id: string) {
     const p = all.find((x) => x.id === id);
-    if (!window.confirm(`Supprimer « ${p?.title} » ? Cette action est irréversible.`)) return;
+    if (!(await confirmModal({ title: "Supprimer l'article", message: `Supprimer « ${p?.title} » ?\nCette action est irréversible.`, danger: true, confirmLabel: "Supprimer" }))) return;
     const { error } = await supabaseBrowser.from("posts").delete().eq("id", id);
     if (error) { toast("Suppression impossible.", "err"); return; }
     toast("Article supprimé.");

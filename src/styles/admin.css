@@ -11,7 +11,27 @@
 @keyframes aspin { to { transform: rotate(360deg); } }
 
 .admin-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
-@media (max-width: 720px) { .admin-shell { grid-template-columns: 1fr; } }
+
+/* Bouton hamburger (mobile) + overlay du menu off-canvas */
+.admin-burger { display: none; width: 38px; height: 38px; margin-right: 4px; border: 1px solid var(--c-border); border-radius: 10px; background: #fff; color: var(--c-navy); cursor: pointer; place-items: center; flex: none; }
+.admin-burger svg { width: 20px; height: 20px; }
+.admin-side-overlay { display: none; }
+
+@media (max-width: 720px) {
+  .admin-shell { grid-template-columns: 1fr; }
+  .admin-burger { display: inline-grid; }
+  .admin-side {
+    position: fixed; top: 0; left: 0; bottom: 0; width: min(280px, 84vw); z-index: 70;
+    transform: translateX(-100%); transition: transform 0.26s var(--ease);
+    overflow-y: auto; box-shadow: 24px 0 60px rgba(2, 11, 80, 0.28);
+  }
+  .admin-side.open { transform: none; }
+  .admin-side-overlay { display: block; position: fixed; inset: 0; z-index: 65; background: rgba(2, 11, 80, 0.5);
+    opacity: 0; visibility: hidden; transition: opacity 0.2s var(--ease), visibility 0.2s; }
+  .admin-side-overlay.open { opacity: 1; visibility: visible; }
+  .admin-topbar h1 { font-size: 1.1rem; }
+  .admin-user-email { display: none; }
+}
 
 /* Barre latérale */
 .admin-side { background: var(--c-navy); color: #cdd6ff; padding: 20px 14px; display: flex; flex-direction: column; }
@@ -25,6 +45,12 @@
 .admin-side .side-foot { margin-top: auto; padding-top: 18px; }
 .admin-logout { display: flex; align-items: center; gap: 9px; width: 100%; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); color: #cdd6ff; font-weight: 600; font-size: 0.85rem; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
 .admin-logout:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+
+/* Desktop : barre latérale figée au défilement (le contenu défile, pas le menu).
+   Scopé ≥ 721px pour ne pas perturber le menu off-canvas mobile (position:fixed). */
+@media (min-width: 721px) {
+  .admin-side { position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; }
+}
 
 /* Zone principale */
 .admin-main { min-width: 0; display: flex; flex-direction: column; }
@@ -48,6 +74,7 @@
 .panel { background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); overflow: hidden; margin-bottom: 20px; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--c-border); }
 .panel-head h2 { font-family: var(--f-display); font-weight: 800; font-size: 1rem; margin: 0; }
+.panel-actions { display: flex; align-items: center; gap: 8px; }
 .admin-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 .admin-table th { text-align: left; color: var(--c-gray-500); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 11px 16px; border-bottom: 1px solid var(--c-border); }
 .admin-table td { padding: 12px 16px; border-bottom: 1px solid var(--c-border-soft); color: var(--c-gray-800, #232a52); vertical-align: middle; }
@@ -59,6 +86,13 @@
 .tag-pill.pub { background: #e3edff; color: #1550b8; }
 .tag-pill.draft { background: var(--c-gray-100); color: var(--c-gray-600); }
 .tag-pill.full { background: #fbe7e7; color: #b02525; }
+.tag-pill.archived { background: #e7e9ef; color: #4a5169; }
+.tag-pill.fail { background: #fbe7e7; color: #b02525; }
+.tag-pill.abandon { background: #f0ecf6; color: #6b5b8a; }
+
+/* Références dans le tableau des réservations */
+.mono-ref { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700; font-size: 0.8rem; color: var(--c-navy); }
+.pay-ref { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.74rem; color: var(--c-gray-500); background: var(--surface-2, #f7f9fd); border: 1px solid var(--c-border-soft, var(--c-border)); border-radius: 6px; padding: 2px 7px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Boutons admin (réutilise .btn du design system, + variantes) */
 .abtn { display: inline-flex; align-items: center; gap: 6px; border-radius: 9px; font-weight: 700; font-size: 0.82rem; padding: 8px 14px; border: 1px solid var(--c-border); background: #fff; color: var(--c-navy); cursor: pointer; text-decoration: none; }
@@ -66,6 +100,13 @@
 .abtn.primary { background: var(--c-blue); border-color: var(--c-blue); color: #fff; }
 .abtn.primary:hover { background: var(--c-blue-dark); color: #fff; }
 .abtn.sm { padding: 6px 11px; font-size: 0.76rem; }
+.abtn svg { width: 15px; height: 15px; flex: none; }
+.abtn.wa { background: var(--c-whatsapp); border-color: var(--c-whatsapp); color: #fff; }
+.abtn.wa:hover { background: var(--c-whatsapp-dark); border-color: var(--c-whatsapp-dark); color: #fff; }
+.abtn.danger { background: var(--c-danger); border-color: var(--c-danger); color: #fff; }
+.abtn.danger:hover { filter: brightness(1.06); color: #fff; border-color: var(--c-danger); }
+.abtn.ghost { background: transparent; border-color: transparent; color: var(--c-gray-700); }
+.abtn.ghost:hover { background: var(--c-gray-100); border-color: transparent; color: var(--c-navy); }
 
 /* ---------- Page de connexion ---------- */
 .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--g-navy); }
@@ -93,11 +134,19 @@
 .admin-toolbar .left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .admin-search { border: 1px solid var(--c-border); border-radius: 9px; padding: 8px 12px; font-size: 0.85rem; min-width: 200px; font-family: inherit; }
 .admin-search:focus { outline: none; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31, 108, 237, 0.14); }
-.admin-filter { border: 1px solid var(--c-border); border-radius: 9px; padding: 8px 12px; font-size: 0.82rem; font-weight: 600; color: var(--c-gray-700); background: #fff; font-family: inherit; }
+/* Menus déroulants : chevron + fond légèrement teinté → jamais confondus avec un bouton. */
+.admin-filter { border: 1px solid var(--c-border); border-radius: 9px; padding: 8px 34px 8px 12px; font-size: 0.82rem; font-weight: 600; color: var(--c-gray-700); font-family: inherit;
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  background-color: var(--surface-2, #f7f9fd);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23565d80' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center; }
+.admin-filter:focus { outline: none; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31, 108, 237, 0.14); }
 .row-actions { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap; }
 .icon-btn { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 1px solid var(--c-border); border-radius: 8px; background: #fff; color: var(--c-gray-600); cursor: pointer; }
 .icon-btn:hover { border-color: var(--c-blue); color: var(--c-blue); }
-.icon-btn.danger:hover { border-color: var(--c-danger); color: var(--c-danger); }
+/* Action destructive (Supprimer) — rouge par défaut, pas seulement au survol. */
+.icon-btn.danger { color: var(--c-danger); }
+.icon-btn.danger:hover { border-color: var(--c-danger); color: var(--c-danger); background: var(--c-danger-bg); }
 .icon-btn svg { width: 15px; height: 15px; }
 .admin-table td a.rowlink { color: var(--c-navy); font-weight: 700; text-decoration: none; }
 .admin-table td a.rowlink:hover { color: var(--c-blue); }
@@ -105,11 +154,14 @@
 /* ---------- Tiroir latéral (éditeur) ---------- */
 .a-drawer-overlay { position: fixed; inset: 0; background: rgba(2, 11, 80, 0.4); z-index: 60; opacity: 0; visibility: hidden; transition: opacity var(--dur) var(--ease), visibility var(--dur); }
 .a-drawer-overlay.open { opacity: 1; visibility: visible; }
-.a-drawer { position: fixed; top: 0; right: 0; height: 100vh; width: min(580px, 100%); background: #fff; box-shadow: -24px 0 60px rgba(2, 11, 80, 0.22); z-index: 61; transform: translateX(100%); transition: transform var(--dur) var(--ease); display: flex; flex-direction: column; }
+.a-drawer { position: fixed; top: 0; right: 0; height: 100vh; width: min(580px, 100%); background: #fff; box-shadow: -24px 0 60px rgba(2, 11, 80, 0.22); z-index: 61; transform: translateX(100%); transition: transform var(--dur) var(--ease); display: flex; flex-direction: column; overscroll-behavior: contain; }
 .a-drawer.open { transform: none; }
 .a-drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px; border-bottom: 1px solid var(--c-border); }
 .a-drawer-head h2 { font-family: var(--f-display); font-weight: 800; font-size: 1.1rem; margin: 0; }
-.a-drawer-body { flex: 1; overflow-y: auto; padding: 22px 24px; }
+/* min-height:0 : sans lui, ce flex-child grandit à la hauteur de son contenu et
+   ne déclenche jamais son propre défilement — la molette scrollait alors le fond.
+   overscroll-behavior:contain : empêche l'enchaînement du scroll vers la page. */
+.a-drawer-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 22px 24px; }
 .a-drawer-foot { display: flex; align-items: center; gap: 10px; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid var(--c-border); }
 .a-drawer-foot .grow { flex: 1; }
 
@@ -118,6 +170,10 @@
 .a-field > label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--c-gray-700); margin-bottom: 5px; }
 .a-field .hint { font-size: 0.72rem; color: var(--c-gray-500); margin-top: 4px; font-weight: 500; }
 .a-input, .a-textarea, .a-select { width: 100%; border: 1px solid var(--c-border); border-radius: 9px; padding: 10px 12px; font-size: 0.9rem; font-family: inherit; color: var(--c-ink); background: #fff; }
+/* Menu déroulant de formulaire : chevron explicite → distinct d'un champ texte / bouton. */
+.a-select { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23565d80' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; }
 .a-textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 .a-textarea.code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem; }
 .a-input:focus, .a-textarea:focus, .a-select:focus { outline: none; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31, 108, 237, 0.14); }
@@ -141,3 +197,273 @@
 
 /* Chargement de contenu de page */
 .a-loading-row td { text-align: center; color: var(--c-gray-500); padding: 26px; }
+
+/* Modale de confirmation (adminUtils.confirmModal) — remplace window.confirm */
+.cm-overlay { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 20px;
+  background: rgba(6, 11, 40, 0.55); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  opacity: 0; transition: opacity 0.16s ease; }
+.cm-overlay.show { opacity: 1; }
+.cm-dialog { width: 100%; max-width: 430px; background: #fff; border-radius: 16px; padding: 22px 22px 18px;
+  box-shadow: 0 24px 60px -12px rgba(2, 11, 80, 0.4); transform: translateY(10px) scale(0.98); transition: transform 0.16s ease; }
+.cm-overlay.show .cm-dialog { transform: none; }
+.cm-title { margin: 0 0 8px; font-size: 1.05rem; font-weight: 800; color: var(--c-navy, #0b1e5b); }
+.cm-msg { margin: 0 0 18px; color: var(--c-gray-700, #374151); font-size: 0.92rem; line-height: 1.5; }
+.cm-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.cm-danger { background: var(--c-danger); border-color: var(--c-danger); color: #fff; }
+.cm-danger:hover { filter: brightness(1.07); color: #fff; border-color: var(--c-danger); }
+
+/* =========================================================
+   CRM — base clients (liste + fiche)
+   ========================================================= */
+/* -------- Bandeau KPI (cartes à icône + accent) -------- */
+.crm-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+@media (min-width: 640px) { .crm-kpis { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1040px) { .crm-kpis { grid-template-columns: repeat(5, 1fr); } }
+.kpi-card { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 14px 16px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; transition: box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease); }
+.kpi-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--acc); }
+.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.kpi-ic { flex: none; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; color: var(--acc); background: color-mix(in srgb, var(--acc) 12%, #fff); }
+.kpi-ic svg { width: 20px; height: 20px; }
+.kpi-txt { min-width: 0; }
+.kpi-k { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-gray-500); font-weight: 700; }
+.kpi-v { font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; color: var(--c-ink); line-height: 1.1; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.kpi-card[data-accent="green"] { --acc: var(--acc-green); }
+.kpi-card[data-accent="blue"] { --acc: var(--acc-blue); }
+.kpi-card[data-accent="navy"] { --acc: var(--acc-navy); }
+.kpi-card[data-accent="violet"] { --acc: var(--acc-violet); }
+.kpi-card[data-accent="amber"] { --acc: var(--acc-amber); }
+
+/* Statut client (pastilles) */
+.tag-pill.client { background: #dcf5ec; color: #0a7d5f; }
+.tag-pill.prospect { background: #e3edff; color: #1550b8; }
+.tag-pill.relance { background: #fbf1d6; color: #8a6400; }
+.tag-pill.dot { display: inline-flex; align-items: center; gap: 5px; }
+.tag-pill.dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 0.84rem; color: #fff; box-shadow: 0 2px 6px rgba(2, 11, 80, 0.14); }
+
+/* -------- Liste clients (grille alignée desktop → cartes mobile) -------- */
+.crm-panel { overflow: visible; }
+.crm-head, .crm-row { display: grid; grid-template-columns: 44px minmax(0, 2.2fr) minmax(0, 1.25fr) minmax(0, 1.2fr) minmax(0, 0.95fr) 120px 40px; align-items: center; gap: 14px; }
+.crm-head { padding: 11px 18px; border-bottom: 1px solid var(--c-border); }
+.crm-head span { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-gray-500); }
+.crm-head .ta-r { text-align: right; }
+.crm-head .ta-c { text-align: center; }
+.crm-row { padding: 13px 18px; border-bottom: 1px solid var(--c-border-soft); cursor: pointer; transition: background var(--dur-fast) var(--ease); }
+.crm-row:last-child { border-bottom: 0; }
+.crm-row:hover { background: var(--surface-2); }
+.crm-row:focus-visible { outline: 2px solid var(--c-blue); outline-offset: -2px; }
+.crm-id { min-width: 0; }
+.crm-id b { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-weight: 800; color: var(--c-ink); font-size: 0.9rem; }
+.crm-id .sub { display: block; color: var(--c-gray-500); font-size: 0.76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crm-contact { color: var(--c-gray-600); font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crm-activity { color: var(--c-gray-500); font-size: 0.8rem; }
+.crm-activity b { color: var(--c-gray-700); font-weight: 700; }
+.crm-activity .crm-dot { margin: 0 5px; opacity: 0.5; }
+.crm-ca { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.crm-status { text-align: center; }
+.crm-actions { display: flex; gap: 6px; justify-content: center; }
+.crm-loading, .crm-empty { padding: 30px 18px; text-align: center; color: var(--c-gray-500); }
+
+/* Boutons icônes (voir / whatsapp) */
+.ic { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--c-border); background: #fff; display: grid; place-items: center; color: var(--c-gray-600); cursor: pointer; padding: 0; }
+.ic:hover { color: var(--c-blue); border-color: var(--c-blue); background: color-mix(in srgb, var(--c-blue) 6%, #fff); }
+.ic svg { width: 16px; height: 16px; }
+.ic.wa:hover { color: #25d366; border-color: #25d366; background: color-mix(in srgb, #25d366 8%, #fff); }
+
+/* Barre d'outils Clients : recherche + filtres + export sur UNE SEULE ligne */
+.crm-toolbar { justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
+.crm-toolbar .admin-search { flex: 0 1 240px; min-width: 150px; }
+/* Les selects se dimensionnent sur leur option la plus longue (ex. le titre de
+   session) ; on plafonne pour tout garder sur une ligne — l'option complète reste
+   lisible dans la liste déroulante native. */
+.crm-toolbar .admin-filter { flex: 0 1 auto; min-width: 0; max-width: 190px; text-overflow: ellipsis; }
+.crm-toolbar .crm-export { margin-left: auto; flex: none; white-space: nowrap; }
+
+/* Menu d'actions rapides (kebab ⋮) — positionné en fixed pour ne pas être clippé par la carte */
+.crm-rowmenu { position: fixed; z-index: 80; min-width: 190px; background: #fff; border: 1px solid var(--c-border); border-radius: 12px; box-shadow: var(--shadow-lg); padding: 6px; }
+.crm-rowmenu[hidden] { display: none; }
+.crm-rowmenu button, .crm-rowmenu a { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 11px; border: 0; background: none; border-radius: 8px; font: inherit; font-size: 0.84rem; font-weight: 600; color: var(--c-gray-700); cursor: pointer; text-decoration: none; text-align: left; }
+.crm-rowmenu button:hover, .crm-rowmenu a:hover { background: var(--surface-2); color: var(--c-navy); }
+.crm-rowmenu svg { width: 16px; height: 16px; flex: none; color: var(--c-gray-500); }
+.crm-rowmenu button:hover svg, .crm-rowmenu a:hover svg { color: var(--c-blue); }
+
+/* Cartes empilées sur mobile/tablette */
+@media (max-width: 780px) {
+  .crm-head { display: none; }
+  .crm-row {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "av id status" "av contact ca" "av activity actions";
+    row-gap: 3px; column-gap: 12px; padding: 14px 16px;
+  }
+  .crm-av { grid-area: av; align-self: start; }
+  .crm-id { grid-area: id; }
+  .crm-contact { grid-area: contact; }
+  .crm-activity { grid-area: activity; }
+  .crm-ca { grid-area: ca; justify-self: end; align-self: center; }
+  .crm-status { grid-area: status; justify-self: end; }
+  .crm-actions { grid-area: actions; justify-self: end; align-self: end; }
+}
+
+/* Barre d'outils responsive (page Clients) */
+@media (max-width: 780px) {
+  .admin-toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
+  .admin-toolbar .left { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .admin-toolbar .admin-search { grid-column: 1 / -1; min-width: 0; width: 100%; }
+  .admin-toolbar .admin-filter { min-width: 0; width: 100%; }
+  .admin-toolbar > .abtn { width: 100%; justify-content: center; }
+  /* Clients : grille 2 colonnes sur mobile (recherche + export pleine largeur) */
+  .crm-toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .crm-toolbar .admin-search { grid-column: 1 / -1; flex: none; min-width: 0; width: 100%; }
+  .crm-toolbar .admin-filter { min-width: 0; width: 100%; }
+  .crm-toolbar .crm-export { grid-column: 1 / -1; margin-left: 0; width: 100%; }
+}
+
+/* ---------- Fiche client (contenu du tiroir) ---------- */
+.cd-head { display: flex; align-items: flex-start; gap: 14px; }
+.cd-head .avatar { width: 52px; height: 52px; font-size: 1.1rem; }
+.cd-head h3 { font-family: var(--f-display); font-weight: 800; font-size: 1.2rem; margin: 0; color: var(--c-ink); }
+.cd-head .meta { color: var(--c-gray-600); font-size: 0.82rem; margin-top: 3px; word-break: break-word; }
+.cd-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
+.cd-sect { margin-top: 20px; }
+.cd-sect h4 { font-family: var(--f-display); font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-gray-500); margin: 0 0 10px; }
+.cd-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+@media (max-width: 520px) { .cd-stats { grid-template-columns: repeat(2, 1fr); } }
+.cd-stat { background: var(--surface-2, #f7f9fd); border: 1px solid var(--c-border-soft); border-radius: 9px; padding: 11px; }
+.cd-stat .k { font-size: 0.63rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--c-gray-400, #8b91ae); }
+.cd-stat .v { font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; margin-top: 3px; font-variant-numeric: tabular-nums; color: var(--c-ink); }
+.cd-line { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid var(--c-border); border-radius: 9px; margin-bottom: 8px; }
+.cd-line .medal { flex: none; width: 44px; text-align: center; line-height: 1.1; background: #fff; border: 1px solid var(--c-border); border-radius: 9px; padding: 6px 4px; }
+.cd-line .medal .d { font-family: var(--f-display); font-weight: 800; font-size: 1.02rem; color: var(--c-ink); }
+.cd-line .medal .m { font-size: 0.52rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-blue); }
+.cd-line .lbody { flex: 1; min-width: 0; }
+.cd-line .lt { font-weight: 800; font-size: 0.86rem; color: var(--c-ink); }
+.cd-line .ls { font-size: 0.76rem; color: var(--c-gray-500); }
+.cd-line .lr { text-align: right; flex: none; }
+.cd-line .lr .money { font-family: var(--f-display); font-weight: 800; color: var(--c-navy); font-variant-numeric: tabular-nums; font-size: 0.92rem; display: block; }
+.cd-relance { background: linear-gradient(120deg, rgba(31, 108, 237, 0.06), rgba(0, 200, 158, 0.08)); border: 1px solid var(--c-border); border-radius: 12px; padding: 11px 13px; margin-top: 16px; }
+.cd-relance-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cd-relance-title { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 800; color: var(--c-navy); cursor: help; }
+.cd-relance-i { display: inline-flex; color: var(--c-gray-400); }
+.cd-relance-i svg { width: 15px; height: 15px; }
+.cd-relance-title:hover .cd-relance-i { color: var(--c-blue); }
+.cd-relance .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.cd-empty { color: var(--c-gray-500); font-size: 0.84rem; padding: 6px 0; }
+.money { font-family: var(--f-display); font-weight: 800; color: var(--c-navy); font-variant-numeric: tabular-nums; }
+.num { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* ---------- Tags & suivi client (Phase 2) ---------- */
+.crm-tag { display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: var(--radius-pill); background: #eef1f8; color: var(--c-gray-700); border: 1px solid transparent; }
+.crm-tag.sm { font-size: 0.62rem; padding: 2px 7px; }
+.crm-tags-inline { display: inline-flex; gap: 4px; vertical-align: middle; margin-left: 2px; }
+.crm-tag.toggle { cursor: pointer; background: #fff; border-color: var(--c-border); color: var(--c-gray-600); }
+.crm-tag.toggle:hover { border-color: var(--c-blue); color: var(--c-blue); }
+.crm-tag.toggle.on { background: var(--c-blue); border-color: var(--c-blue); color: #fff; }
+.crm-tags-edit { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.crm-tag-input { border: 1px dashed var(--c-border); border-radius: var(--radius-pill); padding: 3px 10px; font-size: 0.72rem; font-family: inherit; width: 92px; color: var(--c-ink); }
+.crm-tag-input:focus { outline: none; border-color: var(--c-blue); border-style: solid; }
+.crm-tag.more { background: transparent; color: var(--c-gray-500); border: 1px dashed var(--c-border); cursor: default; }
+.crm-notes-wrap { position: relative; }
+.crm-saved { position: absolute; right: 8px; bottom: 8px; font-size: 0.7rem; font-weight: 800; color: #0a7d5f; background: #dcf5ec; padding: 3px 8px; border-radius: 999px; pointer-events: none; }
+.crm-consent { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 12px; font-size: 0.8rem; color: var(--c-gray-700); }
+.crm-consent label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; }
+.crm-consent input { accent-color: var(--c-blue); width: 15px; height: 15px; }
+.crm-last { color: var(--c-gray-500); font-size: 0.76rem; margin-top: 8px; }
+.crm-last b { color: var(--c-gray-700); font-weight: 700; }
+.crm-optout { display: inline-flex; align-items: center; font-size: 0.78rem; font-weight: 700; color: #8a6400; background: #fbf1d6; padding: 6px 11px; border-radius: 9px; }
+/* Icône WhatsApp verte dans un bouton secondaire (actions de contact rapides) */
+.ico-wa { display: inline-flex; color: #25d366; }
+.ico-wa svg { width: 15px; height: 15px; }
+
+/* ---------- Composeur d'e-mail : boutons variables ---------- */
+.ev-vars { display: flex; flex-wrap: wrap; gap: 7px; }
+.ev-var { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; font-weight: 700; color: var(--c-blue); background: rgba(31, 108, 237, 0.09); border: 1px solid rgba(31, 108, 237, 0.2); border-radius: 7px; padding: 5px 9px; cursor: pointer; }
+.ev-var:hover { background: var(--c-blue); color: #fff; }
+
+/* ---------- Campagnes (Phase 3) ---------- */
+.admin-sub { color: var(--c-gray-600); font-size: 0.9rem; margin: -6px 0 18px; max-width: 70ch; }
+.hint { color: var(--c-gray-500); font-size: 0.78rem; }
+.camp-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; align-items: start; }
+@media (max-width: 860px) { .camp-grid { grid-template-columns: 1fr; } }
+.camp-seg { display: inline-flex; background: var(--c-gray-100); border-radius: var(--radius-pill); padding: 3px; gap: 2px; }
+.camp-seg button { border: 0; background: transparent; padding: 8px 15px; border-radius: var(--radius-pill); font: inherit; font-weight: 700; font-size: 0.82rem; color: var(--c-gray-600); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.camp-seg button svg { width: 15px; height: 15px; }
+.camp-seg button.on { background: #fff; color: var(--c-ink); box-shadow: var(--shadow-sm); }
+.camp-seg button.on[data-ch="whatsapp"] { color: #128c3e; }
+.camp-aud { display: flex; flex-wrap: wrap; gap: 8px; }
+.camp-chip { border: 1px solid var(--c-border); border-radius: var(--radius-pill); padding: 7px 13px; font-size: 0.8rem; font-weight: 700; color: var(--c-gray-600); cursor: pointer; background: #fff; }
+.camp-chip:hover { border-color: var(--c-blue); color: var(--c-blue); }
+.camp-chip.on { border-color: var(--c-blue); color: var(--c-blue); background: color-mix(in srgb, var(--c-blue) 8%, transparent); }
+.camp-chip .n { opacity: 0.7; font-weight: 800; margin-left: 3px; }
+.camp-recipients { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--c-border-soft); border-radius: 9px; padding: 10px 13px; margin-top: 10px; }
+.camp-recipients .big { font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; color: var(--c-blue); font-variant-numeric: tabular-nums; }
+.camp-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.camp-note { color: var(--c-gray-500); font-size: 0.78rem; margin: 12px 0 0; }
+/* Aperçu WhatsApp */
+.wa-wrap { background: #e5ddd5; padding: 14px; }
+.wa-bubble { background: #dcf8c6; border-radius: 12px; padding: 11px 13px; font-size: 0.88rem; color: #0b3b1e; box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06); line-height: 1.5; }
+.wa-bubble .t { font-size: 0.62rem; color: #5a7a5a; text-align: right; margin-top: 6px; }
+/* Aperçu e-mail */
+.mail-prev { padding: 14px; }
+.mail-subj { font-weight: 800; color: var(--c-ink); font-size: 0.92rem; padding-bottom: 10px; border-bottom: 1px solid var(--c-border); margin-bottom: 12px; }
+.mail-body { font-size: 0.88rem; color: var(--c-gray-700); line-height: 1.55; }
+.mail-body.rich h1, .mail-body.rich h2, .mail-body.rich h3 { font-family: var(--f-display); color: var(--c-ink); margin: 0.6em 0 0.3em; line-height: 1.25; }
+.mail-body.rich h1 { font-size: 1.2rem; } .mail-body.rich h2 { font-size: 1.05rem; } .mail-body.rich h3 { font-size: 0.95rem; }
+.mail-body.rich p { margin: 0 0 0.7em; }
+.mail-body.rich a { color: var(--c-blue); }
+.mail-body.rich ul, .mail-body.rich ol { margin: 0 0 0.7em 1.2em; }
+.mail-body.rich img { max-width: 100%; border-radius: 8px; }
+.mail-body.rich blockquote { border-left: 3px solid var(--c-border); margin: 0 0 0.7em; padding-left: 12px; color: var(--c-gray-600); }
+.mail-unsub { color: var(--c-gray-400); font-size: 0.72rem; text-decoration: underline; margin: 16px 0 0; }
+.var-ph { display: inline-block; background: rgba(31, 108, 237, 0.1); color: var(--c-blue); font-weight: 700; font-size: 0.82em; padding: 0 5px; border-radius: 5px; }
+.wa-bubble .var-ph { background: rgba(10, 125, 95, 0.14); color: #0a7d5f; }
+/* File d'attente WhatsApp */
+.camp-qprogress { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.camp-qprogress .bar { flex: 1; height: 8px; background: var(--c-gray-100); border-radius: 999px; overflow: hidden; }
+.camp-qprogress .bar span { display: block; height: 100%; width: 0; background: #25d366; transition: width 0.25s ease; }
+.camp-qprogress > span { font-size: 0.78rem; font-weight: 700; color: var(--c-gray-600); white-space: nowrap; }
+.camp-qlist { display: flex; flex-direction: column; gap: 8px; }
+.camp-qrow { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border: 1px solid var(--c-border); border-radius: 10px; }
+.camp-qrow.done { opacity: 0.55; background: var(--surface-2); }
+.camp-qrow .qinfo { flex: 1; min-width: 0; }
+.camp-qrow .qinfo b { display: block; font-size: 0.86rem; color: var(--c-ink); }
+.camp-qrow .qinfo span { font-size: 0.76rem; color: var(--c-gray-500); }
+/* Historique campagnes */
+.camp-hrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--c-border-soft); }
+.camp-hrow:last-child { border-bottom: 0; }
+.camp-hrow b { font-size: 0.86rem; color: var(--c-ink); display: block; }
+.camp-hrow .hint { display: block; margin-top: 2px; }
+.camp-hcount { font-size: 0.8rem; color: var(--c-gray-600); white-space: nowrap; }
+
+/* =========================================================
+   Garde-fous responsive & anti-débordement (admin)
+   Règle : un élément ne doit jamais déborder de son parent.
+   ========================================================= */
+/* La zone de contenu ne défile jamais horizontalement (les zones
+   scrollables volontaires — tables — utilisent .overflow-x-auto en interne). */
+.admin-main { min-width: 0; }
+.admin-content { max-width: 100%; overflow-x: clip; }
+
+/* Fix débordement flex/grid : les enfants peuvent rétrécir sous leur
+   contenu au lieu de forcer l'élargissement du parent. */
+.sw :where(.grid, .flex) > * { min-width: 0; }
+
+/* Le texte long SANS espaces (e-mails, URLs) se coupe au lieu de déborder —
+   ciblé (pas globalement, pour ne pas casser nombres/titres). */
+.crm-id .sub, .cd-head .meta, .camp-note, .cd-line .ls { overflow-wrap: anywhere; }
+
+/* Un média n'est jamais plus large que son parent. */
+.admin-content :where(img, svg, video, canvas) { max-width: 100%; }
+
+/* Réduction des polices sur petits écrans : meilleure lisibilité et
+   moins de risques de débordement (montants, titres, cellules). */
+@media (max-width: 640px) {
+  .admin-topbar h1 { font-size: 1.05rem; }
+  .admin-table { font-size: 0.82rem; }
+  .admin-table th, .admin-table td { padding: 10px 12px; }
+  .kpi-v { font-size: 1.25rem; }
+  .kpi-k { font-size: 0.64rem; }
+  .crm-id b { font-size: 0.86rem; }
+  .crm-contact, .crm-activity { font-size: 0.78rem; }
+  .cd-head h3 { font-size: 1.1rem; }
+}

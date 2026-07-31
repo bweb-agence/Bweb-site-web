@@ -71,6 +71,34 @@ export function initReservation() {
   // URL du relais paiement (Hostinger, IP fixe) — injectée côté serveur.
   const PAY_API = (overlay.dataset.payApi || "").replace(/\/+$/, "");
 
+  // ---------- Validation e-mail / téléphone ----------
+  // Indicatif pays sélectionné, en chiffres (ex. « +225 » → « 225 »).
+  function dialDigits(): string {
+    const sel = ($("rz-phone") as HTMLElement | null)?.closest(".phone-field")?.querySelector('[name="phone_cc"]') as HTMLSelectElement | null;
+    return (sel?.value || "").replace(/\D/g, "");
+  }
+  // E-mail : format réaliste (partie locale @ domaine . TLD ≥ 2), sans points doublés.
+  function isValidEmail(v: string): boolean {
+    const s = v.trim();
+    if (s.length < 6 || s.length > 254) return false;
+    if (/\.\./.test(s) || /^[.@]|[.@]$/.test(s) || /\.@|@\./.test(s)) return false;
+    return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/.test(s);
+  }
+  // Numéro national saisi, en chiffres uniquement.
+  function phoneNat(): string {
+    return (($("rz-phone") as HTMLInputElement | null)?.value || "").replace(/\D/g, "");
+  }
+  // Téléphone valide : longueur nationale plausible (6–14 chiffres), total E.164 ≤ 15,
+  // pas une suite de zéros. Couvre la Côte d'Ivoire (10 chiffres) et l'international.
+  function isValidPhone(): boolean {
+    const nat = phoneNat();
+    if (nat.length < 6 || nat.length > 14) return false;
+    if (/^0+$/.test(nat)) return false;
+    const total = dialDigits().length + nat.length;
+    return total >= 8 && total <= 15;
+  }
+  const markField = (el: HTMLElement | null, ok: boolean) => el?.setAttribute("aria-invalid", ok ? "false" : "true");
+
   // Mémorisation locale des coordonnées → pré-remplissage aux visites suivantes.
   const INFO_KEY = "bweb_resa_infos";
   function saveInfos() {
@@ -102,6 +130,7 @@ export function initReservation() {
       opt.setAttribute("aria-pressed", "true");
       attendance = opt.dataset.attend || "";
       errEl.textContent = "";
+      syncDepositOption(); // masque/affiche l'acompte selon présentiel/en ligne
     });
   });
 
@@ -180,37 +209,59 @@ export function initReservation() {
   });
 
   // ---------- Paiement ----------
-  overlay.querySelectorAll<HTMLElement>(".pm").forEach((pm) => {
+  overlay.querySelectorAll<HTMLElement>(".rz-payopt").forEach((pm) => {
     pm.addEventListener("click", () => {
-      overlay.querySelectorAll(".pm").forEach((p) => p.classList.remove("sel"));
+      overlay.querySelectorAll(".rz-payopt").forEach((p) => { p.classList.remove("sel"); p.setAttribute("aria-checked", "false"); });
       pm.classList.add("sel");
+      pm.setAttribute("aria-checked", "true");
       method = pm.dataset.method || "";
-      renderPayNote();
       updateNextLabel();
     });
   });
   // Money Fusion mis en avant : présélectionné par défaut (classe .sel dans le markup).
-  const preselected = overlay.querySelector<HTMLElement>(".pm.sel");
+  const preselected = overlay.querySelector<HTMLElement>(".rz-payopt.sel");
   if (preselected) method = preselected.dataset.method || "";
+
+  // L'acompte 50 % = « je règle le solde SUR PLACE le jour J » → n'a de sens que
+  // pour une participation présentielle. On masque donc l'option pour une formation
+  // en ligne (et pour une hybride tant que « en ligne » est choisi).
+  const sessionMode = overlay.dataset.mode || "";
+  const depositOpt = overlay.querySelector<HTMLElement>('.rz-payopt[data-method="money_fusion_acompte"]');
+  const canDeposit = () => sessionMode === "presentiel" || (isHybrid && attendance === "presentiel");
+  function selectPay(m: string) {
+    const el = overlay.querySelector<HTMLElement>(`.rz-payopt[data-method="${m}"]`);
+    if (!el) return;
+    overlay.querySelectorAll(".rz-payopt").forEach((p) => { p.classList.remove("sel"); p.setAttribute("aria-checked", "false"); });
+    el.classList.add("sel"); el.setAttribute("aria-checked", "true");
+    method = m;
+    updateNextLabel();
+  }
+  function syncDepositOption() {
+    const ok = canDeposit();
+    if (depositOpt) depositOpt.style.display = ok ? "" : "none";
+    // Repli sur le paiement plein si l'acompte était choisi mais n'est plus permis.
+    if (!ok && method === "money_fusion_acompte") selectPay("money_fusion");
+  }
+  syncDepositOption();
   // Le paiement en ligne (Money Fusion) se règle directement à l'étape 3 :
-  // pas d'étape justificatif → le bouton « Continuer » devient « Payer ».
+  // pas d'étape justificatif → le bouton « Continuer » devient « Payer <montant> ».
   function updateNextLabel() {
     if (step !== 3) return;
-    nextBtn.textContent = method === "money_fusion" ? "Payer en ligne ›"
-      : method === "money_fusion_acompte" ? "Payer l'acompte ›"
+    const { total } = selection();
+    const deposit = Math.max(1, Math.ceil(total / 2));
+    nextBtn.textContent = method === "money_fusion" ? `Payer ${fmt(total)} ›`
+      : method === "money_fusion_acompte" ? `Payer ${fmt(deposit)} ›`
       : "Continuer ›";
   }
-  function renderPayNote() {
-    const note = $("pm-note")!;
+  // Renseigne le montant porté par chaque option (total / acompte / solde restant).
+  function renderPayAmounts() {
     const { total } = selection();
     const deposit = Math.max(1, Math.ceil(total / 2));
     const solde = total - deposit;
-    const map: Record<string, string> = {
-      money_fusion: `Réglez la <b>totalité</b> (<b>${fmt(total)}</b>) en ligne. Paiement sécurisé (Mobile Money · Wave · carte) ; votre place est confirmée automatiquement.`,
-      money_fusion_acompte: `Réglez l'acompte de <b>${fmt(deposit)}</b> (50 %) en ligne pour bloquer votre place. Le solde de <b>${fmt(solde)}</b> se paie <b>sur place</b> le jour J.`,
-    };
-    note.innerHTML = map[method] || "";
-    note.style.display = method ? "block" : "none";
+    const set = (sel: string, v: string) => { const el = overlay.querySelector(sel); if (el) el.textContent = v; };
+    set("[data-amt-full]", fmt(total));
+    set("[data-amt-deposit]", fmt(deposit));
+    set("[data-amt-solde]", fmt(solde));
   }
 
   // ---------- Justificatif ----------
@@ -251,7 +302,7 @@ export function initReservation() {
     doneBtn.style.display = n > FORM_STEPS ? "inline-flex" : "none";
     nextBtn.textContent = n === FORM_STEPS ? "Valider mon inscription" : "Continuer ›";
     errEl.textContent = "";
-    if (n === 3) { renderPayNote(); updateNextLabel(); }
+    if (n === 3) { syncDepositOption(); renderPayAmounts(); updateNextLabel(); }
     if (n === 4) renderSummary2();
     overlay.querySelector(".rz-scroll")!.scrollTop = 0;
   }
@@ -264,16 +315,22 @@ export function initReservation() {
       return true;
     }
     if (n === 2) {
-      const req = ["rz-name", "rz-email", "rz-phone"];
-      let ok = true;
-      req.forEach((id) => {
-        const el = $(id) as HTMLInputElement;
-        const empty = !el.value.trim();
-        el.setAttribute("aria-invalid", empty ? "true" : "false");
-        if (empty) ok = false;
-      });
-      if (!ok) errEl.textContent = "Merci de remplir les champs obligatoires.";
-      return ok;
+      const nameEl = $("rz-name") as HTMLInputElement;
+      const emailEl = $("rz-email") as HTMLInputElement;
+      const phoneEl = $("rz-phone") as HTMLInputElement;
+      const nameOk = nameEl.value.trim().length >= 2;
+      const emailOk = isValidEmail(emailEl.value);
+      const phoneOk = isValidPhone();
+      markField(nameEl, nameOk);
+      markField(emailEl, emailOk);
+      markField(phoneEl, phoneOk);
+      let bad: HTMLInputElement | null = null;
+      let msg = "";
+      if (!nameOk) { bad = nameEl; msg = "Indiquez votre nom complet."; }
+      else if (!emailOk) { bad = emailEl; msg = emailEl.value.trim() ? "Adresse e-mail invalide — vérifiez le format (ex. nom@domaine.com)." : "Indiquez votre adresse e-mail."; }
+      else if (!phoneOk) { bad = phoneEl; msg = phoneNat() ? "Numéro de téléphone invalide — vérifiez qu'il est complet." : "Indiquez votre numéro de téléphone."; }
+      if (bad) { errEl.textContent = msg; try { bad.focus(); } catch {} return false; }
+      return true;
     }
     if (n === 3) {
       if (!method) { errEl.textContent = "Choisissez un moyen de paiement."; return false; }
@@ -342,6 +399,13 @@ export function initReservation() {
 
   // ---------- Paiement en ligne (Money Fusion) ----------
   async function submitOnline() {
+    // Garde-fou : jamais de paiement avec un e-mail ou un numéro invalide.
+    if (!isValidEmail(($("rz-email") as HTMLInputElement).value) || !isValidPhone()) {
+      show(2); errEl.textContent = "Vérifiez votre e-mail et votre numéro avant de payer.";
+      markField($("rz-email"), isValidEmail(($("rz-email") as HTMLInputElement).value));
+      markField($("rz-phone"), isValidPhone());
+      return;
+    }
     const resetBtn = () => { nextBtn.removeAttribute("disabled"); nextBtn.textContent = method === "money_fusion_acompte" ? "Payer l'acompte ›" : "Payer en ligne ›"; };
     nextBtn.setAttribute("disabled", "true");
     nextBtn.textContent = "Redirection…";
@@ -362,31 +426,53 @@ export function initReservation() {
       const amount = isDeposit ? Math.max(1, Math.ceil(total / 2)) : total;
       saveInfos();
 
-      if (!PAY_API) { errEl.textContent = "Le paiement en ligne est momentanément indisponible."; return; }
-
-      // 1) Créer le paiement Money Fusion D'ABORD. Aucune réservation n'est créée
-      //    tant que le paiement n'est pas accepté → plus de réservation « fantôme ».
+      // 1) Créer le paiement D'ABORD (aucune réservation « fantôme »). Passerelle selon
+      //    l'indicatif : +225 (Côte d'Ivoire) → Paystack SI configuré, sinon repli
+      //    automatique sur Money Fusion (comme les autres pays) → jamais de blocage.
       let token = "";
       let payUrl = "";
-      try {
-        const pres = await fetch(`${PAY_API}/pay.php`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            montant: amount,
-            nom: name,
-            telephone: numeroSend,
-            article: overlay.dataset.title || "Formation Bweb",
-            meta: { session_id: overlay.dataset.session, email },
-          }),
-        });
-        const pj = await pres.json();
-        if (!pj?.ok || !pj?.url) throw new Error("no_url");
-        token = pj.token || "";
-        payUrl = pj.url;
-      } catch {
-        errEl.textContent = "Le paiement en ligne n'a pas pu démarrer. Réessayez ou finalisez sur WhatsApp.";
-        return;
+      let payMethod = "money_fusion";
+
+      if (phoneCc === "+225") {
+        try {
+          const pres = await fetch("/api/paystack/init", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount, email, name, phone: numeroSend,
+              session_id: overlay.dataset.session, title: overlay.dataset.title || "Formation Bweb",
+            }),
+          });
+          const pj = await pres.json();
+          if (pj?.ok && pj?.url) { token = pj.reference || ""; payUrl = pj.url; payMethod = "paystack"; }
+          // sinon (non configuré / erreur) → repli Money Fusion ci-dessous.
+        } catch { /* repli Money Fusion ci-dessous */ }
+      }
+
+      if (!payUrl) {
+        // Money Fusion (relais à IP fixe) — autres pays, et repli si Paystack indisponible.
+        if (!PAY_API) { errEl.textContent = "Le paiement en ligne est momentanément indisponible."; return; }
+        try {
+          const pres = await fetch(`${PAY_API}/pay.php`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              montant: amount,
+              nom: name,
+              telephone: numeroSend,
+              article: overlay.dataset.title || "Formation Bweb",
+              meta: { session_id: overlay.dataset.session, email },
+            }),
+          });
+          const pj = await pres.json();
+          if (!pj?.ok || !pj?.url) throw new Error("no_url");
+          token = pj.token || "";
+          payUrl = pj.url;
+          payMethod = "money_fusion";
+        } catch {
+          errEl.textContent = "Le paiement en ligne n'a pas pu démarrer. Réessayez ou finalisez sur WhatsApp.";
+          return;
+        }
       }
 
       // 2) Paiement accepté → créer la (les) réservation(s) « en attente », en stockant
@@ -398,7 +484,7 @@ export function initReservation() {
       fd.append("email", email);
       fd.append("phone", phone);
       fd.append("company", ($("rz-company") as HTMLInputElement).value.trim());
-      fd.append("payment_method", "money_fusion");
+      fd.append("payment_method", payMethod);
       fd.append("payment_reference", token);
       fd.append("is_deposit", isDeposit ? "1" : "0");
       if (isHybrid && attendance) fd.append("attendance_mode", attendance);
@@ -482,7 +568,18 @@ export function initReservation() {
     lastFocused?.focus(); // rend le focus au bouton déclencheur
   }
   $("open-rz")?.addEventListener("click", open);
+  // Déclencheurs additionnels (ex. CTA collant en bas de page sur mobile).
+  document.querySelectorAll<HTMLElement>("[data-rz-open]").forEach((b) => b.addEventListener("click", open));
   $("rz-close")?.addEventListener("click", close);
+
+  // Retour visuel en direct : on lève le drapeau (et l'erreur) dès que le champ redevient valide,
+  // et on le marque en erreur à la sortie du champ s'il est renseigné mais incorrect.
+  const emailInput = $("rz-email") as HTMLInputElement | null;
+  const phoneInput = $("rz-phone") as HTMLInputElement | null;
+  emailInput?.addEventListener("input", () => { if (isValidEmail(emailInput.value)) { markField(emailInput, true); if (step === 2) errEl.textContent = ""; } });
+  emailInput?.addEventListener("blur", () => markField(emailInput, isValidEmail(emailInput.value) || !emailInput.value.trim()));
+  phoneInput?.addEventListener("input", () => { if (isValidPhone()) { markField(phoneInput, true); if (step === 2) errEl.textContent = ""; } });
+  phoneInput?.addEventListener("blur", () => markField(phoneInput, isValidPhone() || !phoneNat()));
   document.addEventListener("keydown", (e) => {
     if (!overlay.classList.contains("is-open")) return;
     if (e.key === "Escape" && step <= FORM_STEPS) { close(); return; }

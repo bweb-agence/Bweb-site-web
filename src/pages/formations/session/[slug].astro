@@ -4,7 +4,7 @@ export const prerender = false;
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { supabase } from "../../../lib/supabase";
 import { site, contact } from "../../../config/site";
-import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, modeLabel } from "../../../lib/format";
+import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, modeLabel, themeColorMap } from "../../../lib/format";
 import { marked } from "marked";
 import PhoneField from "../../../components/PhoneField.astro";
 import "../../../styles/formations.css";
@@ -13,10 +13,14 @@ const { slug } = Astro.params;
 
 const { data: session } = await supabase
   .from("sessions")
-  .select("*, formations(slug,title,summary,description_md,description_html,duration,level,audience,prerequisites,instructor_name,instructor_role,instructor_photo_url,instructor_bio,included_extra), ticket_types(id,name,price,compare_at_price,capacity,sold,badge,sales_end,sort)")
+  .select("*, formations(slug,title,summary,description_md,description_html,duration,level,audience,prerequisites,instructor_name,instructor_role,instructor_photo_url,instructor_bio,included_extra,image_url), ticket_types(id,name,price,compare_at_price,capacity,sold,badge,sales_end,sort)")
   .eq("slug", slug)
   .in("status", ["published", "full"])
   .maybeSingle();
+
+// Couleurs des thèmes (source de vérité) pour des dégradés uniformes.
+const { data: themesData } = await supabase.from("themes").select("name,color");
+const tmap = themeColorMap(themesData);
 
 if (!session) {
   Astro.response.status = 404;
@@ -39,8 +43,15 @@ const formation = session?.formations as
       audience: string | null; prerequisites: string | null;
       instructor_name: string | null; instructor_role: string | null;
       instructor_photo_url: string | null; instructor_bio: string | null; included_extra: string | null;
+      image_url: string | null;
     }
   | null;
+
+// Titre affiché : le nom de la formation prime (édité dans l'éditeur de formation),
+// sinon le titre propre de la date. La date/lieu restent affichés dans les méta.
+const displayTitle = formation?.title || session?.title || "";
+// Visuel : image propre de la date, sinon le visuel 16/9 de la formation.
+const coverImage = ((session as any)?.image_url as string | null) || formation?.image_url || null;
 
 const tickets = (session?.ticket_types ?? []).slice().sort((a: any, b: any) => a.sort - b.sort);
 const totalCap = tickets.reduce((s: number, t: any) => s + t.capacity, 0);
@@ -62,10 +73,18 @@ const hybrid = isHybrid(sessMode);        // présentiel ET en ligne
 const showVenue = sessMode !== "en_ligne"; // présentiel ou hybride → lieu + carte
 const showOnline = sessMode !== "presentiel"; // en ligne ou hybride → infos visio
 const sessModeLabel = modeLabel(sessMode);
-const sessLevel = levelLabel((session as any)?.level);
-const levelSlug = ((session as any)?.level || "") as string;
-// Libellé du niveau : badge session prioritaire, sinon champ libre de la formation.
-const levelText = sessLevel || formation?.level || "Tous niveaux";
+// Niveau : priorité au niveau défini sur la FORMATION (champ « Niveau » de l'admin,
+// ex. « Tous niveaux », « Débutant accepté »…), sinon le niveau propre de la date.
+// Le badge et « Infos pratiques » affichent exactement la même valeur.
+const levelText = (formation?.level || levelLabel((session as any)?.level) || "Tous niveaux").trim();
+const levelSlug = (() => {
+  const l = levelText.toLowerCase();
+  if (l.includes("débutant") || l.includes("debutant")) return "debutant";
+  if (l.includes("intermédiaire") || l.includes("intermediaire")) return "intermediaire";
+  if (l.includes("avancé") || l.includes("avance")) return "avance";
+  if (l.includes("prérequis") || l.includes("prerequis")) return "prerequis";
+  return "tous";
+})();
 const meetingUrl = ((session as any)?.meeting_url as string | null) || null;
 const meetingInfo = ((session as any)?.meeting_info as string | null) || null;
 
@@ -92,6 +111,22 @@ if (session?.formation_id) {
     .limit(3);
   nextSessions = ns ?? [];
 }
+
+// Toutes les dates à venir de la formation (pour la modale « Prochaines dates »),
+// y compris la date courante (marquée). Sert à changer de date sans quitter la page.
+let formationDates: any[] = [];
+if (session?.formation_id) {
+  const { data: fd } = await supabase
+    .from("sessions")
+    .select("id,slug,starts_at,venue,city,mode,status, ticket_types(price,capacity,sold)")
+    .eq("formation_id", session.formation_id)
+    .in("status", ["published", "full"])
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true });
+  formationDates = fd ?? [];
+}
+const dmMin = (s: any) => { const t = s.ticket_types ?? []; return t.length ? Math.min(...t.map((x: any) => x.price)) : null; };
+const dmRemaining = (s: any) => { const t = s.ticket_types ?? []; return Math.max(0, t.reduce((a: number, x: any) => a + x.capacity, 0) - t.reduce((a: number, x: any) => a + x.sold, 0)); };
 
 // Avis approuvés (témoignages) de la formation
 let reviews: { author_name: string; author_role: string | null; rating: number; comment: string; created_at: string }[] = [];
@@ -171,8 +206,21 @@ const mShort = (s: string) => {
   return m.charAt(0).toUpperCase() + m.slice(1);
 };
 
-const mapQuery = `${(session?.venue ?? "").split("·").pop()?.trim() || session?.city || "Abidjan"}, Côte d'Ivoire`;
+// Adresse du lieu : celle saisie dans l'admin (détails de la date) si présente,
+// sinon l'adresse par défaut de l'espace Bweb (plus code Google Maps).
+const DEFAULT_ADDRESS = "83JG+HH4, Unnamed Road, Abidjan";
+const venueAddress = ((session as any)?.address || "").trim() || DEFAULT_ADDRESS;
+const mapQuery = `${venueAddress}, Côte d'Ivoire`;
 const mapEmbed = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`;
+// Itinéraire : Google Maps (résout l'adresse / plus code) + Yango (VTC, coordonnées).
+// Coordonnées décodées du plus code 83JG+HH4 de l'espace Bweb ; Yango n'est proposé
+// que pour le lieu par défaut (adresse personnalisée → seul l'itinéraire Maps s'affiche).
+const isDefaultVenue = venueAddress === DEFAULT_ADDRESS;
+const VENUE_GEO = { lat: 5.331438, lon: -3.923563 };
+const mapsDirUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQuery)}`;
+const yangoUrl = isDefaultVenue
+  ? `https://yango.go.link/route?end-lat=${VENUE_GEO.lat}&end-lon=${VENUE_GEO.lon}&level=50&lang=fr&ref=bweb&adj_t=vokme8e_nd9s9z9&adj_fallback=${encodeURIComponent(`https://yango.com/en_int/order/?gto=${VENUE_GEO.lon},${VENUE_GEO.lat}`)}`
+  : null;
 const shareUrl = Astro.url.href;
 
 // Données structurées Schema.org — rich results Google (date, lieu, prix, disponibilité).
@@ -196,7 +244,7 @@ const eventLd = session
         ? "https://schema.org/MixedEventAttendanceMode"
         : "https://schema.org/OfflineEventAttendanceMode",
       eventStatus: "https://schema.org/EventScheduled",
-      ...(session.image_url ? { image: [session.image_url] } : {}),
+      ...(coverImage ? { image: [coverImage] } : {}),
       location: online
         ? { "@type": "VirtualLocation", url: shareUrl }
         : (() => {
@@ -288,12 +336,13 @@ const sessCrumbs = session
 
 {session ? (
   <BaseLayout
-    title={session.seo_title || `${session.title} — ${frDateShort(session.starts_at)} | Formations Bweb`}
+    title={session.seo_title || `${displayTitle} — ${frDateShort(session.starts_at)} | Formations Bweb`}
     description={session.seo_description || formation?.summary || (online ? `Formation en ligne (visioconférence) le ${frDateLong(session.starts_at)}.` : hybrid ? `Formation en présentiel à Abidjan et en ligne le ${frDateLong(session.starts_at)}.` : `Session de formation en présentiel à Abidjan le ${frDateLong(session.starts_at)}.`)}
     image={`/og/session/${session.slug}.png`}
     noindex={isPast}
     breadcrumbs={sessCrumbs}
     schemas={faqLd ? [faqLd] : []}
+    hideWhatsApp={true}
   >
     {eventLd && <script type="application/ld+json" slot="head" is:inline set:html={JSON.stringify(eventLd)} />}
     {courseLd && <script type="application/ld+json" slot="head" is:inline set:html={JSON.stringify(courseLd)} />}
@@ -307,7 +356,7 @@ const sessCrumbs = session
         {isPast && (
           <div class="sess-past" role="status">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-            <span>Cette session est <b>passée</b>. Découvrez les prochaines dates au <a href="/formations/calendrier">calendrier</a>.</span>
+            <span>Cette date est <b>passée</b>. Découvrez les prochaines dates au <a href="/formations/calendrier">calendrier</a>.</span>
           </div>
         )}
 
@@ -316,14 +365,20 @@ const sessCrumbs = session
           <div class="sess-head">
             <div class="sess-eyebrows">
               {session.theme && <span class="eyebrow">{session.theme} · {sessModeLabel}</span>}
-              {sessLevel && <span class={`sess-level ${levelSlug}`}>{sessLevel}</span>}
+              {levelText && <span class={`sess-level ${levelSlug}`}>{levelText}</span>}
             </div>
-            <h1 style="font-family:var(--f-display);font-weight:800;font-size:var(--fs-h1);line-height:1.08;letter-spacing:-.02em;margin:8px 0 10px;color:var(--c-ink)">{session.title}</h1>
+            <h1 style="font-family:var(--f-display);font-weight:800;font-size:var(--fs-h1);line-height:1.08;letter-spacing:-.02em;margin:8px 0 10px;color:var(--c-ink)">{displayTitle}</h1>
             {formation?.summary && <p class="sess-desc" style="max-width:60ch">{formation.summary}</p>}
+            {formationDates.length > 1 && (
+              <button type="button" class="sess-formation-link" data-open-dates>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+                Voir toutes les dates ({formationDates.length})
+              </button>
+            )}
 
             <div class="sess-meta">
               <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>{frDateLong(session.starts_at)} · {frTime(session.starts_at)}</span>
-              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg>{isPast ? "Session passée" : isFull ? "Session complète" : `${totalRemaining} places restantes`}</span>
+              <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/></svg>{isPast ? "Date passée" : isFull ? "Complet" : `${totalRemaining} places restantes`}</span>
               {showVenue && (
                 <span class="m"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>{session.venue ?? "Espace Bweb · Cocody"}, {session.city ?? "Abidjan"}</span>
               )}
@@ -399,13 +454,13 @@ const sessCrumbs = session
 
             {showOnline && (
               <>
-                <h2 class="sectitle">Se connecter à la session</h2>
+                <h2 class="sectitle">Se connecter à la formation</h2>
                 <div class="meet-box">
                   <div class="meet-box__head">
                     <span class="meet-box__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="15" height="13" rx="2"/><path d="M17 9l5-3v11l-5-3z"/></svg></span>
                     <div>
                       <div class="meet-box__title">Formation en visioconférence</div>
-                      <div class="meet-box__sub">Suivez la session en direct, où que vous soyez.</div>
+                      <div class="meet-box__sub">Suivez la formation en direct, où que vous soyez.</div>
                     </div>
                   </div>
                   {meetingInfo && <p class="meet-box__info">{meetingInfo}</p>}
@@ -429,11 +484,23 @@ const sessCrumbs = session
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
                     <div>
                       <div class="mf-place">{session.venue ?? "Espace de formation Bweb · Cocody"}</div>
-                      {(session as any).address && <div class="mf-addr">{(session as any).address}</div>}
+                      <div class="mf-addr">{venueAddress}</div>
                       <div class="mf-city">{session.city ?? "Abidjan"}, Côte d'Ivoire</div>
                     </div>
                   </div>
-                  <button type="button" class="btn btn-outline map-facade__btn" id="map-load">Afficher la carte</button>
+                  <div class="map-facade__actions">
+                    <button type="button" class="btn btn-outline map-facade__btn" id="map-load">Afficher la carte</button>
+                    <a class="btn btn-outline mf-dir" href={mapsDirUrl} target="_blank" rel="noopener">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                      Itinéraire
+                    </a>
+                    {yangoUrl && (
+                      <a class="btn mf-yango" href={yangoUrl} target="_blank" rel="noopener">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M6 17l1.5-5h9L18 17M7.5 12l1-3.5A2 2 0 0 1 10.4 7h3.2a2 2 0 0 1 1.9 1.5l1 3.5"/><circle cx="8" cy="17.5" r="1.5"/><circle cx="16" cy="17.5" r="1.5"/></svg>
+                        Y aller en Yango
+                      </a>
+                    )}
+                  </div>
                   <p class="map-facade__note">La carte est fournie par Google Maps. En l'affichant, vous acceptez le dépôt de cookies Google.</p>
                 </div>
               </>
@@ -506,7 +573,7 @@ const sessCrumbs = session
             <h2 class="sectitle">Une question avant de vous inscrire ?</h2>
             <div class="ask-box">
               <p>Notre équipe vous répond directement sur WhatsApp — programme détaillé, prérequis, facture, paiement en plusieurs fois…</p>
-              <a class="btn btn-primary" target="_blank" rel="noopener"
+              <a class="btn btn-wa" target="_blank" rel="noopener"
                 href={`https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("Bonjour Bweb Agence, j'ai une question sur la formation « " + session.title + " » du " + frDateLong(session.starts_at) + ".")}`}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1012 2zm5.6 14.2c-.2.6-1.2 1.2-1.7 1.2-.4.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.5-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.4-1-2.6 0-1.2.6-1.8.9-2 .2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.5c-.2.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2 1.3 2.3 1.5.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.6-.1l1.8.9c.3.1.4.2.5.3.1.2.1.7-.1 1.3z"/></svg>
                 Poser ma question
@@ -542,9 +609,9 @@ const sessCrumbs = session
 
           <!-- ===== Carte d'achat (collante) ===== -->
           <aside class="sess-aside">
-            <div class="buy-card" data-grad={gradSuffix(session.theme)}>
-              <div class={`buy-card__media ev-media ${gradClass(session.theme)}`}>
-                {session.image_url && <img src={session.image_url} alt="" />}
+            <div class="buy-card" data-grad={gradSuffix(session.theme, tmap)}>
+              <div class={`buy-card__media ev-media ${gradClass(session.theme, tmap)}`}>
+                {coverImage && <img src={coverImage} alt="" />}
                 <span class="ev-scrim"></span>
                 {session.theme && <span class="ev-theme"><span class="dot"></span>{session.theme}</span>}
                 <button type="button" class="ev-fav" id="fav" data-session-id={session.id} aria-label="Ajouter aux favoris">
@@ -556,8 +623,6 @@ const sessCrumbs = session
                   <span class="ev-sold ev-sold--past">Passée</span>
                 ) : isFull ? (
                   <span class="ev-sold">Complet</span>
-                ) : minCompareAt ? (
-                  <span class="ev-promo">−{minDiscountPct}%</span>
                 ) : null}
               </div>
               <div class="buy-card__pad">
@@ -576,7 +641,7 @@ const sessCrumbs = session
                 )}
                 {!isPast && !isFull && <p class="buy-card__note">💺 Plus que <strong>{totalRemaining}</strong> places pour cette session.</p>}
                 {isPast ? (
-                  <a class="btn btn-outline btn-block btn-lg" href="/formations/calendrier">Voir les prochaines sessions</a>
+                  <a class="btn btn-outline btn-block btn-lg" href="/formations/calendrier">Voir les prochaines dates</a>
                 ) : isFull ? (
                   <a class="btn btn-outline btn-block btn-lg" href={`https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("Bonjour, je souhaite être sur la liste d'attente pour « " + session.title + " » du " + frDateLong(session.starts_at) + ".")}`} target="_blank" rel="noopener">Rejoindre la liste d'attente</a>
                 ) : (
@@ -584,8 +649,8 @@ const sessCrumbs = session
                 )}
                 <div class="buy-includes-title">Cette formation comprend :</div>
                 <ul class="buy-includes">
-                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span><b>{formation?.duration ?? "Session"}</b> {online ? "en visioconférence" : hybrid ? "en présentiel ou en ligne" : "en présentiel"}</span></li>
-                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Groupe limité à <b>{totalCap} participants</b></li>
+                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span><b>{formation?.duration ?? "Formation"}</b> {online ? "en visioconférence" : hybrid ? "en présentiel ou en ligne" : "en présentiel"}</span></li>
+                  <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Places limitées à <b>{totalCap} participants</b></li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.5 13.5L7 22l5-3 5 3-1.5-8.5"/></svg><b>Attestation</b> de fin de formation</li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12H4z"/><path d="M8 9h6M8 13h8M8 17h5"/></svg><b>Support</b> de formation fourni</li>
                   <li><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 5.8 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.8-4-9s1.5-6.4 4-9z"/></svg>Formation en <b>français</b></li>
@@ -610,8 +675,8 @@ const sessCrumbs = session
         data-mode={sessMode ?? "presentiel"} data-pay-api={import.meta.env.PAYMENT_API_URL}>
         <div class="rz-top">
           <div class="rz-top-brand">
-            <img class="rz-logo" src="/images/logo.svg" alt="Bweb Agence" width="120" height="28" />
-            <span class="rz-title">{session.title} · {frDateShort(session.starts_at)}</span>
+            <img class="rz-logo" src="/images/logo.svg" alt="Bweb Agence" width="171" height="40" />
+            <span class="rz-title">{displayTitle} · {frDateShort(session.starts_at)}</span>
           </div>
           <button type="button" class="rz-close" id="rz-close" aria-label="Fermer">✕</button>
         </div>
@@ -629,7 +694,7 @@ const sessCrumbs = session
               {hybrid && (
                 <div class="rz-attend" id="rz-attend">
                   <h2 class="rz-h">Comment souhaitez-vous participer ?</h2>
-                  <p class="rz-sub">Cette session se tient en présentiel et en ligne — choisissez votre mode.</p>
+                  <p class="rz-sub">Cette formation se tient en présentiel et en ligne — choisissez votre mode.</p>
                   <div class="rz-attend-grid" role="radiogroup" aria-label="Mode de participation">
                     <button type="button" class="rz-attend-opt" data-attend="presentiel" aria-pressed="false">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0116 0z"/><circle cx="12" cy="10" r="2.6"/></svg>
@@ -724,19 +789,45 @@ const sessCrumbs = session
             <!-- Étape 3 : paiement -->
             <section class="rz-step" data-step="3">
               <h2 class="rz-h">Moyen de paiement</h2>
-              <p class="rz-sub">Payez en totalité, ou réglez un acompte de 50 % (le solde sur place).</p>
-              <div class="pm-grid" id="pm-grid">
-                <button type="button" class="pm pm-online sel" data-method="money_fusion" style="grid-column:1/-1;border-color:var(--c-green,#00c89e)">
-                  <span class="lg" style="background:var(--c-green,#00c89e);color:#fff">🔒</span>
-                  <span>Payer en ligne (total)<span class="sub">Mobile Money · Wave · carte — confirmation immédiate</span></span>
+              <p class="rz-sub">Choisissez comment régler — le bouton en bas rappelle la somme.</p>
+
+              <div class="rz-payopts" id="pm-grid" role="radiogroup" aria-label="Moyen de paiement">
+                <button type="button" class="rz-payopt sel" data-method="money_fusion" role="radio" aria-checked="true">
+                  <span class="rz-payopt__ic ic-full" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 5.5v5C5 15 8 18 12 20c4-2 7-5 7-9.5v-5z"/><path d="m9.2 12 1.9 1.9L15 9.9"/></svg></span>
+                  <span class="rz-payopt__main">
+                    <span class="rz-payopt__row"><span class="rz-payopt__t">Payer en ligne</span><span class="rz-payopt__tag">Recommandé</span></span>
+                    <span class="rz-payopt__s">Place confirmée automatiquement, tout de suite.</span>
+                  </span>
+                  <span class="rz-payopt__price"><b data-amt-full>—</b><small>en une fois</small></span>
+                  <span class="rz-payopt__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
                 </button>
-                <button type="button" class="pm" data-method="money_fusion_acompte" style="grid-column:1/-1">
-                  <span class="lg" style="background:#f0a500;color:#fff">½</span>
-                  <span>Acompte 50 % en ligne<span class="sub">Le solde se paie sur place le jour J</span></span>
+                <button type="button" class="rz-payopt" data-method="money_fusion_acompte" role="radio" aria-checked="false">
+                  <span class="rz-payopt__ic ic-half" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></span>
+                  <span class="rz-payopt__main">
+                    <span class="rz-payopt__row"><span class="rz-payopt__t">Acompte 50 %</span></span>
+                    <span class="rz-payopt__s">Solde de <b data-amt-solde>—</b> à régler sur place le jour J.</span>
+                  </span>
+                  <span class="rz-payopt__price"><b data-amt-deposit>—</b><small>maintenant</small></span>
+                  <span class="rz-payopt__check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
                 </button>
               </div>
-              <div class="pay-note" id="pm-note" style="display:none"></div>
-              <div class="rz-note-pay" style="font-size:.82rem;color:#7a2e00;background:#fff2ea;border:1px solid #ffcbb0;border-radius:10px;padding:9px 12px;margin-top:10px">⚠️ Au moment de payer, <b>ressaisissez votre numéro Mobile Money</b> sur la page Money Fusion. Ne tenez pas compte du numéro pré-affiché : c'est un exemple, le champ est à remplir vous-même.</div>
+
+              <div class="rz-methods">
+                <div class="rz-methods__lab">Réglé en toute sécurité via</div>
+                <div class="rz-methods__row">
+                  <span class="rz-logo"><img src="/images/pay/wave.svg" alt="Wave" loading="lazy" /></span>
+                  <span class="rz-logo"><img src="/images/pay/orange-money.svg" alt="Orange Money" loading="lazy" /></span>
+                  <span class="rz-logo"><img src="/images/pay/mtn-momo.svg" alt="MTN MoMo" loading="lazy" /></span>
+                  <span class="rz-logo"><img src="/images/pay/moov.svg" alt="Moov Money" loading="lazy" /></span>
+                  <span class="rz-logo"><img src="/images/pay/visa.svg" alt="Visa" loading="lazy" /></span>
+                  <span class="rz-logo"><img src="/images/pay/mastercard.svg" alt="Mastercard" loading="lazy" /></span>
+                </div>
+              </div>
+
+              <div class="rz-tip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+                <p>Sur la page de paiement, <b>saisissez vous-même votre numéro Mobile Money</b> — celui d'où partira le règlement. Le numéro déjà affiché n'est qu'un exemple.</p>
+              </div>
             </section>
 
             <!-- Étape 4 : justificatif -->
@@ -773,6 +864,47 @@ const sessCrumbs = session
           </div>
         </div>
       </div>
+
+      {formationDates.length > 1 && (
+        <div class="dm-overlay" id="dates-modal" role="dialog" aria-modal="true" aria-label="Prochaines dates de la formation" hidden>
+          <div class="dm-panel">
+            <div class="dm-head">
+              <div>
+                <h2 class="dm-title">Prochaines dates</h2>
+                <p class="dm-sub">{displayTitle}</p>
+              </div>
+              <button type="button" class="dm-close" id="dm-close" aria-label="Fermer">✕</button>
+            </div>
+            <div class="dm-list">
+              {formationDates.map((d: any) => {
+                const rem = dmRemaining(d);
+                const full = d.status === "full" || rem <= 0;
+                const p = dmMin(d);
+                const isCurrent = d.id === session.id;
+                return (
+                  <a class={`dm-item ${isCurrent ? "is-current" : ""} ${full ? "is-full" : ""}`} href={`/formations/session/${d.slug}`} aria-current={isCurrent ? "page" : undefined}>
+                    <span class="dm-date"><span class="d">{dNum(d.starts_at)}</span><span class="m">{mShort(d.starts_at)}</span></span>
+                    <span class="dm-body">
+                      <span class="dm-when">{frDateLong(d.starts_at)} · {frTime(d.starts_at)}{isCurrent && <span class="dm-tag">Cette date</span>}</span>
+                      <span class="dm-meta">{modeLabel(d.mode)}{d.mode !== "en_ligne" && <> · {d.venue ?? "Espace Bweb"}, {d.city ?? "Abidjan"}</>} · {full ? "Complet" : `${rem} place${rem > 1 ? "s" : ""}`}</span>
+                    </span>
+                    {p !== null && <span class="dm-price"><small>dès</small><b>{priceFCFA(p)}</b></span>}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isPast && !isFull && (
+        <div class="sess-stickycta is-hidden" id="sess-stickycta">
+          <div class="ssc-price">
+            {minPrice !== null ? (<><span class="ssc-from">À partir de</span><b>{priceFCFA(minPrice)}</b></>) : <b>Réservation</b>}
+          </div>
+          <button type="button" class="btn btn-primary btn-lg ssc-btn" data-rz-open>Réserver ma place</button>
+        </div>
+      )}
     </article>
   </BaseLayout>
 ) : (
@@ -781,7 +913,7 @@ const sessCrumbs = session
       <div class="container" style="text-align:center">
         <div class="eyebrow" style="justify-content:center">Erreur 404</div>
         <h1>Cette session n'existe pas (ou plus).</h1>
-        <p class="lead">Elle est peut-être passée ou complète. Voir les prochaines sessions au calendrier.</p>
+        <p class="lead">Elle est peut-être passée ou complète. Voir les prochaines dates au calendrier.</p>
         <p style="margin-top:var(--space-md)"><a class="btn btn-primary" href="/formations/calendrier">Voir le calendrier</a></p>
       </div>
     </section>
@@ -791,6 +923,31 @@ const sessCrumbs = session
 <script>
   import { initReservation } from "../../../scripts/reservation";
   initReservation();
+
+  // CTA collant (mobile) : visible seulement quand le bouton principal « Réserver »
+  // n'est plus à l'écran — évite le doublon et pousse la conversion en bas de page.
+  const stickyCta = document.getElementById("sess-stickycta");
+  const mainCta = document.getElementById("open-rz");
+  if (stickyCta && mainCta && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver(
+      ([e]) => stickyCta.classList.toggle("is-hidden", e.isIntersecting),
+      { rootMargin: "0px 0px -40px 0px" },
+    );
+    io.observe(mainCta);
+  } else if (stickyCta) {
+    stickyCta.classList.remove("is-hidden");
+  }
+
+  // Modale « Prochaines dates » — changer de date sans quitter la page.
+  const datesModal = document.getElementById("dates-modal");
+  if (datesModal) {
+    const openDates = () => { datesModal.hidden = false; document.body.style.overflow = "hidden"; };
+    const closeDates = () => { datesModal.hidden = true; document.body.style.overflow = ""; };
+    document.querySelectorAll("[data-open-dates]").forEach((b) => b.addEventListener("click", openDates));
+    document.getElementById("dm-close")?.addEventListener("click", closeDates);
+    datesModal.addEventListener("click", (e) => { if (e.target === datesModal) closeDates(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !datesModal.hidden) closeDates(); });
+  }
 
   // Carte Google Maps chargée au clic (RGPD : pas de cookie tiers avant consentement).
   const mf = document.getElementById("map-facade");
