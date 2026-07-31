@@ -248,22 +248,85 @@ const sdrCloser2 = teamPhoto("sdr-closer2.png");
 <!-- ===== Moyens operationnels ===== -->
 <section class="section" data-nav-section="Nos moyens">
   <div class="container">
-    <div class="section-head center reveal">
-      <div class="eyebrow" style="justify-content:center">Nos moyens</div>
-      <h2>Les ressources mobilisées pour exécuter vos projets.</h2>
+    <div class="moyens-head reveal">
+      <div>
+        <div class="eyebrow">Nos moyens</div>
+        <h2>Les ressources mobilisées pour exécuter vos projets.</h2>
+      </div>
+      <div class="moyens-nav">
+        <button type="button" id="moyens-prev" aria-label="Précédent"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <button type="button" id="moyens-next" aria-label="Suivant"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
     </div>
-    <div class="grid-4-col collapse_tablet" data-stagger>
-      <div class="audience-pill"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/><circle cx="17" cy="9" r="2.6"/></svg></div><span>Équipe multidisciplinaire</span></div>
-      <div class="audience-pill"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 15l2.5-3 2 2L16 9"/></svg></div><span>Outils de création</span></div>
-      <div class="audience-pill"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg></div><span>Solutions d'automatisation</span></div>
-      <div class="audience-pill"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="16" rx="2"/><line x1="3.5" y1="10" x2="20.5" y2="10"/></svg></div><span>Gestion de projet</span></div>
-      <div class="audience-pill"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/></svg></div><span>Plateformes de formation</span></div>
-      <div class="audience-pill"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20s-7-4.5-9.5-9C.7 7.4 2.3 4 5.7 4c2 0 3.3 1.1 4.3 2.4C11 5.1 12.3 4 14.3 4c3.4 0 5 3.4 3.2 7-2.5 4.5-9.5 9-9.5 9z"/></svg></div><span>Partenaires &amp; experts</span></div>
-      <div class="audience-pill"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><span>Matériel informatique &amp; audiovisuel</span></div>
-      <div class="audience-pill"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3c2.5 2.6 4 5.8 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.8-4-9s1.5-6.4 4-9z"/></svg></div><span>Connaissance du terrain africain</span></div>
+
+    <div class="moyens-railwrap">
+      <div class="moyens-rail" id="moyens-rail">
+        <article class="tb-tile" style="--c:#1f6ced"><span class="tb-num">01</span><span class="tb-ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15 13.5c2.4.4 4 2 4 5.5"/></svg></span><h3>Équipe multidisciplinaire</h3><p>Stratégie, créa, dev &amp; vente.</p></article>
+        <article class="tb-tile" style="--c:#ff9a3d"><span class="tb-num">02</span><span class="tb-ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 15l2.5-3 2 2L16 9"/></svg></span><h3>Outils de création</h3><p>Design, montage, rédaction, web.</p></article>
+        <article class="tb-tile" style="--c:#0ea5a3"><span class="tb-num">03</span><span class="tb-ic"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></span><h3>Automatisation</h3><p>Workflows &amp; IA, moins de tâches.</p></article>
+        <article class="tb-tile" style="--c:#7b5cff"><span class="tb-num">04</span><span class="tb-ic"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><line x1="3.5" y1="10" x2="20.5" y2="10"/><path d="M7 14h4M7 17h7"/></svg></span><h3>Gestion de projet</h3><p>Jalons suivis, pilotage clair.</p></article>
+        <article class="tb-tile" style="--c:#1fb663"><span class="tb-num">05</span><span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/></svg></span><h3>Plateformes de formation</h3><p>Apprentissage en ligne clé en main.</p></article>
+        <article class="tb-tile" style="--c:#ec4899"><span class="tb-num">06</span><span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-9.5-9C.7 7.4 2.3 4 5.7 4c2 0 3.3 1.1 4.3 2.4C11 5.1 12.3 4 14.3 4c3.4 0 5 3.4 3.2 7-2.5 4.5-9.5 9-9.5 9z"/></svg></span><h3>Partenaires &amp; experts</h3><p>Un réseau mobilisable à la demande.</p></article>
+        <article class="tb-tile" style="--c:#06b6d4"><span class="tb-num">07</span><span class="tb-ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span><h3>Matériel audiovisuel</h3><p>Studio &amp; captation pro.</p></article>
+        <article class="tb-tile" style="--c:#f59e0b"><span class="tb-num">08</span><span class="tb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3c2.5 2.6 4 5.8 4 9s-1.5 6.4-4 9c-2.5-2.6-4-5.8-4-9s1.5-6.4 4-9z"/></svg></span><h3>Terrain africain</h3><p>Pensé pour le marché local.</p></article>
+      </div>
+      <div class="moyens-track"><div class="moyens-thumb" id="moyens-thumb"></div></div>
     </div>
   </div>
 </section>
+
+<style>
+  .moyens-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: clamp(20px, 3vw, 30px); }
+  .moyens-head h2 { margin-top: 12px; }
+  .moyens-nav { display: none; gap: 10px; }
+  @media (min-width: 760px) { .moyens-nav { display: flex; } }
+  .moyens-nav button { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+    background: var(--c-white); border: 1px solid var(--c-border); color: var(--c-ink); box-shadow: var(--shadow-sm);
+    transition: transform .18s var(--ease), box-shadow .18s var(--ease), color .18s, border-color .18s; }
+  .moyens-nav button:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); color: var(--c-blue); border-color: color-mix(in srgb, var(--c-blue) 35%, var(--c-border)); }
+  .moyens-nav button:disabled { opacity: .38; cursor: default; transform: none; box-shadow: var(--shadow-sm); color: var(--c-ink); border-color: var(--c-border); }
+  .moyens-nav svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+  .moyens-railwrap { position: relative; }
+  .moyens-railwrap::before, .moyens-railwrap::after { content: ""; position: absolute; top: 0; bottom: 16px; width: 30px; z-index: 2; pointer-events: none; }
+  .moyens-railwrap::before { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
+  .moyens-railwrap::after { right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
+
+  .moyens-rail { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    padding: 10px 2px 18px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .moyens-rail::-webkit-scrollbar { display: none; }
+  @media (prefers-reduced-motion: reduce) { .moyens-rail { scroll-behavior: auto; } }
+  .moyens-rail .tb-tile { flex: 0 0 auto; width: clamp(214px, 76vw, 246px); scroll-snap-align: start; }
+
+  .moyens-track { height: 4px; border-radius: 4px; background: var(--c-border); margin: 6px 2px 0; overflow: hidden; }
+  .moyens-thumb { height: 100%; border-radius: 4px; background: var(--c-blue); width: 30%; }
+</style>
+
+<script>
+  (() => {
+    const rail = document.getElementById("moyens-rail");
+    const thumb = document.getElementById("moyens-thumb");
+    const prev = document.getElementById("moyens-prev");
+    const next = document.getElementById("moyens-next");
+    if (!rail) return;
+    const step = () => { const c = rail.querySelector(".tb-tile"); return c ? c.getBoundingClientRect().width + 16 : 246; };
+    prev && prev.addEventListener("click", () => rail.scrollBy({ left: -step() * 2, behavior: "smooth" }));
+    next && next.addEventListener("click", () => rail.scrollBy({ left: step() * 2, behavior: "smooth" }));
+    function update() {
+      const max = rail.scrollWidth - rail.clientWidth;
+      const ratio = rail.clientWidth / rail.scrollWidth;
+      const w = Math.max(12, ratio * 100);
+      thumb.style.width = w + "%";
+      const p = max > 0 ? rail.scrollLeft / max : 0;
+      thumb.style.marginLeft = (p * (100 - w)) + "%";
+      if (prev) prev.disabled = rail.scrollLeft < 4;
+      if (next) next.disabled = rail.scrollLeft > max - 4;
+    }
+    rail.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  })();
+</script>
 
 <!-- ===== STATEMENT ===== -->
 <section class="section-dark text-center" style="overflow:hidden;padding:clamp(56px,6vw,90px) 0 clamp(120px,11vw,170px)">
