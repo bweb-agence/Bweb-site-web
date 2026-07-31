@@ -4,7 +4,7 @@ export const prerender = false;
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { supabase } from "../../../lib/supabase";
 import { site, contact } from "../../../config/site";
-import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, modeLabel, themeColorMap } from "../../../lib/format";
+import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, modeLabel, themeColorMap, cheapestTicket } from "../../../lib/format";
 import { marked } from "marked";
 import PhoneField from "../../../components/PhoneField.astro";
 import "../../../styles/formations.css";
@@ -58,7 +58,7 @@ const totalCap = tickets.reduce((s: number, t: any) => s + t.capacity, 0);
 const totalSold = tickets.reduce((s: number, t: any) => s + t.sold, 0);
 const totalRemaining = Math.max(0, totalCap - totalSold);
 const isFull = session?.status === "full" || totalRemaining <= 0;
-const cheapest = tickets.length ? tickets.reduce((a: any, t: any) => (t.price < a.price ? t : a)) : null;
+const cheapest = cheapestTicket(tickets as any); // le moins cher ENCORE DISPONIBLE
 const minPrice = cheapest ? cheapest.price : null;
 const minCompareAt = cheapest && cheapest.compare_at_price && cheapest.compare_at_price > cheapest.price ? cheapest.compare_at_price : null;
 const minDiscountPct = minCompareAt && minPrice ? Math.round((1 - minPrice / minCompareAt) * 100) : 0;

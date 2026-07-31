@@ -32,6 +32,22 @@ export function priceFCFA(n: number): string {
   return `${n.toLocaleString("fr-FR")} F CFA`;
 }
 
+/** Tarif minimal pour le calcul du prix « à partir de ». */
+type TicketLike = { price: number; capacity: number; sold: number; compare_at_price?: number | null };
+/**
+ * Tarif le moins cher ENCORE DISPONIBLE (capacity - sold > 0). Le « à partir de »
+ * doit refléter ce qu'on peut réellement acheter : si le tarif le moins cher est
+ * épuisé (ex. « Premier arrivé » 9000 plafonné à 10), on retombe sur le plus bas
+ * prix disponible. Si TOUT est épuisé, on retombe sur le moins cher tout court
+ * (cohérent avec l'état « Complet »).
+ */
+export function cheapestTicket<T extends TicketLike>(tts: T[] | null | undefined): T | null {
+  if (!tts?.length) return null;
+  const available = tts.filter((t) => t.capacity - t.sold > 0);
+  const pool = available.length ? available : tts;
+  return pool.reduce((a, t) => (t.price < a.price ? t : a));
+}
+
 /** Table de correspondance nom de thème (minuscule) -> couleur, issue de la table `themes`. */
 export type ThemeColorMap = Record<string, string>;
 
