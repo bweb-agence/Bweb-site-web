@@ -716,7 +716,7 @@ const sessCrumbs = session
                   const bi = badgeInfo(t.badge, t.sales_end);
                   const promo = ttPromo(t);
                   return (
-                    <div class={`ticket ${featured ? "featured" : ""}`} data-ticket data-id={t.id} data-name={t.name} data-price={t.price} data-remaining={remaining}>
+                    <div class={`ticket ${featured ? "featured" : ""} ${remaining <= 0 ? "is-soldout" : ""}`} data-ticket data-id={t.id} data-name={t.name} data-price={t.price} data-remaining={remaining}>
                       {featured && <span class="t-ribbon"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.7L12 17.3 5.8 20.8l1.6-6.7L2.2 8.9l6.9-.6z"/></svg>Le plus choisi</span>}
                       <div class="t-row">
                         <div class="t-info">
