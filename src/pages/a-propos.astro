@@ -293,8 +293,10 @@ const sdrCloser2 = teamPhoto("sdr-closer2.png");
   .moyens-railwrap::after { right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
 
   .moyens-rail { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
-    padding: 10px 2px 18px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    padding: 10px 2px 18px; scrollbar-width: none; -webkit-overflow-scrolling: touch; cursor: grab; }
   .moyens-rail::-webkit-scrollbar { display: none; }
+  .moyens-rail.is-dragging { cursor: grabbing; scroll-behavior: auto; scroll-snap-type: none; user-select: none; }
+  .moyens-rail.is-dragging .tb-tile { pointer-events: none; }
   @media (prefers-reduced-motion: reduce) { .moyens-rail { scroll-behavior: auto; } }
   .moyens-rail .tb-tile { flex: 0 0 auto; width: clamp(214px, 76vw, 246px); scroll-snap-align: start; }
 
@@ -325,6 +327,28 @@ const sdrCloser2 = teamPhoto("sdr-closer2.png");
     rail.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     update();
+
+    // Glisser-déposer à la souris/stylet pour faire défiler (le tactile garde le scroll natif)
+    let down = false, startX = 0, startScroll = 0;
+    rail.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "touch") return;
+      down = true; startX = e.clientX; startScroll = rail.scrollLeft;
+      rail.classList.add("is-dragging");
+      try { rail.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    rail.addEventListener("pointermove", (e) => {
+      if (!down) return;
+      rail.scrollLeft = startScroll - (e.clientX - startX);
+    });
+    function endDrag(e) {
+      if (!down) return;
+      down = false;
+      rail.classList.remove("is-dragging"); // restaure le snap -> alignement au relâcher
+      try { rail.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+    rail.addEventListener("pointerup", endDrag);
+    rail.addEventListener("pointercancel", endDrag);
+    rail.addEventListener("dragstart", (e) => e.preventDefault());
   })();
 </script>
 
