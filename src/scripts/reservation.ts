@@ -167,7 +167,8 @@ export function initReservation() {
   }
   tickets.forEach((t) => {
     const max = parseInt(t.dataset.remaining || "0");
-    const valEl = t.querySelector<HTMLElement>("[data-val]")!;
+    const valEl = t.querySelector<HTMLElement>("[data-val]");
+    if (!valEl) return; // tarif épuisé : pas de sélecteur de quantité à initialiser
     const dec = t.querySelector<HTMLButtonElement>("[data-dec]");
     const inc = t.querySelector<HTMLButtonElement>("[data-inc]");
     if (max > 0) t.classList.add("is-tappable");
