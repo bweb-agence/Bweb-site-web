@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { createAdminClient } from "../../../lib/supabaseAdmin";
 import { sendCampaignEmails, type Recipient } from "../../../lib/sendCampaign";
+import { sendDueRappels } from "../../../lib/sendRappels";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -30,6 +31,11 @@ async function handle(request: Request): Promise<Response> {
   const admin = createAdminClient();
   const nowIso = new Date().toISOString();
 
+  // Rappels d'évènement (J-5/J-3/J-1/J-0) + demande d'avis (J+1) — chaînés ici
+  // pour ne pas ajouter un 3ᵉ cron Vercel (plan Hobby limité à 2).
+  let rappels = { candidates: 0, sent: 0 };
+  try { rappels = await sendDueRappels(admin); } catch { /* non bloquant pour les campagnes */ }
+
   const { data: due } = await admin
     .from("campaigns")
     .select("id, subject, message, body_html, recipients")
@@ -38,7 +44,7 @@ async function handle(request: Request): Promise<Response> {
     .lte("scheduled_at", nowIso)
     .limit(20);
 
-  if (!due || due.length === 0) return json({ ok: true, processed: 0 });
+  if (!due || due.length === 0) return json({ ok: true, processed: 0, rappels });
 
   const results: any[] = [];
   for (const c of due as any[]) {
@@ -65,7 +71,7 @@ async function handle(request: Request): Promise<Response> {
       results.push({ id: c.id, error: true });
     }
   }
-  return json({ ok: true, processed: results.length, results });
+  return json({ ok: true, processed: results.length, results, rappels });
 }
 
 export const GET: APIRoute = ({ request }) => handle(request);

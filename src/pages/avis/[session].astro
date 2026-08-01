@@ -1,0 +1,160 @@
+---
+// Page d'avis dédiée : lien à envoyer après la formation (et cible de l'e-mail
+// « demande d'avis » du lendemain). Formulaire focalisé, avis modéré ensuite.
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { supabase } from "../../lib/supabase";
+import { frDateLong } from "../../lib/format";
+
+const { session: slug } = Astro.params;
+
+const { data: session } = await supabase
+  .from("sessions")
+  .select("id, formation_id, title, starts_at, status")
+  .eq("slug", slug)
+  .maybeSingle();
+---
+
+<BaseLayout
+  title={session ? `Votre avis · ${session.title}` : "Laisser un avis"}
+  description="Partagez votre expérience de la formation Bweb Agence."
+  noindex
+>
+  <section class="av-hero">
+    <div class="mesh-bg"></div>
+    <div class="container">
+      <div class="av-card" data-av={session ? "ok" : "missing"}>
+        {session ? (
+          <>
+            <div class="av-eyebrow">Votre avis</div>
+            <h1 class="av-title">Comment s'est passée votre formation&nbsp;?</h1>
+            <p class="av-sub">
+              <strong>{session.title}</strong><br />
+              <span>{frDateLong(session.starts_at)}</span>
+            </p>
+
+            <form class="av-form" id="av-form" data-formation={session.formation_id} data-session={session.id}>
+              <div class="av-field">
+                <label>Votre note</label>
+                <div class="av-stars" id="av-stars" role="radiogroup" aria-label="Note sur 5">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button type="button" class="av-star" data-val={n} role="radio" aria-checked="false" aria-label={`${n} sur 5`}>★</button>
+                  ))}
+                </div>
+              </div>
+
+              <div class="av-row">
+                <div class="av-field">
+                  <label for="av-name">Votre nom *</label>
+                  <input id="av-name" type="text" maxlength="60" placeholder="Ex. Awa K." required />
+                </div>
+                <div class="av-field">
+                  <label for="av-role">Fonction / structure <span>(optionnel)</span></label>
+                  <input id="av-role" type="text" maxlength="80" placeholder="Ex. Gérante, boutique en ligne" />
+                </div>
+              </div>
+
+              <div class="av-field">
+                <label for="av-comment">Votre avis *</label>
+                <textarea id="av-comment" rows="5" maxlength="600" placeholder="Qu'avez-vous le plus apprécié ? Qu'est-ce que ça vous a apporté ?" required></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-lg av-submit" id="av-submit">Publier mon avis ⭐</button>
+              <p class="av-msg" id="av-msg" hidden></p>
+              <p class="av-legal">Votre avis est vérifié par notre équipe avant publication.</p>
+            </form>
+
+            <div class="av-done" id="av-done" hidden>
+              <div class="av-done-ic">✓</div>
+              <h2>Merci infiniment&nbsp;!</h2>
+              <p>Votre avis a bien été envoyé. Il sera publié après une rapide validation.</p>
+              <a href="/formations" class="btn btn-outline-light">Voir les formations</a>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1 class="av-title">Formation introuvable</h1>
+            <p class="av-sub">Ce lien d'avis n'est pas (ou plus) valide. Vérifiez l'adresse, ou écrivez-nous.</p>
+            <a href="/formations" class="btn btn-primary">Voir les formations</a>
+          </>
+        )}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style is:global>
+  .av-hero { position: relative; padding: clamp(60px, 9vw, 110px) 0 clamp(70px, 9vw, 120px); background: #050a3a; color: #fff; overflow: hidden; }
+  .av-hero .container { position: relative; z-index: 1; }
+  .av-card { max-width: 560px; margin: 0 auto; background: #fff; color: #0a0e27; border-radius: 22px; padding: clamp(24px, 4vw, 40px); box-shadow: 0 30px 80px -30px rgba(2, 11, 80, 0.5); }
+  .av-eyebrow { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #1f6ced; }
+  .av-title { font-family: var(--f-display); font-weight: 800; font-size: clamp(1.5rem, 3.4vw, 2rem); line-height: 1.15; margin: 8px 0 10px; color: #0a0e27; }
+  .av-sub { font-size: 0.95rem; color: #565d80; line-height: 1.5; margin: 0 0 22px; }
+  .av-sub strong { color: #0a0e27; }
+  .av-field { margin-bottom: 16px; display: flex; flex-direction: column; }
+  .av-field > label { font-size: 0.82rem; font-weight: 700; color: #3f4568; margin-bottom: 6px; }
+  .av-field > label span { color: #8b91ae; font-weight: 500; }
+  .av-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 520px) { .av-row { grid-template-columns: 1fr; } }
+  .av-field input, .av-field textarea { width: 100%; border: 1.5px solid #e2e8f6; border-radius: 12px; padding: 12px 14px; font: inherit; font-size: 0.92rem; color: #0a0e27; background: #fff; transition: border-color 0.15s, box-shadow 0.15s; }
+  .av-field input:focus, .av-field textarea:focus { outline: none; border-color: #1f6ced; box-shadow: 0 0 0 3px rgba(31, 108, 237, 0.14); }
+  .av-field textarea { resize: vertical; min-height: 96px; line-height: 1.5; }
+  .av-stars { display: flex; gap: 6px; }
+  .av-star { background: none; border: 0; padding: 0 2px; font-size: 2.1rem; line-height: 1; color: #dbe2f4; cursor: pointer; transition: color 0.12s, transform 0.12s; }
+  .av-star:hover { transform: scale(1.12); }
+  .av-star.on { color: #f0a500; }
+  .av-submit { width: 100%; margin-top: 4px; }
+  .av-msg { margin: 12px 0 0; font-size: 0.86rem; font-weight: 700; text-align: center; }
+  .av-msg.err { color: #d22d2d; }
+  .av-msg.ok { color: #0a7d5f; }
+  .av-legal { font-size: 0.76rem; color: #8b91ae; text-align: center; margin: 12px 0 0; }
+  .av-done { text-align: center; padding: 10px 0; }
+  .av-done-ic { width: 62px; height: 62px; border-radius: 50%; background: #00c89e; color: #fff; font-size: 34px; line-height: 62px; margin: 0 auto 14px; }
+  .av-done h2 { font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; margin: 0 0 8px; color: #0a0e27; }
+  .av-done p { color: #565d80; margin: 0 0 20px; }
+</style>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+
+  const form = document.getElementById("av-form") as HTMLFormElement | null;
+  if (form) {
+    let rating = 0;
+    const stars = Array.from(document.querySelectorAll<HTMLElement>(".av-star"));
+    const paint = (n: number) => stars.forEach((s) => {
+      const v = parseInt(s.dataset.val!);
+      s.classList.toggle("on", v <= n);
+      s.setAttribute("aria-checked", v === n ? "true" : "false");
+    });
+    stars.forEach((s) => {
+      s.addEventListener("click", () => { rating = parseInt(s.dataset.val!); paint(rating); });
+      s.addEventListener("mouseenter", () => paint(parseInt(s.dataset.val!)));
+    });
+    document.getElementById("av-stars")?.addEventListener("mouseleave", () => paint(rating));
+
+    const msg = document.getElementById("av-msg") as HTMLElement;
+    const submit = document.getElementById("av-submit") as HTMLButtonElement;
+    const show = (t: string, ok: boolean) => { msg.textContent = t; msg.hidden = false; msg.className = "av-msg " + (ok ? "ok" : "err"); };
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = (document.getElementById("av-name") as HTMLInputElement).value.trim();
+      const role = (document.getElementById("av-role") as HTMLInputElement).value.trim();
+      const comment = (document.getElementById("av-comment") as HTMLTextAreaElement).value.trim();
+      if (!rating) return show("Merci d'indiquer une note.", false);
+      if (name.length < 2) return show("Merci d'indiquer votre nom.", false);
+      if (comment.length < 5) return show("Votre avis est un peu court.", false);
+      submit.disabled = true; submit.textContent = "Envoi…";
+      const { error } = await supabaseBrowser.rpc("submit_review", {
+        p_formation_id: form.dataset.formation || null,
+        p_session_id: form.dataset.session || null,
+        p_author_name: name, p_author_role: role || null, p_rating: rating, p_comment: comment,
+      });
+      submit.disabled = false; submit.textContent = "Publier mon avis ⭐";
+      if (error) { show("Envoi impossible pour le moment. Réessayez.", false); return; }
+      form.hidden = true;
+      const done = document.getElementById("av-done"); if (done) done.hidden = false;
+    });
+  }
+</script>

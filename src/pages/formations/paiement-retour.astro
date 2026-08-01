@@ -37,6 +37,8 @@ type Billet = {
   is_deposit?: boolean;
   amount_paid?: number;
   balance?: number;
+  calendarGoogle?: string | null;
+  calendarIcs?: string | null;
 };
 let billet: Billet | null = null;
 
@@ -134,6 +136,16 @@ const showTicket = etat === "success" && !!billet;
           </div>
         )}
 
+        {showTicket && billet && billet.calendarGoogle && billet.calendarIcs && (
+          <div class="pr-cal">
+            <span class="pr-cal-lbl">Ajouter à mon agenda</span>
+            <div class="pr-cal-btns">
+              <a href={billet.calendarGoogle} target="_blank" rel="noopener">📅 Google&nbsp;Agenda</a>
+              <a href={billet.calendarIcs}>🍎 Apple&nbsp;/&nbsp;Outlook</a>
+            </div>
+          </div>
+        )}
+
         {!showTicket && montant && etat === "success" && (
           <p class="text-white" style="opacity:.8;margin:0 auto 28px">Montant réglé : <strong>{fmt(montant)}</strong></p>
         )}
@@ -190,4 +202,9 @@ const showTicket = etat === "success" && !!billet;
   .pay-return .pr-legal a{color:rgba(255,255,255,.82);text-decoration:none;font-weight:600}
   .pay-return .pr-legal a:hover{text-decoration:underline}
   .pay-return .pr-legal span{color:rgba(255,255,255,.35)}
+  .pay-return .pr-cal{max-width:380px;margin:16px auto 0;text-align:center}
+  .pay-return .pr-cal-lbl{display:block;font-size:12px;color:rgba(255,255,255,.7);margin-bottom:8px}
+  .pay-return .pr-cal-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .pay-return .pr-cal-btns a{display:inline-block;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:9px 14px;border-radius:11px}
+  .pay-return .pr-cal-btns a:hover{background:rgba(255,255,255,.16)}
 </style>

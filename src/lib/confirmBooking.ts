@@ -8,6 +8,7 @@
    ========================================================= */
 import { createAdminClient } from "./supabaseAdmin";
 import { sendEmail, confirmationEmail } from "./email";
+import { eventFromSession, googleCalendarUrl } from "./calendar";
 import { billetPdfBuffer } from "./billetPdf";
 import { frDateLong } from "./format";
 
@@ -42,7 +43,7 @@ export async function confirmBookingsByReference(reference: string): Promise<Con
 
   const { data: bookings } = await admin
     .from("bookings")
-    .select("id, status, reference, full_name, email, quantity, amount_due, is_deposit, sessions(title, starts_at, venue, city), ticket_types(name)")
+    .select("id, status, reference, full_name, email, quantity, amount_due, is_deposit, sessions(id, slug, title, starts_at, ends_at, venue, address, city, mode, meeting_url, meeting_info), ticket_types(name)")
     .eq("payment_reference", reference);
 
   let confirmed = 0;
@@ -73,11 +74,16 @@ export async function confirmBookingsByReference(reference: string): Promise<Con
         ticket_name: (b as any).ticket_types?.name || null,
         quantity: b.quantity,
       };
+      // « Ajouter à mon agenda » (Google + .ics).
+      const calGoogle = s?.starts_at ? googleCalendarUrl(eventFromSession(s)) : null;
+      const calIcs = s?.id ? `${SITE}/api/calendrier?s=${s.id}` : null;
       const c = confirmationEmail({
         ...billet,
         amount: amountPaid,
         balance,
         pdf_url: `${SITE}/api/billet?token=${encodeURIComponent(reference)}`,
+        calendarGoogle: calGoogle,
+        calendarIcs: calIcs,
       });
       let attachments;
       try {
@@ -108,6 +114,8 @@ export async function confirmBookingsByReference(reference: string): Promise<Con
       is_deposit: !!first.is_deposit,
       amount_paid: paid,
       balance: first.is_deposit ? Math.max(0, due - paid) : 0,
+      calendarGoogle: s?.starts_at ? googleCalendarUrl(eventFromSession(s)) : null,
+      calendarIcs: s?.id ? `${SITE}/api/calendrier?s=${s.id}` : null,
     };
   }
 

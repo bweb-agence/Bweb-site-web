@@ -67,6 +67,8 @@ type BookingEmail = {
   amount?: number;
   balance?: number;
   pdf_url?: string | null;
+  calendarGoogle?: string | null;
+  calendarIcs?: string | null;
 };
 
 const firstName = (n: string) => (n || "").trim().split(" ")[0] || n;
@@ -194,7 +196,99 @@ export function confirmationEmail(b: BookingEmail) {
             </td></tr></table>`
           : ""
       }
+      ${b.calendarGoogle && b.calendarIcs ? `<div style="text-align:center;font-size:12px;color:#8b91ae;margin-top:16px">Ajoutez la date à votre agenda</div>${calendarButtonsHtml(b.calendarGoogle, b.calendarIcs)}` : ""}
       <p style="font-size:11.5px;color:#8b91ae;line-height:1.5;margin:14px 4px 0;text-align:center">Ton billet est aussi joint en PDF à cet e-mail. Code <b>${esc(b.reference)}</b> à présenter à l'accueil (scan du QR).</p>
+    </div>`),
+  };
+}
+
+/* ---------- Boutons « Ajouter à mon agenda » (Google + .ics Apple/Outlook) ---------- */
+export function calendarButtonsHtml(googleUrl: string, icsUrl: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0 4px"><tr>
+    <td align="center" style="padding:0 4px">
+      <a href="${googleUrl}" style="display:inline-block;background:#fff;border:1.5px solid #dbe2f4;color:#1f6ced;text-decoration:none;font-weight:700;font-size:13px;padding:10px 16px;border-radius:11px">📅 Google Agenda</a>
+    </td>
+    <td align="center" style="padding:0 4px">
+      <a href="${icsUrl}" style="display:inline-block;background:#fff;border:1.5px solid #dbe2f4;color:#1f6ced;text-decoration:none;font-weight:700;font-size:13px;padding:10px 16px;border-radius:11px">🍎 Apple / Outlook</a>
+    </td>
+  </tr></table>`;
+}
+
+type EventEmail = {
+  full_name: string;
+  reference: string;
+  session_title: string;
+  session_date: string;              // ex. « samedi 1er août 2026 à 09h »
+  mode?: string | null;
+  venue?: string | null;
+  address?: string | null;
+  meeting_url?: string | null;
+  meeting_info?: string | null;
+  calendarGoogle: string;
+  calendarIcs: string;
+};
+
+const isOnline = (m?: string | null) => m === "en_ligne";
+const isHybrid = (m?: string | null) => m === "hybride";
+
+/* Bloc « comment s'y rendre / se connecter » selon le mode. */
+function accessBlock(b: EventEmail): string {
+  const rows: string[] = [];
+  if (isOnline(b.mode) || isHybrid(b.mode)) {
+    if (b.meeting_url) rows.push(`<div style="margin:4px 0"><b style="color:#0a0e27">Lien de connexion :</b> <a href="${b.meeting_url}" style="color:#1f6ced">${esc(b.meeting_url)}</a></div>`);
+    if (b.meeting_info) rows.push(`<div style="margin:4px 0;color:#565d80">${esc(b.meeting_info)}</div>`);
+  }
+  if (!isOnline(b.mode)) {
+    const lieu = [b.venue, b.address].filter(Boolean).map(esc).join(" · ");
+    if (lieu) rows.push(`<div style="margin:4px 0"><b style="color:#0a0e27">Lieu :</b> ${lieu}</div>`);
+  }
+  return rows.length ? `<div style="font-size:13px;line-height:1.55;background:#f8faff;border:1px solid #eef2fb;border-radius:12px;padding:12px 14px;margin:12px 0">${rows.join("")}</div>` : "";
+}
+
+const REMINDER_HEAD: Record<string, { tag: string; title: string; sub: string }> = {
+  reminder_5d: { tag: "Dans 5 jours", title: "Votre formation approche 🗓️", sub: "Bloquez la date : ajoutez l'évènement à votre agenda dès maintenant." },
+  reminder_3d: { tag: "Dans 3 jours", title: "Plus que 3 jours 🚀", sub: "On a hâte de vous retrouver. Vérifiez les infos pratiques ci-dessous." },
+  reminder_1d: { tag: "C'est demain", title: "Votre formation, c'est demain ✨", sub: "Préparez-vous — voici tout ce qu'il faut savoir." },
+  reminder_0d: { tag: "Aujourd'hui", title: "C'est le grand jour ! 🎉", sub: "Votre formation a lieu aujourd'hui. Voici comment nous rejoindre." },
+};
+
+/* Rappel d'évènement (J-5 / J-3 / J-1 / J-0). */
+export function reminderEmail(kind: string, b: EventEmail) {
+  const h = REMINDER_HEAD[kind] || REMINDER_HEAD.reminder_1d;
+  const accent = kind === "reminder_0d" ? "#00c89e" : kind === "reminder_1d" ? "#f0a500" : "#1f6ced";
+  return {
+    subject: `${h.tag} · ${b.session_title}`,
+    html: shell(`<div style="padding:22px 22px 6px;text-align:center">
+      <div style="display:inline-block;font-family:'Courier New',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${accent};font-weight:800;border:1px solid ${accent};border-radius:999px;padding:4px 12px">${h.tag}</div>
+      <div style="font-size:19px;font-weight:800;color:#0a0e27;margin-top:12px">${h.title}</div>
+      <div style="font-size:13.5px;color:#565d80;margin-top:4px">${h.sub}</div>
+    </div>
+    <div style="padding:8px 20px 22px">
+      <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 6px">Bonjour ${esc(firstName(b.full_name))},</p>
+      <div style="font-size:15px;font-weight:800;color:#0a0e27;margin:8px 0 2px">${esc(b.session_title)}</div>
+      <div style="font-size:13.5px;color:#1f6ced;font-weight:700">${esc(b.session_date)}</div>
+      ${accessBlock(b)}
+      ${calendarButtonsHtml(b.calendarGoogle, b.calendarIcs)}
+      <p style="font-size:11.5px;color:#8b91ae;line-height:1.5;margin:14px 4px 0;text-align:center">Réf. <b>${esc(b.reference)}</b>${isOnline(b.mode) ? "" : " · présentez ce code (ou votre billet) à l'accueil"}.</p>
+    </div>`),
+  };
+}
+
+/* Demande d'avis (le lendemain de la session). */
+export function reviewRequestEmail(b: { full_name: string; session_title: string; review_url: string }) {
+  return {
+    subject: `Comment s'est passée « ${b.session_title} » ? ⭐`,
+    html: shell(`<div style="padding:24px 22px 8px;text-align:center">
+      <div style="font-size:30px;letter-spacing:4px;color:#f0a500">★★★★★</div>
+      <div style="font-size:19px;font-weight:800;color:#0a0e27;margin-top:8px">Votre avis compte 🙏</div>
+    </div>
+    <div style="padding:6px 22px 24px">
+      <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Bonjour ${esc(firstName(b.full_name))}, merci d'avoir participé à <b>« ${esc(b.session_title)} »</b> !</p>
+      <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 14px">Si la formation vous a plu, prenez 30 secondes pour partager votre expérience — ça aide énormément les prochains participants (et ça nous fait très plaisir).</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+        <a href="${b.review_url}" style="display:inline-block;background:#1f6ced;color:#fff;text-decoration:none;font-weight:800;font-size:15px;padding:13px 26px;border-radius:12px">Laisser mon avis ⭐</a>
+      </td></tr></table>
+      <p style="font-size:12px;color:#8b91ae;line-height:1.5;margin:16px 4px 0;text-align:center">Un souci pendant la formation ? Répondez simplement à cet e-mail, on s'en occupe.</p>
     </div>`),
   };
 }
