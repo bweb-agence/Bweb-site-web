@@ -20,6 +20,35 @@ export const fmtFCFA = (n: unknown): string => (Number(n) || 0).toLocaleString("
 export const dshort = (d?: string | null): string =>
   d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
+// État réel d'une réservation (cf. migration 0024). « annule » = ancien cancelled.
+export const bookingState = (b: any): string =>
+  b.status === "confirmed" ? "paye" : b.status === "cancelled" ? "annule" : (b.payment_status || "attente");
+
+// Identité client pour regrouper les tentatives d'un même acheteur : e-mail, sinon téléphone.
+export const clientKey = (b: any): string =>
+  (b.email || "").trim().toLowerCase() || (b.phone ? "tel:" + String(b.phone).replace(/\D/g, "") : "");
+
+/**
+ * Réconciliation : ids des réservations « échouées / abandonnées » qu'il ne faut
+ * PAS relancer, car le même client a une réservation PAYÉE pour la MÊME session
+ * (il a retenté et abouti). Évite de relancer un client qui a fini par payer.
+ */
+export function reconciledRelanceIds(bookings: any[]): Set<string> {
+  const paid = new Set<string>();
+  for (const b of bookings || []) {
+    if (bookingState(b) === "paye" && b.session_id) paid.add(clientKey(b) + "|" + b.session_id);
+  }
+  const out = new Set<string>();
+  for (const b of bookings || []) {
+    const s = bookingState(b);
+    if ((s === "echoue" || s === "abandon") && b.session_id) {
+      const k = clientKey(b);
+      if (k && paid.has(k + "|" + b.session_id)) out.add(b.id);
+    }
+  }
+  return out;
+}
+
 export const dtLocalValue = (d?: string | null): string => {
   // Pour un <input type="datetime-local"> : "YYYY-MM-DDTHH:mm" en heure locale
   const dt = d ? new Date(d) : new Date();

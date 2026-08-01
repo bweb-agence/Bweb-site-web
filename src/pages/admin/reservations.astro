@@ -70,12 +70,14 @@ const stats = [
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { esc, fmtFCFA, dshort, toast } from "../../scripts/adminUtils";
+  import { esc, fmtFCFA, dshort, toast, reconciledRelanceIds } from "../../scripts/adminUtils";
 
   const now = Date.now();
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
   let all: any[] = [];
+  // Ids des tentatives échouées/abandonnées déjà réglées par une autre tentative du même client.
+  let reconciled = new Set<string>();
   let view: "active" | "archives" = "active";
   let statusFilter = "";
   let sessionFilter = "";
@@ -118,8 +120,10 @@ const stats = [
     const total = vb.length;
     const ca = vb.filter((b) => stateOf(b) === "paye").reduce((a, b) => a + dueOf(b), 0);
     const taux = total ? Math.round((c.paye / total) * 100) : 0;
-    const relanceCount = c.echoue + c.abandon;
-    const recoverable = vb.filter((b) => ["echoue", "abandon"].includes(stateOf(b))).reduce((a, b) => a + dueOf(b), 0);
+    // « À relancer » exclut les tentatives déjà réglées par une autre tentative du même client.
+    const relanceItems = vb.filter((b) => ["echoue", "abandon"].includes(stateOf(b)) && !reconciled.has(b.id));
+    const relanceCount = relanceItems.length;
+    const recoverable = relanceItems.reduce((a, b) => a + dueOf(b), 0);
 
     const setStat = (k: string, v: string, sub: string) => {
       const el = document.querySelector(`[data-stat="${k}"]`); if (el) el.textContent = v;
@@ -186,13 +190,17 @@ const stats = [
   function render(list: any[]) {
     rows.innerHTML = list.length ? list.map((b) => {
       const st = stateOf(b);
-      const canRelance = view === "active" && (st === "echoue" || st === "abandon");
+      const isReconciled = (st === "echoue" || st === "abandon") && reconciled.has(b.id);
+      const canRelance = view === "active" && (st === "echoue" || st === "abandon") && !isReconciled;
       let action: string;
       if (canRelance) {
         const msg = encodeURIComponent(relanceMsg(b));
         const wa = digits(b.phone) ? `<a class="rbtn wa" data-track target="_blank" rel="noopener" href="https://wa.me/${digits(b.phone)}?text=${msg}">${svgWa}Relancer</a>` : "";
         const mail = b.email ? `<a class="rbtn mail" data-track target="_blank" rel="noopener" href="mailto:${encodeURIComponent(b.email)}?subject=${encodeURIComponent("Votre inscription chez Bweb Agence")}&body=${msg}">${svgMail}</a>` : "";
         action = `<div class="rz-relance">${wa}${mail || (wa ? "" : "—")}</div>`;
+      } else if (isReconciled) {
+        // Tentative déjà réglée par une autre tentative du même client → pas de relance.
+        action = `<span class="tag-pill ok" title="Ce client a payé via une autre tentative — ne pas relancer">✓ Déjà réglé</span>`;
       } else {
         const receipt = b.payment_proof_url ? `<button class="abtn sm" data-proof="${esc(b.payment_proof_url)}">Reçu</button>` : "";
         const payRef = b.payment_reference ? `<span class="pay-ref" title="Référence de paiement">${esc(b.payment_reference)}</span>` : (receipt ? "" : '<span style="color:var(--c-gray-400)">—</span>');
@@ -229,6 +237,7 @@ const stats = [
     const { data } = await supabaseBrowser.from("bookings")
       .select("*, sessions(title,starts_at,status), ticket_types(name)").order("created_at", { ascending: false });
     all = data || [];
+    reconciled = reconciledRelanceIds(all);
     refreshAll();
   }
 

@@ -81,7 +81,7 @@ const kpis = [
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { esc, fmtFCFA, dshort } from "../../scripts/adminUtils";
+  import { esc, fmtFCFA, dshort, reconciledRelanceIds } from "../../scripts/adminUtils";
 
   const $ = (sel: string) => document.querySelector(sel) as HTMLElement;
   const now = Date.now();
@@ -120,7 +120,9 @@ const kpis = [
     const tentatives = counts.paye + counts.attente + counts.echoue + counts.abandon;
     const taux = tentatives ? Math.round((counts.paye / tentatives) * 100) : 0;
     const ca = all.filter((b) => stateOf(b) === "paye").reduce((a, b) => a + paidOf(b), 0);
-    const recoverList = all.filter((b) => ["echoue", "abandon"].includes(stateOf(b)));
+    // Exclut les tentatives déjà réglées par une autre tentative du même client.
+    const reconciled = reconciledRelanceIds(all);
+    const recoverList = all.filter((b) => ["echoue", "abandon"].includes(stateOf(b)) && !reconciled.has(b.id));
     const recoverable = recoverList.reduce((a, b) => a + dueOf(b), 0);
     const clientsPayants = new Set(all.filter((b) => stateOf(b) === "paye").map((b) => (b.email || "").toLowerCase()).filter(Boolean)).size;
     const allEmails = new Set(all.map((b) => (b.email || "").toLowerCase()).filter(Boolean));
