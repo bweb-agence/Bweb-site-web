@@ -4,6 +4,7 @@ import type { APIRoute } from "astro";
 import { createAdminClient } from "../../../lib/supabaseAdmin";
 import { sendCampaignEmails, type Recipient } from "../../../lib/sendCampaign";
 import { sendDueRappels } from "../../../lib/sendRappels";
+import { enrollDuePackHolders } from "../../../lib/enrollPack";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -36,6 +37,11 @@ async function handle(request: Request): Promise<Response> {
   let rappels = { candidates: 0, sent: 0 };
   try { rappels = await sendDueRappels(admin); } catch { /* non bloquant pour les campagnes */ }
 
+  // Enrôlement auto des détenteurs de pack (filet de sécurité : rattrape les
+  // sessions publiées dont l'enrôlement instantané a été manqué). Non bloquant.
+  let packEnrol = { sessions: 0, enrolled: 0 };
+  try { packEnrol = await enrollDuePackHolders(admin); } catch { /* non bloquant */ }
+
   const { data: due } = await admin
     .from("campaigns")
     .select("id, subject, message, body_html, recipients")
@@ -44,7 +50,7 @@ async function handle(request: Request): Promise<Response> {
     .lte("scheduled_at", nowIso)
     .limit(20);
 
-  if (!due || due.length === 0) return json({ ok: true, processed: 0, rappels });
+  if (!due || due.length === 0) return json({ ok: true, processed: 0, rappels, packEnrol });
 
   const results: any[] = [];
   for (const c of due as any[]) {
@@ -71,7 +77,7 @@ async function handle(request: Request): Promise<Response> {
       results.push({ id: c.id, error: true });
     }
   }
-  return json({ ok: true, processed: results.length, results, rappels });
+  return json({ ok: true, processed: results.length, results, rappels, packEnrol });
 }
 
 export const GET: APIRoute = ({ request }) => handle(request);

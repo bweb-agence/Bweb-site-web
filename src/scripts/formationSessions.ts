@@ -227,6 +227,24 @@ export async function initFormationSessions(
       if (sel) sel.value = next;
       renderPill();
       toast(next === "published" ? "Date mise en ligne. ✅" : "Date retirée du site.");
+
+      // Enrôlement instantané des détenteurs de pack (best-effort ; le cron
+      // rattrape sinon). Si des places sont réservées, on le signale.
+      if (next === "published") {
+        try {
+          const { data: sess } = await supabaseBrowser.auth.getSession();
+          const tok = sess?.session?.access_token;
+          if (tok) {
+            const r = await fetch("/api/pack/enroll-session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
+              body: JSON.stringify({ session_id: sessionId }),
+            });
+            const j = await r.json().catch(() => null);
+            if (j?.ok && j.enrolled > 0) toast(`${j.enrolled} place(s) de pack enrôlée(s). 🎟️`);
+          }
+        } catch { /* non bloquant */ }
+      }
     }
 
     /* ----- lignes tarif / order bump (fond doux, sans bordure) ----- */
