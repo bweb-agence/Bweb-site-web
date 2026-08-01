@@ -292,3 +292,61 @@ export function reviewRequestEmail(b: { full_name: string; session_title: string
     </div>`),
   };
 }
+
+/* ---------- Confirmation d'achat d'un PACK de parcours ----------
+   « Pass parcours » : liste les places prépayées (1 par formation). Les billets
+   nominatifs partent séparément, au fur et à mesure que chaque date est programmée
+   (cf. lib/enrollPack + confirmationEmail). */
+type PackEmail = {
+  reference: string;
+  full_name: string;
+  pack_title: string;
+  amount: number;
+  items: { title: string; date?: string | null }[];
+};
+
+export function packConfirmationEmail(p: PackEmail) {
+  const accent = "#00c89e";
+  const rows = (p.items || [])
+    .map((it) => {
+      const st = it.date
+        ? `<span style="font-family:'Courier New',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:${accent};font-weight:700;white-space:nowrap">Place réservée · ${esc(it.date)}</span>`
+        : `<span style="font-family:'Courier New',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#8b94c8;font-weight:700;white-space:nowrap">Réservée · date à venir</span>`;
+      return `<tr>
+        <td style="padding:9px 0;border-top:1px solid rgba(255,255,255,.12);font-size:12.5px;color:#fff;font-weight:700">${esc(it.title)}</td>
+        <td align="right" style="padding:9px 0 9px 10px;border-top:1px solid rgba(255,255,255,.12);vertical-align:middle">${st}</td>
+      </tr>`;
+    })
+    .join("");
+
+  const ticket = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050a3a" style="border-collapse:separate;border-radius:16px;overflow:hidden;background:#050a3a">
+    <tr><td style="padding:18px 16px">
+      <div style="font-family:'Courier New',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:${accent};font-weight:700">— Pass parcours · ${(p.items || []).length} formation${(p.items || []).length > 1 ? "s" : ""}</div>
+      <div style="font-size:19px;font-weight:800;color:#ffffff;letter-spacing:-.01em;margin:9px 0 6px;line-height:1.25">${esc(p.pack_title)}</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${rows}</table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px">
+        <tr><td style="border:1px solid ${accent};border-radius:11px;padding:11px 13px">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td style="font-family:'Courier New',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:${accent};font-weight:700">Payé · pack</td>
+            <td align="right" style="font-family:'Courier New',monospace;font-size:16px;font-weight:700;color:#ffffff">${fmt(p.amount)}</td>
+          </tr></table>
+        </td></tr>
+      </table>
+      <div style="margin:9px 2px 0;font-size:11px;color:#8b94c8;line-height:1.5">Réf. pack <b style="color:#fff">${esc(p.reference)}</b> · rien à régler sur place.</div>
+    </td></tr>
+  </table>`;
+
+  return {
+    subject: `Votre pass parcours est confirmé — ${p.reference}`,
+    html: shell(`<div style="padding:24px 22px 6px;text-align:center">
+      <div style="width:56px;height:56px;border-radius:50%;background:${accent};color:#fff;font-size:30px;line-height:56px;margin:0 auto 10px">&#10003;</div>
+      <div style="font-size:19px;font-weight:800;color:#0a0e27">Pass parcours confirmé&nbsp;!</div>
+      <div style="font-size:13px;color:#565d80;margin-top:4px">Votre paiement a bien été vérifié.</div>
+    </div>
+    <div style="padding:12px 18px 22px">
+      <p style="font-size:13.5px;color:#3f4568;line-height:1.6;margin:0 0 14px">Bonjour ${esc(firstName(p.full_name))}, votre pack est réservé. Vous avez <b>${(p.items || []).length} place${(p.items || []).length > 1 ? "s" : ""} prépayée${(p.items || []).length > 1 ? "s" : ""}</b> — une pour chaque formation. Dès qu'une date s'ouvre, on vous inscrit et on vous prévient, sans rien repayer.</p>
+      ${ticket}
+      <p style="font-size:11.5px;color:#8b91ae;line-height:1.5;margin:14px 4px 0;text-align:center">Vous recevrez un billet nominatif (avec QR) à chaque fois qu'une formation du pack est programmée.</p>
+    </div>`),
+  };
+}

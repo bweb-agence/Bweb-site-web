@@ -2,6 +2,7 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 import { confirmBookingsByReference, setPaymentStatusByReference } from "../../lib/confirmBooking";
+import { confirmPackByReference, setPackPaymentStatusByReference } from "../../lib/confirmPack";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -71,12 +72,17 @@ export const POST: APIRoute = async ({ request }) => {
     const ongoing = ["ongoing", "pending", "processing", "queued", "en attente", "en_cours", ""].includes(statut);
     const abandoned = ["abandoned", "abandon", "cancelled", "canceled", "annulé", "annule"].includes(statut);
     if (!ongoing) {
-      await setPaymentStatusByReference(token, abandoned ? "abandon" : "echoue");
+      const st = abandoned ? "abandon" : "echoue";
+      await setPaymentStatusByReference(token, st);
+      await setPackPaymentStatusByReference(token, st);
     }
     return json({ ok: true, statut, montant, confirmed: 0 });
   }
 
-  // 2) Confirmer les réservations liées à cette référence de paiement.
+  // 2) Confirmer ce qui est lié à cette référence : une réservation classique
+  //    OU un achat de pack (jamais les deux — la même référence ne peut pas
+  //    correspondre aux deux tables). Les deux appels sont idempotents.
   const { confirmed, booking } = await confirmBookingsByReference(token);
-  return json({ ok: true, statut, montant, confirmed, booking });
+  const pack = await confirmPackByReference(token);
+  return json({ ok: true, statut, montant, confirmed: confirmed + pack.confirmed, booking, pack: pack.purchase });
 };

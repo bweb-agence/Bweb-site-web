@@ -57,6 +57,7 @@ create table if not exists public.pack_purchases (
   amount_due        int  not null default 0,
   amount_paid       int  not null default 0,
   attendance_mode   text check (attendance_mode in ('presentiel', 'en_ligne')), -- préférence à l'achat
+  payment_method    text check (payment_method in ('paystack', 'money_fusion')),
   status            text not null default 'pending'
                       check (status in ('pending', 'confirmed', 'cancelled')),
   payment_status    text not null default 'attente'
