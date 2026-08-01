@@ -42,6 +42,12 @@
 .admin-side a.item:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
 .admin-side a.item.on { background: rgba(255, 255, 255, 0.12); color: #fff; }
 .admin-side a.item svg { width: 17px; height: 17px; flex: none; }
+.admin-side a.item .lbl { flex: 1; }
+/* Libellés de sections + badges « à relancer » */
+.admin-side .navlbl { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #5b68a8; margin: 15px 12px 6px; }
+.admin-side nav > .navlbl:first-child { margin-top: 2px; }
+.admin-side a.item .badge { flex: none; font-size: 0.64rem; font-weight: 800; background: var(--c-blue); color: #fff; border-radius: 999px; padding: 1px 7px; min-width: 20px; text-align: center; }
+.admin-side a.item .badge.warn { background: #e0a02a; color: #241a04; }
 .admin-side .side-foot { margin-top: auto; padding-top: 18px; }
 .admin-logout { display: flex; align-items: center; gap: 9px; width: 100%; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); color: #cdd6ff; font-weight: 600; font-size: 0.85rem; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
 .admin-logout:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
