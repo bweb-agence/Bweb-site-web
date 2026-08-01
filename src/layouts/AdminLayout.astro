@@ -46,7 +46,7 @@ const navGroups = [
     <title>{title} · Admin Bweb Agence</title>
     <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
   </head>
-  <body class="admin-body">
+  <body class="admin-body" data-active={active}>
     <div class="admin-loading" id="admin-loading">
       <div style="text-align:center"><div class="spin"></div>Vérification de l'accès…</div>
     </div>
@@ -63,7 +63,7 @@ const navGroups = [
                 <a href={item.href} class={`item ${active === item.key ? "on" : ""}`}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" set:html={item.icon} />
                   <span class="lbl">{item.label}</span>
-                  {item.badge && <span class="badge warn" data-navbadge={item.badge} hidden></span>}
+                  {item.badge && <span class="badge" data-navbadge={item.badge} title="Nouveautés depuis votre dernière visite" hidden></span>}
                 </a>
               ))}
             </>
@@ -138,20 +138,40 @@ const navGroups = [
           document.querySelector("[data-admin]")?.removeAttribute("hidden");
           window.dispatchEvent(new CustomEvent("admin-ready"));
 
-          // Badges « à relancer » du menu (réservations échouées/abandonnées).
+          // Badges de NOUVEAUTÉS du menu : nombre de réservations / clients arrivés
+          // depuis la dernière visite de la page. Le compteur se remet à 0 quand on
+          // ouvre la page concernée (horodatage « vu » mémorisé en local, par admin).
           (async () => {
             try {
+              const SEEN = { reservations: "bweb_seen_reservations", clients: "bweb_seen_clients" };
+              const activeKey = document.body.dataset.active || "";
+              const seen = (k: string) => Number(localStorage.getItem(k) || 0);
               const { data: bk } = await supabaseBrowser
-                .from("bookings").select("email,status,payment_status");
-              const relance = (bk || []).filter((b: any) =>
-                b.status !== "confirmed" && b.status !== "cancelled" && ["echoue", "abandon"].includes(b.payment_status));
-              const clients = new Set(relance.map((b: any) => (b.email || "").toLowerCase()).filter(Boolean)).size;
+                .from("bookings").select("email,created_at").order("created_at", { ascending: false });
+              const list = bk || [];
+              const nowMs = Date.now();
+
+              // Nouvelles réservations depuis la dernière visite de /admin/reservations.
+              const newResa = list.filter((b: any) => +new Date(b.created_at) > seen(SEEN.reservations)).length;
+              // Nouveaux clients = e-mails dont la 1re réservation est postérieure à la dernière visite de /admin/clients.
+              const firstByEmail = new Map<string, number>();
+              for (const b of list) {
+                const e = (b.email || "").toLowerCase(); if (!e) continue;
+                const t = +new Date(b.created_at);
+                if (!firstByEmail.has(e) || t < firstByEmail.get(e)!) firstByEmail.set(e, t);
+              }
+              const newClients = [...firstByEmail.values()].filter((t) => t > seen(SEEN.clients)).length;
+
               const setBadge = (key: string, n: number) => {
                 const el = document.querySelector(`[data-navbadge="${key}"]`);
-                if (el && n > 0) { el.textContent = String(n); el.removeAttribute("hidden"); }
+                if (el && n > 0) { el.textContent = n > 99 ? "99+" : String(n); el.removeAttribute("hidden"); }
+                else if (el) el.setAttribute("hidden", "");
               };
-              setBadge("reservations", relance.length);
-              setBadge("clients", clients);
+              // Sur la page concernée : on considère les nouveautés comme vues → badge à 0 + horodatage màj.
+              setBadge("reservations", activeKey === "reservations" ? 0 : newResa);
+              setBadge("clients", activeKey === "clients" ? 0 : newClients);
+              if (activeKey === "reservations") localStorage.setItem(SEEN.reservations, String(nowMs));
+              if (activeKey === "clients") localStorage.setItem(SEEN.clients, String(nowMs));
             } catch { /* silencieux : le menu marche sans badge */ }
           })();
 
