@@ -1163,3 +1163,21 @@ body.rz-lock { overflow: hidden; }
 .meet-box__info { margin-top: 14px; color: var(--c-gray-700); font-size: 0.92rem; line-height: 1.55; white-space: pre-line; }
 .meet-box .btn { margin-top: 16px; }
 .meet-box__note { margin-top: 14px; font-size: 0.88rem; color: var(--c-gray-600); background: var(--c-gray-100); padding: 12px 14px; border-radius: var(--radius-md); }
+
+/* -------- Encart « offre parcours en pack » sur la page teaser d'une formation -------- */
+.fmp-packbanner {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+  background: linear-gradient(135deg, #020b50, #154fb3); color: #fff; border-radius: var(--radius-lg);
+  padding: 22px 24px; text-decoration: none; margin: 8px 0 4px;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.fmp-packbanner:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.fmp-packbanner__txt { display: flex; flex-direction: column; gap: 4px; min-width: 240px; flex: 1; }
+.fmp-packbanner__txt .eb { font-family: var(--f-display); font-weight: 800; font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: #7ee3c6; }
+.fmp-packbanner__txt strong { font-family: var(--f-display); font-weight: 800; font-size: 1.2rem; letter-spacing: -.01em; }
+.fmp-packbanner__txt .sub { color: #c3cbf0; font-size: .86rem; line-height: 1.5; max-width: 52ch; }
+.fmp-packbanner__cta { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; text-align: right; }
+.fmp-packbanner__cta .p { font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; }
+.fmp-packbanner__cta .p small { font-size: .72rem; color: #c3cbf0; font-weight: 700; }
+.fmp-packbanner__cta .go { font-weight: 700; font-size: .9rem; color: #ffc72a; }
+@media (max-width: 620px) { .fmp-packbanner__cta { align-items: flex-start; text-align: left; } }
