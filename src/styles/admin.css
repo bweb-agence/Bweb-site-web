@@ -96,6 +96,9 @@
 .tag-pill.fail { background: #fbe7e7; color: #b02525; }
 .tag-pill.abandon { background: #f0ecf6; color: #6b5b8a; }
 
+/* « F CFA » réduit après un montant (partout dans l'admin) — gagne de la place. */
+.fcfa { font-size: 0.72em; font-weight: 600; opacity: 0.66; letter-spacing: 0.01em; white-space: nowrap; }
+
 /* Références dans le tableau des réservations */
 .mono-ref { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 700; font-size: 0.8rem; color: var(--c-navy); }
 .pay-ref { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.74rem; color: var(--c-gray-500); background: var(--surface-2, #f7f9fd); border: 1px solid var(--c-border-soft, var(--c-border)); border-radius: 6px; padding: 2px 7px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
