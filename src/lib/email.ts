@@ -350,3 +350,63 @@ export function packConfirmationEmail(p: PackEmail) {
     </div>`),
   };
 }
+
+/* ---------- Enrôlement d'une place de PACK (une date vient de s'ouvrir) ----------
+   Variante « Bonne nouvelle ! » du billet : ton chaleureux, montant 0 (place déjà
+   payée via le pack), billet nominatif + QR + agenda, et rappel du nombre de
+   places restantes dans le pack. */
+export function packEnrollmentEmail(b: BookingEmail & { remaining?: number }) {
+  const accent = "#00c89e";
+  const remaining = Math.max(0, Number(b.remaining) || 0);
+
+  const band = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px">
+      <tr><td style="border:1px solid ${accent};border-radius:11px;padding:11px 13px">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td style="font-family:'Courier New',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:${accent};font-weight:700;white-space:nowrap">Payé · via pack</td>
+          <td align="right" style="font-family:'Courier New',monospace;font-size:16px;font-weight:700;color:#ffffff;white-space:nowrap;padding-left:10px">${fmt(0)}</td>
+        </tr></table>
+      </td></tr>
+    </table>`;
+
+  const ticket = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" background="${SITE}/images/billet-bg.png" bgcolor="#050a3a" style="border-collapse:separate;border-radius:16px;overflow:hidden;background:#050a3a url('${SITE}/images/billet-bg.png') center center / cover no-repeat">
+    <tr>
+      <td style="padding:18px 16px;vertical-align:top">
+        <div style="font-family:'Courier New',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:${accent};font-weight:700">— Billet de formation</div>
+        <div style="font-size:19px;font-weight:800;color:#ffffff;letter-spacing:-.01em;margin:9px 0 2px;line-height:1.25">${esc(b.session_title)}</div>
+        <div style="height:6px"></div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
+          ${b.session_date ? ticketRow("Date", esc(b.session_date)) : ""}
+          ${b.session_venue ? ticketRow("Lieu", esc(b.session_venue)) : ""}
+          ${ticketRow("Participant", esc(b.full_name))}
+        </table>
+        ${band}
+        <div style="margin:9px 2px 0;font-size:11px;color:#8b94c8;line-height:1.5">Place réglée via votre pack. Un rappel vous sera envoyé avant la date.</div>
+      </td>
+      <td width="126" style="width:126px;padding:16px 10px;vertical-align:middle;text-align:center;border-left:2px dashed rgba(255,255,255,.35)">
+        <img src="${SITE}/api/billet-qr?ref=${encodeURIComponent(b.reference)}" width="86" height="86" alt="QR ${esc(b.reference)}" style="display:block;margin:0 auto 8px;width:86px;height:86px;background:#fff;border-radius:8px;padding:5px" />
+        <div style="font-family:'Courier New',monospace;font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:${accent};font-weight:700">Code d'entrée</div>
+        <div style="font-family:'Courier New',monospace;font-size:15px;font-weight:700;color:#ffffff;letter-spacing:.03em;margin:5px 0 4px">${esc(b.reference)}</div>
+        <div style="font-family:'Courier New',monospace;font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:#8b94c8">Admis · 1</div>
+      </td>
+    </tr>
+  </table>`;
+
+  const leftNote = remaining > 0
+    ? `Il vous reste <b>${remaining} place${remaining > 1 ? "s" : ""}</b> dans votre pack. On vous préviendra à chaque nouvelle date.`
+    : `C'était la dernière place de votre pack — profitez-en bien&nbsp;!`;
+
+  return {
+    subject: `Bonne nouvelle, votre place est réservée — ${b.reference}`,
+    html: shell(`<div style="padding:24px 22px 6px;text-align:center">
+      <div style="width:56px;height:56px;border-radius:50%;background:#1f6ced;color:#fff;font-size:30px;line-height:56px;margin:0 auto 10px">&#9733;</div>
+      <div style="font-size:19px;font-weight:800;color:#0a0e27">Bonne nouvelle, une date s'ouvre&nbsp;!</div>
+      <div style="font-size:13px;color:#565d80;margin-top:4px">Votre place du pack est réservée.</div>
+    </div>
+    <div style="padding:12px 18px 22px">
+      <p style="font-size:13.5px;color:#3f4568;line-height:1.6;margin:0 0 14px">Bonjour ${esc(firstName(b.full_name))}, la formation <b>« ${esc(b.session_title)} »</b> de votre pack a désormais une date. Votre place est <b>déjà réservée</b> — rien à faire, rien à payer. Voici votre billet.</p>
+      ${ticket}
+      ${b.calendarGoogle && b.calendarIcs ? `<div style="text-align:center;font-size:12px;color:#8b91ae;margin-top:16px">Ajoutez la date à votre agenda</div>${calendarButtonsHtml(b.calendarGoogle, b.calendarIcs)}` : ""}
+      <p style="font-size:11.5px;color:#8b91ae;line-height:1.5;margin:14px 4px 0;text-align:center">${leftNote}</p>
+    </div>`),
+  };
+}

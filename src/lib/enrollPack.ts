@@ -12,7 +12,7 @@
    Idempotent : ne traite qu'un droit encore « pending » d'un achat « confirmed ».
    ========================================================= */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendEmail, confirmationEmail } from "./email";
+import { sendEmail, packEnrollmentEmail } from "./email";
 import { eventFromSession, googleCalendarUrl } from "./calendar";
 import { frDateLong } from "./format";
 
@@ -41,7 +41,7 @@ export async function enrollForSession(admin: SupabaseClient, sessionId: string)
   // Droits en attente pour cette formation, dont l'achat de pack est confirmé.
   const { data: ents } = await admin
     .from("pack_entitlements")
-    .select("id, pack_purchases!inner(status, full_name, email, phone, attendance_mode)")
+    .select("id, pack_purchases!inner(id, status, full_name, email, phone, attendance_mode)")
     .eq("formation_id", (s as any).formation_id)
     .eq("status", "pending")
     .eq("pack_purchases.status", "confirmed");
@@ -101,6 +101,13 @@ export async function enrollForSession(admin: SupabaseClient, sessionId: string)
       count++;
 
       if (p.email) {
+        // Places encore en attente dans ce pack (pour le « il vous reste N places »).
+        const { count: remaining } = await admin
+          .from("pack_entitlements")
+          .select("id", { count: "exact", head: true })
+          .eq("purchase_id", p.id)
+          .eq("status", "pending");
+
         const billet = {
           reference: ref,
           full_name: p.full_name,
@@ -114,8 +121,9 @@ export async function enrollForSession(admin: SupabaseClient, sessionId: string)
           pdf_url: `${SITE}/api/billet?ref=${encodeURIComponent(ref)}`,
           calendarGoogle: (s as any).starts_at ? googleCalendarUrl(eventFromSession(s as any)) : null,
           calendarIcs: (s as any).id ? `${SITE}/api/calendrier?s=${(s as any).id}` : null,
+          remaining: remaining ?? 0,
         };
-        const c = confirmationEmail(billet);
+        const c = packEnrollmentEmail(billet);
         await sendEmail({ to: p.email, subject: c.subject, html: c.html });
       }
     } catch {
