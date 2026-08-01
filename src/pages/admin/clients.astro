@@ -357,10 +357,14 @@ const accentClass: Record<string, string> = {
 
     // Relance : la dernière transaction non aboutie — en priorité une qui a
     // ÉCHOUÉ (paiement tenté sans être finalisé), sinon abandon, sinon en attente.
+    // Réconciliation : on IGNORE une tentative si le client a déjà PAYÉ la même
+    // session (il a retenté et abouti) → ne pas relancer un client qui a fini par payer.
+    const paidSessions = new Set(c.bookings.filter((b) => txStateOf(b) === "paye" && b.session_id).map((b) => b.session_id));
+    const relanceable = (b: Booking) => !(b.session_id && paidSessions.has(b.session_id));
     const relanceBooking =
-      c.bookings.find((b) => txStateOf(b) === "echoue") ||
-      c.bookings.find((b) => txStateOf(b) === "abandon") ||
-      c.bookings.find((b) => txStateOf(b) === "attente");
+      c.bookings.find((b) => txStateOf(b) === "echoue" && relanceable(b)) ||
+      c.bookings.find((b) => txStateOf(b) === "abandon" && relanceable(b)) ||
+      c.bookings.find((b) => txStateOf(b) === "attente" && relanceable(b));
     let relanceHtml = "";
     if (relanceBooking) {
       const st = txStateOf(relanceBooking);
