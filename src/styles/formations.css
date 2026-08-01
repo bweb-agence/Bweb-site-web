@@ -263,6 +263,17 @@
 .ev-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
 .ev-card.is-hidden { display: none; }
 
+/* Toute la carte est cliquable : lien-overlay (souris) sous le contenu ;
+   les vrais liens/boutons repassent au-dessus et gardent le focus clavier. */
+.ev-card { cursor: pointer; }
+.ev-cardlink { position: absolute; inset: 0; z-index: 1; border-radius: var(--radius-lg); }
+.ev-card .btn,
+.ev-card a:not(.ev-cardlink),
+.ev-card button { position: relative; z-index: 2; }
+/* Décorations du média = purement visuelles : le clic les traverse jusqu'à
+   l'overlay. Le bouton favoris (.ev-fav) garde ses pointer-events. */
+.ev-scrim, .ev-tags, .ev-date, .ev-sold, .ev-promo { pointer-events: none; }
+
 /* --- Média (bandeau) --- */
 .ev-media { position: relative; height: 150px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden; }
 .ev-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
