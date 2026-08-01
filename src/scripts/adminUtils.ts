@@ -13,7 +13,9 @@ export const slugify = (s: string): string =>
 export const esc = (s: unknown): string =>
   String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 
-export const fmtFCFA = (n: unknown): string => (Number(n) || 0).toLocaleString("fr-FR") + " F CFA";
+// Montant admin : « F CFA » en petit (<small class="fcfa">) pour occuper moins de
+// place. ⚠️ Renvoie du HTML → toujours l'injecter via innerHTML (jamais textContent).
+export const fmtFCFA = (n: unknown): string => (Number(n) || 0).toLocaleString("fr-FR") + ' <small class="fcfa">F CFA</small>';
 
 export const dshort = (d?: string | null): string =>
   d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—";

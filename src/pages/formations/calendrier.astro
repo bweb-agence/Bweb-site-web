@@ -3,7 +3,7 @@ export const prerender = false;
 
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { supabase } from "../../lib/supabase";
-import { priceFCFA, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, themeColorMap } from "../../lib/format";
+import { priceFCFA, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, themeColorMap, cheapestTicket } from "../../lib/format";
 import "../../styles/formations.css";
 
 type TT = { price: number; capacity: number; sold: number; compare_at_price: number | null };
@@ -56,7 +56,7 @@ function derive(s: Session) {
   const cap = tts.reduce((a, t) => a + t.capacity, 0);
   const sold = tts.reduce((a, t) => a + t.sold, 0);
   const remaining = Math.max(0, cap - sold);
-  const cheapest = tts.length ? tts.reduce((a, t) => (t.price < a.price ? t : a)) : null;
+  const cheapest = cheapestTicket(tts); // le moins cher ENCORE DISPONIBLE
   const minPrice = cheapest ? cheapest.price : null;
   const compareAt =
     cheapest && cheapest.compare_at_price && cheapest.compare_at_price > cheapest.price

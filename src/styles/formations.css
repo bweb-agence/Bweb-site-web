@@ -438,7 +438,17 @@
 .t-badge.limited { background: #fbf1d6; color: #8a6400; }
 .t-badge.ok { background: #dcf5ec; color: #0a7d5f; }
 .t-left { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.01em; color: #c2410c; background: #fff0e6; padding: 3px 8px; border-radius: var(--radius-pill); white-space: nowrap; }
-.t-soldout { font-size: 0.72rem; font-weight: 700; color: #b02525; }
+.t-soldout { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; color: #c0392b; background: #fdecec; border: 1px solid #f5cfcf; padding: 4px 10px; border-radius: var(--radius-pill); white-space: nowrap; }
+
+/* Tarif épuisé : légèrement grisé + teinte rouge clair, non interactif. */
+.ticket.is-soldout { background: #faf5f5; border-color: #f0dede; box-shadow: none; }
+.ticket.is-soldout::before { display: none; }
+.ticket.is-soldout:hover { transform: none; border-color: #f0dede; }
+.ticket.is-soldout .tn { color: var(--c-gray-600); }
+.ticket.is-soldout .tp { color: var(--c-gray-500); }
+.ticket.is-soldout .tp .tp-was { opacity: 0.7; }
+.ticket.is-soldout .tp .tp-off { background: #d99; }
+.ticket.is-soldout .t-badge { opacity: 0.55; }
 
 /* Stepper premium : « + » en pastille dégradée, « − » discret, compteur qui pulse. */
 .stepper { display: flex; align-items: center; gap: 8px; flex: none; }

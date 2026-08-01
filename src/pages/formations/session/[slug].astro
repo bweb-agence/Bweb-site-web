@@ -4,7 +4,7 @@ export const prerender = false;
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { supabase } from "../../../lib/supabase";
 import { site, contact } from "../../../config/site";
-import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, modeLabel, themeColorMap } from "../../../lib/format";
+import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, modeLabel, themeColorMap, cheapestTicket } from "../../../lib/format";
 import { marked } from "marked";
 import PhoneField from "../../../components/PhoneField.astro";
 import "../../../styles/formations.css";
@@ -58,7 +58,7 @@ const totalCap = tickets.reduce((s: number, t: any) => s + t.capacity, 0);
 const totalSold = tickets.reduce((s: number, t: any) => s + t.sold, 0);
 const totalRemaining = Math.max(0, totalCap - totalSold);
 const isFull = session?.status === "full" || totalRemaining <= 0;
-const cheapest = tickets.length ? tickets.reduce((a: any, t: any) => (t.price < a.price ? t : a)) : null;
+const cheapest = cheapestTicket(tickets as any); // le moins cher ENCORE DISPONIBLE
 const minPrice = cheapest ? cheapest.price : null;
 const minCompareAt = cheapest && cheapest.compare_at_price && cheapest.compare_at_price > cheapest.price ? cheapest.compare_at_price : null;
 const minDiscountPct = minCompareAt && minPrice ? Math.round((1 - minPrice / minCompareAt) * 100) : 0;
@@ -716,7 +716,7 @@ const sessCrumbs = session
                   const bi = badgeInfo(t.badge, t.sales_end);
                   const promo = ttPromo(t);
                   return (
-                    <div class={`ticket ${featured ? "featured" : ""}`} data-ticket data-id={t.id} data-name={t.name} data-price={t.price} data-remaining={remaining}>
+                    <div class={`ticket ${featured ? "featured" : ""} ${remaining <= 0 ? "is-soldout" : ""}`} data-ticket data-id={t.id} data-name={t.name} data-price={t.price} data-remaining={remaining}>
                       {featured && <span class="t-ribbon"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.7L12 17.3 5.8 20.8l1.6-6.7L2.2 8.9l6.9-.6z"/></svg>Le plus choisi</span>}
                       <div class="t-row">
                         <div class="t-info">

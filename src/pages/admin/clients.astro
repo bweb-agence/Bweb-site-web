@@ -192,7 +192,7 @@ const accentClass: Record<string, string> = {
     const nbRelance = clients.filter((c) => c.status === "relance").length;
     const ca = clients.reduce((a, c) => a + c.ca, 0);
     const taux = clients.length ? Math.round((nbClients / clients.length) * 100) : 0;
-    const set = (k: string, v: string) => { const el = document.querySelector(`[data-kpi="${k}"]`); if (el) el.textContent = v; };
+    const set = (k: string, v: string) => { const el = document.querySelector(`[data-kpi="${k}"]`); if (el) el.innerHTML = v; };
     set("clients", String(nbClients)); set("prospects", String(nbProspects));
     set("ca", fmtFCFA(ca)); set("taux", taux + " %"); set("relance", String(nbRelance));
   }
