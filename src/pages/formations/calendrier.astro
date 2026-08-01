@@ -271,6 +271,7 @@ const calData = sessions.map((s) => {
                   data-rating={rt.avg}
                   data-reviews={rt.n}
                 >
+                  <a class="ev-cardlink" href={`/formations/session/${s.slug}`} tabindex="-1" aria-hidden="true"></a>
                   <div class={`ev-media ${gradClass(s.theme, tmap)}`}>
                     {s.image_url && <img src={s.image_url} alt="" loading="lazy" />}
                     <span class="ev-scrim"></span>

@@ -38,6 +38,7 @@ const weekdayLine = (() => { const w = d.toLocaleDateString("fr-FR", { weekday: 
 ---
 
 <article class="ev-card" data-grad={gradSuffix(s.theme, map)}>
+  <a class="ev-cardlink" href={`/formations/session/${s.slug}`} tabindex="-1" aria-hidden="true"></a>
   <div class={`ev-media ${gradClass(s.theme, map)}`}>
     {s.image_url && <img src={s.image_url} alt="" loading="lazy" />}
     <span class="ev-scrim"></span>

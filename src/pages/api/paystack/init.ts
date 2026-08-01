@@ -1,6 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
+import { supabase } from "../../../lib/supabase";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -20,8 +21,17 @@ export const POST: APIRoute = async ({ request }) => {
   } catch {
     return json({ ok: false, error: "invalid" }, 400);
   }
-  const amount = Math.round(Number(body?.amount) || 0);
+  let amount = Math.round(Number(body?.amount) || 0);
   const email = String(body?.email || "").trim();
+
+  // Pack : le montant fait autorité côté serveur (prix du pack en base), jamais le client.
+  const packSlug = String(body?.pack || "").trim();
+  if (packSlug) {
+    const { data: pk } = await supabase.from("packs").select("price").eq("slug", packSlug).eq("active", true).maybeSingle();
+    if (!pk) return json({ ok: false, error: "pack_indisponible" }, 404);
+    amount = Math.round(Number(pk.price) || 0);
+  }
+
   if (amount < 1 || !email) return json({ ok: false, error: "invalid" }, 400);
 
   const origin = new URL(request.url).origin;

@@ -113,6 +113,11 @@ export async function initFormationSessions(
         </button>
         <button type="button" data-act="pub-toggle" data-status-pill
           style="border:0;cursor:pointer;padding:4px 10px;margin-right:2px;border-radius:999px;font:inherit;font-size:.7rem;font-weight:700;line-height:1.5;white-space:nowrap" ${sessionId ? "" : "hidden"}></button>
+        <button type="button" data-act="copy-review" title="Copier le lien d'avis" aria-label="Copier le lien d'avis de cette date"
+          data-slug="${esc(s?.slug || "")}"
+          style="border:0;background:transparent;cursor:pointer;padding:9px 8px;opacity:.55;line-height:1" ${s?.slug ? "" : "hidden"}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6 6.6.6-5 4.3 1.5 6.5L12 16l-6 3.4 1.5-6.5-5-4.3 6.6-.6z"/></svg>
+        </button>
         <button type="button" class="ed-fscard-dup" data-act="duplicate" title="Dupliquer cette date"
           aria-label="Dupliquer cette date"
           style="border:0;background:transparent;cursor:pointer;padding:9px 12px;opacity:.55;font-size:1.05rem;line-height:1" ${sessionId ? "" : "hidden"}>⧉</button>
@@ -194,6 +199,13 @@ export async function initFormationSessions(
     q('[data-act="delete"]').addEventListener("click", () => deleteCard());
     q('[data-act="duplicate"]').addEventListener("click", () => duplicateCard());
     q('[data-act="pub-toggle"]').addEventListener("click", () => pubToggle());
+    q('[data-act="copy-review"]').addEventListener("click", async (ev) => {
+      const slug = (ev.currentTarget as HTMLElement).dataset.slug || "";
+      if (!slug) { toast("Enregistrez d’abord cette date.", "err"); return; }
+      const url = `${location.origin}/avis/${slug}`;
+      try { await navigator.clipboard.writeText(url); toast("Lien d'avis copié. 📋"); }
+      catch { toast("Copie impossible — copiez manuellement.", "err"); }
+    });
     renderPill();
 
     return card;
@@ -227,6 +239,24 @@ export async function initFormationSessions(
       if (sel) sel.value = next;
       renderPill();
       toast(next === "published" ? "Date mise en ligne. ✅" : "Date retirée du site.");
+
+      // Enrôlement instantané des détenteurs de pack (best-effort ; le cron
+      // rattrape sinon). Si des places sont réservées, on le signale.
+      if (next === "published") {
+        try {
+          const { data: sess } = await supabaseBrowser.auth.getSession();
+          const tok = sess?.session?.access_token;
+          if (tok) {
+            const r = await fetch("/api/pack/enroll-session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
+              body: JSON.stringify({ session_id: sessionId }),
+            });
+            const j = await r.json().catch(() => null);
+            if (j?.ok && j.enrolled > 0) toast(`${j.enrolled} place(s) de pack enrôlée(s). 🎟️`);
+          }
+        } catch { /* non bloquant */ }
+      }
     }
 
     /* ----- lignes tarif / order bump (fond doux, sans bordure) ----- */
