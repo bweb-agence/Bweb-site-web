@@ -8,6 +8,24 @@ import Card from "../../components/starwind/card/Card.astro";
   <div class="sw space-y-6" style="padding-top:8px">
     <p class="admin-sub" style="margin-top:0">Les avis déposés après une formation arrivent ici. Publie ceux qui te conviennent — ils s'affichent alors sur le site.</p>
 
+    <Card class="p-0 overflow-hidden">
+      <div class="rc-tool">
+        <div class="rc-lead">
+          <span class="rc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6 6.6.6-5 4.3 1.5 6.5L12 16l-6 3.4 1.5-6.5-5-4.3 6.6-.6z"/></svg></span>
+          <div>
+            <strong>Récolter un avis</strong>
+            <span class="rc-sub">Choisis la session, copie le lien et partage-le (WhatsApp, e-mail…). Un e-mail de demande d'avis part déjà automatiquement le lendemain.</span>
+          </div>
+        </div>
+        <div class="rc-controls">
+          <select class="admin-filter rc-select" id="rc-session"><option value="">Chargement des sessions…</option></select>
+          <input class="admin-search rc-link" id="rc-link" type="text" readonly placeholder="Le lien apparaîtra ici" />
+          <button class="abtn primary" id="rc-copy" type="button">Copier le lien</button>
+          <a class="abtn" id="rc-open" href="#" target="_blank" rel="noopener">Ouvrir</a>
+        </div>
+      </div>
+    </Card>
+
     <div class="admin-toolbar">
       <div class="left">
         <input class="admin-search" id="a-search" type="search" placeholder="Nom, avis, formation…" />
@@ -100,9 +118,57 @@ import Card from "../../components/starwind/card/Card.astro";
   $("a-search").addEventListener("input", applyFilters);
   $("a-status").addEventListener("change", applyFilters);
 
+  /* ----- Récolter un avis : sélecteur de session + copier le lien ----- */
+  const rcSel = $("rc-session") as unknown as HTMLSelectElement;
+  const rcLink = $("rc-link");
+  const rcOpen = document.getElementById("rc-open") as HTMLAnchorElement;
+  const rcCopy = document.getElementById("rc-copy")!;
+  const linkFor = (slug: string) => `${location.origin}/avis/${slug}`;
+
+  function refreshRcLink() {
+    const slug = rcSel.value;
+    const url = slug ? linkFor(slug) : "";
+    rcLink.value = url;
+    rcOpen.href = url || "#";
+    rcOpen.style.pointerEvents = url ? "" : "none";
+    rcOpen.style.opacity = url ? "" : ".5";
+  }
+
+  async function loadSessions() {
+    const { data } = await supabaseBrowser.from("sessions")
+      .select("slug, title, starts_at").order("starts_at", { ascending: false }).limit(200);
+    const list = data || [];
+    if (!list.length) { rcSel.innerHTML = `<option value="">Aucune session</option>`; refreshRcLink(); return; }
+    const fmtD = (d: string) => { try { return new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" }); } catch { return ""; } };
+    rcSel.innerHTML = `<option value="">Choisir une session…</option>` +
+      list.map((s: any) => `<option value="${esc(s.slug)}">${esc(s.title)} · ${fmtD(s.starts_at)}</option>`).join("");
+    refreshRcLink();
+  }
+
+  rcSel.addEventListener("change", refreshRcLink);
+  rcCopy.addEventListener("click", async () => {
+    const url = rcLink.value.trim();
+    if (!url) { toast("Choisis d'abord une session.", "err"); return; }
+    try { await navigator.clipboard.writeText(url); toast("Lien copié. 📋"); }
+    catch { rcLink.select(); document.execCommand("copy"); toast("Lien copié. 📋"); }
+  });
+
   (async () => {
     const { data: { session } } = await supabaseBrowser.auth.getSession();
     if (!session) return; // la garde de AdminLayout redirige déjà vers la connexion
     await load();
+    await loadSessions();
   })();
 </script>
+
+<style is:global>
+  .rc-tool { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; }
+  .rc-lead { display: flex; align-items: flex-start; gap: 11px; }
+  .rc-lead .rc-ic { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--c-yellow) 22%, transparent); color: #a06b00; }
+  .rc-lead .rc-ic svg { width: 18px; height: 18px; }
+  .rc-lead strong { display: block; font-size: .95rem; }
+  .rc-lead .rc-sub { display: block; font-size: .8rem; color: var(--c-gray-600); line-height: 1.5; margin-top: 2px; }
+  .rc-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .rc-select { max-width: 320px; flex: 1 1 240px; }
+  .rc-link { flex: 2 1 260px; min-width: 200px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .8rem; color: var(--c-gray-700); background: var(--c-gray-100); }
+</style>
