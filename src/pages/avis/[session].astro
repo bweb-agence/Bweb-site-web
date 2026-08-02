@@ -9,11 +9,12 @@ import { frDateLong } from "../../lib/format";
 
 const { session: slug } = Astro.params;
 
-const { data: session } = await supabase
-  .from("sessions")
-  .select("id, formation_id, title, starts_at, status")
-  .eq("slug", slug)
-  .maybeSingle();
+// On récolte les avis APRÈS la formation : la session est souvent « archivée »
+// (formation terminée), or la RLS anon ne montre que published/full. La fonction
+// SECURITY DEFINER session_for_review() contourne la RLS et autorise aussi
+// « archived », pour que le lien d'avis marche même après la session.
+const { data: rows } = await supabase.rpc("session_for_review", { p_slug: slug });
+const session = (rows && rows[0]) || null;
 ---
 
 <BaseLayout
