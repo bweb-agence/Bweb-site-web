@@ -1181,3 +1181,18 @@ body.rz-lock { overflow: hidden; }
 .fmp-packbanner__cta .p small { font-size: .72rem; color: #c3cbf0; font-weight: 700; }
 .fmp-packbanner__cta .go { font-weight: 700; font-size: .9rem; color: #ffc72a; }
 @media (max-width: 620px) { .fmp-packbanner__cta { align-items: flex-start; text-align: left; } }
+
+/* -------- Order bump « passer au pack » dans le tunnel de réservation -------- */
+.rz-packup { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 14px 16px; border: 2px solid var(--c-green); border-radius: 16px; background: linear-gradient(135deg, rgba(0,200,158,.08), rgba(31,108,237,.06)); cursor: pointer; transition: box-shadow .15s, background .15s; }
+.rz-packup:hover { box-shadow: 0 10px 26px -14px rgba(0,200,158,.55); }
+.rz-packup.is-on { background: linear-gradient(135deg, rgba(0,200,158,.18), rgba(31,108,237,.1)); }
+.rz-packup .pku-check { width: 20px; height: 20px; flex: none; accent-color: var(--c-green); }
+.rz-packup .pku-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rz-packup .pku-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.rz-packup .pku-eb { font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #0a7d5f; }
+.rz-packup .pku-plus { font-family: var(--f-display); font-weight: 800; font-size: 1rem; color: #0a7d5f; white-space: nowrap; }
+.rz-packup .pku-title { font-weight: 800; font-size: .95rem; color: var(--c-ink); }
+.rz-packup .pku-sub { font-size: .8rem; color: var(--c-gray-600); line-height: 1.45; }
+.rz-packup .pku-cta { flex: none; align-self: center; font-size: .8rem; font-weight: 800; color: #fff; background: var(--c-green); padding: 8px 14px; border-radius: 10px; white-space: nowrap; }
+.rz-packup.is-on .pku-cta { background: var(--c-navy); }
+@media (max-width: 520px) { .rz-packup .pku-cta { display: none; } }
