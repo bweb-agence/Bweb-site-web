@@ -144,6 +144,19 @@ const reviewCount = reviews.length;
 const reviewAvg = reviewCount ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviewCount) * 10) / 10 : 0;
 const stars = (n: number) => "★★★★★".slice(0, Math.round(n)) + "☆☆☆☆☆".slice(0, 5 - Math.round(n));
 
+// Cette formation fait-elle partie d'un pack de parcours actif ? (bannière d'offre)
+let packOffer: { slug: string; title: string; price: number } | null = null;
+if (session?.formation_id) {
+  const { data: pi } = await supabase
+    .from("pack_items")
+    .select("packs!inner(slug, title, price, active)")
+    .eq("formation_id", session.formation_id)
+    .eq("packs.active", true)
+    .limit(1);
+  const pk: any = pi?.[0]?.packs;
+  if (pk) packOffer = { slug: pk.slug, title: pk.title, price: pk.price };
+}
+
 // Order bumps : offres complémentaires proposées pendant la réservation (max 2).
 let orderBumps: {
   ticketTypeId: string; headline: string | null; description: string | null; badge: string | null;
@@ -390,6 +403,20 @@ const sessCrumbs = session
 
           <!-- ===== Contenu (col. gauche, ligne 2) ===== -->
           <div class="sess-main">
+            {packOffer && (
+              <a class="fmp-packbanner" href={`/pack/${packOffer.slug}`}>
+                <div class="fmp-packbanner__txt">
+                  <span class="eb">Offre parcours</span>
+                  <strong>Cette formation fait partie d'un pack</strong>
+                  <span class="sub">Prenez tout le parcours en une fois — une place réservée à chaque formation, dates ou pas dates.</span>
+                </div>
+                <div class="fmp-packbanner__cta">
+                  <span class="p">{packOffer.price.toLocaleString("fr-FR")} <small>F CFA</small></span>
+                  <span class="go">Voir le pack →</span>
+                </div>
+              </a>
+            )}
+
             {learnItems.length > 0 && (
               <div class="learn-box">
                 <h2>Ce que vous apprendrez</h2>
