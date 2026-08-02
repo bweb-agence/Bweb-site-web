@@ -51,7 +51,7 @@ import Button from "../../components/starwind/button/Button.astro";
       <div class="a-field">
         <label>Formations incluses *</label>
         <div class="pk-checks" id="f-formations"></div>
-        <div class="hint">Coche les formations du parcours à inclure dans le pack.</div>
+        <div class="hint">Coche les formations à inclure. Utilise ↑ ↓ pour définir l'ordre d'affichage sur la page du pack.</div>
       </div>
       <div class="a-field">
         <label class="pk-toggle"><input type="checkbox" id="f-active" /> <span>Pack visible sur le site</span></label>
@@ -79,28 +79,57 @@ import Button from "../../components/starwind/button/Button.astro";
   let themes: any[] = [];
   let formations: any[] = [];
   let selected = new Set<string>();
+  let ordered: string[] = [];       // ordre d'affichage (réordonnable)
   let slugTouched = false;
 
   const openDrawer = () => { drawer.classList.add("open"); overlay.classList.add("open"); document.body.style.overflow = "hidden"; };
   const closeDrawer = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); document.body.style.overflow = ""; };
   const themeName = (id: string) => themes.find((t) => t.id === id)?.name || "—";
 
+  // (Re)construit l'ordre d'affichage pour le parcours courant : garde l'ordre
+  // existant pour les formations encore présentes, ajoute les nouvelles à la fin,
+  // et ne conserve comme sélectionnées que les formations de ce parcours.
+  function rebuildOrdered(themeId: string) {
+    const inTheme = formations.filter((f) => !themeId || f.theme_id === themeId).map((f) => f.id);
+    const set = new Set(inTheme);
+    const kept = ordered.filter((id) => set.has(id));
+    const added = inTheme.filter((id) => !kept.includes(id));
+    ordered = [...kept, ...added];
+    selected = new Set([...selected].filter((id) => set.has(id)));
+  }
+
+  function move(id: string, dir: -1 | 1) {
+    const i = ordered.indexOf(id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= ordered.length) return;
+    [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
+    renderFormations();
+  }
+
   function renderFormations() {
-    const themeId = $("f-theme").value;
-    const list = formations.filter((f) => !themeId || f.theme_id === themeId);
     const box = document.getElementById("f-formations")!;
-    if (!list.length) { box.innerHTML = `<div class="hint">Aucune formation dans ce parcours pour l'instant.</div>`; return; }
-    box.innerHTML = list.map((f) => `
-      <label class="pk-chk ${selected.has(f.id) ? "sel" : ""}">
-        <input type="checkbox" data-fid="${f.id}" ${selected.has(f.id) ? "checked" : ""} />
-        <span>${esc(f.title)}</span>
-      </label>`).join("");
+    const titleOf = (id: string) => formations.find((f) => f.id === id)?.title || "—";
+    if (!ordered.length) { box.innerHTML = `<div class="hint">Aucune formation dans ce parcours pour l'instant.</div>`; return; }
+    box.innerHTML = ordered.map((id, i) => `
+      <div class="pk-fitem ${selected.has(id) ? "sel" : ""}">
+        <label class="pk-fitem-main">
+          <input type="checkbox" data-fid="${id}" ${selected.has(id) ? "checked" : ""} />
+          <span class="pk-fitem-num">${i + 1}</span>
+          <span>${esc(titleOf(id))}</span>
+        </label>
+        <span class="pk-fitem-ord">
+          <button type="button" class="pk-ordbtn" data-up="${id}" title="Monter" aria-label="Monter" ${i === 0 ? "disabled" : ""}>↑</button>
+          <button type="button" class="pk-ordbtn" data-down="${id}" title="Descendre" aria-label="Descendre" ${i === ordered.length - 1 ? "disabled" : ""}>↓</button>
+        </span>
+      </div>`).join("");
     box.querySelectorAll<HTMLInputElement>("[data-fid]").forEach((c) =>
       c.addEventListener("change", () => {
         const id = c.dataset.fid!;
         if (c.checked) selected.add(id); else selected.delete(id);
-        c.closest(".pk-chk")?.classList.toggle("sel", c.checked);
+        c.closest(".pk-fitem")?.classList.toggle("sel", c.checked);
       }));
+    box.querySelectorAll<HTMLElement>("[data-up]").forEach((b) => b.addEventListener("click", () => move(b.dataset.up!, -1)));
+    box.querySelectorAll<HTMLElement>("[data-down]").forEach((b) => b.addEventListener("click", () => move(b.dataset.down!, 1)));
   }
 
   function render(list: any[]) {
@@ -155,7 +184,10 @@ import Button from "../../components/starwind/button/Button.astro";
     $("f-compare").value = (p?.compare_at_price ?? "").toString();
     ($("f-desc") as unknown as HTMLTextAreaElement).value = p?.description || "";
     ($("f-active") as HTMLInputElement).checked = !!p?.active;
-    selected = new Set((p?.pack_items || []).map((i: any) => i.formation_id));
+    const sortedItems = (p?.pack_items || []).slice().sort((a: any, b: any) => (a.sort ?? 0) - (b.sort ?? 0));
+    selected = new Set(sortedItems.map((i: any) => i.formation_id));
+    ordered = sortedItems.map((i: any) => i.formation_id);
+    rebuildOrdered($("f-theme").value);
     slugTouched = !!p?.slug;
     renderFormations();
     document.getElementById("pk-drawer-title")!.textContent = p ? "Modifier le pack" : "Nouveau pack";
@@ -202,7 +234,7 @@ import Button from "../../components/starwind/button/Button.astro";
     if (!error && packId) {
       // Synchronise les formations incluses (remplace l'ensemble).
       await supabaseBrowser.from("pack_items").delete().eq("pack_id", packId);
-      const items = [...selected].map((fid, i) => ({ pack_id: packId, formation_id: fid, sort: i }));
+      const items = ordered.filter((id) => selected.has(id)).map((fid, i) => ({ pack_id: packId, formation_id: fid, sort: i }));
       ({ error } = await supabaseBrowser.from("pack_items").insert(items));
     }
 
@@ -238,7 +270,7 @@ import Button from "../../components/starwind/button/Button.astro";
   overlay.addEventListener("click", closeDrawer);
   document.getElementById("pk-save")!.addEventListener("click", save);
   $("pk-search").addEventListener("input", applySearch);
-  $("f-theme").addEventListener("change", renderFormations);
+  $("f-theme").addEventListener("change", () => { rebuildOrdered($("f-theme").value); renderFormations(); });
   $("f-title").addEventListener("input", () => { if (!slugTouched) $("f-slug").value = slugify($("f-title").value); });
   $("f-slug").addEventListener("input", () => { slugTouched = true; });
 
@@ -252,9 +284,17 @@ import Button from "../../components/starwind/button/Button.astro";
 <style is:global>
   .a-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .pk-checks { display: flex; flex-direction: column; gap: 6px; }
-  .pk-chk { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--c-border); border-radius: 10px; cursor: pointer; font-size: .88rem; }
-  .pk-chk.sel { background: rgba(31, 108, 237, 0.07); border-color: rgba(31, 108, 237, 0.3); font-weight: 600; }
-  .pk-chk input { width: 17px; height: 17px; accent-color: var(--c-blue); }
+  .pk-fitem { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px 8px 12px; border: 1px solid var(--c-border); border-radius: 10px; }
+  .pk-fitem.sel { background: rgba(31, 108, 237, 0.07); border-color: rgba(31, 108, 237, 0.3); }
+  .pk-fitem-main { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: .88rem; min-width: 0; }
+  .pk-fitem-main input { width: 17px; height: 17px; accent-color: var(--c-blue); flex: none; }
+  .pk-fitem-main > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+  .pk-fitem-num { flex: none; width: 20px; height: 20px; border-radius: 6px; background: var(--c-gray-100); color: var(--c-gray-600); font-size: .72rem; font-weight: 800; display: grid; place-items: center; }
+  .pk-fitem.sel .pk-fitem-num { background: rgba(31, 108, 237, 0.16); color: var(--c-blue-dark); }
+  .pk-fitem-ord { display: flex; gap: 4px; flex: none; }
+  .pk-ordbtn { width: 26px; height: 26px; border: 1px solid var(--c-border); background: #fff; border-radius: 7px; cursor: pointer; font-size: .8rem; line-height: 1; color: var(--c-gray-700); }
+  .pk-ordbtn:hover:not([disabled]) { background: var(--c-gray-100); }
+  .pk-ordbtn[disabled] { opacity: .35; cursor: default; }
   .pk-toggle { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
   .pk-toggle input { width: 18px; height: 18px; accent-color: var(--c-green); }
   .pk-buyer { padding: 14px 16px; border-bottom: 1px solid var(--c-border); }
