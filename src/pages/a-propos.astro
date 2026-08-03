@@ -91,24 +91,76 @@ const sdrCloser2 = teamPhoto("sdr-closer2.png");
 <!-- ===== Mission / Vision ===== -->
 <section class="section section-gray" data-nav-section="Mission &amp; vision">
   <div class="container">
-    <div class="grid grid-2" data-stagger>
-      <div class="card" style="background:var(--g-navy);border-color:transparent">
-        <div class="icon-tile" style="background:rgba(255,255,255,.1);color:var(--c-yellow)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".6" fill="currentColor" stroke="none"/></svg>
-        </div>
-        <h3 class="text-white margin-bottom_small">Notre mission</h3>
-        <p class="text-reveal on-dark" style="font-size:1.1rem">Rendre l'IA et le digital accessibles à toute entreprise qui veut avancer pas seulement aux grandes structures. Nous accompagnons nos clients avec méthode, proximité et résultats mesurables, du premier diagnostic jusqu'à l'autonomie totale de leurs équipes.</p>
+    <div class="reveal">
+      <div class="eyebrow">Mission &amp; vision</div>
+      <div class="mv-tabs" role="tablist" aria-label="Mission et vision">
+        <button type="button" class="mv-tab is-active" id="mv-tab-mission" data-mv-tab="mission" role="tab" aria-selected="true" aria-controls="mv-panel-mission">Notre mission</button>
+        <button type="button" class="mv-tab" id="mv-tab-vision" data-mv-tab="vision" role="tab" aria-selected="false" aria-controls="mv-panel-vision" tabindex="-1">Notre vision</button>
       </div>
-      <div class="card">
-        <div class="icon-tile">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-        </div>
-        <h3 class="margin-bottom_small">Notre vision</h3>
-        <p>Dans dix ans, nous voulons avoir contribué à faire émerger une génération d'entrepreneurs et de dirigeants africains qui utilisent l'IA et le digital comme des leviers naturels de performance pas comme des sujets réservés aux experts.</p>
+      <div class="mv-panels">
+        <p class="mv-statement" id="mv-panel-mission" data-mv-panel="mission" role="tabpanel" aria-labelledby="mv-tab-mission">Rendre l'IA et le digital accessibles à toute entreprise qui veut avancer — pas seulement aux grandes structures. <span class="text-muted">Nous accompagnons nos clients avec méthode, proximité et résultats mesurables, du premier diagnostic jusqu'à l'autonomie totale de leurs équipes.</span></p>
+        <p class="mv-statement" id="mv-panel-vision" data-mv-panel="vision" role="tabpanel" aria-labelledby="mv-tab-vision" hidden>Dans dix ans, nous voulons avoir contribué à faire émerger une génération d'entrepreneurs et de dirigeants africains qui utilisent l'IA et le digital comme des leviers naturels de performance. <span class="text-muted">Pas comme des sujets réservés aux experts, mais comme un réflexe de croissance à la portée de tous.</span></p>
+      </div>
+    </div>
+    <div class="mv-showcase" data-stagger>
+      <div class="mv-photo mv-photo--tall reveal" style="background:var(--g-navy)" aria-hidden="true"></div>
+      <div class="mv-photo reveal" data-delay=".1" style="background:var(--g-warm)" aria-hidden="true"></div>
+      <div class="mv-side reveal" data-delay=".2">
+        <h3>Une équipe engagée à vos côtés</h3>
+        <a href="#equipe" class="btn btn-primary">Découvrir l'équipe
+          <svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
+        </a>
       </div>
     </div>
   </div>
 </section>
+
+<style>
+  .mv-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin: 22px 0 20px; }
+  .mv-tab { padding: 11px 22px; border-radius: var(--radius-pill); border: 1.5px solid var(--c-border); background: #fff; color: var(--c-gray-600); font-weight: 700; font-size: .88rem; cursor: pointer; transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+  .mv-tab:hover { border-color: var(--c-blue); color: var(--c-blue); }
+  .mv-tab.is-active { background: var(--c-navy); border-color: var(--c-navy); color: #fff; }
+  .mv-panels { position: relative; min-height: 8em; }
+  .mv-statement { transition: opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease); }
+  .mv-statement.is-out { opacity: 0; transform: translateY(10px); }
+  .mv-photo { transition: transform var(--dur-slow) var(--ease), box-shadow var(--dur-slow) var(--ease); }
+  .mv-photo:hover { transform: translateY(-6px) scale(1.015); box-shadow: var(--shadow-md); }
+</style>
+
+<script>
+  (() => {
+    const tabs = document.querySelectorAll(".mv-tab");
+    const panels = document.querySelectorAll("[data-mv-panel]");
+    if (!tabs.length || !panels.length) return;
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        if (tab.classList.contains("is-active")) return;
+        const target = tab.dataset.mvTab;
+        tabs.forEach((t) => {
+          const active = t === tab;
+          t.classList.toggle("is-active", active);
+          t.setAttribute("aria-selected", String(active));
+          t.tabIndex = active ? 0 : -1;
+        });
+        const current = Array.from(panels).find((p) => !p.hidden);
+        const next = Array.from(panels).find((p) => p.dataset.mvPanel === target);
+        if (!next || next === current) return;
+        const FADE_MS = 600; // doit rester aligné avec --dur-slow (voir <style> ci-dessus)
+        function fadeIn() {
+          next.hidden = false;
+          next.classList.add("is-out");
+          requestAnimationFrame(() => requestAnimationFrame(() => next.classList.remove("is-out")));
+        }
+        if (current) {
+          current.classList.add("is-out");
+          setTimeout(() => { current.hidden = true; current.classList.remove("is-out"); fadeIn(); }, FADE_MS);
+        } else {
+          fadeIn();
+        }
+      });
+    });
+  })();
+</script>
 
 <!-- ===== Valeurs ===== -->
 <section class="section" data-nav-section="Nos valeurs">
@@ -166,7 +218,7 @@ const sdrCloser2 = teamPhoto("sdr-closer2.png");
 </section>
 
 <!-- ===== Equipe ===== -->
-<section class="section section-cream" data-nav-section="Équipe">
+<section id="equipe" class="section section-cream" data-nav-section="Équipe">
   <div class="container">
     <div class="section-head center reveal">
       <div class="eyebrow" style="justify-content:center">L'équipe</div>

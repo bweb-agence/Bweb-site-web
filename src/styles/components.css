@@ -629,6 +629,14 @@ mark { background: none; color: var(--c-blue); position: relative; }
 .visual-badge-card .num { font-family: var(--f-display); font-weight: 800; font-size: 1.2rem; color: var(--c-navy); }
 .visual-badge-card .lbl { font-size: .76rem; color: var(--c-gray-500); }
 
+/* ---------- Mission & vision (showcase) ---------- */
+.mv-statement { max-width: 900px; font-size: clamp(1.4rem, 1.05rem + 1.5vw, 2.05rem); line-height: 1.4; font-weight: 700; color: var(--c-navy); margin-top: 18px; }
+.mv-showcase { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 20px; align-items: end; margin-top: 48px; }
+.mv-photo { border-radius: var(--radius-lg); min-height: 300px; }
+.mv-photo--tall { min-height: 420px; align-self: start; }
+.mv-side { display: flex; flex-direction: column; justify-content: flex-end; gap: 20px; padding-bottom: 6px; }
+.mv-side h3 { font-size: 1.3rem; }
+
 /* Notices & pages simples */
 .placeholder-note { display: flex; gap: 12px; align-items: flex-start; background: #fff8e8; border: 1px solid #f3d998; color: #7a5100; padding: 16px 20px; border-radius: 14px; font-size: .85rem; margin-bottom: 28px; }
 .placeholder-note svg { width: 18px; height: 18px; flex: none; margin-top: 2px; }
@@ -655,9 +663,14 @@ mark { background: none; color: var(--c-blue); position: relative; }
   .bento { grid-template-columns: repeat(4, 1fr); }
   .bento-photo { grid-column: span 4; min-height: 220px; }
   .bento-stat, .bento-dark { grid-column: span 2; }
+  .mv-showcase { grid-template-columns: 1fr 1fr; }
+  .mv-side { grid-column: span 2; flex-direction: row; align-items: center; justify-content: space-between; }
 }
 @media (max-width: 720px) {
   .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; }
+  .mv-showcase { grid-template-columns: 1fr; margin-top: 32px; }
+  .mv-photo, .mv-photo--tall { min-height: 220px; align-self: stretch; }
+  .mv-side { grid-column: auto; flex-direction: column; align-items: flex-start; }
   .form-grid { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr; }
   .section-head-row { flex-direction: column; align-items: flex-start; }
