@@ -37,8 +37,13 @@ type Billet = {
   is_deposit?: boolean;
   amount_paid?: number;
   balance?: number;
+  calendarGoogle?: string | null;
+  calendarIcs?: string | null;
 };
 let billet: Billet | null = null;
+
+type PackRet = { reference: string; full_name: string; pack_title: string; amount_paid?: number; items?: { title: string; date?: string | null }[] };
+let pack: PackRet | null = null;
 
 if (token) {
   try {
@@ -52,6 +57,7 @@ if (token) {
       const statut = String(data?.statut ?? "").toLowerCase();
       montant = Number(data?.montant) || null;
       billet = data?.booking || null;
+      pack = data?.pack || null;
       if (["paid", "payé", "paye", "success", "successful"].includes(statut)) etat = "success";
       else if (["pending", "en attente", "processing"].includes(statut)) etat = "pending";
       else if (statut) etat = "failed";
@@ -96,6 +102,7 @@ const M: Record<Etat, { titre: string; texte: string; couleur: string }> = {
 
 const v = M[etat];
 const showTicket = etat === "success" && !!billet;
+const showPack = etat === "success" && !!pack;
 ---
 
 <BaseLayout
@@ -131,6 +138,33 @@ const showTicket = etat === "success" && !!billet;
             {billet.session_venue && (<div class="pr-row"><span>Lieu</span><b>{billet.session_venue}</b></div>)}
             <div class="pr-row"><span>Participant</span><b>{billet.full_name}</b></div>
             {isDeposit && (<div class="pr-row"><span>Solde sur place</span><b style={`color:${accent}`}>{fmt(billet.balance)}</b></div>)}
+          </div>
+        )}
+
+        {showPack && pack && (
+          <div class="pr-stub" style="--accent:#00c89e">
+            <div class="pr-stub-head">
+              <span class="pr-tag">Pass parcours · {fmt(pack.amount_paid)}</span>
+              <span class="pr-ref">{pack.reference}</span>
+            </div>
+            <div class="pr-row"><span>Parcours</span><b>{pack.pack_title}</b></div>
+            {(pack.items || []).map((it) => (
+              <div class="pr-row"><span>{it.title}</span><b style="color:#00e0b0">{it.date ? it.date : "Réservée · à venir"}</b></div>
+            ))}
+          </div>
+        )}
+
+        {showPack && (
+          <p class="text-white" style="opacity:.82;max-width:420px;margin:14px auto 0;font-size:14px">Vos <b>{(pack?.items || []).length} places</b> sont prépayées. Dès qu'une date s'ouvre, on vous inscrit et on vous envoie votre billet — sans rien repayer.</p>
+        )}
+
+        {showTicket && billet && billet.calendarGoogle && billet.calendarIcs && (
+          <div class="pr-cal">
+            <span class="pr-cal-lbl">Ajouter à mon agenda</span>
+            <div class="pr-cal-btns">
+              <a href={billet.calendarGoogle} target="_blank" rel="noopener">📅 Google&nbsp;Agenda</a>
+              <a href={billet.calendarIcs}>🍎 Apple&nbsp;/&nbsp;Outlook</a>
+            </div>
           </div>
         )}
 
@@ -190,4 +224,9 @@ const showTicket = etat === "success" && !!billet;
   .pay-return .pr-legal a{color:rgba(255,255,255,.82);text-decoration:none;font-weight:600}
   .pay-return .pr-legal a:hover{text-decoration:underline}
   .pay-return .pr-legal span{color:rgba(255,255,255,.35)}
+  .pay-return .pr-cal{max-width:380px;margin:16px auto 0;text-align:center}
+  .pay-return .pr-cal-lbl{display:block;font-size:12px;color:rgba(255,255,255,.7);margin-bottom:8px}
+  .pay-return .pr-cal-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .pay-return .pr-cal-btns a{display:inline-block;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:9px 14px;border-radius:11px}
+  .pay-return .pr-cal-btns a:hover{background:rgba(255,255,255,.16)}
 </style>

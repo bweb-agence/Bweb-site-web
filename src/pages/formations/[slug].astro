@@ -41,6 +41,19 @@ if (formation) {
   faqs = fq ?? [];
 }
 
+// Cette formation fait-elle partie d'un pack de parcours actif ? (encart d'offre)
+let packOffer: { slug: string; title: string; price: number } | null = null;
+if (formation) {
+  const { data: pi } = await supabase
+    .from("pack_items")
+    .select("packs!inner(slug, title, price, active)")
+    .eq("formation_id", formation.id)
+    .eq("packs.active", true)
+    .limit(1);
+  const pk: any = pi?.[0]?.packs;
+  if (pk) packOffer = { slug: pk.slug, title: pk.title, price: pk.price };
+}
+
 const levelText = (formation?.level || "Tous niveaux").trim();
 const levelSlug = (() => {
   const l = levelText.toLowerCase();
@@ -118,6 +131,20 @@ const crumbs = formation ? [
             </a>
           </div>
         </section>
+
+        {packOffer && (
+          <a class="fmp-packbanner" href={`/pack/${packOffer.slug}`}>
+            <div class="fmp-packbanner__txt">
+              <span class="eb">Offre parcours</span>
+              <strong>Prenez tout le parcours en pack</strong>
+              <span class="sub">Une place réservée à chaque formation — vous êtes inscrit·e automatiquement dès qu'une date s'ouvre, sans repayer.</span>
+            </div>
+            <div class="fmp-packbanner__cta">
+              <span class="p">{packOffer.price.toLocaleString("fr-FR")} <small>F CFA</small></span>
+              <span class="go">Voir le pack →</span>
+            </div>
+          </a>
+        )}
 
         <div class="fmp-body">
           {learnItems.length > 0 && (

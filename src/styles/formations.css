@@ -263,6 +263,17 @@
 .ev-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
 .ev-card.is-hidden { display: none; }
 
+/* Toute la carte est cliquable : lien-overlay (souris) sous le contenu ;
+   les vrais liens/boutons repassent au-dessus et gardent le focus clavier. */
+.ev-card { cursor: pointer; }
+.ev-cardlink { position: absolute; inset: 0; z-index: 1; border-radius: var(--radius-lg); }
+.ev-card .btn,
+.ev-card a:not(.ev-cardlink),
+.ev-card button { position: relative; z-index: 2; }
+/* Décorations du média = purement visuelles : le clic les traverse jusqu'à
+   l'overlay. Le bouton favoris (.ev-fav) garde ses pointer-events. */
+.ev-scrim, .ev-tags, .ev-date, .ev-sold, .ev-promo { pointer-events: none; }
+
 /* --- Média (bandeau) --- */
 .ev-media { position: relative; height: 150px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden; }
 .ev-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -438,7 +449,17 @@
 .t-badge.limited { background: #fbf1d6; color: #8a6400; }
 .t-badge.ok { background: #dcf5ec; color: #0a7d5f; }
 .t-left { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.01em; color: #c2410c; background: #fff0e6; padding: 3px 8px; border-radius: var(--radius-pill); white-space: nowrap; }
-.t-soldout { font-size: 0.72rem; font-weight: 700; color: #b02525; }
+.t-soldout { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; color: #c0392b; background: #fdecec; border: 1px solid #f5cfcf; padding: 4px 10px; border-radius: var(--radius-pill); white-space: nowrap; }
+
+/* Tarif épuisé : légèrement grisé + teinte rouge clair, non interactif. */
+.ticket.is-soldout { background: #faf5f5; border-color: #f0dede; box-shadow: none; }
+.ticket.is-soldout::before { display: none; }
+.ticket.is-soldout:hover { transform: none; border-color: #f0dede; }
+.ticket.is-soldout .tn { color: var(--c-gray-600); }
+.ticket.is-soldout .tp { color: var(--c-gray-500); }
+.ticket.is-soldout .tp .tp-was { opacity: 0.7; }
+.ticket.is-soldout .tp .tp-off { background: #d99; }
+.ticket.is-soldout .t-badge { opacity: 0.55; }
 
 /* Stepper premium : « + » en pastille dégradée, « − » discret, compteur qui pulse. */
 .stepper { display: flex; align-items: center; gap: 8px; flex: none; }
@@ -1142,3 +1163,36 @@ body.rz-lock { overflow: hidden; }
 .meet-box__info { margin-top: 14px; color: var(--c-gray-700); font-size: 0.92rem; line-height: 1.55; white-space: pre-line; }
 .meet-box .btn { margin-top: 16px; }
 .meet-box__note { margin-top: 14px; font-size: 0.88rem; color: var(--c-gray-600); background: var(--c-gray-100); padding: 12px 14px; border-radius: var(--radius-md); }
+
+/* -------- Encart « offre parcours en pack » sur la page teaser d'une formation -------- */
+.fmp-packbanner {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+  background: linear-gradient(135deg, #020b50, #154fb3); color: #fff; border-radius: var(--radius-lg);
+  padding: 22px 24px; text-decoration: none; margin: 8px 0 4px;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.fmp-packbanner:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.fmp-packbanner__txt { display: flex; flex-direction: column; gap: 4px; min-width: 240px; flex: 1; }
+.fmp-packbanner__txt .eb { font-family: var(--f-display); font-weight: 800; font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: #7ee3c6; }
+.fmp-packbanner__txt strong { font-family: var(--f-display); font-weight: 800; font-size: 1.2rem; letter-spacing: -.01em; }
+.fmp-packbanner__txt .sub { color: #c3cbf0; font-size: .86rem; line-height: 1.5; max-width: 52ch; }
+.fmp-packbanner__cta { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; text-align: right; }
+.fmp-packbanner__cta .p { font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; }
+.fmp-packbanner__cta .p small { font-size: .72rem; color: #c3cbf0; font-weight: 700; }
+.fmp-packbanner__cta .go { font-weight: 700; font-size: .9rem; color: #ffc72a; }
+@media (max-width: 620px) { .fmp-packbanner__cta { align-items: flex-start; text-align: left; } }
+
+/* -------- Order bump « passer au pack » dans le tunnel de réservation -------- */
+.rz-packup { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 14px 16px; border: 2px solid var(--c-green); border-radius: 16px; background: linear-gradient(135deg, rgba(0,200,158,.08), rgba(31,108,237,.06)); cursor: pointer; transition: box-shadow .15s, background .15s; }
+.rz-packup:hover { box-shadow: 0 10px 26px -14px rgba(0,200,158,.55); }
+.rz-packup.is-on { background: linear-gradient(135deg, rgba(0,200,158,.18), rgba(31,108,237,.1)); }
+.rz-packup .pku-check { width: 20px; height: 20px; flex: none; accent-color: var(--c-green); }
+.rz-packup .pku-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rz-packup .pku-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.rz-packup .pku-eb { font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #0a7d5f; }
+.rz-packup .pku-plus { font-family: var(--f-display); font-weight: 800; font-size: 1rem; color: #0a7d5f; white-space: nowrap; }
+.rz-packup .pku-title { font-weight: 800; font-size: .95rem; color: var(--c-ink); }
+.rz-packup .pku-sub { font-size: .8rem; color: var(--c-gray-600); line-height: 1.45; }
+.rz-packup .pku-cta { flex: none; align-self: center; font-size: .8rem; font-weight: 800; color: #fff; background: var(--c-green); padding: 8px 14px; border-radius: 10px; white-space: nowrap; }
+.rz-packup.is-on .pku-cta { background: var(--c-navy); }
+@media (max-width: 520px) { .rz-packup .pku-cta { display: none; } }

@@ -1,7 +1,7 @@
 ---
 /* Carte de session « billet » — réutilisable (page Formations, etc.).
    Réutilise les styles .ev-card de formations.css. */
-import { priceFCFA, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, type ThemeColorMap } from "../lib/format";
+import { priceFCFA, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, cheapestTicket, type ThemeColorMap } from "../lib/format";
 import "../styles/formations.css";
 
 type TT = { price: number; capacity: number; sold: number; compare_at_price: number | null };
@@ -22,7 +22,7 @@ const tts = s.ticket_types ?? [];
 const cap = tts.reduce((a, t) => a + t.capacity, 0);
 const sold = tts.reduce((a, t) => a + t.sold, 0);
 const remaining = Math.max(0, cap - sold);
-const cheapest = tts.length ? tts.reduce((a, t) => (t.price < a.price ? t : a)) : null;
+const cheapest = cheapestTicket(tts); // le moins cher ENCORE DISPONIBLE
 const minPrice = cheapest ? cheapest.price : null;
 const compareAt = cheapest && cheapest.compare_at_price && cheapest.compare_at_price > cheapest.price ? cheapest.compare_at_price : null;
 const discountPct = compareAt && minPrice ? Math.round((1 - minPrice / compareAt) * 100) : 0;
@@ -38,6 +38,7 @@ const weekdayLine = (() => { const w = d.toLocaleDateString("fr-FR", { weekday: 
 ---
 
 <article class="ev-card" data-grad={gradSuffix(s.theme, map)}>
+  <a class="ev-cardlink" href={`/formations/session/${s.slug}`} tabindex="-1" aria-hidden="true"></a>
   <div class={`ev-media ${gradClass(s.theme, map)}`}>
     {s.image_url && <img src={s.image_url} alt="" loading="lazy" />}
     <span class="ev-scrim"></span>

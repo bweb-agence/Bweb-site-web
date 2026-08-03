@@ -1,169 +1,279 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import Card from "../../components/starwind/card/Card.astro";
-import Button from "../../components/starwind/button/Button.astro";
 
-// KPIs du tableau de bord (rythme d'espacement + accents cohérents).
+// KPIs — icônes statiques ; valeurs + pied remplis côté client (data-k / data-foot).
 const kpis = [
-  { key: "posts", label: "Articles publiés", accent: "blue", icon: '<path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/>' },
-  { key: "sessions", label: "Sessions à venir", accent: "violet", icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>' },
-  { key: "pending", label: "Paiements à vérifier", accent: "amber", icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
-  { key: "confirmed", label: "Réservations confirmées", accent: "green", icon: '<path d="M20 6 9 17l-5-5"/>' },
+  { key: "ca", label: "CA confirmé", accent: "green", icon: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 10v4M18 10v4"/>' },
+  { key: "paid", label: "Réservations payées", accent: "blue", icon: '<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>' },
+  { key: "rate", label: "Taux de paiement", accent: "violet", icon: '<path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/>' },
+  { key: "clients", label: "Clients payants", accent: "navy", icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5"/>' },
+  { key: "relance", label: "À relancer", accent: "amber", icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>' },
+  { key: "session", label: "Prochaine session", accent: "rose", icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>' },
 ];
-const accentClass: Record<string, string> = {
-  blue: "bg-blue/10 text-blue",
-  violet: "bg-[color-mix(in_srgb,#6b4df0_12%,#fff)] text-[#6b4df0]",
-  amber: "bg-warning text-warning-foreground",
-  green: "bg-success text-success-foreground",
-};
 ---
 
 <AdminLayout title="Tableau de bord" active="dashboard">
-  <div class="sw space-y-6">
+  <div class="sw dash">
     <!-- KPIs -->
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <section class="dash-kpis">
       {kpis.map((k) => (
-        <Card class="p-3.5 sm:p-5">
-          <div class="flex items-center gap-2.5 sm:gap-3.5">
-            <span class={`grid size-9 shrink-0 place-items-center rounded-xl sm:size-11 ${accentClass[k.accent]}`}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-[18px] sm:size-5" set:html={k.icon} />
-            </span>
-            <div class="min-w-0">
-              <div class="text-[0.68rem] leading-tight font-bold tracking-wide text-muted-foreground uppercase sm:text-xs">{k.label}</div>
-              <div class="mt-1 font-display text-lg leading-tight font-extrabold text-foreground tabular-nums sm:text-xl md:text-2xl" data-stat={k.key}>—</div>
-            </div>
-          </div>
-        </Card>
+        <div class="dash-kpi">
+          <span class={`dic ${k.accent}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" set:html={k.icon} /></span>
+          <div><div class="k">{k.label}</div><div class="v" data-k={k.key}>—</div></div>
+          <div class="foot" data-foot={k.key}></div>
+        </div>
       ))}
-    </div>
+    </section>
 
-    <!-- Paiements à vérifier -->
-    <Card class="gap-0 overflow-hidden p-0">
-      <div class="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <h2 class="font-display text-base font-extrabold text-foreground">Paiements à vérifier</h2>
-        <Button variant="outline" size="sm" href="/admin/reservations">Toutes les réservations</Button>
+    <!-- État des paiements + Prochaine session -->
+    <section class="dash-grid2">
+      <div class="dash-card">
+        <div class="dash-card-head">
+          <div><h2>État des paiements</h2><div class="hint">Flux 100&nbsp;% automatique — vérifié auprès de la passerelle</div></div>
+          <a class="dash-link" href="/admin/reservations">Réservations →</a>
+        </div>
+        <div class="dash-body" data-pay>
+          <div class="dash-empty">Chargement…</div>
+        </div>
       </div>
-      <div class="overflow-x-auto">
-        <table class="admin-table min-w-[680px]">
-          <thead>
-            <tr><th>Participant</th><th>Session · Tarif</th><th>Moyen</th><th>Justif.</th><th>Montant</th><th></th></tr>
-          </thead>
-          <tbody data-pending><tr><td class="empty" colspan="6">Chargement…</td></tr></tbody>
-        </table>
-      </div>
-    </Card>
 
-    <!-- Prochaines sessions -->
-    <Card class="gap-0 overflow-hidden p-0">
-      <div class="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <h2 class="font-display text-base font-extrabold text-foreground">Prochaines sessions</h2>
-        <Button variant="outline" size="sm" href="/admin/sessions">Gérer les sessions</Button>
+      <div class="dash-card">
+        <div class="dash-card-head"><h2>Prochaine session</h2><a class="dash-link" href="/admin/sessions">Gérer →</a></div>
+        <div class="dash-body" data-nextsession>
+          <div class="dash-empty">Chargement…</div>
+        </div>
       </div>
-      <div class="overflow-x-auto">
-        <table class="admin-table min-w-[560px]">
-          <thead><tr><th>Session</th><th>Date</th><th>Remplissage</th><th>Statut</th></tr></thead>
-          <tbody data-sessions><tr><td class="empty" colspan="4">Chargement…</td></tr></tbody>
-        </table>
+    </section>
+
+    <!-- Dernières réservations + À relancer -->
+    <section class="dash-grid2">
+      <div class="dash-card">
+        <div class="dash-card-head"><h2>Dernières réservations</h2><a class="dash-link" href="/admin/reservations">Tout voir →</a></div>
+        <div style="overflow-x:auto">
+          <table class="admin-table" style="min-width:520px">
+            <thead><tr><th>Participant</th><th>Session · Tarif</th><th style="text-align:right">Montant</th><th>État</th></tr></thead>
+            <tbody data-recent><tr><td class="empty" colspan="4">Chargement…</td></tr></tbody>
+          </table>
+        </div>
       </div>
-    </Card>
+
+      <div class="dash-card">
+        <div class="dash-card-head"><div><h2>À relancer</h2><div class="hint">Paiements échoués ou abandonnés</div></div><a class="dash-link" href="/admin/clients">Clients →</a></div>
+        <div data-relance><div class="dash-empty">Chargement…</div></div>
+      </div>
+    </section>
+
+    <!-- Campagnes + Avis -->
+    <section class="dash-grid-even">
+      <div class="dash-card">
+        <div class="dash-card-head"><h2>Campagnes &amp; e-mails</h2><a class="dash-link" href="/admin/campagnes">Composer →</a></div>
+        <div data-campaigns><div class="dash-empty">Chargement…</div></div>
+      </div>
+
+      <div class="dash-card">
+        <div class="dash-card-head"><div><h2>Avis récents</h2><div class="hint" data-reviews-avg></div></div><a class="dash-link" href="/admin/avis">Modérer →</a></div>
+        <div data-reviews><div class="dash-empty">Chargement…</div></div>
+      </div>
+    </section>
   </div>
 </AdminLayout>
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { confirmBooking, confirmModal } from "../../scripts/adminUtils";
+  import { esc, fmtFCFA, dshort, reconciledRelanceIds } from "../../scripts/adminUtils";
 
-  const fmt = (n: number) => (n || 0).toLocaleString("fr-FR") + " F CFA";
-  const dshort = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-  const methodLabel: Record<string, string> = { wave: "Wave", orange_money: "Orange Money", mobile_money: "Mobile Money", sur_place: "Sur place" };
-  const esc = (s: any) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+  const $ = (sel: string) => document.querySelector(sel) as HTMLElement;
+  const now = Date.now();
+  const nowISO = new Date().toISOString();
 
-  async function viewProof(path: string) {
-    const { data } = await supabaseBrowser.storage.from("payment-proofs").createSignedUrl(path, 120);
-    if (data?.signedUrl) window.open(data.signedUrl, "_blank", "noopener");
+  // État réel d'une réservation (cf. page Réservations / migration 0024).
+  const stateOf = (b: any): string =>
+    b.status === "confirmed" ? "paye" : b.status === "cancelled" ? "annule" : (b.payment_status || "attente");
+  const dueOf = (b: any) => (b.is_deposit ? Math.ceil(b.amount_due / 2) : b.amount_due);
+  const paidOf = (b: any) => Number(b.amount_paid) || dueOf(b);
+  const firstName = (n: string) => (n || "").trim().split(/\s+/)[0] || "";
+  const initials = (n: string) => { const p = (n || "").trim().split(/\s+/).filter(Boolean); return ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || "?"; };
+  const digits = (s: string | null) => (s || "").replace(/\D/g, "");
+  const AV = ["#1f6ced,#00c89e", "#ff835f,#ffc72a", "#7b5cff,#1f6ced", "#00c89e,#0aa886", "#565d80,#8b91ae", "#f2971d,#ff835f"];
+  const avatarBg = (k: string) => { let h = 0; for (const c of k) h = (h * 31 + c.charCodeAt(0)) >>> 0; const [a, b] = AV[h % AV.length].split(","); return `linear-gradient(135deg,${a},${b})`; };
+  const statePill: Record<string, string> = {
+    paye: '<span class="tag-pill ok">Payé</span>', attente: '<span class="tag-pill wait">En attente</span>',
+    echoue: '<span class="tag-pill fail">Échoué</span>', abandon: '<span class="tag-pill abandon">Abandon</span>',
+    annule: '<span class="tag-pill draft">Annulée</span>',
+  };
+  const stateLabel: Record<string, string> = { echoue: "Échoué", abandon: "Abandon", attente: "En attente" };
+  const setKpi = (k: string, v: string, foot: string) => {
+    const el = document.querySelector(`[data-k="${k}"]`); if (el) el.innerHTML = v;
+    const f = document.querySelector(`[data-foot="${k}"]`); if (f) f.innerHTML = foot;
+  };
+
+  async function loadBookings() {
+    const { data } = await supabaseBrowser.from("bookings")
+      .select("id,reference,full_name,email,phone,status,payment_status,amount_due,amount_paid,is_deposit,created_at,payment_method,sessions(title,starts_at),ticket_types(name)")
+      .order("created_at", { ascending: false });
+    const all = data || [];
+
+    // ---- Agrégats états de paiement ----
+    const counts: Record<string, number> = { paye: 0, attente: 0, echoue: 0, abandon: 0, annule: 0 };
+    all.forEach((b) => { counts[stateOf(b)] = (counts[stateOf(b)] || 0) + 1; });
+    const tentatives = counts.paye + counts.attente + counts.echoue + counts.abandon;
+    const taux = tentatives ? Math.round((counts.paye / tentatives) * 100) : 0;
+    const ca = all.filter((b) => stateOf(b) === "paye").reduce((a, b) => a + paidOf(b), 0);
+    // Exclut les tentatives déjà réglées par une autre tentative du même client.
+    const reconciled = reconciledRelanceIds(all);
+    const recoverList = all.filter((b) => ["echoue", "abandon"].includes(stateOf(b)) && !reconciled.has(b.id));
+    const recoverable = recoverList.reduce((a, b) => a + dueOf(b), 0);
+    const clientsPayants = new Set(all.filter((b) => stateOf(b) === "paye").map((b) => (b.email || "").toLowerCase()).filter(Boolean)).size;
+    const allEmails = new Set(all.map((b) => (b.email || "").toLowerCase()).filter(Boolean));
+    const prospects = Math.max(0, allEmails.size - clientsPayants);
+
+    // Delta CA : 30 derniers jours vs 30 précédents.
+    const d30 = now - 30 * 864e5, d60 = now - 60 * 864e5;
+    const caIn = (from: number, to: number) => all.filter((b) => stateOf(b) === "paye" && +new Date(b.created_at) >= from && +new Date(b.created_at) < to).reduce((a, b) => a + paidOf(b), 0);
+    const ca30 = caIn(d30, now + 1), caPrev = caIn(d60, d30);
+    const delta = caPrev > 0 ? Math.round(((ca30 - caPrev) / caPrev) * 100) : 0;
+    const deltaHtml = caPrev === 0 ? "sur les 30 derniers jours"
+      : delta === 0 ? "stable vs 30 j préc."
+      : `<span class="delta ${delta > 0 ? "up" : "down"}">${delta > 0 ? "▲" : "▼"} ${Math.abs(delta)}%</span> vs 30 j préc.`;
+
+    setKpi("ca", fmtFCFA(ca), deltaHtml);
+    setKpi("paid", String(counts.paye), `sur ${tentatives} tentatives`);
+    setKpi("rate", taux + "%", "paiements aboutis");
+    setKpi("clients", String(clientsPayants), `${prospects} prospect${prospects > 1 ? "s" : ""} à convertir`);
+    setKpi("relance", String(recoverList.length), recoverList.length ? `<b style="color:#8a6400">${fmtFCFA(recoverable)}</b>&nbsp;récupérables` : "rien à relancer 🎉");
+
+    // ---- État des paiements (barre + légende) ----
+    const seg = (n: number) => (tentatives ? (n / tentatives) * 100 : 0);
+    const pct = (n: number) => (tentatives ? Math.round((n / tentatives) * 100) : 0);
+    $("[data-pay]").innerHTML = tentatives === 0
+      ? `<div class="dash-empty">Aucune réservation pour l'instant.</div>`
+      : `<div class="pay-top">
+          <div class="pay-total"><div class="n">${tentatives}</div><div class="l">tentatives de réservation</div></div>
+          ${recoverList.length ? `<div class="pay-recover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span><b>${fmtFCFA(recoverable)}</b> récupérables — ${recoverList.length} paiement(s) à relancer</span></div>` : ""}
+        </div>
+        <div class="stackbar" role="img" aria-label="Répartition des paiements">
+          <span class="seg-paye" style="width:${seg(counts.paye)}%"></span>
+          <span class="seg-attente" style="width:${seg(counts.attente)}%"></span>
+          <span class="seg-echoue" style="width:${seg(counts.echoue)}%"></span>
+          <span class="seg-abandon" style="width:${seg(counts.abandon)}%"></span>
+        </div>
+        <div class="legend">
+          <div class="lg"><span class="dot" style="background:#0a7d5f"></span><span class="lg-l">Payé</span><span class="lg-v">${counts.paye}</span><span class="lg-pct">${pct(counts.paye)}%</span></div>
+          <div class="lg"><span class="dot" style="background:#e0a92a"></span><span class="lg-l">En attente</span><span class="lg-v">${counts.attente}</span><span class="lg-pct">${pct(counts.attente)}%</span></div>
+          <div class="lg"><span class="dot" style="background:#d24b4b"></span><span class="lg-l">Échoué</span><span class="lg-v">${counts.echoue}</span><span class="lg-pct">${pct(counts.echoue)}%</span></div>
+          <div class="lg"><span class="dot" style="background:#9d8bc4"></span><span class="lg-l">Abandon</span><span class="lg-v">${counts.abandon}</span><span class="lg-pct">${pct(counts.abandon)}%</span></div>
+        </div>`;
+
+    // ---- Dernières réservations ----
+    const recent = all.filter((b) => stateOf(b) !== "annule").slice(0, 6);
+    const tb = $("[data-recent]");
+    tb.innerHTML = recent.length ? recent.map((b) => `<tr>
+        <td><strong>${esc(b.full_name)}</strong><br><span class="mono-ref" style="font-size:.72rem">${esc(b.reference)}</span></td>
+        <td>${esc(b.sessions?.title || "—")}<br><span style="color:var(--c-gray-500);font-size:.74rem">${esc(b.ticket_types?.name || "")}</span></td>
+        <td style="text-align:right;font-family:var(--f-display);font-weight:800;font-variant-numeric:tabular-nums">${fmtFCFA(dueOf(b))}</td>
+        <td>${statePill[stateOf(b)] || esc(b.status)}</td></tr>`).join("")
+      : `<tr><td class="empty" colspan="4">Aucune réservation.</td></tr>`;
+
+    // ---- À relancer (un client = sa transaction non aboutie la plus récente) ----
+    const seen = new Set<string>();
+    const relance: any[] = [];
+    for (const b of recoverList) { const k = (b.email || b.phone || "").toLowerCase(); if (!k || seen.has(k)) continue; seen.add(k); relance.push(b); if (relance.length >= 4) break; }
+    const rc = $("[data-relance]");
+    if (!relance.length) {
+      rc.innerHTML = `<div class="dash-empty">Aucun paiement à relancer. 🎉</div>`;
+    } else {
+      const svgWa = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>';
+      const svgMail = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
+      rc.innerHTML = relance.map((b) => {
+        const key = (b.email || b.phone || b.full_name);
+        const st = stateOf(b);
+        const wa = digits(b.phone) ? `<a class="ic wa" title="Relancer sur WhatsApp" target="_blank" rel="noopener" href="https://wa.me/${digits(b.phone)}?text=${encodeURIComponent(`Bonjour ${firstName(b.full_name)} 👋 Vous aviez commencé une réservation chez Bweb Agence sans finaliser le paiement — votre place est encore disponible. Souhaitez-vous confirmer ?`)}">${svgWa}</a>` : "";
+        const mail = b.email ? `<a class="ic" title="Relancer par e-mail" href="mailto:${encodeURIComponent(b.email)}?subject=${encodeURIComponent("Votre inscription chez Bweb Agence")}">${svgMail}</a>` : "";
+        return `<div class="rl">
+          <span class="rav" style="background:${avatarBg(key)}">${esc(initials(b.full_name))}</span>
+          <span class="rwho"><b>${esc(b.full_name)}</b><span>${stateLabel[st] || st} · ${esc(b.ticket_types?.name || "")} · ${dshort(b.created_at)}</span></span>
+          <span class="ramt">${fmtFCFA(dueOf(b))}</span>${wa}${mail}</div>`;
+      }).join("") + `<div style="padding:12px 18px;border-top:1px solid var(--c-border-soft)"><a class="dash-link" href="/admin/campagnes">+ Lancer une campagne de relance groupée →</a></div>`;
+    }
   }
 
-  async function loadStats() {
-    const nowISO = new Date().toISOString();
-    const [posts, sessions, pending, confirmed] = await Promise.all([
-      supabaseBrowser.from("posts").select("id", { count: "exact", head: true }).eq("status", "published"),
-      supabaseBrowser.from("sessions").select("id", { count: "exact", head: true }).in("status", ["published", "full"]).gte("starts_at", nowISO),
-      supabaseBrowser.from("bookings").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      supabaseBrowser.from("bookings").select("id", { count: "exact", head: true }).eq("status", "confirmed"),
-    ]);
-    const set = (k: string, v: any) => { const el = document.querySelector(`[data-stat="${k}"]`); if (el) el.textContent = String(v ?? 0); };
-    set("posts", posts.count); set("sessions", sessions.count); set("pending", pending.count); set("confirmed", confirmed.count);
-  }
-
-  async function loadPending() {
-    const { data } = await supabaseBrowser
-      .from("bookings")
-      .select("id,reference,full_name,payment_method,payment_reference,payment_proof_url,amount_due,is_deposit,quantity,sessions(title,starts_at),ticket_types(name)")
-      .eq("status", "pending")
-      .order("created_at", { ascending: true })
-      .limit(20);
-    const tb = document.querySelector("[data-pending]")!;
-    if (!data || data.length === 0) { tb.innerHTML = `<tr><td class="empty" colspan="6">Aucun paiement en attente. 🎉</td></tr>`; return; }
-    tb.innerHTML = data.map((b: any) => {
-      const due = b.is_deposit ? Math.ceil(b.amount_due / 2) : b.amount_due;
-      const proof = b.payment_proof_url
-        ? `<button class="abtn sm" data-proof="${esc(b.payment_proof_url)}">Voir reçu</button>`
-        : (b.payment_reference ? `<span title="${esc(b.payment_reference)}">réf.</span>` : "—");
-      return `<tr>
-        <td><strong>${esc(b.full_name)}</strong><br><span style="color:var(--c-gray-500);font-size:.78rem">${esc(b.reference)}</span></td>
-        <td>${esc(b.sessions?.title || "")}<br><span style="color:var(--c-gray-500);font-size:.78rem">${b.quantity}× ${esc(b.ticket_types?.name || "")}</span></td>
-        <td>${esc(methodLabel[b.payment_method] || "—")}${b.is_deposit ? " <span class=\"tag-pill wait\">acompte</span>" : ""}</td>
-        <td>${proof}</td>
-        <td style="font-variant-numeric:tabular-nums">${fmt(due)}</td>
-        <td style="white-space:nowrap;text-align:right">
-          <button class="abtn primary sm" data-confirm="${b.id}">Valider</button>
-          <button class="abtn sm" data-cancel="${b.id}">Refuser</button>
-        </td></tr>`;
+  async function loadNextSession() {
+    const { data } = await supabaseBrowser.from("sessions")
+      .select("id,title,slug,starts_at,venue,city,mode,status,ticket_types(name,price,capacity,sold)")
+      .in("status", ["published", "full"]).gte("starts_at", nowISO)
+      .order("starts_at", { ascending: true }).limit(1);
+    const s: any = (data || [])[0];
+    const box = $("[data-nextsession]");
+    if (!s) { box.innerHTML = `<div class="dash-empty">Aucune session à venir.<br><a class="dash-link" href="/admin/sessions">Créer une session →</a></div>`; return; }
+    const tts = (s.ticket_types || []) as any[];
+    const cap = tts.reduce((a, t) => a + (t.capacity || 0), 0);
+    const sold = tts.reduce((a, t) => a + (t.sold || 0), 0);
+    const remaining = Math.max(0, cap - sold);
+    const modeL: Record<string, string> = { presentiel: "Présentiel", en_ligne: "En ligne", hybride: "Hybride" };
+    const dateStr = new Date(s.starts_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    // KPI « Prochaine session » : remplissage + places restantes.
+    setKpi("session", `${sold}<small>/${cap}</small>`, `${remaining} places restantes · ${new Date(s.starts_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`);
+    const tiersHtml = tts.slice().sort((a, b) => (a.price || 0) - (b.price || 0)).map((t) => {
+      const full = (t.capacity || 0) - (t.sold || 0) <= 0;
+      const w = t.capacity ? Math.round((t.sold / t.capacity) * 100) : 0;
+      return `<div class="tier ${full ? "epuise" : ""}">
+        <div class="tier-row"><span>${esc(t.name)} · ${fmtFCFA(t.price)}</span><span class="t-r">${full ? `Épuisé · ${t.sold}/${t.capacity}` : `${t.sold} / ${t.capacity}`}</span></div>
+        <div class="dbar ${full ? "full" : ""}"><i style="width:${Math.max(2, w)}%"></i></div></div>`;
     }).join("");
-
-    tb.querySelectorAll<HTMLElement>("[data-proof]").forEach((el) => el.addEventListener("click", () => viewProof(el.dataset.proof!)));
-    tb.querySelectorAll<HTMLElement>("[data-confirm]").forEach((el) => el.addEventListener("click", async () => {
-      el.setAttribute("disabled", "true"); el.textContent = "…";
-      await confirmBooking(supabaseBrowser, el.dataset.confirm!);
-      await refresh();
-    }));
-    tb.querySelectorAll<HTMLElement>("[data-cancel]").forEach((el) => el.addEventListener("click", async () => {
-      if (!(await confirmModal({ title: "Refuser la réservation", message: "La place réservée sera libérée. Confirmer le refus ?", danger: true, confirmLabel: "Refuser" }))) return;
-      await supabaseBrowser.rpc("cancel_booking", { p_booking_id: el.dataset.cancel });
-      await refresh();
-    }));
+    box.innerHTML = `<div class="sess-title">${esc(s.title)}</div>
+      <div class="sess-meta">📅 ${dateStr} · ${esc(s.venue || s.city || "")} · ${modeL[s.mode] || ""}</div>
+      <div class="fill-big"><div class="n">${sold} <small>/ ${cap} places · ${remaining} restantes</small></div></div>
+      <div class="dbar"><i style="width:${cap ? Math.max(2, Math.round((sold / cap) * 100)) : 0}%"></i></div>
+      ${tiersHtml}`;
   }
 
-  async function loadSessions() {
-    const nowISO = new Date().toISOString();
-    const { data } = await supabaseBrowser
-      .from("sessions")
-      .select("id,slug,title,starts_at,status,ticket_types(capacity,sold)")
-      .in("status", ["published", "full", "draft"])
-      .gte("starts_at", nowISO)
-      .order("starts_at", { ascending: true })
-      .limit(10);
-    const tb = document.querySelector("[data-sessions]")!;
-    if (!data || data.length === 0) { tb.innerHTML = `<tr><td class="empty" colspan="4">Aucune session à venir.</td></tr>`; return; }
-    tb.innerHTML = data.map((s: any) => {
-      const cap = (s.ticket_types || []).reduce((a: number, t: any) => a + t.capacity, 0);
-      const sold = (s.ticket_types || []).reduce((a: number, t: any) => a + t.sold, 0);
-      const pct = cap ? Math.round((sold / cap) * 100) : 0;
-      const stat = s.status === "full" ? `<span class="tag-pill full">Complet</span>` : s.status === "draft" ? `<span class="tag-pill draft">Brouillon</span>` : `<span class="tag-pill pub">Publiée</span>`;
-      return `<tr>
-        <td><a href="/formations/session/${esc(s.slug)}" target="_blank" style="color:var(--c-blue);font-weight:700;text-decoration:none">${esc(s.title)}</a></td>
-        <td>${dshort(s.starts_at)}</td>
-        <td style="font-variant-numeric:tabular-nums">${sold}/${cap} · ${pct}%</td>
-        <td>${stat}</td></tr>`;
+  async function loadCampaigns() {
+    const { data } = await supabaseBrowser.from("campaigns")
+      .select("id,subject,channel,audience,status,scheduled_at,sent_at,recipients_count,sent_count,created_at")
+      .order("created_at", { ascending: false }).limit(3);
+    const box = $("[data-campaigns]");
+    const rows = data || [];
+    if (!rows.length) { box.innerHTML = `<div class="dash-empty">Aucune campagne.<br><a class="dash-link" href="/admin/campagnes">Composer une campagne →</a></div>`; return; }
+    const chanIc: Record<string, string> = {
+      whatsapp: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>',
+      email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+    };
+    const chanBg: Record<string, string> = { whatsapp: "background:color-mix(in srgb,#25d366 14%,#fff);color:#1f8a48", email: "background:color-mix(in srgb,var(--c-blue) 12%,transparent);color:var(--c-blue)" };
+    const statMeta: Record<string, { cls: string; label: string }> = {
+      sent: { cls: "sent", label: "Envoyée" }, sending: { cls: "sched", label: "En cours" },
+      scheduled: { cls: "sched", label: "Programmée" }, draft: { cls: "draft", label: "Brouillon" }, error: { cls: "err", label: "Erreur" },
+    };
+    box.innerHTML = rows.map((c) => {
+      const sm = statMeta[c.status] || { cls: "draft", label: c.status };
+      const when = c.status === "scheduled" && c.scheduled_at ? " · " + dshort(c.scheduled_at) : (c.sent_at ? " · " + dshort(c.sent_at) : "");
+      const chan = c.channel === "whatsapp" ? "WhatsApp" : "E-mail";
+      const n = c.sent_count || c.recipients_count || 0;
+      return `<div class="camp">
+        <span class="cic" style="${chanBg[c.channel] || chanBg.email}">${chanIc[c.channel] || chanIc.email}</span>
+        <div class="cbody"><b>${esc(c.subject || "Campagne " + chan)}</b><span>${chan} · ${n} destinataire(s)${when}</span></div>
+        <span class="cstat ${sm.cls}">${sm.label}</span></div>`;
     }).join("");
   }
 
-  async function refresh() { await Promise.all([loadStats(), loadPending(), loadSessions()]); }
+  async function loadReviews() {
+    const { data } = await supabaseBrowser.from("reviews").select("author_name,rating,comment,status,created_at").order("created_at", { ascending: false }).limit(30);
+    const rows = data || [];
+    const approved = rows.filter((r) => r.status === "approved");
+    const avgEl = $("[data-reviews-avg]");
+    if (approved.length) { const avg = (approved.reduce((a, r) => a + r.rating, 0) / approved.length).toFixed(1).replace(".", ","); if (avgEl) avgEl.textContent = `Note moyenne ${avg} · ${approved.length} avis publié(s)`; }
+    const box = $("[data-reviews]");
+    const show = rows.slice(0, 3);
+    if (!show.length) { box.innerHTML = `<div class="dash-empty">Aucun avis pour l'instant.</div>`; return; }
+    const stars = (n: number) => "★★★★★☆☆☆☆☆".slice(5 - n, 10 - n);
+    box.innerHTML = show.map((r) => `<div class="rev">
+      <div class="rt"><b>${esc(r.author_name)}</b><span class="stars">${stars(r.rating)}</span>${r.status !== "approved" ? ' <span class="tag-pill wait" style="font-size:.6rem">à modérer</span>' : ""}</div>
+      ${r.comment ? `<p>« ${esc(r.comment)} »</p>` : ""}</div>`).join("");
+  }
 
   (async () => {
     const { data: { session } } = await supabaseBrowser.auth.getSession();
-    if (!session) return; // AdminLayout gère la redirection
-    await refresh();
+    if (!session) return;
+    await Promise.all([loadBookings(), loadNextSession(), loadCampaigns(), loadReviews()]);
   })();
 </script>

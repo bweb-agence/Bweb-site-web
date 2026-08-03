@@ -1,0 +1,288 @@
+---
+// Page de vente d'un PACK de parcours (places prépayées).
+// Partageable : lien direct envoyé en campagne / WhatsApp.
+// Rendu à la demande (SSR) — lit le pack en base et initie le paiement.
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PhoneField from "../../components/PhoneField.astro";
+import { supabase } from "../../lib/supabase";
+import { priceFCFA, frDateLong } from "../../lib/format";
+import { whatsappLink } from "../../config/site";
+
+const { slug } = Astro.params;
+
+// Le pack (actif) + les formations incluses.
+const { data: pack } = await supabase
+  .from("packs")
+  .select("id, slug, title, description, price, compare_at_price, active, pack_items(sort, formations(id, slug, title, coming_soon))")
+  .eq("slug", slug)
+  .eq("active", true)
+  .maybeSingle();
+
+// Prochaine date publiée par formation incluse (pour l'état « Prochaine date »).
+let items: { title: string; slug: string; date: string | null }[] = [];
+if (pack) {
+  const rows = ((pack as any).pack_items || [])
+    .slice()
+    .sort((a: any, b: any) => (a.sort ?? 0) - (b.sort ?? 0))
+    .map((it: any) => it.formations)
+    .filter(Boolean);
+  const fids = rows.map((f: any) => f.id);
+  const nextByFormation = new Map<string, string>();
+  if (fids.length) {
+    const { data: sess } = await supabase
+      .from("sessions")
+      .select("formation_id, starts_at")
+      .in("formation_id", fids)
+      .in("status", ["published", "full"])
+      .gte("starts_at", new Date().toISOString())
+      .order("starts_at", { ascending: true });
+    for (const s of sess || []) {
+      const fid = (s as any).formation_id;
+      if (fid && !nextByFormation.has(fid)) nextByFormation.set(fid, (s as any).starts_at);
+    }
+  }
+  items = rows.map((f: any) => ({
+    title: f.title,
+    slug: f.slug,
+    date: nextByFormation.get(f.id) || null,
+  }));
+}
+
+const count = items.length;
+const compareAt = pack && pack.compare_at_price && pack.compare_at_price > pack.price ? pack.compare_at_price : null;
+const discountPct = compareAt ? Math.round((1 - pack.price / compareAt) * 100) : 0;
+const payApi = import.meta.env.PAYMENT_API_URL || "";
+---
+
+<BaseLayout
+  title={pack ? `${pack.title} — Pack parcours | Bweb Agence` : "Pack introuvable | Bweb Agence"}
+  description={pack ? (pack.description || `Réservez votre place à chaque formation du parcours en une seule fois.`) : "Pack introuvable."}
+>
+  <section class="pk-hero">
+    <div class="mesh-bg"></div>
+    <div class="grid-lines"></div>
+    <div class="container">
+      {pack ? (
+        <div class="pk-wrap" data-hero-in>
+          <div class="pk-left">
+            <div class="pk-intro">
+              <span class="pk-eyebrow">Offre parcours · {count} formations</span>
+              <h1 class="pk-title">{pack.title}</h1>
+              {pack.description && <p class="pk-lead">{pack.description}</p>}
+              <ul class="pk-usps">
+                <li><span class="ic">✓</span> Une place garantie à chacune des {count} formations.</li>
+                <li><span class="ic">✓</span> Inscription automatique dès qu'une date est publiée.</li>
+                <li><span class="ic">✓</span> En présentiel ou en direct sur Zoom — au choix.</li>
+                <li><span class="ic">✓</span> Payez une seule fois, aujourd'hui.</li>
+              </ul>
+            </div>
+
+            <div class="pk-included">
+              <div class="pk-included-hd">
+                <h2>Ce que comprend le pack</h2>
+                <span class="pk-count">{count} formation{count > 1 ? "s" : ""}</span>
+              </div>
+              <div class="pk-list">
+                {items.map((it) => (
+                  <div class="pk-frow">
+                    <span class="nm"><span class={`d ${it.date ? "on" : "wait"}`}>{it.date ? "✓" : "•"}</span><span class="txt">{it.title}</span></span>
+                    {it.date
+                      ? <span class="pill date">Prochaine date · {frDateLong(it.date)}</span>
+                      : <span class="pill soon">Date à venir</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div class="pk-right">
+            <div class="pk-card">
+              <span class="pk-card-lbl">Le pack complet</span>
+              <div class="pk-price">
+                <span class="val">{pack.price.toLocaleString("fr-FR")}</span>
+                <span class="cur">F CFA</span>
+                {compareAt && <span class="off">−{discountPct}%</span>}
+              </div>
+              {compareAt && <div class="pk-was">au lieu de {priceFCFA(compareAt)} à l'unité</div>}
+
+              <form class="pk-form" id="pk-form" data-slug={pack.slug} data-pay-api={payApi} data-title={pack.title} data-price={pack.price}>
+                <div class="pk-field"><label for="pk-name">Nom complet *</label><input id="pk-name" type="text" required placeholder="Ex. Awa Koné" /></div>
+                <div class="pk-field"><label for="pk-email">E-mail *</label><input id="pk-email" type="email" required placeholder="vous@exemple.com" /></div>
+                <div class="pk-field"><label for="pk-phone">Téléphone / WhatsApp *</label><PhoneField id="pk-phone" /></div>
+                <div class="pk-field">
+                  <label>Comment comptez-vous suivre les formations ?</label>
+                  <div class="pk-seg" id="pk-att" role="radiogroup" aria-label="Mode de participation">
+                    <button type="button" class="on" data-att="presentiel">En présentiel</button>
+                    <button type="button" data-att="en_ligne">En ligne (Zoom)</button>
+                  </div>
+                  <p class="pk-hint">Modifiable ensuite, formation par formation, selon les dates.</p>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-lg" id="pk-submit">Réserver mon pack — {pack.price.toLocaleString("fr-FR")} F CFA</button>
+                <p class="pk-msg" id="pk-msg" hidden></p>
+                <p class="pk-secure">Paiement sécurisé en une fois · Paystack / Mobile Money. Vous recevez un e-mail de confirmation immédiat.</p>
+                <a class="pk-wa" href={whatsappLink()} data-whatsapp-link target="_blank" rel="noopener">Une question ? Écrivez-nous sur WhatsApp</a>
+              </form>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div class="pk-empty" data-hero-in>
+          <h1>Ce pack n'est pas disponible</h1>
+          <p>Le lien n'est pas (ou plus) valide. Découvrez toutes nos formations.</p>
+          <a href="/formations" class="btn btn-primary">Voir les formations</a>
+        </div>
+      )}
+    </div>
+  </section>
+</BaseLayout>
+
+<style is:global>
+  .pk-hero { position: relative; padding: clamp(88px, 12vw, 140px) 0 clamp(60px, 8vw, 110px); background: #050a3a; color: #fff; overflow: hidden; }
+  .pk-hero .container { position: relative; z-index: 1; }
+  .pk-wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(24px, 4vw, 56px); align-items: start; max-width: 1120px; margin: 0 auto; }
+  @media (max-width: 900px) { .pk-wrap { grid-template-columns: 1fr; gap: 22px; } }
+  .pk-left { display: flex; flex-direction: column; gap: clamp(20px, 3vw, 28px); min-width: 0; }
+  .pk-right { min-width: 0; }
+
+  .pk-eyebrow { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #7ee3c6; }
+  .pk-title { color: #fff; font-family: var(--f-display); font-weight: 800; font-size: clamp(1.6rem, 1.1rem + 2.2vw, 2.5rem); line-height: 1.12; margin: 10px 0 14px; letter-spacing: -0.01em; text-wrap: balance; }
+  .pk-lead { color: #c3cbf0; font-size: 1rem; line-height: 1.6; margin: 0 0 20px; max-width: 48ch; }
+  .pk-usps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .pk-usps li { display: flex; align-items: flex-start; gap: 11px; font-size: 0.96rem; color: #eaf0ff; }
+  .pk-usps .ic { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(0, 200, 158, 0.18); color: #7ee3c6; display: grid; place-items: center; font-size: 12px; font-weight: 800; margin-top: 1px; }
+
+  /* Carte « ce que comprend le pack » (colonne gauche) */
+  .pk-included { background: #fff; color: #0a0e27; border-radius: 20px; padding: clamp(18px, 2.4vw, 24px); box-shadow: 0 30px 70px -40px rgba(2, 11, 80, 0.55); }
+  .pk-included-hd { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .pk-included-hd h2 { font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; margin: 0; letter-spacing: -0.01em; }
+  .pk-count { font-size: 0.72rem; font-weight: 800; color: #0a7d5f; background: #dcf5ec; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+
+  .pk-list { display: flex; flex-direction: column; gap: 8px; }
+  .pk-frow { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #f6f8ff; border: 1px solid #eef1f8; border-radius: 12px; padding: 11px 14px; }
+  .pk-frow .nm { display: flex; align-items: center; gap: 9px; font-size: 0.9rem; font-weight: 600; color: #0a0e27; min-width: 0; }
+  .pk-frow .nm .d { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+  .pk-frow .d.on { background: #dcf5ec; color: #0a7d5f; }
+  .pk-frow .d.wait { background: #eef1f8; color: #8b91ae; }
+  .pk-frow .pill { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; flex: none; }
+  .pk-frow .pill.date { background: #dcf5ec; color: #0a7d5f; }
+  .pk-frow .pill.soon { background: #fff; border: 1px solid #e2e8f6; color: #5c6488; }
+  @media (max-width: 560px) {
+    .pk-frow { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .pk-frow .pill { margin-left: 29px; }
+  }
+
+  /* Carte de paiement (colonne droite), collante en desktop */
+  @media (min-width: 901px) { .pk-card { position: sticky; top: 88px; } }
+  .pk-card { background: #fff; color: #0a0e27; border-radius: 22px; padding: clamp(22px, 3vw, 30px); box-shadow: 0 40px 90px -35px rgba(2, 11, 80, 0.7); }
+  .pk-card-lbl { display: block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #8b91ae; margin-bottom: 6px; }
+  .pk-price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .pk-price .val { font-family: var(--f-display); font-weight: 800; font-size: 2.3rem; letter-spacing: -0.02em; line-height: 1; }
+  .pk-price .cur { font-size: 0.95rem; font-weight: 700; color: #565d80; }
+  .pk-price .off { margin-left: auto; font-size: 0.78rem; font-weight: 800; color: #0a7d5f; background: #dcf5ec; padding: 5px 10px; border-radius: 999px; }
+  .pk-was { color: #8b91ae; font-size: 0.85rem; margin: 4px 0 18px; }
+
+  .pk-form { display: flex; flex-direction: column; gap: 14px; }
+  .pk-field { display: flex; flex-direction: column; }
+  .pk-field > label { font-size: 0.82rem; font-weight: 700; color: #3f4568; margin-bottom: 6px; }
+  .pk-field input { width: 100%; border: 1.5px solid #e2e8f6; border-radius: 12px; padding: 12px 14px; font: inherit; font-size: 0.92rem; color: #0a0e27; background: #fff; }
+  .pk-field input:focus { outline: none; border-color: #1f6ced; box-shadow: 0 0 0 3px rgba(31, 108, 237, 0.14); }
+  .pk-seg { display: flex; gap: 8px; }
+  .pk-seg button { flex: 1; border: 1.5px solid #e2e8f6; background: #fff; border-radius: 12px; padding: 11px; font: inherit; font-size: 0.88rem; font-weight: 700; color: #565d80; cursor: pointer; transition: all 0.14s; }
+  .pk-seg button.on { border-color: #1f6ced; background: rgba(31, 108, 237, 0.08); color: #154fb3; }
+  .pk-hint { font-size: 0.76rem; color: #8b91ae; margin: 6px 0 0; }
+  .pk-msg { margin: 0; font-size: 0.86rem; font-weight: 700; text-align: center; }
+  .pk-msg.err { color: #d22d2d; }
+  .pk-secure { font-size: 0.76rem; color: #8b91ae; text-align: center; margin: 0; line-height: 1.5; }
+  .pk-wa { text-align: center; font-size: 0.82rem; font-weight: 700; color: #1f6ced; text-decoration: none; }
+  .pk-wa:hover { text-decoration: underline; }
+
+  .pk-empty { max-width: 520px; margin: 0 auto; text-align: center; color: #fff; }
+  .pk-empty h1 { font-family: var(--f-display); font-weight: 800; font-size: 1.8rem; margin: 0 0 10px; }
+  .pk-empty p { color: #c3cbf0; margin: 0 0 22px; }
+</style>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+
+  const form = document.getElementById("pk-form") as HTMLFormElement | null;
+  if (form) {
+    const PAY_API = (form.dataset.payApi || "").replace(/\/+$/, "");
+    let attendance = "presentiel";
+    const seg = document.getElementById("pk-att")!;
+    seg.querySelectorAll<HTMLButtonElement>("button").forEach((b) => {
+      b.addEventListener("click", () => {
+        seg.querySelectorAll("button").forEach((x) => x.classList.remove("on"));
+        b.classList.add("on");
+        attendance = b.dataset.att || "presentiel";
+      });
+    });
+
+    const msg = document.getElementById("pk-msg") as HTMLElement;
+    const submit = document.getElementById("pk-submit") as HTMLButtonElement;
+    const show = (t: string) => { msg.textContent = t; msg.hidden = false; msg.className = "pk-msg err"; };
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = (document.getElementById("pk-name") as HTMLInputElement).value.trim();
+      const email = (document.getElementById("pk-email") as HTMLInputElement).value.trim();
+      const phoneEl = document.getElementById("pk-phone") as HTMLInputElement;
+      const phoneCc = (phoneEl.closest(".phone-field")?.querySelector('[name="phone_cc"]') as HTMLSelectElement | null)?.value || "";
+      const phoneVal = phoneEl.value.trim();
+      const phone = phoneVal ? (phoneCc ? `${phoneCc} ${phoneVal}` : phoneVal) : "";
+      const numeroSend = phoneVal.replace(/\D/g, "");
+
+      if (name.length < 2) return show("Merci d'indiquer votre nom.");
+      if (!/.+@.+\..+/.test(email)) return show("Merci d'indiquer un e-mail valide.");
+      if (numeroSend.length < 6) return show("Merci d'indiquer un numéro de téléphone valide.");
+
+      const amount = Math.round(Number(form.dataset.price) || 0);
+      submit.disabled = true;
+      const label = submit.textContent;
+      submit.textContent = "Redirection…";
+      msg.hidden = true;
+
+      try {
+        // 1) Créer le paiement d'abord (Paystack pour +225, sinon Money Fusion).
+        //    Pour un pack, /api/paystack/init recalcule le montant depuis la base.
+        let token = "", payUrl = "", payMethod = "money_fusion";
+        if (phoneCc === "+225") {
+          try {
+            const pres = await fetch("/api/paystack/init", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ amount, email, name, phone: numeroSend, title: form.dataset.title, pack: form.dataset.slug }),
+            });
+            const pj = await pres.json();
+            if (pj?.ok && pj?.url) { token = pj.reference || ""; payUrl = pj.url; payMethod = "paystack"; }
+          } catch { /* repli Money Fusion */ }
+        }
+        if (!payUrl) {
+          if (!PAY_API) { show("Le paiement en ligne est momentanément indisponible."); submit.disabled = false; submit.textContent = label; return; }
+          const pres = await fetch(`${PAY_API}/pay.php`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ montant: amount, nom: name, telephone: numeroSend, article: form.dataset.title || "Pack parcours Bweb", meta: { pack_slug: form.dataset.slug, email, kind: "pack" } }),
+          });
+          const pj = await pres.json();
+          if (!pj?.ok || !pj?.url) throw new Error("no_url");
+          token = pj.token || ""; payUrl = pj.url; payMethod = "money_fusion";
+        }
+
+        // 2) Enregistrer l'achat « en attente » avec le jeton (prix fixé côté serveur).
+        const res = await fetch("/api/pack-reserver", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug: form.dataset.slug, name, email, phone, attendance_mode: attendance, payment_reference: token, payment_method: payMethod }),
+        });
+        const j = await res.json();
+        if (!j?.ok) { show("La réservation n'a pas pu démarrer. Réessayez ou écrivez-nous sur WhatsApp."); submit.disabled = false; submit.textContent = label; return; }
+
+        window.location.href = payUrl;
+      } catch {
+        show("Le paiement n'a pas pu démarrer. Réessayez ou finalisez sur WhatsApp.");
+        submit.disabled = false;
+        submit.textContent = label;
+      }
+    });
+  }
+</script>

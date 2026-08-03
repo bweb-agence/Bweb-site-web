@@ -64,6 +64,9 @@ export function initReservation() {
   const steps = Array.from(overlay.querySelectorAll<HTMLElement>(".rz-step"));
   const tickets = Array.from(overlay.querySelectorAll<HTMLElement>("[data-ticket]"));
   const bumps = Array.from(overlay.querySelectorAll<HTMLElement>("[data-bump]"));
+  // Order bump « passer au pack » : bascule tout l'achat en pack de parcours.
+  const packUp = overlay.querySelector<HTMLElement>("[data-pack-upgrade]");
+  let packUpgrade = false;
   const prevBtn = $("rz-prev")!, nextBtn = $("rz-next")!, doneBtn = $("rz-done")!, errEl = $("rz-err")!;
   const FORM_STEPS = 4;
   let step = 1;
@@ -136,6 +139,11 @@ export function initReservation() {
 
   // ---------- Tarifs ----------
   function selection() {
+    // « Passer au pack » remplace tout l'achat : total = prix du pack.
+    if (packUpgrade && packUp) {
+      const price = parseInt(packUp.dataset.packPrice || "0");
+      return { lines: [{ id: "pack", name: "Parcours complet", qty: 1, price }], total: price };
+    }
     const lines: { id: string; name: string; qty: number; price: number }[] = [];
     let total = 0;
     tickets.forEach((t) => {
@@ -168,7 +176,10 @@ export function initReservation() {
   tickets.forEach((t) => {
     const max = parseInt(t.dataset.remaining || "0");
     const valEl = t.querySelector<HTMLElement>("[data-val]");
-    if (!valEl) return; // tarif épuisé : pas de sélecteur de quantité à initialiser
+    // Tarif épuisé : rendu SANS sélecteur (badge « Épuisé »). Sans ce garde-fou,
+    // `apply()` plantait sur `valEl` null → toute l'init du tunnel échouait et le
+    // bouton « Réserver ma place » ne s'ouvrait plus (bug bloquant en prod).
+    if (!valEl) return;
     const dec = t.querySelector<HTMLButtonElement>("[data-dec]");
     const inc = t.querySelector<HTMLButtonElement>("[data-inc]");
     if (max > 0) t.classList.add("is-tappable");
@@ -180,6 +191,7 @@ export function initReservation() {
       if (animate) { valEl.classList.remove("bump"); void valEl.offsetWidth; valEl.classList.add("bump"); }
     };
     const increment = () => {
+      if (packUpgrade) setPackUpgrade(false); // sélectionner un tarif annule l'upgrade pack
       const v = parseInt(valEl.textContent || "0");
       if (v >= max) return;
       apply(v + 1, true); refreshTotal();
@@ -202,12 +214,36 @@ export function initReservation() {
     const cb = b.querySelector<HTMLInputElement>(".ob-check");
     const cta = b.querySelector<HTMLElement>(".ob-cta");
     cb?.addEventListener("change", () => {
+      if (cb.checked) setPackUpgrade(false); // un bump classique annule l'upgrade pack
       b.classList.toggle("is-added", cb.checked);
       if (cta) cta.textContent = cb.checked ? "Ajouté ✓" : "Ajouter";
       if (cb.checked) { b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop"); }
       refreshTotal();
     });
   });
+
+  // « Passer au pack » : bascule tout l'achat en pack (exclusif des tarifs/bumps).
+  function setPackUpgrade(on: boolean) {
+    packUpgrade = on;
+    if (packUp) {
+      packUp.classList.toggle("is-on", on);
+      const cb = packUp.querySelector<HTMLInputElement>(".pku-check");
+      if (cb) cb.checked = on;
+    }
+    if (on) {
+      // Vide tarifs + bumps (l'upgrade remplace l'achat de la seule formation).
+      tickets.forEach((t) => { const v = t.querySelector<HTMLElement>("[data-val]"); if (v) v.textContent = "0"; t.classList.remove("is-picked"); const d = t.querySelector<HTMLButtonElement>("[data-dec]"); if (d) d.disabled = true; const i = t.querySelector<HTMLButtonElement>("[data-inc]"); if (i) i.disabled = false; });
+      bumps.forEach((b) => { const c = b.querySelector<HTMLInputElement>(".ob-check"); if (c?.checked) { c.checked = false; b.classList.remove("is-added"); const cta = b.querySelector<HTMLElement>(".ob-cta"); if (cta) cta.textContent = "Ajouter"; } });
+      selectPay("money_fusion"); // pack = paiement plein en ligne uniquement
+    }
+    syncDepositOption();
+    refreshTotal();
+    updateNextLabel();
+  }
+  if (packUp) {
+    const cb = packUp.querySelector<HTMLInputElement>(".pku-check");
+    cb?.addEventListener("change", () => setPackUpgrade(!!cb.checked));
+  }
 
   // ---------- Paiement ----------
   overlay.querySelectorAll<HTMLElement>(".rz-payopt").forEach((pm) => {
@@ -228,7 +264,7 @@ export function initReservation() {
   // en ligne (et pour une hybride tant que « en ligne » est choisi).
   const sessionMode = overlay.dataset.mode || "";
   const depositOpt = overlay.querySelector<HTMLElement>('.rz-payopt[data-method="money_fusion_acompte"]');
-  const canDeposit = () => sessionMode === "presentiel" || (isHybrid && attendance === "presentiel");
+  const canDeposit = () => !packUpgrade && (sessionMode === "presentiel" || (isHybrid && attendance === "presentiel"));
   function selectPay(m: string) {
     const el = overlay.querySelector<HTMLElement>(`.rz-payopt[data-method="${m}"]`);
     if (!el) return;
@@ -422,6 +458,46 @@ export function initReservation() {
       const phone = phoneVal ? (phoneCc ? `${phoneCc} ${phoneVal}` : phoneVal) : "";
       // Numéro LOCAL (chiffres) transmis à Money Fusion = numéro à débiter pour valider.
       const numeroSend = phoneVal.replace(/\D/g, "");
+
+      // ---- « Passer au pack » : achat de pack (pack_purchase), pas une réservation ----
+      if (packUpgrade && packUp) {
+        const packSlug = packUp.dataset.packSlug || "";
+        const packPrice = parseInt(packUp.dataset.packPrice || "0");
+        const attMode = sessionMode === "en_ligne" ? "en_ligne" : sessionMode === "hybride" ? (attendance || "presentiel") : "presentiel";
+        let ptoken = "", purl = "", pmethod = "money_fusion";
+        if (phoneCc === "+225") {
+          try {
+            const pres = await fetch("/api/paystack/init", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ amount: packPrice, email, name, phone: numeroSend, title: overlay.dataset.title || "Pack parcours", pack: packSlug }),
+            });
+            const pj = await pres.json();
+            if (pj?.ok && pj?.url) { ptoken = pj.reference || ""; purl = pj.url; pmethod = "paystack"; }
+          } catch { /* repli Money Fusion */ }
+        }
+        if (!purl) {
+          if (!PAY_API) { errEl.textContent = "Le paiement en ligne est momentanément indisponible."; resetBtn(); return; }
+          try {
+            const pres = await fetch(`${PAY_API}/pay.php`, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ montant: packPrice, nom: name, telephone: numeroSend, article: overlay.dataset.title || "Pack parcours", meta: { pack_slug: packSlug, email, kind: "pack" } }),
+            });
+            const pj = await pres.json();
+            if (!pj?.ok || !pj?.url) throw new Error("no_url");
+            ptoken = pj.token || ""; purl = pj.url; pmethod = "money_fusion";
+          } catch { errEl.textContent = "Le paiement en ligne n'a pas pu démarrer. Réessayez ou finalisez sur WhatsApp."; resetBtn(); return; }
+        }
+        const pr = await fetch("/api/pack-reserver", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug: packSlug, name, email, phone, attendance_mode: attMode, payment_reference: ptoken, payment_method: pmethod }),
+        });
+        const pj2 = await pr.json().catch(() => null);
+        if (!pj2?.ok) { errEl.textContent = "La réservation du pack n'a pas pu démarrer. Réessayez ou écrivez-nous sur WhatsApp."; resetBtn(); return; }
+        redirecting = true;
+        window.location.href = purl;
+        return;
+      }
+
       // Total, ou acompte 50 % (le solde se paie alors sur place le jour J).
       const isDeposit = method === "money_fusion_acompte";
       const amount = isDeposit ? Math.max(1, Math.ceil(total / 2)) : total;

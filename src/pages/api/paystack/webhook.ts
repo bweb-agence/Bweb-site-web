@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import crypto from "node:crypto";
 import { confirmBookingsByReference } from "../../../lib/confirmBooking";
+import { confirmPackByReference } from "../../../lib/confirmPack";
 
 /**
  * Webhook Paystack : confirme la réservation même si l'acheteur ferme l'onglet
@@ -22,7 +23,9 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const event = JSON.parse(raw);
     if (event?.event === "charge.success" && event?.data?.reference) {
-      await confirmBookingsByReference(String(event.data.reference));
+      const ref = String(event.data.reference);
+      await confirmBookingsByReference(ref);
+      await confirmPackByReference(ref); // achat de pack (idempotent, no-op si non concerné)
     }
   } catch {
     /* on renvoie 200 quand même : Paystack ne doit pas réessayer indéfiniment */

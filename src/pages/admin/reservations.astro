@@ -1,118 +1,271 @@
 ---
 export const prerender = false;
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import Card from "../../components/starwind/card/Card.astro";
 import Button from "../../components/starwind/button/Button.astro";
+
+// Tuiles de stats — icônes statiques, valeurs remplies côté client.
+const stats = [
+  { key: "total", label: "Tentatives", accent: "blue", icon: '<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>' },
+  { key: "paye", label: "Payées", accent: "green", icon: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/>' },
+  { key: "attente", label: "En attente", accent: "amber", icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
+  { key: "relance", label: "À relancer", accent: "violet", icon: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>' },
+];
 ---
 
 <AdminLayout title="Réservations" active="reservations">
-  <div class="sw space-y-6">
-    <div class="admin-toolbar">
-      <div class="left">
-        <input class="admin-search" id="r-search" type="search" placeholder="Nom, e-mail, référence…" />
-        <select class="admin-filter" id="r-status">
-          <option value="" selected>Tous les statuts</option><option value="attente">En attente</option><option value="paye">Confirmées</option><option value="echoue">Échouées</option><option value="abandon">Abandons</option>
-        </select>
-        <select class="admin-filter" id="r-session"><option value="">Toutes les sessions</option></select>
+  <div class="sw space-y-4">
+    <!-- Bascule Actives / Archives -->
+    <div class="rz-viewbar">
+      <div class="vb-sub" data-viewsub>Sessions à venir</div>
+      <div class="rz-viewtoggle">
+        <button data-view="active" class="on">Actives</button>
+        <button data-view="archives"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg> Archives <span data-archcount></span></button>
       </div>
+    </div>
+
+    <!-- Stats -->
+    <section class="rz-stats">
+      {stats.map((s) => (
+        <div class="rz-stat">
+          <span class={`sic ${s.accent}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" set:html={s.icon} /></span>
+          <div><div class="k">{s.label}</div><div class="v" data-stat={s.key}>—</div><div class="ssub" data-statsub={s.key}></div></div>
+        </div>
+      ))}
+    </section>
+
+    <!-- Callout relance groupée -->
+    <div class="rz-callout" data-callout hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span data-callout-text></span>
+      <a class="cta" href="/admin/campagnes">Campagne de relance →</a>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="rz-toolbar">
+      <input class="admin-search" id="r-search" type="search" placeholder="Nom, e-mail, référence…" />
+      <div class="rz-seg" data-seg></div>
+      <div class="cdrop" id="r-sessiondrop">
+        <button type="button" class="cdrop-btn" data-drop-toggle><span class="lbl">Toutes les sessions</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="cdrop-panel">
+          <div class="cdrop-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input type="search" data-drop-search placeholder="Filtrer une session…" /></div>
+          <div class="cdrop-list" data-drop-list></div>
+          <div class="cdrop-foot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg> <span data-drop-foot>Sessions à venir uniquement</span></div>
+        </div>
+      </div>
+      <span style="flex:1"></span>
       <Button id="r-export" variant="outline" size="sm">⬇ Exporter CSV</Button>
     </div>
 
-    <Card class="gap-0 overflow-hidden p-0">
-      <div class="overflow-x-auto">
-        <table class="admin-table min-w-[720px]">
-          <thead><tr><th>Participant</th><th>Session · Tarif</th><th>Moyen</th><th>Montant</th><th>Statut</th><th>Réf. / Reçu</th></tr></thead>
+    <!-- Tableau -->
+    <div class="dash-card">
+      <div style="overflow-x:auto">
+        <table class="admin-table" style="min-width:760px">
+          <thead><tr><th>Participant</th><th>Session · Tarif</th><th>Moyen</th><th style="text-align:right">Montant</th><th>État</th><th>Action / Réf.</th></tr></thead>
           <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
         </table>
       </div>
-    </Card>
+    </div>
   </div>
 </AdminLayout>
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { esc, fmtFCFA, dshort, toast } from "../../scripts/adminUtils";
+  import { esc, fmtFCFA, dshort, toast, reconciledRelanceIds } from "../../scripts/adminUtils";
 
+  const now = Date.now();
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
   let all: any[] = [];
-  const methodLabel: Record<string, string> = { wave: "Wave", orange_money: "Orange Money", mobile_money: "Mobile Money", sur_place: "Sur place" };
-  const attendPill: Record<string, string> = {
-    presentiel: '<span class="tag-pill pub">🏢 Sur place</span>',
-    en_ligne: '<span class="tag-pill pub">💻 En ligne</span>',
-  };
+  // Ids des tentatives échouées/abandonnées déjà réglées par une autre tentative du même client.
+  let reconciled = new Set<string>();
+  let view: "active" | "archives" = "active";
+  let statusFilter = "";
+  let sessionFilter = "";
+
+  const methodLabel: Record<string, string> = { wave: "Wave", orange_money: "Orange Money", mobile_money: "Mobile Money", sur_place: "Sur place", money_fusion: "Money Fusion", paystack: "Paystack" };
+  const attendPill: Record<string, string> = { presentiel: "🏢 Sur place", en_ligne: "💻 En ligne" };
   const attendCsv: Record<string, string> = { presentiel: "Sur place", en_ligne: "En ligne" };
-  // Paiement 100 % automatique : le « statut » reflète l'état réel de l'opération
-  // de paiement, piloté par la passerelle — l'admin ne valide/refuse plus rien.
-  const payPill: Record<string, string> = {
-    attente: '<span class="tag-pill wait">En attente</span>', paye: '<span class="tag-pill ok">Confirmée</span>',
+  const statePill: Record<string, string> = {
+    paye: '<span class="tag-pill ok">Payé</span>', attente: '<span class="tag-pill wait">En attente</span>',
     echoue: '<span class="tag-pill fail">Échoué</span>', abandon: '<span class="tag-pill abandon">Abandon</span>',
     annule: '<span class="tag-pill draft">Annulée</span>',
   };
-  // État affiché : réservation confirmée → payé ; annulée (héritage) → annulé ;
-  // sinon l'état de paiement (attente / échoué / abandon).
-  const stateOf = (b: any): string =>
-    b.status === "confirmed" ? "paye" : b.status === "cancelled" ? "annule" : (b.payment_status || "attente");
+  const stateCsv: Record<string, string> = { paye: "Payée", attente: "En attente", echoue: "Échoué", abandon: "Abandon", annule: "Annulée" };
+
+  // État réel (cf. migration 0024) ; « annule » = ancien status cancelled.
+  const stateOf = (b: any): string => b.status === "confirmed" ? "paye" : b.status === "cancelled" ? "annule" : (b.payment_status || "attente");
+  const dueOf = (b: any) => (b.is_deposit ? Math.ceil(b.amount_due / 2) : b.amount_due);
+  const firstName = (n: string) => (n || "").trim().split(/\s+/)[0] || "";
+  const digits = (s: string | null) => (s || "").replace(/\D/g, "");
+  // Archivée = session passée (date) OU session explicitement archivée.
+  const isArchived = (b: any): boolean => {
+    const st = b.sessions?.starts_at ? new Date(b.sessions.starts_at).getTime() : null;
+    return (st != null && st < now) || b.sessions?.status === "archived";
+  };
+
+  // Réservations du mode courant (hors annulées héritées).
+  const viewBookings = () => all.filter((b) => stateOf(b) !== "annule" && (view === "archives" ? isArchived(b) : !isArchived(b)));
 
   async function viewProof(path: string) {
     const { data } = await supabaseBrowser.storage.from("payment-proofs").createSignedUrl(path, 120);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank", "noopener"); else toast("Justificatif introuvable.", "err");
   }
+  const relanceMsg = (b: any) => `Bonjour ${firstName(b.full_name)} 👋 Vous aviez commencé à réserver « ${b.sessions?.title || "une formation"} » chez Bweb Agence, mais le paiement n'a pas été finalisé. Votre place est encore disponible — souhaitez-vous confirmer votre inscription ?`;
+
+  // ---------- Stats + segments + callout ----------
+  function renderMeta() {
+    const vb = viewBookings();
+    const c: Record<string, number> = { paye: 0, attente: 0, echoue: 0, abandon: 0 };
+    vb.forEach((b) => { c[stateOf(b)] = (c[stateOf(b)] || 0) + 1; });
+    const total = vb.length;
+    const ca = vb.filter((b) => stateOf(b) === "paye").reduce((a, b) => a + dueOf(b), 0);
+    const taux = total ? Math.round((c.paye / total) * 100) : 0;
+    // « À relancer » exclut les tentatives déjà réglées par une autre tentative du même client.
+    const relanceItems = vb.filter((b) => ["echoue", "abandon"].includes(stateOf(b)) && !reconciled.has(b.id));
+    const relanceCount = relanceItems.length;
+    const recoverable = relanceItems.reduce((a, b) => a + dueOf(b), 0);
+
+    const setStat = (k: string, v: string, sub: string) => {
+      const el = document.querySelector(`[data-stat="${k}"]`); if (el) el.textContent = v;
+      const s = document.querySelector(`[data-statsub="${k}"]`); if (s) s.innerHTML = sub;
+    };
+    setStat("total", String(total), view === "archives" ? "sessions passées" : "sessions à venir");
+    setStat("paye", String(c.paye), `${fmtFCFA(ca)} · ${taux}%`);
+    setStat("attente", String(c.attente), "paiement en cours");
+    setStat("relance", String(relanceCount), relanceCount ? fmtFCFA(recoverable) + " récupérables" : "rien à relancer");
+
+    // Segments
+    const segs: [string, string, number][] = [["", "Tous", total], ["paye", "Payés", c.paye], ["attente", "Attente", c.attente], ["echoue", "Échoués", c.echoue], ["abandon", "Abandons", c.abandon]];
+    const segBox = document.querySelector("[data-seg]")!;
+    segBox.innerHTML = segs.map(([k, lbl, n]) => `<button data-seg-btn="${k}" class="${statusFilter === k ? "on" : ""}">${lbl} <span class="c">${n}</span></button>`).join("");
+    segBox.querySelectorAll<HTMLElement>("[data-seg-btn]").forEach((btn) => btn.addEventListener("click", () => { statusFilter = btn.dataset.segBtn!; renderMeta(); applyFilters(); }));
+
+    // Callout relance groupée (uniquement en vue Actives)
+    const co = document.querySelector("[data-callout]") as HTMLElement;
+    if (view === "active" && relanceCount > 0) {
+      co.hidden = false;
+      (document.querySelector("[data-callout-text]") as HTMLElement).textContent = `${relanceCount} paiement(s) échoué(s) ou abandonné(s) — relancez-les d'un clic depuis le tableau, ou en masse.`;
+    } else co.hidden = true;
+
+    // Compteur Archives + sous-titre
+    const arch = all.filter((b) => stateOf(b) !== "annule" && isArchived(b)).length;
+    const ac = document.querySelector("[data-archcount]"); if (ac) ac.textContent = arch ? `· ${arch}` : "";
+    (document.querySelector("[data-viewsub]") as HTMLElement).textContent = view === "archives" ? "Sessions passées (archives)" : "Sessions à venir";
+    (document.querySelector("[data-drop-foot]") as HTMLElement).textContent = view === "archives" ? "Sessions passées uniquement" : "Sessions à venir uniquement";
+  }
+
+  // ---------- Dropdown sessions ----------
+  function renderSessionDropdown() {
+    const vb = viewBookings();
+    const map = new Map<string, { title: string; starts_at: string | null; n: number }>();
+    for (const b of vb) { if (!b.session_id) continue; const e = map.get(b.session_id) || { title: b.sessions?.title || "Session", starts_at: b.sessions?.starts_at || null, n: 0 }; e.n++; map.set(b.session_id, e); }
+    const list = [...map.entries()].sort((a, b) => (a[1].starts_at || "").localeCompare(b[1].starts_at || ""));
+    const listBox = document.querySelector("[data-drop-list]")!;
+    const opts = [`<div class="cdrop-opt ${sessionFilter === "" ? "on" : ""}" data-sess=""><span class="oi">∀</span><span class="ot"><b>Toutes les sessions</b><span>${vb.length} réservation(s)</span></span><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></div>`]
+      .concat(list.map(([id, e]) => `<div class="cdrop-opt ${sessionFilter === id ? "on" : ""}" data-sess="${id}" data-search="${esc((e.title || "").toLowerCase())}"><span class="oi">${esc((e.title || "S").slice(0, 2))}</span><span class="ot"><b>${esc(e.title)}</b><span>${e.n} réservation(s)${e.starts_at ? " · " + dshort(e.starts_at) : ""}</span></span><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></div>`));
+    listBox.innerHTML = opts.join("");
+    listBox.querySelectorAll<HTMLElement>("[data-sess]").forEach((o) => o.addEventListener("click", () => {
+      sessionFilter = o.dataset.sess!;
+      (document.querySelector("#r-sessiondrop .lbl") as HTMLElement).textContent = o.querySelector("b")!.textContent!;
+      document.getElementById("r-sessiondrop")!.classList.remove("open");
+      renderSessionDropdown(); applyFilters();
+    }));
+    // reset label if selected session no longer in view
+    if (sessionFilter && !map.has(sessionFilter)) { sessionFilter = ""; (document.querySelector("#r-sessiondrop .lbl") as HTMLElement).textContent = "Toutes les sessions"; }
+  }
+
+  // ---------- Table ----------
+  function applyFilters() {
+    const q = ($("r-search").value || "").toLowerCase();
+    const list = viewBookings().filter((b) =>
+      (!statusFilter || stateOf(b) === statusFilter) &&
+      (!sessionFilter || b.session_id === sessionFilter) &&
+      (!q || (b.full_name + " " + (b.email || "") + " " + b.reference + " " + (b.payment_reference || "")).toLowerCase().includes(q)));
+    render(list);
+  }
+
+  const svgWa = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>';
+  const svgMail = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
 
   function render(list: any[]) {
     rows.innerHTML = list.length ? list.map((b) => {
-      const due = b.is_deposit ? Math.ceil(b.amount_due / 2) : b.amount_due;
-      // Référence de paiement (jeton passerelle) + justificatif éventuel.
-      const receipt = b.payment_proof_url ? `<button class="abtn sm" data-proof="${esc(b.payment_proof_url)}">Reçu</button>` : "";
-      const payRef = b.payment_reference
-        ? `<span class="pay-ref" title="Référence de paiement">${esc(b.payment_reference)}</span>`
-        : (receipt ? "" : '<span style="color:var(--c-gray-400)">—</span>');
+      const st = stateOf(b);
+      const isReconciled = (st === "echoue" || st === "abandon") && reconciled.has(b.id);
+      const canRelance = view === "active" && (st === "echoue" || st === "abandon") && !isReconciled;
+      let action: string;
+      if (canRelance) {
+        const msg = encodeURIComponent(relanceMsg(b));
+        const wa = digits(b.phone) ? `<a class="rbtn wa" data-track target="_blank" rel="noopener" href="https://wa.me/${digits(b.phone)}?text=${msg}">${svgWa}Relancer</a>` : "";
+        const mail = b.email ? `<a class="rbtn mail" data-track target="_blank" rel="noopener" href="mailto:${encodeURIComponent(b.email)}?subject=${encodeURIComponent("Votre inscription chez Bweb Agence")}&body=${msg}">${svgMail}</a>` : "";
+        action = `<div class="rz-relance">${wa}${mail || (wa ? "" : "—")}</div>`;
+      } else if (isReconciled) {
+        // Tentative déjà réglée par une autre tentative du même client → pas de relance.
+        action = `<span class="tag-pill ok" title="Ce client a payé via une autre tentative — ne pas relancer">✓ Déjà réglé</span>`;
+      } else {
+        const receipt = b.payment_proof_url ? `<button class="abtn sm" data-proof="${esc(b.payment_proof_url)}">Reçu</button>` : "";
+        const payRef = b.payment_reference ? `<span class="pay-ref" title="Référence de paiement">${esc(b.payment_reference)}</span>` : (receipt ? "" : '<span style="color:var(--c-gray-400)">—</span>');
+        action = `<div class="row-actions">${payRef}${receipt}</div>`;
+      }
       return `<tr>
-        <td><strong>${esc(b.full_name)}</strong><br><span class="mono-ref">${esc(b.reference)}</span> <span style="color:var(--c-gray-500);font-size:.76rem">· ${esc(b.email || b.phone || "")}</span></td>
-        <td>${esc(b.sessions?.title || "")}${b.attendance_mode ? " " + attendPill[b.attendance_mode] : ""}<br><span style="color:var(--c-gray-500);font-size:.76rem">${b.quantity}× ${esc(b.ticket_types?.name || "")} · ${dshort(b.created_at)}</span></td>
+        <td><strong>${esc(b.full_name)}</strong><br><span class="mono-ref" style="font-size:.72rem">${esc(b.reference)}</span> <span style="color:var(--c-gray-500);font-size:.74rem">· ${esc(b.email || b.phone || "")}</span></td>
+        <td>${esc(b.sessions?.title || "—")}<br><span style="color:var(--c-gray-500);font-size:.74rem">${b.quantity}× ${esc(b.ticket_types?.name || "")}${b.attendance_mode ? " · " + attendPill[b.attendance_mode] : ""} · ${dshort(b.created_at)}</span></td>
         <td>${esc(methodLabel[b.payment_method] || "—")}${b.is_deposit ? ' <span class="tag-pill wait">acompte</span>' : ""}</td>
-        <td style="font-variant-numeric:tabular-nums">${fmtFCFA(due)}</td>
-        <td>${payPill[stateOf(b)] || esc(b.status)}</td>
-        <td><div class="row-actions">${payRef}${receipt}</div></td></tr>`;
-    }).join("") : `<tr><td class="empty" colspan="6">Aucune réservation.</td></tr>`;
+        <td style="text-align:right;font-family:var(--f-display);font-weight:800;font-variant-numeric:tabular-nums">${fmtFCFA(dueOf(b))}</td>
+        <td>${statePill[st] || esc(b.status)}</td>
+        <td>${action}</td></tr>`;
+    }).join("") : `<tr><td class="empty" colspan="6">${view === "archives" ? "Aucune réservation archivée." : "Aucune réservation."}</td></tr>`;
 
     rows.querySelectorAll<HTMLElement>("[data-proof]").forEach((el) => el.addEventListener("click", () => viewProof(el.dataset.proof!)));
+    rows.querySelectorAll<HTMLElement>("[data-track]").forEach((el) => el.addEventListener("click", () => toast("Relance ouverte — pensez à envoyer le message.")));
   }
 
-  function applyFilters() {
-    const q = ($("r-search").value || "").toLowerCase(); const st = $("r-status").value; const sess = $("r-session").value;
-    render(all.filter((b) =>
-      (!st || stateOf(b) === st) && (!sess || b.session_id === sess) &&
-      (!q || (b.full_name + " " + (b.email || "") + " " + b.reference + " " + (b.payment_reference || "")).toLowerCase().includes(q))));
+  function refreshAll() { renderMeta(); renderSessionDropdown(); applyFilters(); }
+
+  function exportCsv() {
+    const q = ($("r-search").value || "").toLowerCase();
+    const list = viewBookings().filter((b) => (!statusFilter || stateOf(b) === statusFilter) && (!sessionFilter || b.session_id === sessionFilter) &&
+      (!q || (b.full_name + " " + (b.email || "") + " " + b.reference).toLowerCase().includes(q)));
+    const head = ["Référence", "Réf. paiement", "Date", "Nom", "E-mail", "Téléphone", "Session", "Participation", "Tarif", "Places", "Moyen", "Montant", "État"];
+    const lines = list.map((b) => [b.reference, b.payment_reference || "", new Date(b.created_at).toISOString(), b.full_name, b.email, b.phone, b.sessions?.title, attendCsv[b.attendance_mode] || "", b.ticket_types?.name, b.quantity, methodLabel[b.payment_method] || "", dueOf(b), stateCsv[stateOf(b)] || b.status]
+      .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","));
+    const csv = [head.join(","), ...lines].join("\n");
+    const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a"); a.href = url; a.download = `reservations-${view}-bweb.csv`; a.click(); URL.revokeObjectURL(url);
   }
 
   async function load() {
     const { data } = await supabaseBrowser.from("bookings")
-      .select("*, sessions(title), ticket_types(name)").order("created_at", { ascending: false });
+      .select("*, sessions(title,starts_at,status), ticket_types(name)").order("created_at", { ascending: false });
     all = data || [];
-    applyFilters();
+    reconciled = reconciledRelanceIds(all);
+    refreshAll();
   }
 
-  function exportCsv() {
-    const list = all;
-    const stateCsv: Record<string, string> = { attente: "En attente", paye: "Confirmée", echoue: "Échoué", abandon: "Abandon", annule: "Annulée" };
-    const head = ["Référence", "Réf. paiement", "Date", "Nom", "E-mail", "Téléphone", "Session", "Participation", "Tarif", "Places", "Moyen", "Montant dû", "Payé", "Statut"];
-    const lines = list.map((b) => [b.reference, b.payment_reference || "", new Date(b.created_at).toISOString(), b.full_name, b.email, b.phone, b.sessions?.title, attendCsv[b.attendance_mode] || "", b.ticket_types?.name, b.quantity, methodLabel[b.payment_method] || "", b.amount_due, b.amount_paid, stateCsv[stateOf(b)] || b.status]
-      .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","));
-    const csv = [head.join(","), ...lines].join("\n");
-    const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
-    const a = document.createElement("a"); a.href = url; a.download = "reservations-bweb.csv"; a.click(); URL.revokeObjectURL(url);
-  }
-
+  // ---------- Événements ----------
   $("r-search").addEventListener("input", applyFilters);
-  $("r-status").addEventListener("change", applyFilters);
-  $("r-session").addEventListener("change", applyFilters);
   document.getElementById("r-export")!.addEventListener("click", exportCsv);
+
+  // Bascule Actives / Archives
+  document.querySelectorAll<HTMLElement>("[data-view]").forEach((btn) => btn.addEventListener("click", () => {
+    view = btn.dataset.view as any;
+    document.querySelectorAll("[data-view]").forEach((b) => b.classList.toggle("on", b === btn));
+    statusFilter = ""; sessionFilter = "";
+    (document.querySelector("#r-sessiondrop .lbl") as HTMLElement).textContent = "Toutes les sessions";
+    ($("r-search").value = "");
+    refreshAll();
+  }));
+
+  // Dropdown open/close + recherche interne
+  const drop = document.getElementById("r-sessiondrop")!;
+  drop.querySelector("[data-drop-toggle]")!.addEventListener("click", (e) => { e.stopPropagation(); drop.classList.toggle("open"); const s = drop.querySelector("[data-drop-search]") as HTMLInputElement; if (drop.classList.contains("open")) setTimeout(() => s.focus(), 20); });
+  drop.querySelector("[data-drop-search]")!.addEventListener("input", (e) => {
+    const q = (e.target as HTMLInputElement).value.toLowerCase();
+    drop.querySelectorAll<HTMLElement>(".cdrop-opt[data-search]").forEach((o) => { o.style.display = !q || (o.dataset.search || "").includes(q) ? "" : "none"; });
+  });
+  document.addEventListener("click", (e) => { if (!(e.target as HTMLElement).closest("#r-sessiondrop")) drop.classList.remove("open"); });
 
   (async () => {
     const { data: { session } } = await supabaseBrowser.auth.getSession(); if (!session) return;
-    const { data: ss } = await supabaseBrowser.from("sessions").select("id,title").order("starts_at", { ascending: false });
-    $("r-session").innerHTML = '<option value="">Toutes les sessions</option>' + (ss || []).map((s: any) => `<option value="${s.id}">${esc(s.title)}</option>`).join("");
     await load();
   })();
 </script>

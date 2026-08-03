@@ -42,9 +42,18 @@ async function handle(request: Request): Promise<Response> {
     .not("payment_reference", "is", null)
     .gte("created_at", since);
 
+  // Achats de pack en attente (même filet de sécurité, table pack_purchases).
+  const { data: pendPacks } = await admin
+    .from("pack_purchases")
+    .select("payment_reference, payment_method")
+    .eq("status", "pending")
+    .in("payment_method", ["money_fusion", "paystack"])
+    .not("payment_reference", "is", null)
+    .gte("created_at", since);
+
   // Référence unique → passerelle à interroger.
   const byRef = new Map<string, string>();
-  for (const b of pend || []) {
+  for (const b of [...(pend || []), ...(pendPacks || [])]) {
     const ref = (b as any).payment_reference;
     if (ref && !byRef.has(ref)) byRef.set(ref, (b as any).payment_method === "paystack" ? "paystack" : "money_fusion");
   }

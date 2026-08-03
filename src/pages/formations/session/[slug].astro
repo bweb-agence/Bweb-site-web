@@ -4,7 +4,7 @@ export const prerender = false;
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { supabase } from "../../../lib/supabase";
 import { site, contact } from "../../../config/site";
-import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, modeLabel, themeColorMap } from "../../../lib/format";
+import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, modeLabel, themeColorMap, cheapestTicket } from "../../../lib/format";
 import { marked } from "marked";
 import PhoneField from "../../../components/PhoneField.astro";
 import "../../../styles/formations.css";
@@ -58,7 +58,7 @@ const totalCap = tickets.reduce((s: number, t: any) => s + t.capacity, 0);
 const totalSold = tickets.reduce((s: number, t: any) => s + t.sold, 0);
 const totalRemaining = Math.max(0, totalCap - totalSold);
 const isFull = session?.status === "full" || totalRemaining <= 0;
-const cheapest = tickets.length ? tickets.reduce((a: any, t: any) => (t.price < a.price ? t : a)) : null;
+const cheapest = cheapestTicket(tickets as any); // le moins cher ENCORE DISPONIBLE
 const minPrice = cheapest ? cheapest.price : null;
 const minCompareAt = cheapest && cheapest.compare_at_price && cheapest.compare_at_price > cheapest.price ? cheapest.compare_at_price : null;
 const minDiscountPct = minCompareAt && minPrice ? Math.round((1 - minPrice / minCompareAt) * 100) : 0;
@@ -143,6 +143,30 @@ if (session?.formation_id) {
 const reviewCount = reviews.length;
 const reviewAvg = reviewCount ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviewCount) * 10) / 10 : 0;
 const stars = (n: number) => "★★★★★".slice(0, Math.round(n)) + "☆☆☆☆☆".slice(0, 5 - Math.round(n));
+
+// Cette formation fait-elle partie d'un pack de parcours actif ? (bannière d'offre)
+let packOffer: { slug: string; title: string; price: number } | null = null;
+if (session?.formation_id) {
+  const { data: pi } = await supabase
+    .from("pack_items")
+    .select("packs!inner(slug, title, price, active)")
+    .eq("formation_id", session.formation_id)
+    .eq("packs.active", true)
+    .limit(1);
+  const pk: any = pi?.[0]?.packs;
+  if (pk) packOffer = { slug: pk.slug, title: pk.title, price: pk.price };
+}
+// Order bump « passer au pack » : supplément = prix du pack − prix (le plus bas) de cette formation.
+const packBase = tickets.length ? Math.min(...tickets.map((t: any) => t.price)) : 0;
+const packExtra = packOffer ? Math.max(0, packOffer.price - packBase) : 0;
+let packItemCount = 0;
+if (packOffer) {
+  const { count } = await supabase
+    .from("pack_items")
+    .select("id, packs!inner(slug)", { count: "exact", head: true })
+    .eq("packs.slug", packOffer.slug);
+  packItemCount = count ?? 0;
+}
 
 // Order bumps : offres complémentaires proposées pendant la réservation (max 2).
 let orderBumps: {
@@ -390,6 +414,20 @@ const sessCrumbs = session
 
           <!-- ===== Contenu (col. gauche, ligne 2) ===== -->
           <div class="sess-main">
+            {packOffer && (
+              <a class="fmp-packbanner" href={`/pack/${packOffer.slug}`}>
+                <div class="fmp-packbanner__txt">
+                  <span class="eb">Offre parcours</span>
+                  <strong>Cette formation fait partie d'un pack</strong>
+                  <span class="sub">Prenez tout le parcours en une fois — une place réservée à chaque formation, dates ou pas dates.</span>
+                </div>
+                <div class="fmp-packbanner__cta">
+                  <span class="p">{packOffer.price.toLocaleString("fr-FR")} <small>F CFA</small></span>
+                  <span class="go">Voir le pack →</span>
+                </div>
+              </a>
+            )}
+
             {learnItems.length > 0 && (
               <div class="learn-box">
                 <h2>Ce que vous apprendrez</h2>
@@ -716,7 +754,7 @@ const sessCrumbs = session
                   const bi = badgeInfo(t.badge, t.sales_end);
                   const promo = ttPromo(t);
                   return (
-                    <div class={`ticket ${featured ? "featured" : ""}`} data-ticket data-id={t.id} data-name={t.name} data-price={t.price} data-remaining={remaining}>
+                    <div class={`ticket ${featured ? "featured" : ""} ${remaining <= 0 ? "is-soldout" : ""}`} data-ticket data-id={t.id} data-name={t.name} data-price={t.price} data-remaining={remaining}>
                       {featured && <span class="t-ribbon"><svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.7L12 17.3 5.8 20.8l1.6-6.7L2.2 8.9l6.9-.6z"/></svg>Le plus choisi</span>}
                       <div class="t-row">
                         <div class="t-info">
@@ -739,6 +777,21 @@ const sessCrumbs = session
                   );
                 })}
               </div>
+
+              {packOffer && packExtra > 0 && (
+                <label class="rz-packup" data-pack-upgrade data-pack-slug={packOffer.slug} data-pack-price={packOffer.price} data-extra={packExtra}>
+                  <input type="checkbox" class="pku-check" aria-label="Passer au parcours complet" />
+                  <span class="pku-body">
+                    <span class="pku-top">
+                      <span class="pku-eb">★ Meilleure offre — parcours complet</span>
+                      <span class="pku-plus">+{packExtra.toLocaleString("fr-FR")} F CFA</span>
+                    </span>
+                    <span class="pku-title">Prenez les {packItemCount} formations du parcours</span>
+                    <span class="pku-sub">Pour {packExtra.toLocaleString("fr-FR")} F CFA de plus, réservez une place à chacune des {packItemCount} formations — vous êtes inscrit·e automatiquement dès qu'une date s'ouvre.</span>
+                  </span>
+                  <span class="pku-cta" aria-hidden="true">Choisir</span>
+                </label>
+              )}
 
               {orderBumps.length > 0 && (
                 <div class="rz-bumps" id="rz-bumps">
