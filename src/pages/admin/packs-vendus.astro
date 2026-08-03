@@ -1,0 +1,168 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import Button from "../../components/starwind/button/Button.astro";
+
+// Tuiles de stats — icônes statiques, valeurs remplies côté client.
+const stats = [
+  { key: "vendus", label: "Packs payés", accent: "green", icon: '<path d="M20 6 9 17l-5-5"/>' },
+  { key: "ca", label: "CA packs", accent: "blue", icon: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/>' },
+  { key: "attente", label: "En attente", accent: "amber", icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
+  { key: "relance", label: "À relancer", accent: "violet", icon: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>' },
+];
+---
+
+<AdminLayout title="Packs vendus" active="packs-vendus">
+  <div class="sw space-y-4">
+    <div class="rz-viewbar">
+      <div class="vb-sub">Achats de parcours (packs de places prépayées)</div>
+      <div class="rz-viewright">
+        <a class="abtn" href="/admin/reservations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;vertical-align:-3px"><path d="M4 6h16v12H4z"/><path d="M4 10h16"/></svg> Réservations (billets)</a>
+      </div>
+    </div>
+
+    <section class="rz-stats">
+      {stats.map((s) => (
+        <div class="rz-stat">
+          <span class={`sic ${s.accent}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" set:html={s.icon} /></span>
+          <div><div class="k">{s.label}</div><div class="v" data-stat={s.key}>—</div><div class="ssub" data-statsub={s.key}></div></div>
+        </div>
+      ))}
+    </section>
+
+    <div class="rz-callout" data-callout hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span data-callout-text></span>
+      <a class="cta" href="/admin/campagnes">Campagne de relance →</a>
+    </div>
+
+    <div class="rz-toolbar">
+      <input class="admin-search" id="p-search" type="search" placeholder="Nom, e-mail, parcours, réf…" />
+      <div class="rz-seg" data-seg></div>
+      <span style="flex:1"></span>
+      <Button id="p-export" variant="outline" size="sm">⬇ Exporter CSV</Button>
+    </div>
+
+    <div class="dash-card">
+      <div style="overflow-x:auto">
+        <table class="admin-table" style="min-width:820px">
+          <thead><tr><th>Client</th><th>Parcours</th><th>Moyen</th><th style="text-align:right">Montant</th><th>État</th><th>Réf. / Relance</th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="6">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+  import { esc, fmtFCFA, dshort, toast } from "../../scripts/adminUtils";
+
+  const $ = (sel: string) => document.querySelector(sel) as HTMLElement;
+  let all: any[] = [];
+  let statusFilter = "";
+  let search = "";
+
+  const methodLabel: Record<string, string> = { wave: "Wave", orange_money: "Orange Money", mtn_momo: "MTN MoMo", especes: "Espèces", money_fusion: "Money Fusion", paystack: "Paystack" };
+  const statePill: Record<string, string> = {
+    paye: '<span class="tag-pill ok">Payé</span>', attente: '<span class="tag-pill wait">En attente</span>',
+    echoue: '<span class="tag-pill fail">Échoué</span>', abandon: '<span class="tag-pill abandon">Abandon</span>',
+    annule: '<span class="tag-pill draft">Annulé</span>',
+  };
+  const stateLabel: Record<string, string> = { paye: "Payé", attente: "En attente", echoue: "Échoué", abandon: "Abandon", annule: "Annulé" };
+  const stateOf = (p: any): string => p.status === "confirmed" ? "paye" : p.status === "cancelled" ? "annule" : (p.payment_status || "attente");
+  const paidOf = (p: any) => Number(p.amount_paid) || Number(p.amount_due) || 0;
+  const firstName = (n: string) => (n || "").trim().split(/\s+/)[0] || "";
+  const digits = (s: string | null) => (s || "").replace(/\D/g, "");
+  const fCount = (p: any) => (p.pack_entitlements || []).length;
+
+  async function load() {
+    const { data, error } = await supabaseBrowser.from("pack_purchases")
+      .select("id,reference,full_name,email,phone,status,payment_status,amount_due,amount_paid,payment_method,registered_by,created_at,packs(title,slug),pack_entitlements(formation_id)")
+      .order("created_at", { ascending: false });
+    if (error) { $("[data-rows]").innerHTML = `<tr><td colspan="6" class="empty">Lecture impossible (droits ?).</td></tr>`; return; }
+    all = data || [];
+    renderMeta();
+    renderRows();
+  }
+
+  function renderMeta() {
+    const c: Record<string, number> = { paye: 0, attente: 0, echoue: 0, abandon: 0, annule: 0 };
+    all.forEach((p) => { c[stateOf(p)] = (c[stateOf(p)] || 0) + 1; });
+    const ca = all.filter((p) => stateOf(p) === "paye").reduce((a, p) => a + paidOf(p), 0);
+    const relanceItems = all.filter((p) => ["echoue", "abandon"].includes(stateOf(p)));
+    const recoverable = relanceItems.reduce((a, p) => a + (Number(p.amount_due) || 0), 0);
+    const attenteMontant = all.filter((p) => stateOf(p) === "attente").reduce((a, p) => a + (Number(p.amount_due) || 0), 0);
+
+    const setStat = (k: string, v: string, sub: string) => {
+      const el = document.querySelector(`[data-stat="${k}"]`); if (el) el.textContent = v;
+      const s = document.querySelector(`[data-statsub="${k}"]`); if (s) s.innerHTML = sub;
+    };
+    setStat("vendus", String(c.paye), "parcours confirmés");
+    setStat("ca", fmtFCFA(ca), "encaissé");
+    setStat("attente", String(c.attente), attenteMontant ? fmtFCFA(attenteMontant) + " potentiels" : "aucun");
+    setStat("relance", String(relanceItems.length), relanceItems.length ? fmtFCFA(recoverable) + " récupérables" : "rien à relancer");
+
+    const segs: [string, string, number][] = [["", "Tous", all.length], ["paye", "Payés", c.paye], ["attente", "Attente", c.attente], ["echoue", "Échoués", c.echoue], ["abandon", "Abandons", c.abandon]];
+    const segBox = $("[data-seg]");
+    segBox.innerHTML = segs.map(([k, lbl, n]) => `<button data-seg-btn="${k}" class="${statusFilter === k ? "on" : ""}">${lbl} <span class="c">${n}</span></button>`).join("");
+    segBox.querySelectorAll<HTMLElement>("[data-seg-btn]").forEach((btn) => btn.addEventListener("click", () => { statusFilter = btn.dataset.segBtn!; renderMeta(); renderRows(); }));
+
+    const co = $("[data-callout]");
+    if (relanceItems.length > 0) { co.hidden = false; ($("[data-callout-text]")).textContent = `${relanceItems.length} achat(s) de pack échoué(s) ou abandonné(s) — relancez d'un clic.`; }
+    else co.hidden = true;
+  }
+
+  function relanceMsg(p: any) {
+    const t = p.packs?.title || "un parcours";
+    return `Bonjour ${firstName(p.full_name)} 👋 Vous aviez commencé l'achat du parcours « ${t} » chez Bweb Agence sans finaliser le paiement — votre place est encore disponible. Souhaitez-vous confirmer ?`;
+  }
+
+  function renderRows() {
+    const q = search.trim().toLowerCase();
+    const rows = all.filter((p) => {
+      if (statusFilter && stateOf(p) !== statusFilter) return false;
+      if (!q) return true;
+      return ((p.full_name || "") + " " + (p.email || "") + " " + (p.packs?.title || "") + " " + (p.reference || "")).toLowerCase().includes(q);
+    });
+    const tb = $("[data-rows]");
+    if (!rows.length) { tb.innerHTML = `<tr><td colspan="6" class="empty">Aucun achat de pack.</td></tr>`; return; }
+    const svgWa = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5-1.4A10 10 0 1 0 12 2z"/></svg>';
+    const svgMail = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
+    tb.innerHTML = rows.map((p) => {
+      const st = stateOf(p);
+      const relanceable = ["attente", "echoue", "abandon"].includes(st);
+      const wa = relanceable && digits(p.phone) ? `<a class="ic wa" title="Relancer sur WhatsApp" target="_blank" rel="noopener" href="https://wa.me/${digits(p.phone)}?text=${encodeURIComponent(relanceMsg(p))}">${svgWa}</a>` : "";
+      const mail = relanceable && p.email ? `<a class="ic" title="Relancer par e-mail" href="mailto:${encodeURIComponent(p.email)}?subject=${encodeURIComponent("Votre parcours chez Bweb Agence")}&body=${encodeURIComponent(relanceMsg(p))}">${svgMail}</a>` : "";
+      const by = p.registered_by ? `<span style="color:var(--c-gray-500);font-size:.72rem" title="Saisi manuellement">· ${esc(p.registered_by)}</span>` : "";
+      return `<tr>
+        <td><strong>${esc(p.full_name || "—")}</strong><br><span style="color:var(--c-gray-500);font-size:.74rem">${esc(p.email || "")}${p.phone ? " · " + esc(p.phone) : ""}</span></td>
+        <td>${esc(p.packs?.title || "Parcours")}<br><span style="color:var(--c-gray-500);font-size:.74rem">${fCount(p)} formation(s)</span></td>
+        <td>${methodLabel[p.payment_method] || (p.payment_method ? esc(p.payment_method) : "—")}</td>
+        <td style="text-align:right;font-family:var(--f-display);font-weight:800;font-variant-numeric:tabular-nums">${fmtFCFA(paidOf(p))}</td>
+        <td>${statePill[st] || esc(p.status)}</td>
+        <td><span class="mono-ref" style="font-size:.72rem">${esc(p.reference || "")}</span> <span style="color:var(--c-gray-500);font-size:.7rem">${dshort(p.created_at)}</span> ${by}<span style="float:right;display:inline-flex;gap:6px">${wa}${mail}</span></td>
+      </tr>`;
+    }).join("");
+  }
+
+  document.getElementById("p-search")?.addEventListener("input", (e) => { search = (e.target as HTMLInputElement).value; renderRows(); });
+
+  document.getElementById("p-export")?.addEventListener("click", () => {
+    const q = search.trim().toLowerCase();
+    const rows = all.filter((p) => (!statusFilter || stateOf(p) === statusFilter) && (!q || ((p.full_name || "") + " " + (p.email || "") + " " + (p.packs?.title || "") + " " + (p.reference || "")).toLowerCase().includes(q)));
+    if (!rows.length) { toast("Rien à exporter.", "err"); return; }
+    const head = ["Reference", "Client", "Email", "Telephone", "Parcours", "Formations", "Moyen", "Montant", "Etat", "Saisi_par", "Date"];
+    const esc2 = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = rows.map((p) => [p.reference, p.full_name, p.email, p.phone, p.packs?.title, fCount(p), methodLabel[p.payment_method] || p.payment_method || "", paidOf(p), stateLabel[stateOf(p)] || "", p.registered_by || "", new Date(p.created_at).toISOString()].map(esc2).join(","));
+    const csv = "﻿" + [head.join(","), ...lines].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a"); a.href = url; a.download = `packs-vendus-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  (async () => {
+    const { data: { session } } = await supabaseBrowser.auth.getSession(); if (!session) return;
+    await load();
+  })();
+</script>
