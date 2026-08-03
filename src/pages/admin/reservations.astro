@@ -78,35 +78,16 @@ const stats = [
       <button class="icon-btn" id="mb-close" aria-label="Fermer">✕</button>
     </div>
     <div class="a-drawer-body">
-      <p class="hint">Paiement encaissé directement (Mobile Money / espèces). La place est réservée immédiatement et le billet part par e-mail au participant.</p>
-      <div class="a-field"><label for="mb-session">Session *</label><select class="a-input" id="mb-session"><option value="">Chargement…</option></select></div>
-      <div class="a-field"><label for="mb-ticket">Tarif *</label><select class="a-input" id="mb-ticket"><option value="">—</option></select></div>
-      <div class="a-field" id="mb-attend-wrap" hidden><label>Participation *</label>
-        <div class="mb-seg" id="mb-attend"><button type="button" data-att="presentiel" class="on">Présentiel</button><button type="button" data-att="en_ligne">En ligne (Zoom)</button></div>
-      </div>
-      <div class="a-grid2">
-        <div class="a-field"><label for="mb-name">Nom du participant *</label><input class="a-input" id="mb-name" placeholder="Ex. Awa Koné" /></div>
-        <div class="a-field"><label for="mb-qty">Quantité *</label><input class="a-input" id="mb-qty" type="number" min="1" max="20" value="1" /></div>
-      </div>
-      <div class="a-grid2">
-        <div class="a-field"><label for="mb-email">E-mail * <span style="color:var(--c-gray-500);font-weight:400">(pour le billet)</span></label><input class="a-input" id="mb-email" type="email" placeholder="vous@exemple.com" /></div>
-        <div class="a-field"><label for="mb-phone">Téléphone</label><input class="a-input" id="mb-phone" type="tel" placeholder="07 00 00 00 00" /></div>
-      </div>
-      <div class="a-field"><label>Moyen de paiement *</label>
-        <div class="mb-seg wrap" id="mb-method">
-          <button type="button" data-m="wave" class="on">Wave</button>
-          <button type="button" data-m="orange_money">Orange Money</button>
-          <button type="button" data-m="mtn_momo">MTN MoMo</button>
-          <button type="button" data-m="especes">Espèces</button>
-        </div>
-      </div>
-      <div class="mb-total">Total encaissé&nbsp;: <b data-mb-total>—</b></div>
+      <p class="hint">Paiement encaissé directement (Mobile Money / espèces). Chaque ligne crée une réservation confirmée et envoie le billet par e-mail au participant. Ajoutez autant de lignes que de réservations.</p>
+      <div id="mb-lines"></div>
+      <button type="button" class="abtn mb-addline" id="mb-addline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;vertical-align:-3px"><path d="M12 5v14M5 12h14"/></svg> Ajouter une réservation</button>
+      <div class="mb-total">Total encaissé&nbsp;: <b data-mb-total>0 F CFA</b></div>
       <p class="mb-msg" id="mb-msg" hidden></p>
     </div>
     <div class="a-drawer-foot">
       <span class="grow"></span>
       <button class="abtn" id="mb-cancel">Annuler</button>
-      <button class="abtn primary" id="mb-save">Enregistrer + envoyer le billet</button>
+      <button class="abtn primary" id="mb-save">Enregistrer + envoyer les billets</button>
     </div>
   </aside>
 </AdminLayout>
@@ -118,9 +99,19 @@ const stats = [
   .mb-seg.wrap { flex-wrap: wrap; }
   .mb-seg button { flex: 1; min-width: 84px; border: 1px solid var(--c-border); background: #fff; border-radius: 10px; padding: 9px; font: inherit; font-size: .84rem; font-weight: 700; color: var(--c-gray-600); cursor: pointer; }
   .mb-seg button.on { border-color: var(--c-blue); background: rgba(31,108,237,.08); color: var(--c-blue-dark); }
-  .mb-total { font-size: .9rem; color: var(--c-gray-700); background: var(--c-gray-100); border-radius: 10px; padding: 10px 12px; }
+  .mb-total { font-size: .9rem; color: var(--c-gray-700); background: var(--c-gray-100); border-radius: 10px; padding: 10px 12px; margin-top: 12px; }
   .mb-total b { font-family: var(--f-display); font-weight: 800; }
-  .mb-msg { margin: 0; font-size: .84rem; font-weight: 700; }
+  .mb-msg { margin: 8px 0 0; font-size: .84rem; font-weight: 700; }
+  /* Lignes de réservation (multi) */
+  #mb-lines { display: flex; flex-direction: column; gap: 14px; margin-bottom: 12px; }
+  .mb-line { border: 1px solid var(--c-border); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px; background: var(--surface-2, #f8faff); }
+  .mb-line-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .mb-type { max-width: 260px; }
+  .mb-line-del { border: 0; background: transparent; color: var(--c-gray-500); font-size: 1rem; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+  .mb-line-del:hover { background: var(--c-danger-bg); color: var(--c-danger); }
+  .mb-line-total { font-size: .82rem; font-weight: 700; color: var(--c-gray-600); text-align: right; }
+  .mb-addline { width: 100%; justify-content: center; border-style: dashed; }
+  .mb-line .a-field label { font-size: .76rem; }
   .mb-msg.err { color: var(--c-danger); }
   @media (max-width: 560px) { .a-grid2 { grid-template-columns: 1fr; } }
 </style>
@@ -321,85 +312,181 @@ const stats = [
   });
   document.addEventListener("click", (e) => { if (!(e.target as HTMLElement).closest("#r-sessiondrop")) drop.classList.remove("open"); });
 
-  // ---------- Nouvelle réservation manuelle (encaissement direct) ----------
-  const mbEl = (id: string) => document.getElementById(id) as HTMLInputElement;
+  // ---------- Nouvelle réservation manuelle (multi-lignes : tickets + packs) ----------
   const mbDrawer = document.getElementById("mb-drawer")!;
   const mbOverlay = document.getElementById("mb-overlay")!;
+  const mbLines = document.getElementById("mb-lines")!;
   let mbSessions: any[] = [];
-  let mbMethod = "wave";
-  let mbAttend = "presentiel";
+  let mbPacks: any[] = [];
+  let mbSeq = 0;
   const fmtPlain = (n: number) => (Number(n) || 0).toLocaleString("fr-FR") + " F CFA";
   const mbOpen = () => { mbDrawer.classList.add("open"); mbOverlay.classList.add("open"); document.body.style.overflow = "hidden"; };
   const mbClose = () => { mbDrawer.classList.remove("open"); mbOverlay.classList.remove("open"); document.body.style.overflow = ""; };
 
-  async function mbLoadSessions() {
-    const { data } = await supabaseBrowser.from("sessions")
-      .select("id,title,starts_at,mode,status, ticket_types(id,name,price,capacity,sold)")
-      .in("status", ["published", "full"]).gte("starts_at", new Date().toISOString())
-      .order("starts_at", { ascending: true });
-    mbSessions = data || [];
-    mbEl("mb-session").innerHTML = mbSessions.length
-      ? `<option value="">Choisir une session…</option>` + mbSessions.map((s) => `<option value="${s.id}">${esc(s.title)} · ${dshort(s.starts_at)}</option>`).join("")
-      : `<option value="">Aucune session à venir</option>`;
-    mbSyncTickets();
+  async function mbLoad() {
+    const [s, p] = await Promise.all([
+      supabaseBrowser.from("sessions").select("id,title,starts_at,mode,status, ticket_types(id,name,price,capacity,sold)").in("status", ["published", "full"]).gte("starts_at", new Date().toISOString()).order("starts_at", { ascending: true }),
+      supabaseBrowser.from("packs").select("slug,title,price,active").eq("active", true).order("title"),
+    ]);
+    mbSessions = s.data || [];
+    mbPacks = p.data || [];
   }
-  const mbSession = () => mbSessions.find((s) => s.id === mbEl("mb-session").value);
-  function mbSyncTickets() {
-    const s = mbSession();
-    const tts = ((s?.ticket_types) || []).slice().sort((a: any, b: any) => a.price - b.price);
-    mbEl("mb-ticket").innerHTML = tts.length
-      ? tts.map((t: any) => { const rem = Math.max(0, t.capacity - t.sold); return `<option value="${t.id}" data-price="${t.price}" ${rem <= 0 ? "disabled" : ""}>${esc(t.name)} — ${fmtPlain(t.price)}${rem <= 0 ? " (épuisé)" : ` · ${rem} pl.`}</option>`; }).join("")
-      : `<option value="">—</option>`;
-    document.getElementById("mb-attend-wrap")!.hidden = s?.mode !== "hybride";
-    mbSyncTotal();
+  const sessionOpts = () => mbSessions.length
+    ? `<option value="">Choisir une session…</option>` + mbSessions.map((x: any) => `<option value="${x.id}">${esc(x.title)} · ${dshort(x.starts_at)}</option>`).join("")
+    : `<option value="">Aucune session à venir</option>`;
+  const packOpts = () => mbPacks.length
+    ? `<option value="">Choisir un pack…</option>` + mbPacks.map((x: any) => `<option value="${esc(x.slug)}" data-price="${x.price}">${esc(x.title)} — ${fmtPlain(x.price)}</option>`).join("")
+    : `<option value="">Aucun pack actif</option>`;
+
+  function mbAddLine() {
+    const id = ++mbSeq;
+    const el = document.createElement("div");
+    el.className = "mb-line"; el.dataset.line = String(id);
+    el.innerHTML = `
+      <div class="mb-line-top">
+        <div class="mb-seg mb-type" data-type-seg>
+          <button type="button" data-type="formation" class="on">Formation</button>
+          <button type="button" data-type="pack">Pack</button>
+        </div>
+        <button type="button" class="mb-line-del" data-del title="Retirer cette ligne">✕</button>
+      </div>
+      <div data-block="formation">
+        <div class="a-field"><label>Session</label><select class="a-input" data-f="session">${sessionOpts()}</select></div>
+        <div class="a-grid2">
+          <div class="a-field"><label>Tarif</label><select class="a-input" data-f="ticket"><option value="">—</option></select></div>
+          <div class="a-field"><label>Quantité</label><input class="a-input" data-f="qty" type="number" min="1" max="20" value="1" /></div>
+        </div>
+      </div>
+      <div data-block="pack" hidden>
+        <div class="a-field"><label>Pack (parcours)</label><select class="a-input" data-f="pack">${packOpts()}</select></div>
+      </div>
+      <div class="a-field mb-attend-wrap" data-attend-wrap hidden><label>Participation</label>
+        <div class="mb-seg" data-f="attend"><button type="button" data-att="presentiel" class="on">Présentiel</button><button type="button" data-att="en_ligne">En ligne (Zoom)</button></div>
+      </div>
+      <div class="a-grid2">
+        <div class="a-field"><label>Nom du participant</label><input class="a-input" data-f="name" placeholder="Ex. Awa Koné" /></div>
+        <div class="a-field"><label>E-mail (billet)</label><input class="a-input" data-f="email" type="email" placeholder="vous@exemple.com" /></div>
+      </div>
+      <div class="a-field"><label>Téléphone</label><input class="a-input" data-f="phone" type="tel" placeholder="07 00 00 00 00" /></div>
+      <div class="a-field"><label>Moyen de paiement</label>
+        <div class="mb-seg wrap" data-f="method">
+          <button type="button" data-m="wave" class="on">Wave</button>
+          <button type="button" data-m="orange_money">Orange Money</button>
+          <button type="button" data-m="mtn_momo">MTN MoMo</button>
+          <button type="button" data-m="especes">Espèces</button>
+        </div>
+      </div>
+      <div class="mb-line-total" data-line-total>—</div>`;
+    mbLines.appendChild(el);
+    mbUpdDelVis(); mbSyncTotal();
+  }
+  function mbUpdDelVis() {
+    const lines = mbLines.querySelectorAll(".mb-line");
+    lines.forEach((l) => ((l.querySelector("[data-del]") as HTMLElement).style.display = lines.length > 1 ? "" : "none"));
+  }
+  const lineType = (l: Element) => (l.querySelector(".mb-type .on") as HTMLElement)?.dataset.type || "formation";
+  const lineSession = (l: Element) => mbSessions.find((s) => s.id === (l.querySelector('[data-f="session"]') as HTMLSelectElement)?.value);
+  function mbLineTotal(l: Element): number {
+    if (lineType(l) === "pack") {
+      const opt = (l.querySelector('[data-f="pack"]') as HTMLSelectElement)?.selectedOptions[0];
+      return opt ? parseInt(opt.getAttribute("data-price") || "0") : 0;
+    }
+    const opt = (l.querySelector('[data-f="ticket"]') as HTMLSelectElement)?.selectedOptions[0];
+    const price = opt ? parseInt(opt.getAttribute("data-price") || "0") : 0;
+    const qty = Math.max(1, parseInt((l.querySelector('[data-f="qty"]') as HTMLInputElement)?.value || "1"));
+    return price * qty;
   }
   function mbSyncTotal() {
-    const opt = (mbEl("mb-ticket") as unknown as HTMLSelectElement).selectedOptions[0];
-    const price = opt ? parseInt(opt.getAttribute("data-price") || "0") : 0;
-    const qty = Math.max(1, parseInt(mbEl("mb-qty").value || "1"));
-    document.querySelector("[data-mb-total]")!.textContent = fmtPlain(price * qty);
+    let sum = 0;
+    mbLines.querySelectorAll(".mb-line").forEach((l) => {
+      const t = mbLineTotal(l);
+      (l.querySelector("[data-line-total]") as HTMLElement).textContent = t ? `Sous-total : ${fmtPlain(t)}` : "—";
+      sum += t;
+    });
+    document.querySelector("[data-mb-total]")!.textContent = fmtPlain(sum);
   }
-  document.getElementById("mb-open")?.addEventListener("click", () => { mbOpen(); if (!mbSessions.length) mbLoadSessions(); });
+  function mbSyncAttend(l: Element) {
+    const wrap = l.querySelector("[data-attend-wrap]") as HTMLElement;
+    wrap.hidden = lineType(l) === "pack" ? false : lineSession(l)?.mode !== "hybride";
+  }
+  function mbSyncTickets(l: Element) {
+    const s = lineSession(l);
+    const tsel = l.querySelector('[data-f="ticket"]') as HTMLSelectElement;
+    const tts = ((s?.ticket_types) || []).slice().sort((a: any, b: any) => a.price - b.price);
+    tsel.innerHTML = tts.length ? tts.map((t: any) => { const rem = Math.max(0, t.capacity - t.sold); return `<option value="${t.id}" data-price="${t.price}" ${rem <= 0 ? "disabled" : ""}>${esc(t.name)} — ${fmtPlain(t.price)}${rem <= 0 ? " (épuisé)" : ` · ${rem} pl.`}</option>`; }).join("") : `<option value="">—</option>`;
+    mbSyncAttend(l);
+  }
+
+  mbLines.addEventListener("click", (e) => {
+    const t = e.target as HTMLElement; const line = t.closest(".mb-line"); if (!line) return;
+    if (t.closest("[data-del]")) { if (mbLines.querySelectorAll(".mb-line").length > 1) { line.remove(); mbUpdDelVis(); mbSyncTotal(); } return; }
+    const typeBtn = t.closest("[data-type]") as HTMLElement | null;
+    if (typeBtn) {
+      line.querySelectorAll(".mb-type button").forEach((b) => b.classList.remove("on")); typeBtn.classList.add("on");
+      (line.querySelector('[data-block="formation"]') as HTMLElement).hidden = typeBtn.dataset.type !== "formation";
+      (line.querySelector('[data-block="pack"]') as HTMLElement).hidden = typeBtn.dataset.type !== "pack";
+      mbSyncAttend(line); mbSyncTotal(); return;
+    }
+    const mBtn = t.closest('[data-f="method"] [data-m]') as HTMLElement | null;
+    if (mBtn) { line.querySelectorAll('[data-f="method"] button').forEach((b) => b.classList.remove("on")); mBtn.classList.add("on"); return; }
+    const aBtn = t.closest('[data-f="attend"] [data-att]') as HTMLElement | null;
+    if (aBtn) { line.querySelectorAll('[data-f="attend"] button').forEach((b) => b.classList.remove("on")); aBtn.classList.add("on"); return; }
+  });
+  mbLines.addEventListener("change", (e) => {
+    const t = e.target as HTMLElement; const line = t.closest(".mb-line"); if (!line) return;
+    if (t.matches('[data-f="session"]')) mbSyncTickets(line);
+    mbSyncTotal();
+  });
+  mbLines.addEventListener("input", (e) => { if ((e.target as HTMLElement).matches('[data-f="qty"]')) mbSyncTotal(); });
+
+  document.getElementById("mb-open")?.addEventListener("click", async () => { mbOpen(); if (!mbSessions.length && !mbPacks.length) await mbLoad(); if (!mbLines.children.length) mbAddLine(); });
   document.getElementById("mb-close")?.addEventListener("click", mbClose);
   document.getElementById("mb-cancel")?.addEventListener("click", mbClose);
   mbOverlay.addEventListener("click", mbClose);
-  mbEl("mb-session").addEventListener("change", mbSyncTickets);
-  mbEl("mb-ticket").addEventListener("change", mbSyncTotal);
-  mbEl("mb-qty").addEventListener("input", mbSyncTotal);
-  document.querySelectorAll<HTMLElement>("#mb-method button").forEach((b) => b.addEventListener("click", () => {
-    document.querySelectorAll("#mb-method button").forEach((x) => x.classList.remove("on")); b.classList.add("on"); mbMethod = b.dataset.m || "wave";
-  }));
-  document.querySelectorAll<HTMLElement>("#mb-attend button").forEach((b) => b.addEventListener("click", () => {
-    document.querySelectorAll("#mb-attend button").forEach((x) => x.classList.remove("on")); b.classList.add("on"); mbAttend = b.dataset.att || "presentiel";
-  }));
+  document.getElementById("mb-addline")?.addEventListener("click", mbAddLine);
+
   document.getElementById("mb-save")?.addEventListener("click", async () => {
-    const msg = document.getElementById("mb-msg")!; const show = (t: string) => { msg.textContent = t; msg.hidden = false; msg.className = "mb-msg err"; };
-    const ticket = mbEl("mb-ticket").value;
-    const name = mbEl("mb-name").value.trim();
-    const email = mbEl("mb-email").value.trim();
-    const phone = mbEl("mb-phone").value.trim();
-    const qty = Math.max(1, parseInt(mbEl("mb-qty").value || "1"));
-    if (!ticket) return show("Choisissez une session et un tarif.");
-    if (name.length < 2) return show("Nom du participant requis.");
-    if (!/.+@.+\..+/.test(email)) return show("E-mail valide requis (pour envoyer le billet).");
-    const s = mbSession();
-    const attendance = s?.mode === "hybride" ? mbAttend : (s?.mode === "en_ligne" ? "en_ligne" : "presentiel");
+    const msg = document.getElementById("mb-msg")!; const show = (txt: string) => { msg.textContent = txt; msg.hidden = false; msg.className = "mb-msg err"; };
+    const lines = [...mbLines.querySelectorAll(".mb-line")];
+    if (!lines.length) return show("Ajoutez au moins une réservation.");
+    const jobs: any[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i]; const type = lineType(l);
+      const name = (l.querySelector('[data-f="name"]') as HTMLInputElement).value.trim();
+      const email = (l.querySelector('[data-f="email"]') as HTMLInputElement).value.trim();
+      const phone = (l.querySelector('[data-f="phone"]') as HTMLInputElement).value.trim();
+      const method = (l.querySelector('[data-f="method"] .on') as HTMLElement)?.dataset.m || "wave";
+      if (name.length < 2) return show(`Ligne ${i + 1} : nom du participant requis.`);
+      if (!/.+@.+\..+/.test(email)) return show(`Ligne ${i + 1} : e-mail valide requis (pour le billet).`);
+      if (type === "pack") {
+        const slug = (l.querySelector('[data-f="pack"]') as HTMLSelectElement).value;
+        if (!slug) return show(`Ligne ${i + 1} : choisissez un pack.`);
+        const attend = (l.querySelector('[data-f="attend"] .on') as HTMLElement)?.dataset.att || "presentiel";
+        jobs.push({ url: "/api/manual-pack", body: { slug, full_name: name, email, phone, payment_method: method, attendance_mode: attend } });
+      } else {
+        const ticket = (l.querySelector('[data-f="ticket"]') as HTMLSelectElement).value;
+        if (!ticket) return show(`Ligne ${i + 1} : choisissez une session et un tarif.`);
+        const qty = Math.max(1, parseInt((l.querySelector('[data-f="qty"]') as HTMLInputElement).value || "1"));
+        const s = lineSession(l);
+        const attend = s?.mode === "hybride" ? ((l.querySelector('[data-f="attend"] .on') as HTMLElement)?.dataset.att || "presentiel") : (s?.mode === "en_ligne" ? "en_ligne" : "presentiel");
+        jobs.push({ url: "/api/manual-booking", body: { ticket_type_id: ticket, quantity: qty, full_name: name, email, phone, payment_method: method, attendance_mode: attend } });
+      }
+    }
     const btn = document.getElementById("mb-save")!; btn.setAttribute("disabled", "true"); btn.textContent = "Enregistrement…"; msg.hidden = true;
-    try {
-      const { data: { session } } = await supabaseBrowser.auth.getSession();
-      const res = await fetch("/api/manual-booking", {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ ticket_type_id: ticket, quantity: qty, full_name: name, email, phone, payment_method: mbMethod, attendance_mode: attendance }),
-      });
-      const j = await res.json();
-      btn.removeAttribute("disabled"); btn.textContent = "Enregistrer + envoyer le billet";
-      if (!j?.ok) { show(j?.message || (j?.error === "sold_out" ? "Plus assez de places." : "Enregistrement impossible.")); return; }
-      toast(`Réservation ${j.reference} enregistrée — billet envoyé. ✓`);
-      mbClose();
-      mbEl("mb-name").value = ""; mbEl("mb-email").value = ""; mbEl("mb-phone").value = ""; mbEl("mb-qty").value = "1";
-      await mbLoadSessions();
-      await load();
-    } catch { btn.removeAttribute("disabled"); btn.textContent = "Enregistrer + envoyer le billet"; show("Erreur réseau. Réessayez."); }
+    const { data: { session } } = await supabaseBrowser.auth.getSession(); const tok = session?.access_token;
+    let ok = 0; const fails: string[] = [];
+    for (let i = 0; i < jobs.length; i++) {
+      try {
+        const r = await fetch(jobs[i].url, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` }, body: JSON.stringify(jobs[i].body) });
+        const j = await r.json();
+        if (j?.ok) ok++; else fails.push(`Ligne ${i + 1} : ${j?.message || j?.error || "échec"}`);
+      } catch { fails.push(`Ligne ${i + 1} : erreur réseau`); }
+    }
+    btn.removeAttribute("disabled"); btn.textContent = "Enregistrer + envoyer les billets";
+    if (ok > 0) toast(`${ok} réservation(s) enregistrée(s) — billet(s) envoyé(s). ✓`);
+    if (fails.length) show(fails.join(" · "));
+    else { mbClose(); mbLines.innerHTML = ""; }
+    await mbLoad(); await load();
   });
 
   (async () => {
