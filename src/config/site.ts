@@ -113,7 +113,6 @@ export const mainNav: NavLink[] = [
   { label: "Accueil", href: "/" },
   { label: "À propos", href: "/a-propos" },
   { label: "Services", href: "/services", children: services },
-  { label: "Réalisations", href: "/realisations" },
   { label: "Formations", href: "/formations" },
   { label: "Blog", href: "/blog" },
 ];
@@ -128,7 +127,6 @@ export const footerNav = {
   navigation: [
     { label: "À propos", href: "/a-propos" },
     { label: "Services", href: "/services" },
-    { label: "Réalisations", href: "/realisations" },
     { label: "Formations", href: "/formations" },
     { label: "Blog", href: "/blog" },
     { label: "Méthodologie", href: "/methodologie" },
