@@ -78,9 +78,46 @@ const stats = [
       <button class="icon-btn" id="mb-close" aria-label="Fermer">✕</button>
     </div>
     <div class="a-drawer-body">
-      <p class="hint">Paiement encaissé directement (Mobile Money / espèces). Chaque ligne crée une réservation confirmée et envoie le billet par e-mail au participant. Ajoutez autant de lignes que de réservations.</p>
-      <div id="mb-lines"></div>
-      <button type="button" class="abtn mb-addline" id="mb-addline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;vertical-align:-3px"><path d="M12 5v14M5 12h14"/></svg> Ajouter une réservation</button>
+      <p class="hint">Paiement encaissé directement (Mobile Money / espèces). Choisissez le client, cochez les sessions (et packs) qu'il prend — un billet part par session, un « pass » par pack.</p>
+
+      <div class="mb-block">
+        <div class="mb-block-h">Client</div>
+        <div class="a-field mb-client">
+          <input class="a-input" id="mb-clientsearch" type="text" autocomplete="off" placeholder="Rechercher un client existant… (ou laisser vide pour un nouveau)" />
+          <div class="mb-client-drop" id="mb-client-drop" hidden></div>
+        </div>
+        <div class="a-grid2">
+          <div class="a-field"><label>Nom du client *</label><input class="a-input" id="mb-name" placeholder="Ex. Awa Koné" /></div>
+          <div class="a-field"><label>E-mail * <span style="color:var(--c-gray-500);font-weight:400">(billet)</span></label><input class="a-input" id="mb-email" type="email" placeholder="vous@exemple.com" /></div>
+        </div>
+        <div class="a-grid2">
+          <div class="a-field"><label>Téléphone</label><input class="a-input" id="mb-phone" type="tel" placeholder="07 00 00 00 00" /></div>
+          <div class="a-field"><label>Participation <span style="color:var(--c-gray-500);font-weight:400">(si en ligne possible)</span></label>
+            <div class="mb-seg" id="mb-attend"><button type="button" data-att="presentiel" class="on">Présentiel</button><button type="button" data-att="en_ligne">En ligne</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-block">
+        <div class="mb-block-h">Sessions <span>— cochez celles à réserver</span></div>
+        <div id="mb-sessions-list"><div class="hint" style="padding:4px">Chargement…</div></div>
+      </div>
+
+      <div class="mb-block" id="mb-packs-block" hidden>
+        <div class="mb-block-h">Packs de parcours <span>— optionnel</span></div>
+        <div id="mb-packs-list"></div>
+      </div>
+
+      <div class="mb-block">
+        <div class="mb-block-h">Moyen de paiement</div>
+        <div class="mb-seg wrap" id="mb-method">
+          <button type="button" data-m="wave" class="on">Wave</button>
+          <button type="button" data-m="orange_money">Orange Money</button>
+          <button type="button" data-m="mtn_momo">MTN MoMo</button>
+          <button type="button" data-m="especes">Espèces</button>
+        </div>
+      </div>
+
       <div class="mb-total">Total encaissé&nbsp;: <b data-mb-total>0 F CFA</b></div>
       <p class="mb-msg" id="mb-msg" hidden></p>
     </div>
@@ -102,16 +139,22 @@ const stats = [
   .mb-total { font-size: .9rem; color: var(--c-gray-700); background: var(--c-gray-100); border-radius: 10px; padding: 10px 12px; margin-top: 12px; }
   .mb-total b { font-family: var(--f-display); font-weight: 800; }
   .mb-msg { margin: 8px 0 0; font-size: .84rem; font-weight: 700; }
-  /* Lignes de réservation (multi) */
-  #mb-lines { display: flex; flex-direction: column; gap: 14px; margin-bottom: 12px; }
-  .mb-line { border: 1px solid var(--c-border); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px; background: var(--surface-2, #f8faff); }
-  .mb-line-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .mb-type { max-width: 260px; }
-  .mb-line-del { border: 0; background: transparent; color: var(--c-gray-500); font-size: 1rem; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
-  .mb-line-del:hover { background: var(--c-danger-bg); color: var(--c-danger); }
-  .mb-line-total { font-size: .82rem; font-weight: 700; color: var(--c-gray-600); text-align: right; }
-  .mb-addline { width: 100%; justify-content: center; border-style: dashed; }
-  .mb-line .a-field label { font-size: .76rem; }
+  /* Blocs (client / sessions / packs / paiement) */
+  .mb-block { border: 1px solid var(--c-border); border-radius: 14px; padding: 14px; margin-bottom: 14px; background: var(--surface-2, #f8faff); display: flex; flex-direction: column; gap: 10px; }
+  .mb-block-h { font-family: var(--f-display); font-weight: 800; font-size: .92rem; color: var(--c-ink); }
+  .mb-block-h span { font-family: var(--f-body); font-weight: 500; font-size: .76rem; color: var(--c-gray-500); }
+  .mb-block .a-field label { font-size: .76rem; }
+  /* Rangée session/pack cochable */
+  .mb-srow { border: 1px solid var(--c-border); border-radius: 10px; padding: 8px 10px; background: #fff; }
+  .mb-srow-head { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .mb-srow-head input { width: 18px; height: 18px; accent-color: var(--c-blue); flex: none; }
+  .mb-srow-t { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .mb-srow-t b { font-size: .86rem; color: var(--c-ink); }
+  .mb-srow-t span { font-size: .74rem; color: var(--c-gray-500); }
+  .mb-srow-cfg { display: flex; gap: 8px; margin-top: 8px; padding-left: 28px; }
+  .mb-srow-cfg select { flex: 1; }
+  .mb-srow-cfg .mb-qtysm { width: 74px; flex: none; }
+  #mb-sessions-list, #mb-packs-list { display: flex; flex-direction: column; gap: 8px; }
   .mb-client { position: relative; }
   .mb-client-drop { position: absolute; z-index: 30; top: 100%; left: 0; right: 0; margin-top: 4px; background: #fff; border: 1px solid var(--c-border); border-radius: 12px; box-shadow: var(--shadow-lg); overflow: hidden; max-height: 240px; overflow-y: auto; }
   .mb-client-item { display: flex; flex-direction: column; gap: 1px; width: 100%; text-align: left; border: 0; background: #fff; padding: 8px 12px; cursor: pointer; font: inherit; }
@@ -319,15 +362,16 @@ const stats = [
   });
   document.addEventListener("click", (e) => { if (!(e.target as HTMLElement).closest("#r-sessiondrop")) drop.classList.remove("open"); });
 
-  // ---------- Nouvelle réservation manuelle (multi-lignes : tickets + packs) ----------
+  // ---------- Nouvelle réservation manuelle (1 client → sessions/packs cochables) ----------
   const mbDrawer = document.getElementById("mb-drawer")!;
   const mbOverlay = document.getElementById("mb-overlay")!;
-  const mbLines = document.getElementById("mb-lines")!;
   let mbSessions: any[] = [];
   let mbPacks: any[] = [];
   let mbCustomers: any[] = [];
-  let mbSeq = 0;
+  let mbMethod = "wave";
+  let mbAttend = "presentiel";
   const fmtPlain = (n: number) => (Number(n) || 0).toLocaleString("fr-FR") + " F CFA";
+  const mbEl = (id: string) => document.getElementById(id) as HTMLInputElement;
   const mbOpen = () => { mbDrawer.classList.add("open"); mbOverlay.classList.add("open"); document.body.style.overflow = "hidden"; };
   const mbClose = () => { mbDrawer.classList.remove("open"); mbOverlay.classList.remove("open"); document.body.style.overflow = ""; };
 
@@ -340,193 +384,126 @@ const stats = [
     mbSessions = s.data || [];
     mbPacks = p.data || [];
     mbCustomers = c.data || [];
+    mbRenderSessions();
+    mbRenderPacks();
+    mbSyncTotal();
   }
-  const sessionOpts = () => mbSessions.length
-    ? `<option value="">Choisir une session…</option>` + mbSessions.map((x: any) => `<option value="${x.id}">${esc(x.title)} · ${dshort(x.starts_at)}</option>`).join("")
-    : `<option value="">Aucune session à venir</option>`;
-  const packOpts = () => mbPacks.length
-    ? `<option value="">Choisir un pack…</option>` + mbPacks.map((x: any) => `<option value="${esc(x.slug)}" data-price="${x.price}">${esc(x.title)} — ${fmtPlain(x.price)}</option>`).join("")
-    : `<option value="">Aucun pack actif</option>`;
 
-  function mbAddLine() {
-    const id = ++mbSeq;
-    const el = document.createElement("div");
-    el.className = "mb-line"; el.dataset.line = String(id);
-    el.innerHTML = `
-      <div class="mb-line-top">
-        <div class="mb-seg mb-type" data-type-seg>
-          <button type="button" data-type="formation" class="on">Formation</button>
-          <button type="button" data-type="pack">Pack</button>
+  function mbRenderSessions() {
+    const box = document.getElementById("mb-sessions-list")!;
+    if (!mbSessions.length) { box.innerHTML = `<div class="hint" style="padding:4px">Aucune session à venir.</div>`; return; }
+    box.innerHTML = mbSessions.map((s: any) => {
+      const tts = (s.ticket_types || []).slice().sort((a: any, b: any) => a.price - b.price);
+      const opts = tts.length
+        ? tts.map((t: any) => { const rem = Math.max(0, t.capacity - t.sold); return `<option value="${t.id}" data-price="${t.price}" ${rem <= 0 ? "disabled" : ""}>${esc(t.name)} — ${fmtPlain(t.price)}${rem <= 0 ? " (épuisé)" : ` · ${rem} pl.`}</option>`; }).join("")
+        : `<option value="">—</option>`;
+      return `<div class="mb-srow" data-session="${s.id}">
+        <label class="mb-srow-head"><input type="checkbox" data-s-check /><span class="mb-srow-t"><b>${esc(s.title)}</b><span>${dshort(s.starts_at)}</span></span></label>
+        <div class="mb-srow-cfg" data-s-cfg hidden>
+          <select class="a-input" data-s-ticket>${opts}</select>
+          <input class="a-input mb-qtysm" data-s-qty type="number" min="1" max="20" value="1" title="Quantité" />
         </div>
-        <button type="button" class="mb-line-del" data-del title="Retirer cette ligne">✕</button>
-      </div>
-      <div data-block="formation">
-        <div class="a-field"><label>Session</label><select class="a-input" data-f="session">${sessionOpts()}</select></div>
-        <div class="a-grid2">
-          <div class="a-field"><label>Tarif</label><select class="a-input" data-f="ticket"><option value="">—</option></select></div>
-          <div class="a-field"><label>Quantité</label><input class="a-input" data-f="qty" type="number" min="1" max="20" value="1" /></div>
-        </div>
-      </div>
-      <div data-block="pack" hidden>
-        <div class="a-field"><label>Pack (parcours)</label><select class="a-input" data-f="pack">${packOpts()}</select></div>
-      </div>
-      <div class="a-field mb-attend-wrap" data-attend-wrap hidden><label>Participation</label>
-        <div class="mb-seg" data-f="attend"><button type="button" data-att="presentiel" class="on">Présentiel</button><button type="button" data-att="en_ligne">En ligne (Zoom)</button></div>
-      </div>
-      <div class="a-field mb-client"><label>Client</label>
-        <input class="a-input" data-f="clientsearch" type="text" autocomplete="off" placeholder="Rechercher un client existant… (ou laisser vide pour un nouveau)" />
-        <div class="mb-client-drop" data-client-drop hidden></div>
-      </div>
-      <div class="a-grid2">
-        <div class="a-field"><label>Nom du participant</label><input class="a-input" data-f="name" placeholder="Ex. Awa Koné" /></div>
-        <div class="a-field"><label>E-mail (billet)</label><input class="a-input" data-f="email" type="email" placeholder="vous@exemple.com" /></div>
-      </div>
-      <div class="a-field"><label>Téléphone</label><input class="a-input" data-f="phone" type="tel" placeholder="07 00 00 00 00" /></div>
-      <div class="a-field"><label>Moyen de paiement</label>
-        <div class="mb-seg wrap" data-f="method">
-          <button type="button" data-m="wave" class="on">Wave</button>
-          <button type="button" data-m="orange_money">Orange Money</button>
-          <button type="button" data-m="mtn_momo">MTN MoMo</button>
-          <button type="button" data-m="especes">Espèces</button>
-        </div>
-      </div>
-      <div class="mb-line-total" data-line-total>—</div>`;
-    mbLines.appendChild(el);
-    mbUpdDelVis(); mbSyncTotal();
+      </div>`;
+    }).join("");
   }
-  function mbUpdDelVis() {
-    const lines = mbLines.querySelectorAll(".mb-line");
-    lines.forEach((l) => ((l.querySelector("[data-del]") as HTMLElement).style.display = lines.length > 1 ? "" : "none"));
+  function mbRenderPacks() {
+    const block = document.getElementById("mb-packs-block")!;
+    const box = document.getElementById("mb-packs-list")!;
+    if (!mbPacks.length) { block.hidden = true; return; }
+    block.hidden = false;
+    box.innerHTML = mbPacks.map((p: any) => `<div class="mb-srow" data-pack="${esc(p.slug)}" data-price="${p.price}">
+      <label class="mb-srow-head"><input type="checkbox" data-p-check /><span class="mb-srow-t"><b>${esc(p.title)}</b><span>${fmtPlain(p.price)}</span></span></label>
+    </div>`).join("");
   }
-  const lineType = (l: Element) => (l.querySelector(".mb-type .on") as HTMLElement)?.dataset.type || "formation";
-  const lineSession = (l: Element) => mbSessions.find((s) => s.id === (l.querySelector('[data-f="session"]') as HTMLSelectElement)?.value);
-  function mbLineTotal(l: Element): number {
-    if (lineType(l) === "pack") {
-      const opt = (l.querySelector('[data-f="pack"]') as HTMLSelectElement)?.selectedOptions[0];
-      return opt ? parseInt(opt.getAttribute("data-price") || "0") : 0;
-    }
-    const opt = (l.querySelector('[data-f="ticket"]') as HTMLSelectElement)?.selectedOptions[0];
+
+  function mbSessionRowTotal(row: Element): number {
+    if (!(row.querySelector("[data-s-check]") as HTMLInputElement)?.checked) return 0;
+    const opt = (row.querySelector("[data-s-ticket]") as HTMLSelectElement)?.selectedOptions[0];
     const price = opt ? parseInt(opt.getAttribute("data-price") || "0") : 0;
-    const qty = Math.max(1, parseInt((l.querySelector('[data-f="qty"]') as HTMLInputElement)?.value || "1"));
+    const qty = Math.max(1, parseInt((row.querySelector("[data-s-qty]") as HTMLInputElement)?.value || "1"));
     return price * qty;
   }
   function mbSyncTotal() {
     let sum = 0;
-    mbLines.querySelectorAll(".mb-line").forEach((l) => {
-      const t = mbLineTotal(l);
-      (l.querySelector("[data-line-total]") as HTMLElement).textContent = t ? `Sous-total : ${fmtPlain(t)}` : "—";
-      sum += t;
-    });
+    document.querySelectorAll("#mb-sessions-list [data-session]").forEach((r) => (sum += mbSessionRowTotal(r)));
+    document.querySelectorAll("#mb-packs-list [data-pack]").forEach((r) => { if ((r.querySelector("[data-p-check]") as HTMLInputElement)?.checked) sum += parseInt((r as HTMLElement).dataset.price || "0"); });
     document.querySelector("[data-mb-total]")!.textContent = fmtPlain(sum);
   }
-  function mbSyncAttend(l: Element) {
-    const wrap = l.querySelector("[data-attend-wrap]") as HTMLElement;
-    wrap.hidden = lineType(l) === "pack" ? false : lineSession(l)?.mode !== "hybride";
-  }
-  function mbSyncTickets(l: Element) {
-    const s = lineSession(l);
-    const tsel = l.querySelector('[data-f="ticket"]') as HTMLSelectElement;
-    const tts = ((s?.ticket_types) || []).slice().sort((a: any, b: any) => a.price - b.price);
-    tsel.innerHTML = tts.length ? tts.map((t: any) => { const rem = Math.max(0, t.capacity - t.sold); return `<option value="${t.id}" data-price="${t.price}" ${rem <= 0 ? "disabled" : ""}>${esc(t.name)} — ${fmtPlain(t.price)}${rem <= 0 ? " (épuisé)" : ` · ${rem} pl.`}</option>`; }).join("") : `<option value="">—</option>`;
-    mbSyncAttend(l);
-  }
 
-  function mbRenderClientDrop(line: Element, q: string) {
-    const drop = line.querySelector("[data-client-drop]") as HTMLElement;
-    const query = q.trim().toLowerCase();
-    if (query.length < 1) { drop.hidden = true; drop.innerHTML = ""; return; }
-    const hits = mbCustomers.filter((c) => ((c.full_name || "") + " " + (c.email || "")).toLowerCase().includes(query)).slice(0, 8);
-    if (!hits.length) { drop.innerHTML = `<div class="mb-client-empty">Aucun client — les infos saisies créeront un nouveau client.</div>`; drop.hidden = false; return; }
-    drop.innerHTML = hits.map((c) => `<button type="button" class="mb-client-item" data-client-item data-email="${esc(c.email)}" data-name="${esc(c.full_name || "")}" data-phone="${esc(c.phone || "")}"><b>${esc(c.full_name || "(sans nom)")}</b><span>${esc(c.email)}</span></button>`).join("");
-    drop.hidden = false;
-  }
-
-  mbLines.addEventListener("click", (e) => {
-    const t = e.target as HTMLElement; const line = t.closest(".mb-line"); if (!line) return;
-    const cItem = t.closest("[data-client-item]") as HTMLElement | null;
-    if (cItem) {
-      (line.querySelector('[data-f="name"]') as HTMLInputElement).value = cItem.dataset.name || "";
-      (line.querySelector('[data-f="email"]') as HTMLInputElement).value = cItem.dataset.email || "";
-      (line.querySelector('[data-f="phone"]') as HTMLInputElement).value = cItem.dataset.phone || "";
-      (line.querySelector('[data-f="clientsearch"]') as HTMLInputElement).value = cItem.dataset.name || cItem.dataset.email || "";
-      (line.querySelector("[data-client-drop]") as HTMLElement).hidden = true;
-      return;
-    }
-    if (t.closest("[data-del]")) { if (mbLines.querySelectorAll(".mb-line").length > 1) { line.remove(); mbUpdDelVis(); mbSyncTotal(); } return; }
-    const typeBtn = t.closest("[data-type]") as HTMLElement | null;
-    if (typeBtn) {
-      line.querySelectorAll(".mb-type button").forEach((b) => b.classList.remove("on")); typeBtn.classList.add("on");
-      (line.querySelector('[data-block="formation"]') as HTMLElement).hidden = typeBtn.dataset.type !== "formation";
-      (line.querySelector('[data-block="pack"]') as HTMLElement).hidden = typeBtn.dataset.type !== "pack";
-      mbSyncAttend(line); mbSyncTotal(); return;
-    }
-    const mBtn = t.closest('[data-f="method"] [data-m]') as HTMLElement | null;
-    if (mBtn) { line.querySelectorAll('[data-f="method"] button').forEach((b) => b.classList.remove("on")); mBtn.classList.add("on"); return; }
-    const aBtn = t.closest('[data-f="attend"] [data-att]') as HTMLElement | null;
-    if (aBtn) { line.querySelectorAll('[data-f="attend"] button').forEach((b) => b.classList.remove("on")); aBtn.classList.add("on"); return; }
-  });
-  mbLines.addEventListener("change", (e) => {
-    const t = e.target as HTMLElement; const line = t.closest(".mb-line"); if (!line) return;
-    if (t.matches('[data-f="session"]')) mbSyncTickets(line);
+  document.getElementById("mb-sessions-list")!.addEventListener("change", (e) => {
+    const t = e.target as HTMLElement; const row = t.closest("[data-session]"); if (!row) return;
+    if (t.matches("[data-s-check]")) (row.querySelector("[data-s-cfg]") as HTMLElement).hidden = !(t as HTMLInputElement).checked;
     mbSyncTotal();
   });
-  mbLines.addEventListener("input", (e) => {
-    const t = e.target as HTMLElement; const line = t.closest(".mb-line"); if (!line) return;
-    if (t.matches('[data-f="qty"]')) mbSyncTotal();
-    if (t.matches('[data-f="clientsearch"]')) mbRenderClientDrop(line, (t as HTMLInputElement).value);
-  });
-  // Ferme les listes de clients au clic extérieur.
-  document.addEventListener("click", (e) => {
-    if (!(e.target as HTMLElement).closest(".mb-client")) mbLines.querySelectorAll("[data-client-drop]").forEach((d) => ((d as HTMLElement).hidden = true));
-  });
+  document.getElementById("mb-sessions-list")!.addEventListener("input", (e) => { if ((e.target as HTMLElement).matches("[data-s-qty]")) mbSyncTotal(); });
+  document.getElementById("mb-packs-list")!.addEventListener("change", mbSyncTotal);
 
-  document.getElementById("mb-open")?.addEventListener("click", async () => { mbOpen(); if (!mbSessions.length && !mbPacks.length) await mbLoad(); if (!mbLines.children.length) mbAddLine(); });
+  document.querySelectorAll<HTMLElement>("#mb-method button").forEach((b) => b.addEventListener("click", () => { document.querySelectorAll("#mb-method button").forEach((x) => x.classList.remove("on")); b.classList.add("on"); mbMethod = b.dataset.m || "wave"; }));
+  document.querySelectorAll<HTMLElement>("#mb-attend button").forEach((b) => b.addEventListener("click", () => { document.querySelectorAll("#mb-attend button").forEach((x) => x.classList.remove("on")); b.classList.add("on"); mbAttend = b.dataset.att || "presentiel"; }));
+
+  const mbDrop = document.getElementById("mb-client-drop")!;
+  mbEl("mb-clientsearch").addEventListener("input", () => {
+    const q = mbEl("mb-clientsearch").value.trim().toLowerCase();
+    if (!q) { mbDrop.hidden = true; mbDrop.innerHTML = ""; return; }
+    const hits = mbCustomers.filter((c) => ((c.full_name || "") + " " + (c.email || "")).toLowerCase().includes(q)).slice(0, 8);
+    mbDrop.innerHTML = hits.length
+      ? hits.map((c) => `<button type="button" class="mb-client-item" data-email="${esc(c.email)}" data-name="${esc(c.full_name || "")}" data-phone="${esc(c.phone || "")}"><b>${esc(c.full_name || "(sans nom)")}</b><span>${esc(c.email)}</span></button>`).join("")
+      : `<div class="mb-client-empty">Aucun client — les infos saisies créeront un nouveau client.</div>`;
+    mbDrop.hidden = false;
+  });
+  mbDrop.addEventListener("click", (e) => {
+    const it = (e.target as HTMLElement).closest(".mb-client-item") as HTMLElement | null; if (!it) return;
+    mbEl("mb-name").value = it.dataset.name || "";
+    mbEl("mb-email").value = it.dataset.email || "";
+    mbEl("mb-phone").value = it.dataset.phone || "";
+    mbEl("mb-clientsearch").value = it.dataset.name || it.dataset.email || "";
+    mbDrop.hidden = true;
+  });
+  document.addEventListener("click", (e) => { if (!(e.target as HTMLElement).closest(".mb-client")) mbDrop.hidden = true; });
+
+  document.getElementById("mb-open")?.addEventListener("click", async () => { mbOpen(); if (!mbSessions.length && !mbPacks.length) await mbLoad(); });
   document.getElementById("mb-close")?.addEventListener("click", mbClose);
   document.getElementById("mb-cancel")?.addEventListener("click", mbClose);
   mbOverlay.addEventListener("click", mbClose);
-  document.getElementById("mb-addline")?.addEventListener("click", mbAddLine);
 
   document.getElementById("mb-save")?.addEventListener("click", async () => {
     const msg = document.getElementById("mb-msg")!; const show = (txt: string) => { msg.textContent = txt; msg.hidden = false; msg.className = "mb-msg err"; };
-    const lines = [...mbLines.querySelectorAll(".mb-line")];
-    if (!lines.length) return show("Ajoutez au moins une réservation.");
+    const name = mbEl("mb-name").value.trim();
+    const email = mbEl("mb-email").value.trim();
+    const phone = mbEl("mb-phone").value.trim();
+    if (name.length < 2) return show("Nom du client requis.");
+    if (!/.+@.+\..+/.test(email)) return show("E-mail valide requis (pour envoyer les billets).");
+
     const jobs: any[] = [];
-    for (let i = 0; i < lines.length; i++) {
-      const l = lines[i]; const type = lineType(l);
-      const name = (l.querySelector('[data-f="name"]') as HTMLInputElement).value.trim();
-      const email = (l.querySelector('[data-f="email"]') as HTMLInputElement).value.trim();
-      const phone = (l.querySelector('[data-f="phone"]') as HTMLInputElement).value.trim();
-      const method = (l.querySelector('[data-f="method"] .on') as HTMLElement)?.dataset.m || "wave";
-      if (name.length < 2) return show(`Ligne ${i + 1} : nom du participant requis.`);
-      if (!/.+@.+\..+/.test(email)) return show(`Ligne ${i + 1} : e-mail valide requis (pour le billet).`);
-      if (type === "pack") {
-        const slug = (l.querySelector('[data-f="pack"]') as HTMLSelectElement).value;
-        if (!slug) return show(`Ligne ${i + 1} : choisissez un pack.`);
-        const attend = (l.querySelector('[data-f="attend"] .on') as HTMLElement)?.dataset.att || "presentiel";
-        jobs.push({ url: "/api/manual-pack", body: { slug, full_name: name, email, phone, payment_method: method, attendance_mode: attend } });
-      } else {
-        const ticket = (l.querySelector('[data-f="ticket"]') as HTMLSelectElement).value;
-        if (!ticket) return show(`Ligne ${i + 1} : choisissez une session et un tarif.`);
-        const qty = Math.max(1, parseInt((l.querySelector('[data-f="qty"]') as HTMLInputElement).value || "1"));
-        const s = lineSession(l);
-        const attend = s?.mode === "hybride" ? ((l.querySelector('[data-f="attend"] .on') as HTMLElement)?.dataset.att || "presentiel") : (s?.mode === "en_ligne" ? "en_ligne" : "presentiel");
-        jobs.push({ url: "/api/manual-booking", body: { ticket_type_id: ticket, quantity: qty, full_name: name, email, phone, payment_method: method, attendance_mode: attend } });
-      }
-    }
+    document.querySelectorAll("#mb-sessions-list [data-session]").forEach((row) => {
+      if (!(row.querySelector("[data-s-check]") as HTMLInputElement)?.checked) return;
+      const ticket = (row.querySelector("[data-s-ticket]") as HTMLSelectElement).value;
+      if (!ticket) return;
+      const qty = Math.max(1, parseInt((row.querySelector("[data-s-qty]") as HTMLInputElement).value || "1"));
+      const s = mbSessions.find((x: any) => x.id === (row as HTMLElement).dataset.session);
+      const attendance = s?.mode === "hybride" ? mbAttend : (s?.mode === "en_ligne" ? "en_ligne" : "presentiel");
+      jobs.push({ url: "/api/manual-booking", body: { ticket_type_id: ticket, quantity: qty, full_name: name, email, phone, payment_method: mbMethod, attendance_mode: attendance } });
+    });
+    document.querySelectorAll("#mb-packs-list [data-pack]").forEach((row) => {
+      if (!(row.querySelector("[data-p-check]") as HTMLInputElement)?.checked) return;
+      jobs.push({ url: "/api/manual-pack", body: { slug: (row as HTMLElement).dataset.pack, full_name: name, email, phone, payment_method: mbMethod, attendance_mode: mbAttend } });
+    });
+    if (!jobs.length) return show("Cochez au moins une session ou un pack.");
+
     const btn = document.getElementById("mb-save")!; btn.setAttribute("disabled", "true"); btn.textContent = "Enregistrement…"; msg.hidden = true;
     const { data: { session } } = await supabaseBrowser.auth.getSession(); const tok = session?.access_token;
     let ok = 0; const fails: string[] = [];
-    for (let i = 0; i < jobs.length; i++) {
+    for (const job of jobs) {
       try {
-        const r = await fetch(jobs[i].url, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` }, body: JSON.stringify(jobs[i].body) });
+        const r = await fetch(job.url, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` }, body: JSON.stringify(job.body) });
         const j = await r.json();
-        if (j?.ok) ok++; else fails.push(`Ligne ${i + 1} : ${j?.message || j?.error || "échec"}`);
-      } catch { fails.push(`Ligne ${i + 1} : erreur réseau`); }
+        if (j?.ok) ok++; else fails.push(j?.message || j?.error || "échec");
+      } catch { fails.push("erreur réseau"); }
     }
     btn.removeAttribute("disabled"); btn.textContent = "Enregistrer + envoyer les billets";
-    if (ok > 0) toast(`${ok} réservation(s) enregistrée(s) — billet(s) envoyé(s). ✓`);
+    if (ok > 0) toast(`${ok} billet(s) envoyé(s) à ${name}. ✓`);
     if (fails.length) show(fails.join(" · "));
-    else { mbClose(); mbLines.innerHTML = ""; }
+    else { mbClose(); mbEl("mb-name").value = ""; mbEl("mb-email").value = ""; mbEl("mb-phone").value = ""; mbEl("mb-clientsearch").value = ""; }
     await mbLoad(); await load();
   });
 
