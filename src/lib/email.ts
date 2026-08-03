@@ -8,7 +8,10 @@ import { BirdClient } from "@messagebird/sdk";
 
 const SITE = "https://www.bwebagence.com";
 
-type EmailAttachment = { filename: string; content: string; type?: string };
+// NB. Bird attend `content_type` (pas `type`) ; on accepte `type` en entrée par
+// tolérance mais on sérialise toujours vers le contrat exact de Bird (sinon 422
+// « champ inconnu » → l'envoi échoue et le billet ne part jamais).
+type EmailAttachment = { filename: string; content: string; content_type?: string; type?: string; content_id?: string };
 type EmailOpts = { to: string; subject: string; html: string; text?: string; attachments?: EmailAttachment[] };
 
 export async function sendEmail(opts: EmailOpts): Promise<boolean> {
@@ -16,6 +19,12 @@ export async function sendEmail(opts: EmailOpts): Promise<boolean> {
   const from = import.meta.env.BIRD_FROM || "Bweb Agence <no-reply@mail.bwebagence.com>";
   const replyTo = import.meta.env.BIRD_REPLY_TO || "info@bwebagence.com";
   if (!key || key === "A_COMPLETER") return false;
+  const attachments = opts.attachments?.length
+    ? opts.attachments.map((a) => {
+        const ct = a.content_type || a.type;
+        return { filename: a.filename, content: a.content, ...(ct ? { content_type: ct } : {}), ...(a.content_id ? { content_id: a.content_id } : {}) };
+      })
+    : undefined;
   try {
     const bird = new BirdClient({ apiKey: key });
     const msg: any = await bird.email.send({
@@ -25,11 +34,12 @@ export async function sendEmail(opts: EmailOpts): Promise<boolean> {
       subject: opts.subject,
       html: opts.html,
       ...(opts.text ? { text: opts.text } : {}),
-      ...(opts.attachments?.length ? { attachments: opts.attachments } : {}),
+      ...(attachments ? { attachments } : {}),
       category: "transactional",
     } as any);
     return msg?.status === "accepted" || !!msg?.id;
-  } catch {
+  } catch (e) {
+    console.error("[sendEmail] échec Bird pour", opts.to, "—", (e as any)?.message || e);
     return false;
   }
 }
