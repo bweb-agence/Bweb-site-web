@@ -112,6 +112,13 @@ const stats = [
   .mb-line-total { font-size: .82rem; font-weight: 700; color: var(--c-gray-600); text-align: right; }
   .mb-addline { width: 100%; justify-content: center; border-style: dashed; }
   .mb-line .a-field label { font-size: .76rem; }
+  .mb-client { position: relative; }
+  .mb-client-drop { position: absolute; z-index: 30; top: 100%; left: 0; right: 0; margin-top: 4px; background: #fff; border: 1px solid var(--c-border); border-radius: 12px; box-shadow: var(--shadow-lg); overflow: hidden; max-height: 240px; overflow-y: auto; }
+  .mb-client-item { display: flex; flex-direction: column; gap: 1px; width: 100%; text-align: left; border: 0; background: #fff; padding: 8px 12px; cursor: pointer; font: inherit; }
+  .mb-client-item:hover { background: var(--c-gray-100); }
+  .mb-client-item b { font-size: .84rem; color: var(--c-ink); }
+  .mb-client-item span { font-size: .74rem; color: var(--c-gray-500); }
+  .mb-client-empty { padding: 10px 12px; font-size: .78rem; color: var(--c-gray-500); }
   .mb-msg.err { color: var(--c-danger); }
   @media (max-width: 560px) { .a-grid2 { grid-template-columns: 1fr; } }
 </style>
@@ -318,18 +325,21 @@ const stats = [
   const mbLines = document.getElementById("mb-lines")!;
   let mbSessions: any[] = [];
   let mbPacks: any[] = [];
+  let mbCustomers: any[] = [];
   let mbSeq = 0;
   const fmtPlain = (n: number) => (Number(n) || 0).toLocaleString("fr-FR") + " F CFA";
   const mbOpen = () => { mbDrawer.classList.add("open"); mbOverlay.classList.add("open"); document.body.style.overflow = "hidden"; };
   const mbClose = () => { mbDrawer.classList.remove("open"); mbOverlay.classList.remove("open"); document.body.style.overflow = ""; };
 
   async function mbLoad() {
-    const [s, p] = await Promise.all([
+    const [s, p, c] = await Promise.all([
       supabaseBrowser.from("sessions").select("id,title,starts_at,mode,status, ticket_types(id,name,price,capacity,sold)").in("status", ["published", "full"]).gte("starts_at", new Date().toISOString()).order("starts_at", { ascending: true }),
       supabaseBrowser.from("packs").select("slug,title,price,active").eq("active", true).order("title"),
+      supabaseBrowser.from("customers").select("email,full_name,phone").order("full_name"),
     ]);
     mbSessions = s.data || [];
     mbPacks = p.data || [];
+    mbCustomers = c.data || [];
   }
   const sessionOpts = () => mbSessions.length
     ? `<option value="">Choisir une session…</option>` + mbSessions.map((x: any) => `<option value="${x.id}">${esc(x.title)} · ${dshort(x.starts_at)}</option>`).join("")
@@ -362,6 +372,10 @@ const stats = [
       </div>
       <div class="a-field mb-attend-wrap" data-attend-wrap hidden><label>Participation</label>
         <div class="mb-seg" data-f="attend"><button type="button" data-att="presentiel" class="on">Présentiel</button><button type="button" data-att="en_ligne">En ligne (Zoom)</button></div>
+      </div>
+      <div class="a-field mb-client"><label>Client</label>
+        <input class="a-input" data-f="clientsearch" type="text" autocomplete="off" placeholder="Rechercher un client existant… (ou laisser vide pour un nouveau)" />
+        <div class="mb-client-drop" data-client-drop hidden></div>
       </div>
       <div class="a-grid2">
         <div class="a-field"><label>Nom du participant</label><input class="a-input" data-f="name" placeholder="Ex. Awa Koné" /></div>
@@ -417,8 +431,27 @@ const stats = [
     mbSyncAttend(l);
   }
 
+  function mbRenderClientDrop(line: Element, q: string) {
+    const drop = line.querySelector("[data-client-drop]") as HTMLElement;
+    const query = q.trim().toLowerCase();
+    if (query.length < 1) { drop.hidden = true; drop.innerHTML = ""; return; }
+    const hits = mbCustomers.filter((c) => ((c.full_name || "") + " " + (c.email || "")).toLowerCase().includes(query)).slice(0, 8);
+    if (!hits.length) { drop.innerHTML = `<div class="mb-client-empty">Aucun client — les infos saisies créeront un nouveau client.</div>`; drop.hidden = false; return; }
+    drop.innerHTML = hits.map((c) => `<button type="button" class="mb-client-item" data-client-item data-email="${esc(c.email)}" data-name="${esc(c.full_name || "")}" data-phone="${esc(c.phone || "")}"><b>${esc(c.full_name || "(sans nom)")}</b><span>${esc(c.email)}</span></button>`).join("");
+    drop.hidden = false;
+  }
+
   mbLines.addEventListener("click", (e) => {
     const t = e.target as HTMLElement; const line = t.closest(".mb-line"); if (!line) return;
+    const cItem = t.closest("[data-client-item]") as HTMLElement | null;
+    if (cItem) {
+      (line.querySelector('[data-f="name"]') as HTMLInputElement).value = cItem.dataset.name || "";
+      (line.querySelector('[data-f="email"]') as HTMLInputElement).value = cItem.dataset.email || "";
+      (line.querySelector('[data-f="phone"]') as HTMLInputElement).value = cItem.dataset.phone || "";
+      (line.querySelector('[data-f="clientsearch"]') as HTMLInputElement).value = cItem.dataset.name || cItem.dataset.email || "";
+      (line.querySelector("[data-client-drop]") as HTMLElement).hidden = true;
+      return;
+    }
     if (t.closest("[data-del]")) { if (mbLines.querySelectorAll(".mb-line").length > 1) { line.remove(); mbUpdDelVis(); mbSyncTotal(); } return; }
     const typeBtn = t.closest("[data-type]") as HTMLElement | null;
     if (typeBtn) {
@@ -437,7 +470,15 @@ const stats = [
     if (t.matches('[data-f="session"]')) mbSyncTickets(line);
     mbSyncTotal();
   });
-  mbLines.addEventListener("input", (e) => { if ((e.target as HTMLElement).matches('[data-f="qty"]')) mbSyncTotal(); });
+  mbLines.addEventListener("input", (e) => {
+    const t = e.target as HTMLElement; const line = t.closest(".mb-line"); if (!line) return;
+    if (t.matches('[data-f="qty"]')) mbSyncTotal();
+    if (t.matches('[data-f="clientsearch"]')) mbRenderClientDrop(line, (t as HTMLInputElement).value);
+  });
+  // Ferme les listes de clients au clic extérieur.
+  document.addEventListener("click", (e) => {
+    if (!(e.target as HTMLElement).closest(".mb-client")) mbLines.querySelectorAll("[data-client-drop]").forEach((d) => ((d as HTMLElement).hidden = true));
+  });
 
   document.getElementById("mb-open")?.addEventListener("click", async () => { mbOpen(); if (!mbSessions.length && !mbPacks.length) await mbLoad(); if (!mbLines.children.length) mbAddLine(); });
   document.getElementById("mb-close")?.addEventListener("click", mbClose);

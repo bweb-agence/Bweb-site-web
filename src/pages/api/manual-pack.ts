@@ -93,6 +93,15 @@ export const POST: APIRoute = async ({ request }) => {
     .insert(items.map((it: any) => ({ purchase_id: purchaseId, formation_id: it.formation_id })));
   if (entErr) return json({ ok: false, error: "server" }, 500);
 
+  // Fiche CRM : un pack ne crée pas de booking (pas de synchro auto), on rattache
+  // donc le client ici (crée un nouveau client, ou rafraîchit l'existant par e-mail).
+  try {
+    const cust: any = { email: email.toLowerCase() };
+    if (name) cust.full_name = name;
+    if (phone) cust.phone = phone;
+    await admin.from("customers").upsert(cust, { onConflict: "email" });
+  } catch { /* non bloquant : le CRM ne doit jamais faire échouer l'achat */ }
+
   // E-mail « pass parcours ».
   const { data: fnames } = await admin.from("formations").select("id,title").in("id", items.map((i: any) => i.formation_id));
   const titleById = new Map((fnames || []).map((f: any) => [f.id, f.title]));
