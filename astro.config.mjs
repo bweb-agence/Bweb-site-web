@@ -19,6 +19,14 @@ export default defineConfig({
         !page.includes("/admin") &&
         !page.includes("/formations/paiement-retour") &&
         !page.includes("/merci"),
+      // Retire le slash final : Vercel (`trailingSlash: false`) sert les URLs
+      // sans slash et redirige (308) `/page/` -> `/page`. Sans ceci, le sitemap
+      // listerait des URLs qui redirigent (« Page avec redirection » dans GSC),
+      // désalignées des balises canoniques (elles aussi sans slash).
+      serialize(item) {
+        item.url = item.url.replace(/\/$/, "") || item.url;
+        return item;
+      },
     }),
   ],
   // Rendu STATIQUE par défaut (aucune régression sur les pages vitrine).
