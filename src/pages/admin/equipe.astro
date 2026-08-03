@@ -1,0 +1,132 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+---
+
+<AdminLayout title="Équipe" active="equipe">
+  <div class="sw space-y-6">
+    <p class="admin-sub" style="margin-top:0">Gère les accès à l'administration. Un <b>admin</b> a tous les droits ; un <b>commercial</b> saisit des réservations, consulte les ventes et relance les clients (pas de catalogue ni de paramètres). Un membre se connecte avec son e-mail via « lien de connexion ».</p>
+
+    <Card class="p-0 overflow-hidden">
+      <form class="eq-add" id="eq-add">
+        <div class="eq-add-f"><label for="eq-email">Ajouter un membre</label><input class="admin-search" id="eq-email" type="email" placeholder="prenom@exemple.com" /></div>
+        <div class="eq-add-f eq-role"><label for="eq-role">Rôle</label>
+          <select class="admin-filter" id="eq-role"><option value="commercial">Commercial</option><option value="admin">Admin</option></select>
+        </div>
+        <button class="abtn primary" id="eq-addbtn" type="submit">Ajouter</button>
+      </form>
+    </Card>
+
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[560px]">
+          <thead><tr><th>Membre</th><th>Rôle</th><th>Ajouté le</th><th></th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="4">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
+  </div>
+</AdminLayout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+  import { esc, dshort, toast, confirmModal } from "../../scripts/adminUtils";
+
+  const rows = document.querySelector("[data-rows]")!;
+  let all: any[] = [];
+  let me = "";
+
+  const roleErr = (e: any) =>
+    (e?.message || "").includes("last_admin") || e?.code === "P0001"
+      ? "Impossible : il doit rester au moins un administrateur."
+      : (e?.message || "").toLowerCase().includes("duplicate")
+        ? "Ce membre existe déjà."
+        : "Action impossible.";
+
+  const rolePill = (r: string) => r === "admin"
+    ? '<span class="tag-pill ok">Admin</span>'
+    : '<span class="tag-pill eq-com">Commercial</span>';
+
+  async function load() {
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    me = (session?.user?.email || "").toLowerCase();
+    const { data, error } = await supabaseBrowser.from("admins").select("email,role,created_at").order("role").order("email");
+    if (error) { rows.innerHTML = `<tr><td class="empty" colspan="4">Chargement impossible.</td></tr>`; return; }
+    all = data || [];
+    render();
+  }
+
+  function render() {
+    if (!all.length) { rows.innerHTML = `<tr><td class="empty" colspan="4">Aucun membre.</td></tr>`; return; }
+    rows.innerHTML = all.map((m) => {
+      const isMe = m.email.toLowerCase() === me;
+      return `<tr>
+        <td><strong>${esc(m.email)}</strong>${isMe ? ' <span class="eq-you">vous</span>' : ""}</td>
+        <td>
+          <select class="eq-roles" data-role="${esc(m.email)}" aria-label="Rôle de ${esc(m.email)}">
+            <option value="commercial" ${m.role === "commercial" ? "selected" : ""}>Commercial</option>
+            <option value="admin" ${m.role === "admin" ? "selected" : ""}>Admin</option>
+          </select>
+          ${rolePill(m.role)}
+        </td>
+        <td>${dshort(m.created_at)}</td>
+        <td style="text-align:right"><button class="icon-btn danger" data-del="${esc(m.email)}" title="Retirer l'accès"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></td>
+      </tr>`;
+    }).join("");
+    rows.querySelectorAll<HTMLSelectElement>("[data-role]").forEach((s) => s.addEventListener("change", () => changeRole(s.dataset.role!, s.value, s)));
+    rows.querySelectorAll<HTMLElement>("[data-del]").forEach((b) => b.addEventListener("click", () => remove(b.dataset.del!)));
+  }
+
+  async function changeRole(email: string, role: string, sel: HTMLSelectElement) {
+    sel.disabled = true;
+    const { error } = await supabaseBrowser.from("admins").update({ role }).eq("email", email);
+    sel.disabled = false;
+    if (error) { toast(roleErr(error), "err"); await load(); return; }
+    toast("Rôle mis à jour.");
+    if (email === me && role !== "admin") { toast("Vous n'êtes plus admin — redirection…"); setTimeout(() => location.replace("/admin"), 900); return; }
+    await load();
+  }
+
+  async function remove(email: string) {
+    const isMe = email.toLowerCase() === me;
+    if (!(await confirmModal({ title: "Retirer l'accès", message: `Retirer l'accès admin de « ${email} » ?${isMe ? "\n\n⚠️ C'est VOTRE compte : vous serez déconnecté(e) de l'administration." : ""}`, danger: true, confirmLabel: "Retirer" }))) return;
+    const { error } = await supabaseBrowser.from("admins").delete().eq("email", email);
+    if (error) { toast(roleErr(error), "err"); return; }
+    toast("Accès retiré.");
+    if (isMe) { setTimeout(() => location.replace("/admin/connexion"), 800); return; }
+    await load();
+  }
+
+  document.getElementById("eq-add")!.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const emailEl = document.getElementById("eq-email") as HTMLInputElement;
+    const email = emailEl.value.trim().toLowerCase();
+    const role = (document.getElementById("eq-role") as HTMLSelectElement).value;
+    if (!/.+@.+\..+/.test(email)) { toast("E-mail invalide.", "err"); return; }
+    const btn = document.getElementById("eq-addbtn")!; btn.setAttribute("disabled", "true");
+    const { error } = await supabaseBrowser.from("admins").insert({ email, role });
+    btn.removeAttribute("disabled");
+    if (error) { toast(roleErr(error), "err"); return; }
+    toast("Membre ajouté. Il se connecte via « lien de connexion » sur la page de connexion.");
+    emailEl.value = "";
+    await load();
+  });
+
+  (async () => {
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    if (!session) return;
+    await load();
+  })();
+</script>
+
+<style is:global>
+  .eq-add { display: flex; align-items: flex-end; gap: 12px; padding: 16px 18px; flex-wrap: wrap; }
+  .eq-add-f { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 180px; }
+  .eq-add-f.eq-role { flex: 0 0 160px; }
+  .eq-add-f label { font-size: .78rem; color: var(--c-gray-600); font-weight: 600; }
+  .eq-add .admin-search, .eq-add .admin-filter { width: 100%; }
+  .eq-you { font-size: .68rem; font-weight: 800; color: var(--c-blue-dark); background: rgba(31,108,237,.12); padding: 2px 7px; border-radius: 999px; margin-left: 6px; }
+  .eq-roles { font: inherit; font-size: .8rem; padding: 5px 8px; border: 1px solid var(--c-border); border-radius: 8px; background: #fff; margin-right: 8px; }
+  .tag-pill.eq-com { background: rgba(31,108,237,.12); color: var(--c-blue-dark); }
+</style>
