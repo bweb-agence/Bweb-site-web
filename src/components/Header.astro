@@ -16,18 +16,36 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path === href 
               <svg class="nav-item__chevron" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </a>
             <div class="nav-dropdown">
-              <div class="nav-dropdown__inner mega-grid" role="menu">
-                {item.children.map((child) => (
-                  <a href={child.href} role="menuitem" class:list={["mega-item", { "is-active": isActive(child.href) }]}>
-                    <span class="mega-item__icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
-                    </span>
-                    <span class="mega-item__body">
-                      <span class="mega-item__title">{child.label}</span>
-                      <span class="mega-item__desc">{child.description}</span>
-                    </span>
-                  </a>
-                ))}
+              <div class="nav-dropdown__inner mega-panel" role="menu">
+                <div class="mega-grid">
+                  {item.children.slice(0, 6).map((child) => (
+                    <a href={child.href} role="menuitem" class:list={["mega-item", { "is-active": isActive(child.href) }]}>
+                      <span class="mega-item__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
+                      </span>
+                      <span class="mega-item__body">
+                        <span class="mega-item__title">{child.label}</span>
+                        <span class="mega-item__desc">{child.description}</span>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+                {item.children.length > 6 && (
+                  <div class="mega-extra">
+                    {item.children.slice(6).map((child) => (
+                      <a href={child.href} role="menuitem" class:list={["mega-extra__item", { "is-active": isActive(child.href) }]}>
+                        <span class="mega-item__icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
+                        </span>
+                        <span class="mega-item__title">{child.label}</span>
+                        <span class="mega-item__desc">{child.description}</span>
+                        {"image" in child && child.image && (
+                          <img class="mega-extra__img" src={child.image} alt="" loading="lazy" />
+                        )}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

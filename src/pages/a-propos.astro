@@ -103,8 +103,14 @@ const sdrCloser2 = teamPhoto("sdr-closer2.png");
       </div>
     </div>
     <div class="mv-showcase" data-stagger>
-      <div class="mv-photo mv-photo--tall reveal" style="background:var(--g-navy)" aria-hidden="true"></div>
-      <div class="mv-photo reveal" data-delay=".1" style="background:var(--g-warm)" aria-hidden="true"></div>
+      <div class="mv-photo-slot mv-photo-slot--tall reveal">
+        <img class="mv-photo" data-mv-photo="mission" src="/images/mission-formation-1.jpg" alt="Session de formation Bweb en salle, écran de projection en fond" loading="lazy" />
+        <img class="mv-photo mv-photo--portrait" data-mv-photo="vision" src="/images/mission-portrait.png" alt="Formateur Bweb en pleine session de formation" loading="lazy" hidden />
+      </div>
+      <div class="mv-photo-slot reveal" data-delay=".1">
+        <img class="mv-photo" data-mv-photo="mission" src="/images/mission-formation-2.jpg" alt="Formateur Bweb animant un atelier devant un groupe" loading="lazy" />
+        <img class="mv-photo" data-mv-photo="vision" src="/images/mission-groupe.jpg" alt="Groupe de participants à une formation Bweb, posant devant l'écran du site" loading="lazy" hidden />
+      </div>
       <div class="mv-side reveal" data-delay=".2">
         <h3>Une équipe engagée à vos côtés</h3>
         <a href="#equipe" class="btn btn-primary">Découvrir l'équipe
@@ -123,15 +129,39 @@ const sdrCloser2 = teamPhoto("sdr-closer2.png");
   .mv-panels { position: relative; min-height: 8em; }
   .mv-statement { transition: opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease); }
   .mv-statement.is-out { opacity: 0; transform: translateY(10px); }
-  .mv-photo { transition: transform var(--dur-slow) var(--ease), box-shadow var(--dur-slow) var(--ease); }
-  .mv-photo:hover { transform: translateY(-6px) scale(1.015); box-shadow: var(--shadow-md); }
+  .mv-photo-slot { transition: transform var(--dur-slow) var(--ease), box-shadow var(--dur-slow) var(--ease); }
+  .mv-photo-slot:hover { transform: translateY(-6px) scale(1.015); box-shadow: var(--shadow-md); }
+  .mv-photo--portrait { object-position: 30% 12%; }
+  /* :where(img) en base.css force display:block — sans ce garde-fou, [hidden]
+     ne masque pas l'image inactive et les deux photos du slot se superposent. */
+  .mv-photo[hidden] { display: none; }
 </style>
 
 <script>
   (() => {
     const tabs = document.querySelectorAll(".mv-tab");
     const panels = document.querySelectorAll("[data-mv-panel]");
-    if (!tabs.length || !panels.length) return;
+    const photos = document.querySelectorAll("[data-mv-photo]");
+    if (!tabs.length) return;
+    const FADE_MS = 600; // doit rester aligné avec --dur-slow (voir <style> ci-dessus)
+
+    // Fondu séquentiel (sortie puis entrée) sur un groupe d'éléments partageant
+    // le même attribut de données (peut contenir plusieurs paires, ex. les 2 photos).
+    function crossfade(group, attr, target) {
+      const toHide = Array.from(group).filter((el) => !el.hidden && el.dataset[attr] !== target);
+      const toShow = Array.from(group).filter((el) => el.hidden && el.dataset[attr] === target);
+      if (!toShow.length) return;
+      toHide.forEach((el) => el.classList.add("is-out"));
+      setTimeout(() => {
+        toHide.forEach((el) => { el.hidden = true; el.classList.remove("is-out"); });
+        toShow.forEach((el) => {
+          el.hidden = false;
+          el.classList.add("is-out");
+          requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove("is-out")));
+        });
+      }, FADE_MS);
+    }
+
     tabs.forEach((tab) => {
       tab.addEventListener("click", () => {
         if (tab.classList.contains("is-active")) return;
@@ -142,21 +172,8 @@ const sdrCloser2 = teamPhoto("sdr-closer2.png");
           t.setAttribute("aria-selected", String(active));
           t.tabIndex = active ? 0 : -1;
         });
-        const current = Array.from(panels).find((p) => !p.hidden);
-        const next = Array.from(panels).find((p) => p.dataset.mvPanel === target);
-        if (!next || next === current) return;
-        const FADE_MS = 600; // doit rester aligné avec --dur-slow (voir <style> ci-dessus)
-        function fadeIn() {
-          next.hidden = false;
-          next.classList.add("is-out");
-          requestAnimationFrame(() => requestAnimationFrame(() => next.classList.remove("is-out")));
-        }
-        if (current) {
-          current.classList.add("is-out");
-          setTimeout(() => { current.hidden = true; current.classList.remove("is-out"); fadeIn(); }, FADE_MS);
-        } else {
-          fadeIn();
-        }
+        crossfade(panels, "mvPanel", target);
+        crossfade(photos, "mvPhoto", target);
       });
     });
   })();
