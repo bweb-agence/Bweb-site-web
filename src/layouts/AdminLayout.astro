@@ -9,7 +9,7 @@ import "../styles/admin.css";
 
 interface Props {
   title: string;
-  active?: "dashboard" | "articles" | "formations" | "sessions" | "reservations" | "clients" | "packs" | "campagnes" | "emails" | "avis" | "themes";
+  active?: "dashboard" | "articles" | "formations" | "sessions" | "reservations" | "clients" | "packs" | "campagnes" | "emails" | "avis" | "themes" | "equipe";
 }
 const { title, active } = Astro.props;
 
@@ -34,6 +34,9 @@ const navGroups = [
   { label: "Contenu", items: [
     { key: "articles", href: "/admin/articles", label: "Articles", icon: '<path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/>' },
     { key: "avis", href: "/admin/avis", label: "Avis", icon: '<path d="M12 2l2.9 6 6.6.6-5 4.3 1.5 6.5L12 16l-6 3.4 1.5-6.5-5-4.3 6.6-.6z"/>' },
+  ]},
+  { label: "Administration", items: [
+    { key: "equipe", href: "/admin/equipe", label: "Équipe", icon: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M22 20a6.5 6.5 0 0 0-4.5-6.2"/>' },
   ] },
 ];
 ---
