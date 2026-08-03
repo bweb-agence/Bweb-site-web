@@ -17,9 +17,12 @@ const stats = [
     <!-- Bascule Actives / Archives -->
     <div class="rz-viewbar">
       <div class="vb-sub" data-viewsub>Sessions à venir</div>
-      <div class="rz-viewtoggle">
-        <button data-view="active" class="on">Actives</button>
-        <button data-view="archives"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg> Archives <span data-archcount></span></button>
+      <div class="rz-viewright">
+        <button type="button" class="abtn primary" id="mb-open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;vertical-align:-3px"><path d="M12 5v14M5 12h14"/></svg> Nouvelle réservation</button>
+        <div class="rz-viewtoggle">
+          <button data-view="active" class="on">Actives</button>
+          <button data-view="archives"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg> Archives <span data-archcount></span></button>
+        </div>
       </div>
     </div>
 
@@ -66,7 +69,61 @@ const stats = [
       </div>
     </div>
   </div>
+
+  <!-- Tiroir : nouvelle réservation manuelle (encaissement direct commercial) -->
+  <div class="a-drawer-overlay" id="mb-overlay"></div>
+  <aside class="a-drawer" id="mb-drawer" aria-hidden="true">
+    <div class="a-drawer-head">
+      <h2>Nouvelle réservation</h2>
+      <button class="icon-btn" id="mb-close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="a-drawer-body">
+      <p class="hint">Paiement encaissé directement (Mobile Money / espèces). La place est réservée immédiatement et le billet part par e-mail au participant.</p>
+      <div class="a-field"><label for="mb-session">Session *</label><select class="a-input" id="mb-session"><option value="">Chargement…</option></select></div>
+      <div class="a-field"><label for="mb-ticket">Tarif *</label><select class="a-input" id="mb-ticket"><option value="">—</option></select></div>
+      <div class="a-field" id="mb-attend-wrap" hidden><label>Participation *</label>
+        <div class="mb-seg" id="mb-attend"><button type="button" data-att="presentiel" class="on">Présentiel</button><button type="button" data-att="en_ligne">En ligne (Zoom)</button></div>
+      </div>
+      <div class="a-grid2">
+        <div class="a-field"><label for="mb-name">Nom du participant *</label><input class="a-input" id="mb-name" placeholder="Ex. Awa Koné" /></div>
+        <div class="a-field"><label for="mb-qty">Quantité *</label><input class="a-input" id="mb-qty" type="number" min="1" max="20" value="1" /></div>
+      </div>
+      <div class="a-grid2">
+        <div class="a-field"><label for="mb-email">E-mail * <span style="color:var(--c-gray-500);font-weight:400">(pour le billet)</span></label><input class="a-input" id="mb-email" type="email" placeholder="vous@exemple.com" /></div>
+        <div class="a-field"><label for="mb-phone">Téléphone</label><input class="a-input" id="mb-phone" type="tel" placeholder="07 00 00 00 00" /></div>
+      </div>
+      <div class="a-field"><label>Moyen de paiement *</label>
+        <div class="mb-seg wrap" id="mb-method">
+          <button type="button" data-m="wave" class="on">Wave</button>
+          <button type="button" data-m="orange_money">Orange Money</button>
+          <button type="button" data-m="mtn_momo">MTN MoMo</button>
+          <button type="button" data-m="especes">Espèces</button>
+        </div>
+      </div>
+      <div class="mb-total">Total encaissé&nbsp;: <b data-mb-total>—</b></div>
+      <p class="mb-msg" id="mb-msg" hidden></p>
+    </div>
+    <div class="a-drawer-foot">
+      <span class="grow"></span>
+      <button class="abtn" id="mb-cancel">Annuler</button>
+      <button class="abtn primary" id="mb-save">Enregistrer + envoyer le billet</button>
+    </div>
+  </aside>
 </AdminLayout>
+
+<style is:global>
+  .rz-viewright { display: flex; align-items: center; gap: 10px; }
+  .a-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .mb-seg { display: flex; gap: 6px; }
+  .mb-seg.wrap { flex-wrap: wrap; }
+  .mb-seg button { flex: 1; min-width: 84px; border: 1px solid var(--c-border); background: #fff; border-radius: 10px; padding: 9px; font: inherit; font-size: .84rem; font-weight: 700; color: var(--c-gray-600); cursor: pointer; }
+  .mb-seg button.on { border-color: var(--c-blue); background: rgba(31,108,237,.08); color: var(--c-blue-dark); }
+  .mb-total { font-size: .9rem; color: var(--c-gray-700); background: var(--c-gray-100); border-radius: 10px; padding: 10px 12px; }
+  .mb-total b { font-family: var(--f-display); font-weight: 800; }
+  .mb-msg { margin: 0; font-size: .84rem; font-weight: 700; }
+  .mb-msg.err { color: var(--c-danger); }
+  @media (max-width: 560px) { .a-grid2 { grid-template-columns: 1fr; } }
+</style>
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
@@ -263,6 +320,87 @@ const stats = [
     drop.querySelectorAll<HTMLElement>(".cdrop-opt[data-search]").forEach((o) => { o.style.display = !q || (o.dataset.search || "").includes(q) ? "" : "none"; });
   });
   document.addEventListener("click", (e) => { if (!(e.target as HTMLElement).closest("#r-sessiondrop")) drop.classList.remove("open"); });
+
+  // ---------- Nouvelle réservation manuelle (encaissement direct) ----------
+  const mbEl = (id: string) => document.getElementById(id) as HTMLInputElement;
+  const mbDrawer = document.getElementById("mb-drawer")!;
+  const mbOverlay = document.getElementById("mb-overlay")!;
+  let mbSessions: any[] = [];
+  let mbMethod = "wave";
+  let mbAttend = "presentiel";
+  const fmtPlain = (n: number) => (Number(n) || 0).toLocaleString("fr-FR") + " F CFA";
+  const mbOpen = () => { mbDrawer.classList.add("open"); mbOverlay.classList.add("open"); document.body.style.overflow = "hidden"; };
+  const mbClose = () => { mbDrawer.classList.remove("open"); mbOverlay.classList.remove("open"); document.body.style.overflow = ""; };
+
+  async function mbLoadSessions() {
+    const { data } = await supabaseBrowser.from("sessions")
+      .select("id,title,starts_at,mode,status, ticket_types(id,name,price,capacity,sold)")
+      .in("status", ["published", "full"]).gte("starts_at", new Date().toISOString())
+      .order("starts_at", { ascending: true });
+    mbSessions = data || [];
+    mbEl("mb-session").innerHTML = mbSessions.length
+      ? `<option value="">Choisir une session…</option>` + mbSessions.map((s) => `<option value="${s.id}">${esc(s.title)} · ${dshort(s.starts_at)}</option>`).join("")
+      : `<option value="">Aucune session à venir</option>`;
+    mbSyncTickets();
+  }
+  const mbSession = () => mbSessions.find((s) => s.id === mbEl("mb-session").value);
+  function mbSyncTickets() {
+    const s = mbSession();
+    const tts = ((s?.ticket_types) || []).slice().sort((a: any, b: any) => a.price - b.price);
+    mbEl("mb-ticket").innerHTML = tts.length
+      ? tts.map((t: any) => { const rem = Math.max(0, t.capacity - t.sold); return `<option value="${t.id}" data-price="${t.price}" ${rem <= 0 ? "disabled" : ""}>${esc(t.name)} — ${fmtPlain(t.price)}${rem <= 0 ? " (épuisé)" : ` · ${rem} pl.`}</option>`; }).join("")
+      : `<option value="">—</option>`;
+    document.getElementById("mb-attend-wrap")!.hidden = s?.mode !== "hybride";
+    mbSyncTotal();
+  }
+  function mbSyncTotal() {
+    const opt = (mbEl("mb-ticket") as unknown as HTMLSelectElement).selectedOptions[0];
+    const price = opt ? parseInt(opt.getAttribute("data-price") || "0") : 0;
+    const qty = Math.max(1, parseInt(mbEl("mb-qty").value || "1"));
+    document.querySelector("[data-mb-total]")!.textContent = fmtPlain(price * qty);
+  }
+  document.getElementById("mb-open")?.addEventListener("click", () => { mbOpen(); if (!mbSessions.length) mbLoadSessions(); });
+  document.getElementById("mb-close")?.addEventListener("click", mbClose);
+  document.getElementById("mb-cancel")?.addEventListener("click", mbClose);
+  mbOverlay.addEventListener("click", mbClose);
+  mbEl("mb-session").addEventListener("change", mbSyncTickets);
+  mbEl("mb-ticket").addEventListener("change", mbSyncTotal);
+  mbEl("mb-qty").addEventListener("input", mbSyncTotal);
+  document.querySelectorAll<HTMLElement>("#mb-method button").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("#mb-method button").forEach((x) => x.classList.remove("on")); b.classList.add("on"); mbMethod = b.dataset.m || "wave";
+  }));
+  document.querySelectorAll<HTMLElement>("#mb-attend button").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("#mb-attend button").forEach((x) => x.classList.remove("on")); b.classList.add("on"); mbAttend = b.dataset.att || "presentiel";
+  }));
+  document.getElementById("mb-save")?.addEventListener("click", async () => {
+    const msg = document.getElementById("mb-msg")!; const show = (t: string) => { msg.textContent = t; msg.hidden = false; msg.className = "mb-msg err"; };
+    const ticket = mbEl("mb-ticket").value;
+    const name = mbEl("mb-name").value.trim();
+    const email = mbEl("mb-email").value.trim();
+    const phone = mbEl("mb-phone").value.trim();
+    const qty = Math.max(1, parseInt(mbEl("mb-qty").value || "1"));
+    if (!ticket) return show("Choisissez une session et un tarif.");
+    if (name.length < 2) return show("Nom du participant requis.");
+    if (!/.+@.+\..+/.test(email)) return show("E-mail valide requis (pour envoyer le billet).");
+    const s = mbSession();
+    const attendance = s?.mode === "hybride" ? mbAttend : (s?.mode === "en_ligne" ? "en_ligne" : "presentiel");
+    const btn = document.getElementById("mb-save")!; btn.setAttribute("disabled", "true"); btn.textContent = "Enregistrement…"; msg.hidden = true;
+    try {
+      const { data: { session } } = await supabaseBrowser.auth.getSession();
+      const res = await fetch("/api/manual-booking", {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ ticket_type_id: ticket, quantity: qty, full_name: name, email, phone, payment_method: mbMethod, attendance_mode: attendance }),
+      });
+      const j = await res.json();
+      btn.removeAttribute("disabled"); btn.textContent = "Enregistrer + envoyer le billet";
+      if (!j?.ok) { show(j?.message || (j?.error === "sold_out" ? "Plus assez de places." : "Enregistrement impossible.")); return; }
+      toast(`Réservation ${j.reference} enregistrée — billet envoyé. ✓`);
+      mbClose();
+      mbEl("mb-name").value = ""; mbEl("mb-email").value = ""; mbEl("mb-phone").value = ""; mbEl("mb-qty").value = "1";
+      await mbLoadSessions();
+      await load();
+    } catch { btn.removeAttribute("disabled"); btn.textContent = "Enregistrer + envoyer le billet"; show("Erreur réseau. Réessayez."); }
+  });
 
   (async () => {
     const { data: { session } } = await supabaseBrowser.auth.getSession(); if (!session) return;
