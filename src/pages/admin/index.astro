@@ -109,10 +109,27 @@ const kpis = [
   };
 
   async function loadBookings() {
-    const { data } = await supabaseBrowser.from("bookings")
-      .select("id,reference,full_name,email,phone,status,payment_status,amount_due,amount_paid,is_deposit,created_at,payment_method,sessions(title,starts_at),ticket_types(name)")
-      .order("created_at", { ascending: false });
-    const all = data || [];
+    // Stats unifiées : billets (bookings) + achats de parcours (pack_purchases).
+    const [bkRes, pkRes] = await Promise.all([
+      supabaseBrowser.from("bookings")
+        .select("id,reference,full_name,email,phone,status,payment_status,amount_due,amount_paid,is_deposit,created_at,payment_method,source,session_id,sessions(title,starts_at),ticket_types(name)")
+        .order("created_at", { ascending: false }),
+      supabaseBrowser.from("pack_purchases")
+        .select("id,reference,full_name,email,phone,status,payment_status,amount_due,amount_paid,created_at,payment_method,packs(title)")
+        .order("created_at", { ascending: false }),
+    ]);
+    // Un billet « source=pack » = place déjà payée au niveau du pack (montant 0) :
+    // on l'EXCLUT des ventes pour ne pas compter deux fois — c'est le pack qui porte
+    // la transaction et le chiffre d'affaires.
+    const bookings = (bkRes.data || [])
+      .filter((b: any) => b.source !== "pack")
+      .map((b: any) => ({ ...b, kind: "booking", txnSession: b.sessions?.title || "—", txnLabel: b.ticket_types?.name || "" }));
+    const packs = (pkRes.data || []).map((p: any) => ({
+      ...p, is_deposit: false, kind: "pack",
+      txnSession: p.packs?.title ? `Parcours — ${p.packs.title}` : "Parcours (pack)",
+      txnLabel: "Pass parcours",
+    }));
+    const all = [...bookings, ...packs].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
 
     // ---- Agrégats états de paiement ----
     const counts: Record<string, number> = { paye: 0, attente: 0, echoue: 0, abandon: 0, annule: 0 };
@@ -170,7 +187,7 @@ const kpis = [
     const tb = $("[data-recent]");
     tb.innerHTML = recent.length ? recent.map((b) => `<tr>
         <td><strong>${esc(b.full_name)}</strong><br><span class="mono-ref" style="font-size:.72rem">${esc(b.reference)}</span></td>
-        <td>${esc(b.sessions?.title || "—")}<br><span style="color:var(--c-gray-500);font-size:.74rem">${esc(b.ticket_types?.name || "")}</span></td>
+        <td>${esc(b.txnSession)}${b.kind === "pack" ? ` <span class="tag-pill" style="background:rgba(31,108,237,.12);color:var(--c-blue-dark)">Pack</span>` : ""}<br><span style="color:var(--c-gray-500);font-size:.74rem">${esc(b.txnLabel)}</span></td>
         <td style="text-align:right;font-family:var(--f-display);font-weight:800;font-variant-numeric:tabular-nums">${fmtFCFA(dueOf(b))}</td>
         <td>${statePill[stateOf(b)] || esc(b.status)}</td></tr>`).join("")
       : `<tr><td class="empty" colspan="4">Aucune réservation.</td></tr>`;
@@ -192,7 +209,7 @@ const kpis = [
         const mail = b.email ? `<a class="ic" title="Relancer par e-mail" href="mailto:${encodeURIComponent(b.email)}?subject=${encodeURIComponent("Votre inscription chez Bweb Agence")}">${svgMail}</a>` : "";
         return `<div class="rl">
           <span class="rav" style="background:${avatarBg(key)}">${esc(initials(b.full_name))}</span>
-          <span class="rwho"><b>${esc(b.full_name)}</b><span>${stateLabel[st] || st} · ${esc(b.ticket_types?.name || "")} · ${dshort(b.created_at)}</span></span>
+          <span class="rwho"><b>${esc(b.full_name)}</b><span>${stateLabel[st] || st} · ${esc(b.txnLabel)} · ${dshort(b.created_at)}</span></span>
           <span class="ramt">${fmtFCFA(dueOf(b))}</span>${wa}${mail}</div>`;
       }).join("") + `<div style="padding:12px 18px;border-top:1px solid var(--c-border-soft)"><a class="dash-link" href="/admin/campagnes">+ Lancer une campagne de relance groupée →</a></div>`;
     }
