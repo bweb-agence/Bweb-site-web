@@ -99,13 +99,13 @@ const stats = [
       </div>
 
       <div class="mb-block">
-        <div class="mb-block-h">Sessions <span>— cochez celles à réserver</span></div>
-        <div id="mb-sessions-list"><div class="hint" style="padding:4px">Chargement…</div></div>
-      </div>
-
-      <div class="mb-block" id="mb-packs-block" hidden>
-        <div class="mb-block-h">Packs de parcours <span>— optionnel</span></div>
-        <div id="mb-packs-list"></div>
+        <div class="mb-block-h">Sessions &amp; packs <span>— cochez ce que prend le client</span></div>
+        <div id="mb-cart" class="mb-cart" hidden></div>
+        <div class="mb-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input class="a-input" id="mb-search" type="text" autocomplete="off" placeholder="Rechercher (titre, date, présentiel/en ligne…)" />
+        </div>
+        <div id="mb-list" class="mb-list"><div class="mb-list-empty">Chargement…</div></div>
       </div>
 
       <div class="mb-block">
@@ -118,7 +118,7 @@ const stats = [
         </div>
       </div>
 
-      <div class="mb-total">Total encaissé&nbsp;: <b data-mb-total>0 F CFA</b></div>
+      <div class="mb-total"><span data-mb-count>0 billet</span> · Total encaissé <b data-mb-total>0 F CFA</b></div>
       <p class="mb-msg" id="mb-msg" hidden></p>
     </div>
     <div class="a-drawer-foot">
@@ -154,6 +154,35 @@ const stats = [
   .mb-srow-cfg { display: flex; gap: 8px; margin-top: 8px; padding-left: 28px; }
   .mb-srow-cfg select { flex: 1; }
   .mb-srow-cfg .mb-qtysm { width: 74px; flex: none; }
+  /* Panier récap (sélection en cours, survit au filtrage) */
+  .mb-cart { display: flex; flex-direction: column; gap: 6px; background: rgba(31,108,237,.06); border: 1px solid rgba(31,108,237,.18); border-radius: 12px; padding: 10px; }
+  .mb-cart-h { display: flex; align-items: center; justify-content: space-between; font-size: .72rem; font-weight: 800; color: var(--c-blue-dark); text-transform: uppercase; letter-spacing: .03em; }
+  .mb-cart-row { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 8px; padding: 6px 8px; }
+  .mb-cart-row .cr-t { flex: 1; min-width: 0; }
+  .mb-cart-row .cr-t b { display: block; font-size: .82rem; color: var(--c-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mb-cart-row .cr-t span { font-size: .72rem; color: var(--c-gray-500); }
+  .mb-cart-row .cr-p { font-size: .8rem; font-weight: 800; color: var(--c-ink); white-space: nowrap; }
+  .mb-cart-row .cr-x { border: 0; background: none; cursor: pointer; color: var(--c-gray-500); font-size: .95rem; line-height: 1; padding: 2px 4px; border-radius: 6px; }
+  .mb-cart-row .cr-x:hover { background: var(--c-gray-100); color: var(--c-danger); }
+  /* Recherche + liste unifiée bornée */
+  .mb-search { position: relative; }
+  .mb-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--c-gray-500); pointer-events: none; }
+  .mb-search .a-input { padding-left: 34px; }
+  .mb-list { display: flex; flex-direction: column; gap: 6px; max-height: 244px; overflow-y: auto; border: 1px solid var(--c-border); border-radius: 12px; padding: 6px; background: #fff; }
+  .mb-item { border: 1px solid transparent; border-radius: 10px; padding: 7px 8px; }
+  .mb-item.on { border-color: rgba(31,108,237,.3); background: rgba(31,108,237,.05); }
+  .mb-item.off { opacity: .5; }
+  .mb-item-head { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .mb-item-head input { width: 17px; height: 17px; accent-color: var(--c-blue); flex: none; }
+  .mb-item-t { flex: 1; min-width: 0; }
+  .mb-item-t b { display: block; font-size: .84rem; color: var(--c-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mb-item-t span { font-size: .72rem; color: var(--c-gray-500); }
+  .mb-item-side { font-size: .74rem; color: var(--c-gray-500); white-space: nowrap; }
+  .mb-badge { display: inline-block; font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--c-blue-dark); background: rgba(31,108,237,.12); border-radius: 5px; padding: 1px 5px; margin-left: 6px; vertical-align: 1px; }
+  .mb-item-cfg { display: flex; gap: 8px; margin-top: 7px; padding-left: 27px; }
+  .mb-item-cfg select { flex: 1; }
+  .mb-item-cfg .mb-qtysm { width: 68px; flex: none; }
+  .mb-list-empty { text-align: center; font-size: .78rem; color: var(--c-gray-500); padding: 16px 8px; }
   #mb-sessions-list, #mb-packs-list { display: flex; flex-direction: column; gap: 8px; }
   .mb-client { position: relative; }
   .mb-client-drop { position: absolute; z-index: 30; top: 100%; left: 0; right: 0; margin-top: 4px; background: #fff; border: 1px solid var(--c-border); border-radius: 12px; box-shadow: var(--shadow-lg); overflow: hidden; max-height: 240px; overflow-y: auto; }
@@ -375,6 +404,15 @@ const stats = [
   const mbOpen = () => { mbDrawer.classList.add("open"); mbOverlay.classList.add("open"); document.body.style.overflow = "hidden"; };
   const mbClose = () => { mbDrawer.classList.remove("open"); mbOverlay.classList.remove("open"); document.body.style.overflow = ""; };
 
+  // Sélection en état — clé « s:<id> » (session) ou « p:<slug> » (pack).
+  // Source de vérité : survit au filtrage/recherche (une case filtrée hors vue reste choisie).
+  const mbSel = new Map<string, any>();
+  let mbQuery = "";
+  const modeLabel = (m: string) => m === "en_ligne" ? "En ligne" : m === "hybride" ? "Hybride" : "Présentiel";
+  const remOf = (t: any) => Math.max(0, (t.capacity || 0) - (t.sold || 0));
+  const availTts = (s: any) => (s.ticket_types || []).slice().sort((a: any, b: any) => a.price - b.price);
+  const sessRem = (s: any) => availTts(s).reduce((n: number, t: any) => n + remOf(t), 0);
+
   async function mbLoad() {
     const [s, p, c] = await Promise.all([
       supabaseBrowser.from("sessions").select("id,title,starts_at,mode,status, ticket_types(id,name,price,capacity,sold)").in("status", ["published", "full"]).gte("starts_at", new Date().toISOString()).order("starts_at", { ascending: true }),
@@ -384,59 +422,135 @@ const stats = [
     mbSessions = s.data || [];
     mbPacks = p.data || [];
     mbCustomers = c.data || [];
-    mbRenderSessions();
-    mbRenderPacks();
+    mbRenderList();
+    mbRenderCart();
     mbSyncTotal();
   }
 
-  function mbRenderSessions() {
-    const box = document.getElementById("mb-sessions-list")!;
-    if (!mbSessions.length) { box.innerHTML = `<div class="hint" style="padding:4px">Aucune session à venir.</div>`; return; }
-    box.innerHTML = mbSessions.map((s: any) => {
-      const tts = (s.ticket_types || []).slice().sort((a: any, b: any) => a.price - b.price);
-      const opts = tts.length
-        ? tts.map((t: any) => { const rem = Math.max(0, t.capacity - t.sold); return `<option value="${t.id}" data-price="${t.price}" ${rem <= 0 ? "disabled" : ""}>${esc(t.name)} — ${fmtPlain(t.price)}${rem <= 0 ? " (épuisé)" : ` · ${rem} pl.`}</option>`; }).join("")
-        : `<option value="">—</option>`;
-      return `<div class="mb-srow" data-session="${s.id}">
-        <label class="mb-srow-head"><input type="checkbox" data-s-check /><span class="mb-srow-t"><b>${esc(s.title)}</b><span>${dshort(s.starts_at)}</span></span></label>
-        <div class="mb-srow-cfg" data-s-cfg hidden>
-          <select class="a-input" data-s-ticket>${opts}</select>
-          <input class="a-input mb-qtysm" data-s-qty type="number" min="1" max="20" value="1" title="Quantité" />
-        </div>
+  function mbTicketOpts(s: any, sel: any): string {
+    return availTts(s).map((t: any) => `<option value="${t.id}" data-price="${t.price}" data-name="${esc(t.name)}"${remOf(t) <= 0 ? " disabled" : ""}${sel?.ticketId === t.id ? " selected" : ""}>${esc(t.name)} — ${fmtPlain(t.price)}${remOf(t) <= 0 ? " (épuisé)" : ` · ${remOf(t)} pl.`}</option>`).join("");
+  }
+
+  function mbRenderList() {
+    const box = document.getElementById("mb-list")!;
+    const q = mbQuery.trim().toLowerCase();
+    if (!mbSessions.length && !mbPacks.length) { box.innerHTML = `<div class="mb-list-empty">Aucune session ni pack disponible.</div>`; return; }
+    const sess = mbSessions.filter((s: any) => !q || (s.title + " " + dshort(s.starts_at) + " " + modeLabel(s.mode)).toLowerCase().includes(q));
+    const packs = mbPacks.filter((p: any) => !q || (p.title + " pack parcours").toLowerCase().includes(q));
+    if (!sess.length && !packs.length) { box.innerHTML = `<div class="mb-list-empty">Rien ne correspond à «&nbsp;${esc(mbQuery)}&nbsp;».</div>`; return; }
+
+    const sHtml = sess.map((s: any) => {
+      const key = "s:" + s.id;
+      const sel = mbSel.get(key);
+      const on = !!sel;
+      const rem = sessRem(s);
+      const soldOut = rem <= 0 || s.status === "full";
+      const cfg = on ? `<div class="mb-item-cfg"><select class="a-input" data-ticket>${mbTicketOpts(s, sel)}</select><input class="a-input mb-qtysm" data-qty type="number" min="1" max="20" value="${sel.qty}" title="Quantité" /></div>` : "";
+      return `<div class="mb-item${on ? " on" : ""}${soldOut && !on ? " off" : ""}" data-key="${key}">
+        <label class="mb-item-head"><input type="checkbox" data-check${on ? " checked" : ""}${soldOut && !on ? " disabled" : ""} />
+          <span class="mb-item-t"><b>${esc(s.title)}</b><span>${dshort(s.starts_at)} · ${modeLabel(s.mode)}</span></span>
+          <span class="mb-item-side">${soldOut ? "Complet" : rem + " pl."}</span>
+        </label>${cfg}
       </div>`;
     }).join("");
-  }
-  function mbRenderPacks() {
-    const block = document.getElementById("mb-packs-block")!;
-    const box = document.getElementById("mb-packs-list")!;
-    if (!mbPacks.length) { block.hidden = true; return; }
-    block.hidden = false;
-    box.innerHTML = mbPacks.map((p: any) => `<div class="mb-srow" data-pack="${esc(p.slug)}" data-price="${p.price}">
-      <label class="mb-srow-head"><input type="checkbox" data-p-check /><span class="mb-srow-t"><b>${esc(p.title)}</b><span>${fmtPlain(p.price)}</span></span></label>
-    </div>`).join("");
+
+    const pHtml = packs.map((p: any) => {
+      const key = "p:" + p.slug;
+      const on = mbSel.has(key);
+      return `<div class="mb-item${on ? " on" : ""}" data-key="${key}">
+        <label class="mb-item-head"><input type="checkbox" data-check${on ? " checked" : ""} />
+          <span class="mb-item-t"><b>${esc(p.title)}<span class="mb-badge">Pack</span></b><span>Parcours · pass complet</span></span>
+          <span class="mb-item-side">${fmtPlain(p.price)}</span>
+        </label>
+      </div>`;
+    }).join("");
+
+    box.innerHTML = sHtml + pHtml;
   }
 
-  function mbSessionRowTotal(row: Element): number {
-    if (!(row.querySelector("[data-s-check]") as HTMLInputElement)?.checked) return 0;
-    const opt = (row.querySelector("[data-s-ticket]") as HTMLSelectElement)?.selectedOptions[0];
-    const price = opt ? parseInt(opt.getAttribute("data-price") || "0") : 0;
-    const qty = Math.max(1, parseInt((row.querySelector("[data-s-qty]") as HTMLInputElement)?.value || "1"));
-    return price * qty;
+  function mbAddSession(s: any) {
+    const first = availTts(s).find((t: any) => remOf(t) > 0) || availTts(s)[0];
+    mbSel.set("s:" + s.id, { kind: "s", key: "s:" + s.id, id: s.id, title: s.title, mode: s.mode, dateLabel: dshort(s.starts_at), ticketId: first?.id || "", ticketName: first?.name || "", price: first?.price || 0, qty: 1 });
   }
+
+  function mbRenderCart() {
+    const box = document.getElementById("mb-cart")!;
+    if (mbSel.size === 0) { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    let billets = 0;
+    const rows = Array.from(mbSel.values()).map((it: any) => {
+      let sub = "", price = 0;
+      if (it.kind === "s") { billets += it.qty; price = it.price * it.qty; sub = `${it.dateLabel} · ${it.ticketName} ×${it.qty}`; }
+      else { billets += 1; price = it.price; sub = "Pack parcours"; }
+      return `<div class="mb-cart-row" data-key="${it.key}"><span class="cr-t"><b>${esc(it.title)}</b><span>${esc(sub)}</span></span><span class="cr-p">${fmtPlain(price)}</span><button type="button" class="cr-x" data-remove aria-label="Retirer">✕</button></div>`;
+    }).join("");
+    box.innerHTML = `<div class="mb-cart-h"><span>${mbSel.size} sélectionné(s)</span><span>${billets} billet(s)</span></div>${rows}`;
+  }
+
   function mbSyncTotal() {
-    let sum = 0;
-    document.querySelectorAll("#mb-sessions-list [data-session]").forEach((r) => (sum += mbSessionRowTotal(r)));
-    document.querySelectorAll("#mb-packs-list [data-pack]").forEach((r) => { if ((r.querySelector("[data-p-check]") as HTMLInputElement)?.checked) sum += parseInt((r as HTMLElement).dataset.price || "0"); });
+    let sum = 0, billets = 0;
+    mbSel.forEach((it: any) => { if (it.kind === "s") { sum += it.price * it.qty; billets += it.qty; } else { sum += it.price; billets += 1; } });
     document.querySelector("[data-mb-total]")!.textContent = fmtPlain(sum);
+    const cnt = document.querySelector("[data-mb-count]"); if (cnt) cnt.textContent = billets + (billets > 1 ? " billets" : " billet");
   }
 
-  document.getElementById("mb-sessions-list")!.addEventListener("change", (e) => {
-    const t = e.target as HTMLElement; const row = t.closest("[data-session]"); if (!row) return;
-    if (t.matches("[data-s-check]")) (row.querySelector("[data-s-cfg]") as HTMLElement).hidden = !(t as HTMLInputElement).checked;
-    mbSyncTotal();
+  // Met à jour une ligne (classe + config tarif) sans re-rendre toute la liste (préserve le scroll).
+  function mbUpdateRow(item: HTMLElement, key: string) {
+    const on = mbSel.has(key);
+    item.classList.toggle("on", on);
+    if (!key.startsWith("s:")) return;
+    const cfg = item.querySelector(".mb-item-cfg") as HTMLElement | null;
+    if (on && !cfg) {
+      const s = mbSessions.find((x: any) => "s:" + x.id === key);
+      const sel = mbSel.get(key);
+      item.insertAdjacentHTML("beforeend", `<div class="mb-item-cfg"><select class="a-input" data-ticket>${mbTicketOpts(s, sel)}</select><input class="a-input mb-qtysm" data-qty type="number" min="1" max="20" value="${sel.qty}" title="Quantité" /></div>`);
+    } else if (!on && cfg) { cfg.remove(); }
+  }
+
+  const mbListEl = document.getElementById("mb-list")!;
+  mbListEl.addEventListener("change", (e) => {
+    const t = e.target as HTMLElement;
+    const item = t.closest(".mb-item") as HTMLElement | null; if (!item) return;
+    const key = item.dataset.key || "";
+    if (t.matches("[data-check]")) {
+      const checked = (t as HTMLInputElement).checked;
+      if (key.startsWith("s:")) {
+        const s = mbSessions.find((x: any) => "s:" + x.id === key);
+        if (checked && s) mbAddSession(s); else mbSel.delete(key);
+      } else {
+        const p = mbPacks.find((x: any) => "p:" + x.slug === key);
+        if (checked && p) mbSel.set(key, { kind: "p", key, slug: p.slug, title: p.title, price: p.price }); else mbSel.delete(key);
+      }
+      mbUpdateRow(item, key);
+      mbRenderCart(); mbSyncTotal();
+    } else if (t.matches("[data-ticket]")) {
+      const sel = mbSel.get(key); if (!sel) return;
+      const opt = (t as HTMLSelectElement).selectedOptions[0];
+      sel.ticketId = (t as HTMLSelectElement).value;
+      sel.price = parseInt(opt?.getAttribute("data-price") || "0");
+      sel.ticketName = opt?.getAttribute("data-name") || sel.ticketName;
+      mbRenderCart(); mbSyncTotal();
+    }
   });
-  document.getElementById("mb-sessions-list")!.addEventListener("input", (e) => { if ((e.target as HTMLElement).matches("[data-s-qty]")) mbSyncTotal(); });
-  document.getElementById("mb-packs-list")!.addEventListener("change", mbSyncTotal);
+  mbListEl.addEventListener("input", (e) => {
+    const t = e.target as HTMLElement; if (!t.matches("[data-qty]")) return;
+    const item = t.closest(".mb-item") as HTMLElement | null; if (!item) return;
+    const sel = mbSel.get(item.dataset.key || ""); if (!sel) return;
+    sel.qty = Math.max(1, Math.min(20, parseInt((t as HTMLInputElement).value || "1")));
+    mbRenderCart(); mbSyncTotal();
+  });
+
+  document.getElementById("mb-cart")!.addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest("[data-remove]"); if (!b) return;
+    const row = (e.target as HTMLElement).closest(".mb-cart-row") as HTMLElement | null;
+    const key = row?.dataset.key || "";
+    mbSel.delete(key);
+    const item = document.querySelector(`#mb-list .mb-item[data-key="${key}"]`) as HTMLElement | null;
+    if (item) { const cb = item.querySelector("[data-check]") as HTMLInputElement | null; if (cb) cb.checked = false; mbUpdateRow(item, key); }
+    mbRenderCart(); mbSyncTotal();
+  });
+
+  document.getElementById("mb-search")!.addEventListener("input", () => { mbQuery = mbEl("mb-search").value; mbRenderList(); });
 
   document.querySelectorAll<HTMLElement>("#mb-method button").forEach((b) => b.addEventListener("click", () => { document.querySelectorAll("#mb-method button").forEach((x) => x.classList.remove("on")); b.classList.add("on"); mbMethod = b.dataset.m || "wave"; }));
   document.querySelectorAll<HTMLElement>("#mb-attend button").forEach((b) => b.addEventListener("click", () => { document.querySelectorAll("#mb-attend button").forEach((x) => x.classList.remove("on")); b.classList.add("on"); mbAttend = b.dataset.att || "presentiel"; }));
@@ -475,18 +589,15 @@ const stats = [
     if (!/.+@.+\..+/.test(email)) return show("E-mail valide requis (pour envoyer les billets).");
 
     const jobs: any[] = [];
-    document.querySelectorAll("#mb-sessions-list [data-session]").forEach((row) => {
-      if (!(row.querySelector("[data-s-check]") as HTMLInputElement)?.checked) return;
-      const ticket = (row.querySelector("[data-s-ticket]") as HTMLSelectElement).value;
-      if (!ticket) return;
-      const qty = Math.max(1, parseInt((row.querySelector("[data-s-qty]") as HTMLInputElement).value || "1"));
-      const s = mbSessions.find((x: any) => x.id === (row as HTMLElement).dataset.session);
-      const attendance = s?.mode === "hybride" ? mbAttend : (s?.mode === "en_ligne" ? "en_ligne" : "presentiel");
-      jobs.push({ url: "/api/manual-booking", body: { ticket_type_id: ticket, quantity: qty, full_name: name, email, phone, payment_method: mbMethod, attendance_mode: attendance } });
-    });
-    document.querySelectorAll("#mb-packs-list [data-pack]").forEach((row) => {
-      if (!(row.querySelector("[data-p-check]") as HTMLInputElement)?.checked) return;
-      jobs.push({ url: "/api/manual-pack", body: { slug: (row as HTMLElement).dataset.pack, full_name: name, email, phone, payment_method: mbMethod, attendance_mode: mbAttend } });
+    mbSel.forEach((it: any) => {
+      if (it.kind === "s") {
+        if (!it.ticketId) return;
+        const s = mbSessions.find((x: any) => x.id === it.id);
+        const attendance = s?.mode === "hybride" ? mbAttend : (s?.mode === "en_ligne" ? "en_ligne" : "presentiel");
+        jobs.push({ url: "/api/manual-booking", body: { ticket_type_id: it.ticketId, quantity: it.qty, full_name: name, email, phone, payment_method: mbMethod, attendance_mode: attendance } });
+      } else {
+        jobs.push({ url: "/api/manual-pack", body: { slug: it.slug, full_name: name, email, phone, payment_method: mbMethod, attendance_mode: mbAttend } });
+      }
     });
     if (!jobs.length) return show("Cochez au moins une session ou un pack.");
 
@@ -503,7 +614,7 @@ const stats = [
     btn.removeAttribute("disabled"); btn.textContent = "Enregistrer + envoyer les billets";
     if (ok > 0) toast(`${ok} billet(s) envoyé(s) à ${name}. ✓`);
     if (fails.length) show(fails.join(" · "));
-    else { mbClose(); mbEl("mb-name").value = ""; mbEl("mb-email").value = ""; mbEl("mb-phone").value = ""; mbEl("mb-clientsearch").value = ""; }
+    else { mbClose(); mbSel.clear(); mbEl("mb-name").value = ""; mbEl("mb-email").value = ""; mbEl("mb-phone").value = ""; mbEl("mb-clientsearch").value = ""; mbEl("mb-search").value = ""; mbQuery = ""; }
     await mbLoad(); await load();
   });
 
