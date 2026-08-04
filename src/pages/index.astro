@@ -335,39 +335,70 @@ import IllusEngagement from "../components/illus/IllusEngagement.astro";
 </section>
 
 <!-- ============ METHODOLOGIE ============ -->
-<section class="section section-gray" data-nav-section="Méthodologie">
+<section class="section section-gray methodo-v2" data-nav-section="Méthodologie">
   <div class="container">
-    <div class="section-head center reveal">
-      <div class="eyebrow" style="justify-content:center">Méthode</div>
-      <h2><span style="opacity:.5">Une</span> <span class="text-gradient-blue">approche simple</span>. <span style="opacity:.5">Des</span> <span class="text-gradient-blue">résultats mesurables</span>.</h2>
-    </div>
-    <div class="method-flow" data-stagger>
-      <div class="method-track" aria-hidden="true"><span class="method-track__flow"></span></div>
-      <div class="method-step">
-        <div class="method-node"><span class="method-num">01</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
-        <div class="method-body"><h4>Diagnostic</h4><p>Comprendre vos besoins, difficultés et objectifs.</p></div>
+    <div class="split-block">
+      <div class="reveal">
+        <div class="eyebrow">Méthode</div>
+        <h2><span style="opacity:.5">Une</span> <span class="text-gradient-blue">approche simple</span>. <span style="opacity:.5">Des</span> <span class="text-gradient-blue">résultats mesurables</span>.</h2>
+        <p class="lead" style="margin:20px 0 28px">Cinq étapes claires, du premier diagnostic jusqu'au suivi des résultats, pour avancer sans vous perdre en route.</p>
+        <a href="/methodologie" class="btn btn-primary">Voir notre méthodologie en détail
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
+        </a>
       </div>
-      <div class="method-step">
-        <div class="method-node"><span class="method-num">02</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="20" y1="12" x2="22.5" y2="12"/></svg></div>
-        <div class="method-body"><h4>Stratégie</h4><p>Définir priorités, solutions et plan d'action.</p></div>
+      <div class="methodo-carousel reveal" data-delay=".15">
+        <div class="methodo-blur" aria-hidden="true"></div>
+        <div class="methodo-pages">
+          <div class="methodo-page is-active" data-methodo-page="0">
+            <svg class="methodo-zigzag" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M15,82 C26,84 28,20 50,18 C72,20 74,84 85,82" vector-effect="non-scaling-stroke" />
+            </svg>
+            <div class="methodo-slot methodo-slot--low methodo-slot--start">
+              <span class="methodo-dot"></span>
+              <span class="methodo-ghost">01</span>
+              <div class="methodo-card"><h4>Diagnostic</h4><p>Comprendre vos besoins, difficultés et objectifs.</p></div>
+            </div>
+            <div class="methodo-slot methodo-slot--high">
+              <span class="methodo-dot"></span>
+              <span class="methodo-ghost">02</span>
+              <div class="methodo-card"><h4>Stratégie</h4><p>Définir priorités, solutions et plan d'action.</p></div>
+            </div>
+            <div class="methodo-slot methodo-slot--low methodo-slot--end">
+              <span class="methodo-dot"></span>
+              <span class="methodo-ghost">03</span>
+              <div class="methodo-card"><h4>Conception</h4><p>Créer les outils, plateformes et systèmes nécessaires.</p></div>
+            </div>
+          </div>
+          <div class="methodo-page" data-methodo-page="1" hidden>
+            <svg class="methodo-zigzag" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M15,82 C26,84 28,20 50,18" vector-effect="non-scaling-stroke" />
+            </svg>
+            <div class="methodo-slot methodo-slot--low methodo-slot--start">
+              <span class="methodo-dot"></span>
+              <span class="methodo-ghost">04</span>
+              <div class="methodo-card"><h4>Déploiement</h4><p>Mettre en place et accompagner les utilisateurs.</p></div>
+            </div>
+            <div class="methodo-slot methodo-slot--high">
+              <span class="methodo-dot methodo-dot--final"></span>
+              <span class="methodo-ghost">05</span>
+              <div class="methodo-card"><h4>Suivi</h4><p>Mesurer, corriger et optimiser vos performances.</p></div>
+            </div>
+            <div class="methodo-slot methodo-slot--empty" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="methodo-nav">
+          <button type="button" class="methodo-arrow" data-methodo-prev aria-label="Étapes précédentes" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="methodo-dots">
+            <button type="button" class="methodo-page-dot is-active" data-methodo-goto="0" aria-label="Étapes 1 à 3"></button>
+            <button type="button" class="methodo-page-dot" data-methodo-goto="1" aria-label="Étapes 4 à 5"></button>
+          </div>
+          <button type="button" class="methodo-arrow" data-methodo-next aria-label="Étapes suivantes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
       </div>
-      <div class="method-step">
-        <div class="method-node"><span class="method-num">03</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4.5-1L19 8.5 15.5 5 5 15.5 4 20z"/><path d="M14 6.5l3.5 3.5"/></svg></div>
-        <div class="method-body"><h4>Conception</h4><p>Créer les outils, plateformes et systèmes nécessaires.</p></div>
-      </div>
-      <div class="method-step">
-        <div class="method-node"><span class="method-num">04</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3.2 2.2 5 5.8 5 10.5L14.4 16l-2.4-1.4L9.6 16 7 13.5C7 8.8 8.8 5.2 12 3z"/><circle cx="12" cy="10" r="1.8"/><path d="M9 18l-2 2M15 18l2 2"/></svg></div>
-        <div class="method-body"><h4>Déploiement</h4><p>Mettre en place et accompagner les utilisateurs.</p></div>
-      </div>
-      <div class="method-step">
-        <div class="method-node"><span class="method-num">05</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 15 9 10 13 14 20 6"/><polyline points="15 6 20 6 20 11"/></svg></div>
-        <div class="method-body"><h4>Suivi</h4><p>Mesurer, corriger et optimiser vos performances.</p></div>
-      </div>
-    </div>
-    <div class="text-center" style="margin-top:44px">
-      <a href="/methodologie" class="btn btn-outline">Voir notre méthodologie en détail
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
-      </a>
     </div>
   </div>
 </section>
@@ -392,3 +423,130 @@ import IllusEngagement from "../components/illus/IllusEngagement.astro";
 </section>
 
 </BaseLayout>
+
+<style>
+  /* Colonne texte plus large + titre plafonné : garantit 2 lignes maximum.
+     Gardé au-dessus du breakpoint global (1080px) : en dessous, .split-block
+     repasse déjà en 1 colonne (règle globale) et cette surcharge la casserait. */
+  @media (min-width: 1081px) {
+    .methodo-v2 .split-block { grid-template-columns: 1fr 1fr; gap: 0px; align-items: center; }
+  }
+  /* Sous-titre contraint pour un rendu sur 3 lignes, indépendamment de la largeur de colonne. */
+  .methodo-v2 .lead { max-width: 480px; }
+
+  .methodo-carousel { position: relative; }
+  .methodo-blur {
+    position: absolute; top: -30px; right: -30px; width: 260px; height: 260px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(31, 108, 237, .16), rgba(31, 108, 237, 0) 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .methodo-pages { position: relative; min-height: 400px; }
+  /* Glissement horizontal (pas un simple fondu) : donne la sensation d'avancer
+     le long du parcours plutôt qu'un changement instantané. */
+  .methodo-page { position: absolute; inset: 0; transition: opacity .7s var(--ease), transform .7s var(--ease); }
+  .methodo-page.is-right { opacity: 0; transform: translateX(48px); }
+  .methodo-page.is-left { opacity: 0; transform: translateX(-48px); }
+  .methodo-page[hidden] { display: none; }
+
+  .methodo-zigzag { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; overflow: visible; }
+  .methodo-zigzag path { fill: none; stroke: var(--c-orange); stroke-width: 3.5; stroke-dasharray: 6 8; stroke-linecap: round; }
+
+  .methodo-slot { position: absolute; transform: translate(-50%, -50%); z-index: 2; }
+  .methodo-slot--start { left: 15%; top: 82%; }
+  .methodo-slot--high { left: 50%; top: 15%; }
+  .methodo-slot--end { left: 85%; top: 82%; }
+  .methodo-slot--empty { display: none; }
+
+  .methodo-dot {
+    display: block; width: 14px; height: 14px; border-radius: 50%; background: #fff;
+    border: 3px solid var(--c-blue); box-shadow: 0 0 0 6px rgba(31, 108, 237, .14); position: relative; z-index: 2;
+  }
+  .methodo-dot--final { background: var(--c-blue); box-shadow: 0 0 0 8px rgba(31, 108, 237, .2); }
+
+  .methodo-ghost {
+    position: absolute; font-family: var(--f-display); font-weight: 800;
+    font-size: clamp(2.6rem, 4.5vw, 4.5rem); line-height: 1; color: var(--c-gray-300); opacity: .6;
+    z-index: 0; pointer-events: none; user-select: none;
+  }
+  .methodo-slot--start .methodo-ghost { top: 14px; left: 10px; }
+  .methodo-slot--end .methodo-ghost { top: 14px; left: auto; right: 10px; }
+  .methodo-slot--high .methodo-ghost { bottom: 14px; left: 50%; transform: translateX(-50%); }
+
+  .methodo-card { position: absolute; width: 175px; max-width: 40vw; z-index: 3; }
+  .methodo-card h4 { font-size: 1.08rem; margin-bottom: 6px; }
+  .methodo-card p { font-size: .92rem; color: var(--c-gray-600); line-height: 1.5; margin: 0; }
+  /* Placée à côté du grand chiffre, du côté opposé au centre : ne croise jamais le tracé. */
+  .methodo-slot--start .methodo-card { top: 24px; bottom: auto; left: auto; right: 14px; text-align: right; }
+  .methodo-slot--end .methodo-card { top: 24px; bottom: auto; left: 14px; right: auto; text-align: left; }
+  .methodo-slot--high .methodo-card { top: auto; bottom: 22px; left: 58px; transform: none; text-align: left; }
+
+  .methodo-nav { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 12px; position: relative; z-index: 4; }
+  .methodo-arrow {
+    width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--c-border); background: #fff;
+    display: flex; align-items: center; justify-content: center; color: var(--c-navy); cursor: pointer; flex: none;
+    transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .methodo-arrow svg { width: 20px; height: 20px; }
+  .methodo-arrow:hover:not(:disabled) { background: var(--c-navy); color: #fff; border-color: transparent; transform: scale(1.06); }
+  .methodo-arrow:disabled { opacity: .35; cursor: default; }
+  .methodo-dots { display: flex; gap: 8px; }
+  .methodo-page-dot {
+    width: 9px; height: 9px; border-radius: 50%; border: none; background: var(--c-gray-300); cursor: pointer; padding: 0;
+    transition: background-color var(--dur-fast) var(--ease), width var(--dur-fast) var(--ease);
+  }
+  .methodo-page-dot.is-active { background: var(--c-blue); width: 22px; border-radius: 5px; }
+
+  @media (max-width: 860px) {
+    .methodo-pages { min-height: 0; }
+    .methodo-page { position: static; opacity: 1 !important; display: block !important; margin-bottom: 26px; }
+    .methodo-page:last-child { margin-bottom: 0; }
+    .methodo-zigzag, .methodo-ghost { display: none; }
+    .methodo-slot {
+      position: static; transform: none; display: flex; align-items: flex-start; gap: 16px; margin-bottom: 26px;
+    }
+    .methodo-page .methodo-slot:last-child { margin-bottom: 0; }
+    .methodo-dot { flex: none; margin-top: 6px; }
+    .methodo-card {
+      position: static; width: auto; max-width: none; text-align: left !important; transform: none !important;
+    }
+    .methodo-nav { display: none; }
+  }
+</style>
+
+<script>
+  (() => {
+    const carousel = document.querySelector(".methodo-carousel");
+    if (!carousel) return;
+    const pages = Array.from(carousel.querySelectorAll<HTMLElement>(".methodo-page"));
+    const dots = Array.from(carousel.querySelectorAll<HTMLButtonElement>(".methodo-page-dot"));
+    const prevBtn = carousel.querySelector<HTMLButtonElement>("[data-methodo-prev]");
+    const nextBtn = carousel.querySelector<HTMLButtonElement>("[data-methodo-next]");
+    let current = 0;
+    const SLIDE_MS = 550;
+
+    function goTo(index: number) {
+      if (index === current || index < 0 || index >= pages.length) return;
+      const forward = index > current;
+      const outClass = forward ? "is-left" : "is-right";
+      const inClass = forward ? "is-right" : "is-left";
+      const from = pages[current];
+      const to = pages[index];
+      from.classList.add(outClass);
+      to.hidden = false;
+      to.classList.add(inClass);
+      requestAnimationFrame(() => requestAnimationFrame(() => to.classList.remove(inClass)));
+      setTimeout(() => {
+        from.hidden = true;
+        from.classList.remove(outClass);
+      }, SLIDE_MS);
+      current = index;
+      dots.forEach((d, i) => d.classList.toggle("is-active", i === index));
+      if (prevBtn) prevBtn.disabled = index === 0;
+      if (nextBtn) nextBtn.disabled = index === pages.length - 1;
+    }
+
+    prevBtn?.addEventListener("click", () => goTo(current - 1));
+    nextBtn?.addEventListener("click", () => goTo(current + 1));
+    dots.forEach((dot, i) => dot.addEventListener("click", () => goTo(i)));
+  })();
+</script>
