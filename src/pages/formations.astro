@@ -46,6 +46,10 @@ const soonIcons: Record<string, string> = {
 };
 const soonIcon = (slug: string) => soonIcons[slug] || soonIcons["creer-produit-digital"];
 
+// Témoignage vidéo : ID de la vidéo YouTube (non répertoriée).
+// Vide = seule la vignette s'affiche, sans bouton lecture.
+const testimonialYoutubeId = "";
+
 // Couleurs des thèmes (source de vérité) pour des badges/dégradés uniformes.
 const { data: themesData } = await supabase.from("themes").select("name,color");
 const tmap = themeColorMap(themesData);
@@ -182,12 +186,32 @@ const tmap = themeColorMap(themesData);
         </div>
       </div>
 
-      <!-- Colonne centrale : témoignage vidéo (la vidéo n'est injectée qu'au clic) -->
-      <div class="tm-video">
+      <!-- Colonne centrale : témoignage vidéo. Le lecteur YouTube n'est injecté qu'au
+           clic ET après consentement « contenus externes » (même règle que la carte). -->
+      <div class="tm-video" data-tm-video>
         <img src="/images/mission-formation-1.jpg" alt="Session de formation Bweb en salle" loading="lazy" />
-        <button type="button" class="tm-play" data-tm-video="/videos/temoignage-formation.mp4" aria-label="Lire le témoignage vidéo">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
-        </button>
+        {testimonialYoutubeId ? (
+          <>
+            <template data-tm-embed>
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${testimonialYoutubeId}?autoplay=1&rel=0`}
+                title="Témoignage vidéo d'une participante à une formation Bweb"
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowfullscreen
+                loading="lazy"
+              ></iframe>
+            </template>
+            <button type="button" class="tm-play" data-tm-play aria-label="Lire le témoignage vidéo">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+            </button>
+          </>
+        ) : (
+          /* Pas encore de vidéo : pastille purement décorative (ni bouton ni focusable),
+             pour ne pas exposer un contrôle qui ne ferait rien au clic. */
+          <span class="tm-play tm-play--idle" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>
+          </span>
+        )}
       </div>
 
       <!-- Colonne droite : témoignages écrits en défilement continu -->
@@ -387,7 +411,7 @@ const tmap = themeColorMap(themesData);
   .tm-bar span { display: block; height: 100%; border-radius: inherit; background: var(--c-orange); }
 
   .tm-video { position: relative; border-radius: var(--radius-lg); overflow: hidden; min-height: 460px; background: var(--c-navy); }
-  .tm-video img, .tm-video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .tm-video img, .tm-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border: 0; }
   .tm-play {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: 74px; height: 74px; border-radius: 50%; border: none; cursor: pointer;
@@ -398,6 +422,9 @@ const tmap = themeColorMap(themesData);
   .tm-play svg { width: 30px; height: 30px; margin-left: 3px; }
   .tm-play:hover { transform: translate(-50%, -50%) scale(1.08); box-shadow: 0 18px 44px -8px rgba(2, 11, 80, .55); }
   .tm-play[hidden] { display: none; }
+  /* Variante décorative (aucune vidéo branchée) : ni curseur main, ni effet de survol. */
+  .tm-play--idle { cursor: default; }
+  .tm-play--idle:hover { transform: translate(-50%, -50%); box-shadow: 0 12px 34px -8px rgba(2, 11, 80, .45); }
 
   /* __inner en absolu : la hauteur des cartes ne dilate pas la ligne de grille,
      le bloc épouse donc la hauteur de la colonne la plus haute. */
@@ -516,20 +543,30 @@ const tmap = themeColorMap(themesData);
       });
     }
 
-    /* La vidéo n'est chargée qu'au clic : la page ne paie pas son poids au chargement. */
-    const play = document.querySelector<HTMLButtonElement>(".tm-play");
-    play?.addEventListener("click", () => {
-      const src = play.dataset.tmVideo;
-      const wrap = play.closest(".tm-video");
-      if (!src || !wrap) return;
-      const video = document.createElement("video");
-      video.src = src;
-      video.controls = true;
-      video.autoplay = true;
-      video.playsInline = true;
-      wrap.appendChild(video);
-      play.hidden = true;
-    });
+    /* Lecteur YouTube injecté au clic seulement, et uniquement si les « contenus
+       externes » sont acceptés — sinon on déclenche d'abord la demande de consentement
+       et l'injection se fait au retour de l'événement `bweb:consent`. */
+    const wrap = document.querySelector<HTMLElement>("[data-tm-video]");
+    const tpl = wrap?.querySelector<HTMLTemplateElement>("[data-tm-embed]");
+    const play = wrap?.querySelector<HTMLButtonElement>("[data-tm-play]");
+    if (wrap && tpl && play) {
+      let requested = false;
+      const render = () => {
+        if (!requested) return;
+        if (!document.documentElement.classList.contains("consent-externes")) return;
+        if (wrap.querySelector("iframe")) return;
+        wrap.appendChild(tpl.content.cloneNode(true));
+        play.hidden = true;
+      };
+      play.addEventListener("click", () => {
+        requested = true;
+        if (!document.documentElement.classList.contains("consent-externes")) {
+          (window as unknown as { bwebCookies?: { acceptExternes: () => void } }).bwebCookies?.acceptExternes();
+        }
+        render();
+      });
+      window.addEventListener("bweb:consent", render);
+    }
   })();
 </script>
 </BaseLayout>
