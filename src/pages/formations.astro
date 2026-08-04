@@ -88,7 +88,7 @@ const tmap = themeColorMap(themesData);
 
     {sessions.length > 0 ? (
       <>
-        <div class="ev-grid" style="margin-top:var(--space-lg)">
+        <div class="ev-grid ev-grid--center" style={`margin-top:var(--space-lg);--ev-cols:${Math.min(sessions.length, 3)};--ev-cols-sm:${Math.min(sessions.length, 2)}`}>
           {sessions.map((s) => <SessionCard session={s} map={tmap} />)}
         </div>
         <div style="text-align:center;margin-top:var(--space-lg)">
@@ -151,6 +151,71 @@ const tmap = themeColorMap(themesData);
     </div>
   </section>
 )}
+
+<!-- ===== Témoignages ===== -->
+<section class="section" data-nav-section="Témoignages">
+  <div class="container">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center">Témoignages</div>
+      <h2>Ce qu'en disent nos participants.</h2>
+      <p class="lead" style="margin-top:14px">Des retours concrets de dirigeants, d'équipes et d'indépendants formés par Bweb.</p>
+    </div>
+    <div class="tm-layout reveal" style="margin-top:var(--space-lg)">
+      <!-- Colonne gauche : intro + preuves chiffrées -->
+      <div class="tm-intro">
+        <div class="tm-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14.5"/><path d="M4 19.5A1.5 1.5 0 0 1 5.5 18H20"/><path d="M9 7h6M9 11h6"/></svg>
+        </div>
+        <h3>Ils sont passés par nos formations.</h3>
+        <p class="lead">Des dirigeants, des équipes et des indépendants qui utilisent aujourd'hui l'IA et le digital comme un vrai levier de croissance.</p>
+        <div class="tm-stats">
+          <div class="tm-stat">
+            <div class="tm-stat__num">97 %</div>
+            <p>de participants satisfaits de leur formation.</p>
+            <div class="tm-bar"><span style="width:97%"></span></div>
+          </div>
+          <div class="tm-stat">
+            <div class="tm-stat__num">15 000<span class="tm-stat__suffix">+</span></div>
+            <p>personnes formées et accompagnées depuis nos débuts.</p>
+            <div class="tm-bar"><span style="width:85%"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne centrale : témoignage vidéo (la vidéo n'est injectée qu'au clic) -->
+      <div class="tm-video">
+        <img src="/images/mission-formation-1.jpg" alt="Session de formation Bweb en salle" loading="lazy" />
+        <button type="button" class="tm-play" data-tm-video="/videos/temoignage-formation.mp4" aria-label="Lire le témoignage vidéo">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+        </button>
+      </div>
+
+      <!-- Colonne droite : témoignages écrits en défilement continu -->
+      <div class="tm-scroller">
+        <div class="tm-scroller__inner">
+        <div class="tm-scroller__track">
+          <article class="tm-card">
+            <p>La formation m'a permis de structurer mon offre et d'automatiser ma prospection. En deux mois, j'ai doublé mes rendez-vous qualifiés.</p>
+            <div class="tm-person"><span class="avatar-badge">KA</span><div><div class="name">Koffi Aristide</div><div class="role">Consultant indépendant</div></div></div>
+          </article>
+          <article class="tm-card">
+            <p>Mon équipe commerciale utilise l'IA au quotidien maintenant. Les exercices pratiques ont fait toute la différence par rapport aux formations théoriques.</p>
+            <div class="tm-person"><span class="avatar-badge">MD</span><div><div class="name">Mariam Diallo</div><div class="role">Directrice commerciale</div></div></div>
+          </article>
+          <article class="tm-card">
+            <p>J'ai enfin compris comment vendre en ligne sans y passer mes journées. Le formateur prend vraiment le temps de répondre à chaque question.</p>
+            <div class="tm-person"><span class="avatar-badge">SK</span><div><div class="name">Serge Kouassi</div><div class="role">Gérant de PME</div></div></div>
+          </article>
+          <article class="tm-card">
+            <p>Un accompagnement concret, adapté à nos réalités. On repart avec des outils qu'on utilise dès le lendemain, pas juste des concepts.</p>
+            <div class="tm-person"><span class="avatar-badge">FB</span><div><div class="name">Fatou Bamba</div><div class="role">Responsable marketing</div></div></div>
+          </article>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <div class="ticker-band alt">
   <div class="marquee-track">
@@ -297,6 +362,78 @@ const tmap = themeColorMap(themesData);
 </section>
 
 <style>
+  /* ---------- Témoignages (3 colonnes : intro / vidéo / défilement) ---------- */
+  .tm-layout {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;
+    background: var(--c-gray-100); border-radius: var(--radius-xl); padding: 20px;
+  }
+  .tm-intro {
+    background: #fff; border-radius: var(--radius-lg); padding: 34px 32px;
+    display: flex; flex-direction: column;
+  }
+  .tm-icon {
+    width: 62px; height: 62px; border-radius: 18px; background: var(--c-cream); color: var(--c-orange);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 28px; flex: none;
+  }
+  .tm-icon svg { width: 28px; height: 28px; }
+  .tm-intro h3 { font-size: clamp(1.4rem, 1.1rem + 1vw, 1.9rem); margin-bottom: 14px; }
+  .tm-intro .lead { font-size: 1rem; margin-bottom: 0; }
+  /* Les stats sont poussées en bas de la carte (comme le modèle de référence). */
+  .tm-stats { margin-top: auto; padding-top: 40px; display: flex; flex-direction: column; gap: 26px; }
+  .tm-stat__num { font-family: var(--f-display); font-weight: 800; font-size: 2.1rem; color: var(--c-navy); line-height: 1; }
+  .tm-stat__suffix { font-size: .55em; color: var(--c-blue); }
+  .tm-stat p { font-size: .9rem; color: var(--c-gray-600); margin: 8px 0 12px; }
+  .tm-bar { height: 4px; border-radius: 2px; background: var(--c-gray-100); overflow: hidden; }
+  .tm-bar span { display: block; height: 100%; border-radius: inherit; background: var(--c-orange); }
+
+  .tm-video { position: relative; border-radius: var(--radius-lg); overflow: hidden; min-height: 460px; background: var(--c-navy); }
+  .tm-video img, .tm-video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .tm-play {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 74px; height: 74px; border-radius: 50%; border: none; cursor: pointer;
+    background: #fff; color: var(--c-orange); display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 12px 34px -8px rgba(2, 11, 80, .45);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .tm-play svg { width: 30px; height: 30px; margin-left: 3px; }
+  .tm-play:hover { transform: translate(-50%, -50%) scale(1.08); box-shadow: 0 18px 44px -8px rgba(2, 11, 80, .55); }
+  .tm-play[hidden] { display: none; }
+
+  /* __inner en absolu : la hauteur des cartes ne dilate pas la ligne de grille,
+     le bloc épouse donc la hauteur de la colonne la plus haute. */
+  .tm-scroller { position: relative; min-height: 460px; }
+  .tm-scroller__inner {
+    position: absolute; inset: 0; overflow: hidden;
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 12%, #000 88%, transparent);
+    mask-image: linear-gradient(180deg, transparent, #000 12%, #000 88%, transparent);
+  }
+  .tm-scroller__track { display: flex; flex-direction: column; gap: 14px; animation: tm-scroll 32s linear infinite; }
+  .tm-scroller:hover .tm-scroller__track { animation-play-state: paused; }
+  @keyframes tm-scroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+
+  .tm-card { background: #fff; border-radius: var(--radius-lg); padding: 26px 24px; flex: none; }
+  .tm-card p { font-size: .96rem; line-height: 1.55; color: var(--c-gray-800); margin-bottom: 20px; }
+  .tm-person { display: flex; align-items: center; gap: 13px; }
+  .tm-person .name { font-weight: 700; font-size: .92rem; color: var(--c-navy); }
+  .tm-person .role { font-size: .8rem; color: var(--c-gray-500); }
+
+  @media (max-width: 1080px) {
+    .tm-layout { grid-template-columns: 1fr 1fr; }
+    .tm-intro { grid-column: span 2; }
+  }
+  @media (max-width: 720px) {
+    .tm-layout { grid-template-columns: 1fr; padding: 14px; }
+    .tm-intro { grid-column: auto; padding: 28px 24px; }
+    .tm-video { min-height: 320px; }
+    .tm-scroller { min-height: 380px; }
+  }
+  /* Défilement automatique désactivé si l'utilisateur réduit les animations :
+     la liste reste lisible et parcourable à la molette. */
+  @media (prefers-reduced-motion: reduce) {
+    .tm-scroller__track { animation: none; }
+    .tm-scroller__inner { overflow-y: auto; -webkit-mask-image: none; mask-image: none; }
+  }
+
   .soon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
   @media (max-width: 900px) { .soon-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 600px) { .soon-grid { grid-template-columns: 1fr; } }
@@ -364,4 +501,35 @@ const tmap = themeColorMap(themesData);
     .soon-card:hover { transform: none; }
   }
 </style>
+
+<script>
+  (() => {
+    /* Boucle sans couture : le track est dupliqué et l'animation le décale de -50 %,
+       donc la copie prend exactement la place de l'original à la fin du cycle. */
+    const track = document.querySelector<HTMLElement>(".tm-scroller__track");
+    if (track && !track.dataset.cloned) {
+      track.dataset.cloned = "1";
+      Array.from(track.children).forEach((card) => {
+        const copy = card.cloneNode(true) as HTMLElement;
+        copy.setAttribute("aria-hidden", "true");
+        track.appendChild(copy);
+      });
+    }
+
+    /* La vidéo n'est chargée qu'au clic : la page ne paie pas son poids au chargement. */
+    const play = document.querySelector<HTMLButtonElement>(".tm-play");
+    play?.addEventListener("click", () => {
+      const src = play.dataset.tmVideo;
+      const wrap = play.closest(".tm-video");
+      if (!src || !wrap) return;
+      const video = document.createElement("video");
+      video.src = src;
+      video.controls = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      wrap.appendChild(video);
+      play.hidden = true;
+    });
+  })();
+</script>
 </BaseLayout>
