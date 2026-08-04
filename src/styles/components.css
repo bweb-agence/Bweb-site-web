@@ -253,8 +253,8 @@ mark { background: none; color: var(--c-blue); position: relative; }
 .stat-label { margin-top: 10px; font-size: .92rem; font-weight: 600; color: var(--c-gray-500); }
 .text-white .stat-label { color: rgba(255,255,255,.7); }
 
-.why-item { display: flex; gap: 18px; padding: 22px 0; border-bottom: 1px solid var(--c-border-soft); }
-.why-item:last-child { border-bottom: none; }
+.why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 32px; }
+.why-item { display: flex; gap: 16px; }
 .why-item .ico { width: 44px; height: 44px; border-radius: 12px; background: var(--c-cream); color: var(--c-orange); display: flex; align-items: center; justify-content: center; flex: none; }
 .why-item .ico svg { width: 20px; height: 20px; }
 .why-item h4 { margin-bottom: 4px; }
@@ -676,6 +676,7 @@ mark { background: none; color: var(--c-blue); position: relative; }
 }
 @media (max-width: 720px) {
   .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; }
+  .why-grid { grid-template-columns: 1fr; gap: 24px; }
   .mv-showcase { grid-template-columns: 1fr; margin-top: 32px; }
   .mv-photo-slot, .mv-photo-slot--tall { min-height: 220px; align-self: stretch; }
   .mv-side { grid-column: auto; flex-direction: column; align-items: flex-start; }
