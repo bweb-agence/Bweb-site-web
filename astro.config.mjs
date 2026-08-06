@@ -44,12 +44,5 @@ export default defineConfig({
   // La vitrine n'importe pas ce CSS → aucun reset Tailwind en production.
   vite: {
     plugins: [tailwindcss()],
-    // sanitize-html (CJS) + ses deps (postcss…) doivent être bundlés dans la
-    // fonction serverless : en externe, la résolution des modules tracés peut
-    // échouer au runtime Vercel (500 sur les pages SSR). noExternal force
-    // l'inlining → fonction autonome.
-    ssr: {
-      noExternal: ["sanitize-html"],
-    },
   },
 });

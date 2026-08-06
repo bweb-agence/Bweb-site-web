@@ -30,12 +30,9 @@ export async function setPackPaymentStatusByReference(
     .eq("status", "pending");
 }
 
-export type PackConfirmResult = { confirmed: number; purchase: any | null; underpaid?: boolean };
+export type PackConfirmResult = { confirmed: number; purchase: any | null };
 
-export async function confirmPackByReference(
-  reference: string,
-  paidAmount?: number | null,
-): Promise<PackConfirmResult> {
+export async function confirmPackByReference(reference: string): Promise<PackConfirmResult> {
   if (!reference) return { confirmed: 0, purchase: null };
   const admin = createAdminClient();
 
@@ -43,18 +40,6 @@ export async function confirmPackByReference(
     .from("pack_purchases")
     .select("id, status, reference, full_name, email, amount_due, packs(title), pack_entitlements(formations(title))")
     .eq("payment_reference", reference);
-
-  // Garde-fou montant (cf. confirmBooking) : le montant encaissé doit couvrir le
-  // total attendu. Manque clair → pas de confirmation, achat laissé « pending ».
-  if (paidAmount != null && paidAmount > 0) {
-    const required = (purchases || [])
-      .filter((p) => p.status !== "confirmed")
-      .reduce((sum, p) => sum + ((p as any).amount_due ?? 0), 0);
-    if (required > 0 && paidAmount + Math.max(1, required * 0.01) < required) {
-      console.warn(`[confirmPack] montant insuffisant ref=${reference} payé=${paidAmount} attendu=${required} — non confirmé`);
-      return { confirmed: 0, purchase: null, underpaid: true };
-    }
-  }
 
   let confirmed = 0;
   let summary: any = null;

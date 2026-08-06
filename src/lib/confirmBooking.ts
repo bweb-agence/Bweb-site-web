@@ -14,7 +14,7 @@ import { frDateLong } from "./format";
 
 const SITE = "https://www.bwebagence.com";
 
-export type ConfirmResult = { confirmed: number; booking: any | null; underpaid?: boolean };
+export type ConfirmResult = { confirmed: number; booking: any | null };
 
 /** État d'une opération de paiement encore non aboutie. */
 export type PendingPaymentState = "attente" | "echoue" | "abandon";
@@ -37,10 +37,7 @@ export async function setPaymentStatusByReference(
     .eq("status", "pending");
 }
 
-export async function confirmBookingsByReference(
-  reference: string,
-  paidAmount?: number | null,
-): Promise<ConfirmResult> {
+export async function confirmBookingsByReference(reference: string): Promise<ConfirmResult> {
   if (!reference) return { confirmed: 0, booking: null };
   const admin = createAdminClient();
 
@@ -48,25 +45,6 @@ export async function confirmBookingsByReference(
     .from("bookings")
     .select("id, status, reference, full_name, email, quantity, amount_due, is_deposit, sessions(id, slug, title, starts_at, ends_at, venue, address, city, mode, meeting_url, meeting_info), ticket_types(name)")
     .eq("payment_reference", reference);
-
-  // Garde-fou montant (defense-in-depth) : le montant réellement encaissé
-  // (renvoyé par la passerelle) doit couvrir le total attendu pour cette
-  // référence — acomptes inclus. En cas de manque clair, on NE confirme pas et
-  // on laisse la (les) réservation(s) en « pending » pour revue admin. Si le
-  // montant est inconnu (null/0), le contrôle est ignoré (jamais de faux refus).
-  if (paidAmount != null && paidAmount > 0) {
-    const required = (bookings || [])
-      .filter((b) => b.status !== "confirmed")
-      .reduce((sum, b) => {
-        const due = (b as any).amount_due ?? 0;
-        return sum + ((b as any).is_deposit ? Math.max(1, Math.ceil(due / 2)) : due);
-      }, 0);
-    // Tolérance 1 % (arrondis / frais passerelle). En dessous → anomalie.
-    if (required > 0 && paidAmount + Math.max(1, required * 0.01) < required) {
-      console.warn(`[confirmBooking] montant insuffisant ref=${reference} payé=${paidAmount} attendu=${required} — non confirmé`);
-      return { confirmed: 0, booking: null, underpaid: true };
-    }
-  }
 
   let confirmed = 0;
   for (const b of bookings || []) {
