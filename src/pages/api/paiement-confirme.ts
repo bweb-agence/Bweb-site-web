@@ -82,7 +82,16 @@ export const POST: APIRoute = async ({ request }) => {
   // 2) Confirmer ce qui est lié à cette référence : une réservation classique
   //    OU un achat de pack (jamais les deux — la même référence ne peut pas
   //    correspondre aux deux tables). Les deux appels sont idempotents.
-  const { confirmed, booking } = await confirmBookingsByReference(token);
-  const pack = await confirmPackByReference(token);
-  return json({ ok: true, statut, montant, confirmed: confirmed + pack.confirmed, booking, pack: pack.purchase });
+  const { confirmed, booking, underpaid } = await confirmBookingsByReference(token, montant);
+  const pack = await confirmPackByReference(token, montant);
+  const amountMismatch = underpaid || pack.underpaid || false;
+  return json({
+    ok: true,
+    statut,
+    montant,
+    confirmed: confirmed + pack.confirmed,
+    booking,
+    pack: pack.purchase,
+    ...(amountMismatch ? { warning: "amount_mismatch" } : {}),
+  });
 };
