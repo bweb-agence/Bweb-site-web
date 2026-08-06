@@ -15,12 +15,12 @@ const json = (obj: unknown, status = 200) =>
  * ?key=CRON_SECRET.
  */
 async function handle(request: Request): Promise<Response> {
+  // Fail-closed : sans secret configuré, l'endpoint est fermé (jamais public).
   const secret = import.meta.env.CRON_SECRET;
-  if (secret) {
-    const auth = request.headers.get("authorization") || "";
-    const key = new URL(request.url).searchParams.get("key") || "";
-    if (auth !== `Bearer ${secret}` && key !== secret) return json({ ok: false, error: "unauthorized" }, 401);
-  }
+  if (!secret) return json({ ok: false, error: "not_configured" }, 503);
+  const auth = request.headers.get("authorization") || "";
+  const key = new URL(request.url).searchParams.get("key") || "";
+  if (auth !== `Bearer ${secret}` && key !== secret) return json({ ok: false, error: "unauthorized" }, 401);
   const serviceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceKey || serviceKey === "A_COMPLETER") return json({ ok: false, error: "not_configured" });
 
