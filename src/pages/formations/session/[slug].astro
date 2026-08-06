@@ -6,6 +6,7 @@ import { supabase } from "../../../lib/supabase";
 import { site, contact } from "../../../config/site";
 import { priceFCFA, frDateLong, frDateShort, frTime, gradClass, gradSuffix, levelLabel, isOnline, isHybrid, modeLabel, themeColorMap, cheapestTicket } from "../../../lib/format";
 import { marked } from "marked";
+import { cleanRichHtml } from "../../../lib/sanitizeHtml";
 import PhoneField from "../../../components/PhoneField.astro";
 import "../../../styles/formations.css";
 
@@ -216,6 +217,7 @@ let detailHtml = richHtml || (intro ? (marked.parse(intro, { async: false }) as 
 if (learnItems.length > 0 && richHtml) {
   detailHtml = detailHtml.replace(/<h[1-6][^>]*>\s*au programme[\s\S]*$/i, "").trim();
 }
+detailHtml = cleanRichHtml(detailHtml);
 
 function badgeInfo(badge: string | null, salesEnd: string | null) {
   if (badge === "hot") return { cls: "hot", label: "📈 Forte demande" };
@@ -601,7 +603,7 @@ const sessCrumbs = session
                   {faqs.map((f, i) => (
                     <details class="faq-item" open={i === 0}>
                       <summary>{f.question}</summary>
-                      <div class="faq-answer" set:html={marked.parse(f.answer_md, { async: false }) as string} />
+                      <div class="faq-answer" set:html={cleanRichHtml(marked.parse(f.answer_md, { async: false }) as string)} />
                     </details>
                   ))}
                 </div>
