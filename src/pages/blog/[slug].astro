@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { frDateLong, coverClass, themeColorMap } from "../../lib/format";
 import { site } from "../../config/site";
 import { marked } from "marked";
+import { cleanRichHtml } from "../../lib/sanitizeHtml";
 import "../../styles/blog.css";
 
 const { slug } = Astro.params;
@@ -51,7 +52,7 @@ if (post?.category) {
 }
 
 // Contenu riche (éditeur WYSIWYG) prioritaire ; repli Markdown pour les articles historiques.
-const bodyHtml = post ? (post.body_html || (marked.parse(post.body_md || "", { async: false }) as string)) : "";
+const bodyHtml = post ? cleanRichHtml(post.body_html || (marked.parse(post.body_md || "", { async: false }) as string)) : "";
 const initials = (name?: string | null) =>
   (name || "Bweb").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
