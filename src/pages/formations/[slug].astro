@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase";
 import { site, contact } from "../../config/site";
 import { gradClass, gradSuffix, themeColorMap } from "../../lib/format";
 import { marked } from "marked";
+import { cleanRichHtml } from "../../lib/sanitizeHtml";
 import "../../styles/formations.css";
 
 const { slug } = Astro.params;
@@ -71,6 +72,8 @@ const learnItems = (progRaw || "").split("\n").map((l) => l.trim()).filter((l) =
 const richHtml = formation?.description_html || "";
 let detailHtml = richHtml || (intro ? (marked.parse(intro, { async: false }) as string) : "");
 if (learnItems.length > 0 && richHtml) detailHtml = detailHtml.replace(/<h[1-6][^>]*>\s*au programme[\s\S]*$/i, "").trim();
+detailHtml = await cleanRichHtml(detailHtml);
+const faqAnswers = await Promise.all(faqs.map((f) => cleanRichHtml(marked.parse(f.answer_md, { async: false }) as string)));
 
 const ck = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
 
@@ -204,7 +207,7 @@ const crumbs = formation ? [
                 {faqs.map((f, i) => (
                   <details class="faq-item" open={i === 0}>
                     <summary>{f.question}</summary>
-                    <div class="faq-answer" set:html={marked.parse(f.answer_md, { async: false }) as string} />
+                    <div class="faq-answer" set:html={faqAnswers[i]} />
                   </details>
                 ))}
               </div>
