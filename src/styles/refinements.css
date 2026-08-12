@@ -259,9 +259,10 @@ html, body { max-width: 100%; overflow-x: clip; }
 .method-body h4 { font-size: 1.02rem; margin-bottom: 6px; }
 .method-body p { font-size: .88rem; color: var(--c-gray-600); max-width: 24ch; margin: 0 auto; }
 .method-step:hover .method-node {
-  transform: translateY(-7px); background: var(--g-navy); color: #fff;
+  transform: translateY(-7px); background: var(--g-navy); color: var(--c-yellow);
   border-color: transparent; box-shadow: var(--shadow-lg);
 }
+.method-step:hover .method-num { background: var(--c-yellow); color: var(--c-navy); }
 
 @keyframes method-flow { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
 
