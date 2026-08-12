@@ -1,19 +1,10 @@
 ---
-import fs from "node:fs";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
-/* Résolution des visuels générés, vérifiée au build (pas de 404 : le fallback
-   est rendu côté serveur). Le .webp optimisé est préféré au .png source.
-   Workflow : déposer le PNG dans public/images/parcours-initiation/, lancer
-   `npm run visuels` pour générer le .webp, puis redéployer. */
+/* Les visuels WebP optimisés font partie du dépôt et sont servis directement
+   depuis /public : cela évite toute dépendance au système de fichiers du build. */
 const IMG_BASE = "/images/parcours-initiation/";
-const IMG_DIR = new URL("../../public" + IMG_BASE, import.meta.url);
-const imgSrc = (base: string): string | null => {
-  for (const ext of [".webp", ".png"]) {
-    if (fs.existsSync(new URL(base + ext, IMG_DIR))) return IMG_BASE + base + ext;
-  }
-  return null;
-};
+const imgSrc = (base: string): string => IMG_BASE + base + ".webp";
 
 /* =========================================================
    PARCOURS INITIATION — Page de vente (Bweb Academy)
@@ -66,9 +57,8 @@ const publishedTestimonials = testimonials
   }))
   .filter((testimonial): testimonial is typeof testimonial & { video: string } => Boolean(testimonial.video));
 
-/* Visuels glassmorphism par phase : déposer les PNG transparents générés
-   dans /public/images/parcours-initiation/ sous les noms phase-1.png … phase-5.png.
-   Tant qu'un fichier manque, la carte affiche automatiquement le numéro (fallback). */
+/* Visuels glassmorphism par phase, optimisés dans
+   /public/images/parcours-initiation/ sous les noms phase-1.webp … phase-5.webp. */
 const phases = [
   {
     week: "Semaine 1",
