@@ -254,6 +254,16 @@
 .ev-grid[hidden] { display: none; }
 @media (min-width: 560px) { .ev-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 900px) { .ev-grid { grid-template-columns: repeat(3, 1fr); } }
+
+/* Variante « aperçu » (1 à 3 sessions) : autant de colonnes que de cartes, largeur
+   plafonnée et rangée centrée — sinon 1 ou 2 cartes restent collées à gauche.
+   Le nombre de colonnes vient de --ev-cols/--ev-cols-sm posés côté page. */
+@media (min-width: 560px) {
+  .ev-grid--center { grid-template-columns: repeat(var(--ev-cols-sm, 2), minmax(0, 394px)); justify-content: center; }
+}
+@media (min-width: 900px) {
+  .ev-grid--center { grid-template-columns: repeat(var(--ev-cols, 3), minmax(0, 394px)); }
+}
 .ev-card {
   position: relative;
   display: flex; flex-direction: column; background: var(--c-white);

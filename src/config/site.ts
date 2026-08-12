@@ -103,6 +103,7 @@ export const services = [
     href: "/services-location-salle",
     description: "Salle équipée à louer pour formations et événements.",
     icon: '<rect x="3" y="4" width="18" height="11" rx="1.5"/><line x1="12" y1="15" x2="12" y2="19"/><line x1="8" y1="19" x2="16" y2="19"/>',
+    image: "/images/salle/salle-hero.jpg",
   },
 ];
 
@@ -113,7 +114,6 @@ export const mainNav: NavLink[] = [
   { label: "Accueil", href: "/" },
   { label: "À propos", href: "/a-propos" },
   { label: "Services", href: "/services", children: services },
-  { label: "Réalisations", href: "/realisations" },
   { label: "Formations", href: "/formations" },
   { label: "Blog", href: "/blog" },
 ];
@@ -128,7 +128,6 @@ export const footerNav = {
   navigation: [
     { label: "À propos", href: "/a-propos" },
     { label: "Services", href: "/services" },
-    { label: "Réalisations", href: "/realisations" },
     { label: "Formations", href: "/formations" },
     { label: "Blog", href: "/blog" },
     { label: "Méthodologie", href: "/methodologie" },
