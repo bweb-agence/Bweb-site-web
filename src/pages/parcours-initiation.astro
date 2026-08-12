@@ -1,0 +1,1665 @@
+---
+import fs from "node:fs";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+/* Résolution des visuels générés, vérifiée au build (pas de 404 : le fallback
+   est rendu côté serveur). Le .webp optimisé est préféré au .png source.
+   Workflow : déposer le PNG dans public/images/parcours-initiation/, lancer
+   `npm run visuels` pour générer le .webp, puis redéployer. */
+const IMG_BASE = "/images/parcours-initiation/";
+const IMG_DIR = new URL("../../public" + IMG_BASE, import.meta.url);
+const imgSrc = (base: string): string | null => {
+  for (const ext of [".webp", ".png"]) {
+    if (fs.existsSync(new URL(base + ext, IMG_DIR))) return IMG_BASE + base + ext;
+  }
+  return null;
+};
+
+/* =========================================================
+   PARCOURS INITIATION — Page de vente (Bweb Academy)
+   Landing campagne intégrée au site : design system Bweb
+   (tokens, Sora/Jakarta, .btn/.eyebrow/.card…) + styles
+   page-scoped pour les blocs sur-mesure (stepper, sceau,
+   stack de prix, sticky CTA).
+   ---------------------------------------------------------
+   À CONFIGURER (Godwin) :
+   - Paiement Chariow : product_id / store-domain ci-dessous
+   - COHORTE_ISO   : date/heure de démarrage (countdown)
+   - PLACES_RESTANTES : à brancher sur /api/count (Notion)
+   - YOUTUBE_HERO / témoignages : IDs vidéo
+   ========================================================= */
+
+const COHORTE_ISO = "2026-09-01T09:00:00";
+const PLACES_RESTANTES = 25; // TODO: /api/count (Notion)
+const YOUTUBE_HERO = ""; // ex: "dQw4w9WgXcQ"
+
+const proof = [
+  { n: "+15 000", t: "personnes formées" },
+  { n: "92 %", t: "de satisfaction" },
+  { n: "+63 453", t: "ventes cumulées par nos apprenants" },
+];
+
+const getYouTubeId = (url: string): string | null => {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "youtu.be") return parsed.pathname.slice(1) || null;
+    if (parsed.pathname.startsWith("/shorts/")) return parsed.pathname.split("/")[2] || null;
+    return parsed.searchParams.get("v");
+  } catch {
+    return null;
+  }
+};
+
+/* Ajouter ici les témoignages publiables. Le carrousel ne rend que les
+   témoignages ayant une vidéo : aucune carte vide ou faux avis n'apparaît
+   sur la landing. Il peut en accueillir une dizaine ou plus. */
+const testimonials = [
+  { name: "Joseph Amon", url: "https://youtube.com/shorts/ViMoaJH7XHA?feature=share" },
+  { name: "Kendra Anudike", url: "https://youtube.com/shorts/BnY0sYFcJws?feature=share" },
+  { name: "Khalil", url: "https://youtube.com/shorts/xjAyKr5OXwY?feature=share" },
+];
+const publishedTestimonials = testimonials
+  .map((testimonial) => ({
+    ...testimonial,
+    video: getYouTubeId(testimonial.url),
+    format: new URL(testimonial.url).pathname.startsWith("/shorts/") ? "portrait" : "landscape",
+  }))
+  .filter((testimonial): testimonial is typeof testimonial & { video: string } => Boolean(testimonial.video));
+
+/* Visuels glassmorphism par phase : déposer les PNG transparents générés
+   dans /public/images/parcours-initiation/ sous les noms phase-1.png … phase-5.png.
+   Tant qu'un fichier manque, la carte affiche automatiquement le numéro (fallback). */
+const phases = [
+  {
+    week: "Semaine 1",
+    tag: "Idée",
+    title: "Trouve ton idée et valide-la avant de créer",
+    sub: "« Comment générer +325 000 FCFA/mois avec tes compétences »",
+    items: [
+      "Tu identifies LA compétence que tu peux monétiser (matrice guidée)",
+      "Tu définis ton client idéal (âge, problème, budget)",
+      "Tu contactes 10 vrais prospects pour valider que ton idée va se vendre",
+    ],
+    livrable: "Idée validée + client cible + rapport de validation",
+  },
+  {
+    week: "Semaine 2",
+    tag: "Produit",
+    title: "Crée ton produit digital de A à Z",
+    sub: "6 cas pratiques : ebook, formation, template, outil IA, communauté, coaching",
+    items: [
+      "Tu choisis le format adapté à ton client et ton marché",
+      "Tu crées ton produit avec l'IA (prompts fournis, méthode complète)",
+      "Mise en page pro avec Canva, Claude Design ou Codex",
+    ],
+    livrable: "Produit créé, accessible, prêt à vendre",
+  },
+  {
+    week: "Semaine 3",
+    tag: "Offre",
+    title: "Construis une offre irrésistible",
+    sub: "Structure, copywriting, prix, page de vente",
+    items: [
+      "Tu appliques la méthode OFFRE™ (Observer → Formuler → Fabriquer → Renforcer → Emballer)",
+      "Tu écris un texte de vente qui convertit — sans sonner comme une pub",
+      "Tu fixes ton prix avec la stack de valeur (5 techniques)",
+      "Tu crées ta page de vente complète (template fourni)",
+    ],
+    livrable: "Offre structurée + page de vente publiée",
+  },
+  {
+    week: "Semaine 4",
+    tag: "Boutique",
+    title: "Ouvre ta boutique et automatise tout",
+    sub: "Cas pratique Chariow, paiements Mobile Money, relances automatiques",
+    items: [
+      "Tu configures ta boutique de A à Z sur Chariow",
+      "Tu actives les paiements (Wave, Orange Money, carte bancaire)",
+      "Tu paramètres la livraison automatique et les relances",
+      "Tu testes ton parcours client complet",
+    ],
+    livrable: "Boutique en ligne + paiement testé + livraison fonctionnelle",
+  },
+  {
+    week: "Semaine 5",
+    tag: "Lancement",
+    title: "Lance tes publicités et attire tes premiers clients",
+    sub: "Facebook Ads, contenu organique, stratégie d'acquisition 30 jours",
+    items: [
+      "Tu crées ton plan d'acquisition (actions quotidiennes)",
+      "Tu lances ta première campagne Facebook (budget : 3 000 FCFA/jour)",
+      "Tu publies du contenu sur 2+ plateformes",
+      "Tu mets en place ton tableau de bord de suivi",
+    ],
+    livrable: "Campagne active + contenu diffusé + tableau de bord",
+  },
+];
+
+const bonuses = [
+  { icon: "🤖", title: "Bot Telegram Coach Godwin IA", desc: "Feedback 24 h/24 sur tes livrables. Il valide tes idées, relit tes offres, corrige tes pages. Comme si j'étais dans ta poche.", value: "Inestimable" },
+  { icon: "📊", title: "Banque de 100 niches rentables", desc: "Avec chiffres, exemples et promesses prêtes à copier. Trouve ton idée en 30 minutes au lieu de 3 semaines.", value: "25 000 FCFA" },
+  { icon: "💡", title: "Pack 50 idées de produits digitaux validés", desc: "Chaque idée vient avec sa promesse, son prix recommandé et sa cible. Des produits qui se sont déjà vendus.", value: "25 000 FCFA" },
+  { icon: "✍️", title: "10 prompts IA pour créer 3× plus vite", desc: "Les prompts exacts que j'utilise pour écrire un ebook, une page de vente ou une formation en une fraction du temps.", value: "20 000 FCFA" },
+  { icon: "🎨", title: "Template page de vente Canva", desc: "Design professionnel, prêt à remplir. Pas besoin d'être graphiste.", value: "20 000 FCFA" },
+  { icon: "📱", title: "Pack 15 scripts WhatsApp", desc: "Prospection, relance, objection, closing. Copie, colle, adapte.", value: "15 000 FCFA" },
+  { icon: "👥", title: "Communauté privée des diplômés", desc: "Réseau, entraide, opportunités.", value: "Inestimable" },
+  { icon: "🔁", title: "Replay des 10 lives à vie", desc: "+ mises à jour du programme incluses.", value: "75 000 FCFA" },
+];
+
+const faqs = [
+  { q: "Je n'ai jamais vendu quoi que ce soit en ligne. Ce parcours est vraiment pour moi ?", a: "Oui. C'est exactement pour toi. Le parcours est conçu pour les débutants complets — la première phase t'apprend à valider ton idée avant même de créer ton produit. Tu n'as pas besoin d'audience, de site web ou d'expérience." },
+  { q: "J'ai un emploi à temps plein. Est-ce que je peux suivre le rythme ?", a: "Oui. Le parcours demande environ 1 h par jour + 2 lives de 90 minutes par semaine. Les lives sont enregistrés si tu ne peux pas être présent. Des centaines de salariés ont suivi mes programmes avant toi." },
+  { q: "Est-ce que je dois être un expert en tech ou en IA ?", a: "Non. Si tu sais envoyer un message WhatsApp et utiliser Google, tu as le niveau. On utilise l'IA pour accélérer la création (prompts fournis, tutoriels pas à pas), mais tu n'as besoin d'aucune compétence technique." },
+  { q: "Et si je n'ai pas de compétence à monétiser ?", a: "Tout le monde a une compétence. Tu sais peut-être cuisiner, organiser, écrire, parler anglais, gérer des réseaux sociaux, utiliser Excel, coiffer, maquiller, conseiller… La Phase 1 est spécifiquement conçue pour t'aider à identifier ta compétence monétisable — même si tu penses n'en avoir aucune." },
+  { q: "65 000 FCFA, c'est un investissement. Comment être sûr que ça va marcher ?", a: "C'est pour ça qu'on a une garantie. Si tu exécutes le programme et qu'à J+30 tu n'as pas de produit en ligne, on continue de t'accompagner gratuitement. Le risque est de notre côté." },
+  { q: "Est-ce que je reçois un certificat ?", a: "Oui. Mais la vraie certification, c'est ton produit en ligne et tes premières ventes. Un PDF ne paie pas tes factures." },
+  { q: "Quelle est la différence entre ce parcours et les formations gratuites sur YouTube ?", a: "YouTube te donne des morceaux. Bweb Academy te fait construire un système complet, dans le bon ordre, avec des livrables obligatoires à chaque étape. Tu repars avec un produit fini, pas avec une liste de vidéos regardées." },
+  { q: "Je suis au Cameroun / Sénégal / Bénin / Burkina… je peux participer ?", a: "Oui. La formation est 100 % accessible en ligne (Zoom). Les paiements fonctionnent avec Mobile Money (Wave, Orange Money). Les exemples et templates sont adaptés à l'Afrique francophone." },
+];
+---
+
+<BaseLayout
+  title="Parcours Initiation aux Produits Digitaux | Bweb Academy"
+  description="En 30 jours, transforme une compétence que tu possèdes déjà en un produit digital prêt à vendre, mets-le en ligne et décroche tes premières ventes. Cohorte Septembre 2026 — 30 places."
+  hideWhatsApp={true}
+  bareChrome={true}
+>
+  <!-- Meta Pixel (verbatim, dans le <head>) -->
+  <Fragment slot="head">
+    <script is:inline>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '150267587094280');
+      fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none" alt=""
+      src="https://www.facebook.com/tr?id=150267587094280&ev=PageView&noscript=1"/></noscript>
+  </Fragment>
+
+  <!-- ============================================================
+       1 · HERO (clair) -->
+  <header class="pi-hero" data-nav-section="Le parcours">
+    <div class="pi-hero-halo" aria-hidden="true"></div>
+    <img class="pi-hero-glass pi-hero-glass--right" src="/images/parcours-initiation/glass-shapes.webp" alt="" aria-hidden="true" width="1200" height="675" loading="eager" decoding="async" />
+    <img class="pi-hero-glass pi-hero-glass--left" src="/images/parcours-initiation/glass-shapes.webp" alt="" aria-hidden="true" width="1200" height="675" loading="lazy" decoding="async" />
+    <div class="container">
+      <div class="pi-hero-inner">
+        <span class="pi-badge-urgence" data-hero-in>🚀 Cohorte Septembre 2026 — 30 places uniquement</span>
+
+        <h1 data-hero-in>
+          Tu possèdes déjà une compétence qui peut te rapporter <span class="pi-hl-gold">325 000 FCFA</span> par mois.
+          <span class="pi-h1-hook">Et si tu la transformais en produit digital en 30 jours&nbsp;?</span>
+        </h1>
+
+        <p class="lead pi-hero-sub" data-hero-in>
+          Un parcours de 5 semaines pour créer, lancer et vendre ton premier produit digital
+          — même si tu n'as jamais rien vendu en ligne.
+        </p>
+
+        <div class="pi-hero-cta" data-hero-in>
+          <a href="#reserver" class="pi-btn-buy pi-cta">Je réserve ma place — 65 000 FCFA <span class="pi-arrow">→</span></a>
+          <p class="pi-cta-note">Prochaine cohorte : Septembre 2026 · 30 places · Paiement sécurisé</p>
+        </div>
+
+        <div class="pi-proof" data-hero-in>
+          {proof.map((p) => (
+            <div class="pi-proof-chip"><b>{p.n}</b> <span>{p.t}</span></div>
+          ))}
+        </div>
+
+        <!-- Vidéo hero : preuve et explication, après l'action principale. -->
+        <div class="pi-video pi-video--wide" id="heroVideo" data-hero-in>
+          <button class="pi-video-ph" id="heroPlay" type="button" aria-label="Lire la vidéo de présentation">
+            <img class="pi-video-cover" src="/images/parcours-initiation/hero-cover.webp" alt="Entrepreneur en train de construire son produit digital sur son ordinateur" width="1400" height="788" fetchpriority="high" />
+            <span class="pi-video-shade" aria-hidden="true"></span>
+            <span class="pi-play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
+            <span class="pi-video-lbl">Regarde comment on construit ton produit, ensemble (2 min)</span>
+          </button>
+          <iframe id="heroFrame" title="Vidéo de présentation — Parcours Initiation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen hidden></iframe>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Countdown -->
+  <div class="pi-countdown">
+    <div class="container pi-countdown-inner">
+      <span class="pi-countdown-label">⏳ La cohorte démarre dans</span>
+      <div class="pi-fcd pi-countdown-clock" id="countdown" data-target={COHORTE_ISO}>
+        <span class="pi-fcd-box"><span class="n" data-cd="d">00</span><span class="u">Jours</span></span>
+        <span class="pi-fcd-sep" aria-hidden="true">:</span>
+        <span class="pi-fcd-box"><span class="n" data-cd="h">00</span><span class="u">Heures</span></span>
+        <span class="pi-fcd-sep" aria-hidden="true">:</span>
+        <span class="pi-fcd-box"><span class="n" data-cd="m">00</span><span class="u">Min</span></span>
+        <span class="pi-fcd-sep" aria-hidden="true">:</span>
+        <span class="pi-fcd-box"><span class="n" data-cd="s">00</span><span class="u">Sec</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       2 · PROBLÈME -->
+  <section class="section" data-nav-section="Le problème">
+    <div class="container pi-narrow">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Reconnais-tu ça&nbsp;?</div>
+        <h2>Tu passes tes soirées à chercher. Et au final, t'as toujours rien lancé.</h2>
+      </div>
+      <div class="pi-prose reveal">
+        <p>Tu as une compétence. Tu sais faire quelque chose que d'autres aimeraient apprendre.</p>
+        <p>Tu regardes des vidéos TikTok. Des tutos YouTube. Tu suis des créateurs sur Instagram. Tu enregistres des publications. Tu achètes parfois des petites formations à 5 000 ou 10 000 FCFA.</p>
+        <p>Mais chaque personne te donne une méthode différente. L'un te dit de créer un ebook. L'autre te dit de construire une audience d'abord. Un autre te dit que tu peux vendre sans audience.</p>
+        <p class="pi-prose-punch">Résultat : tu apprends beaucoup. Mais tu ne lances rien.</p>
+      </div>
+
+      <figure class="pi-quote reveal">
+        <blockquote>« Je sais que je pourrais gagner de l'argent avec ce que je sais. Mais je ne sais pas quoi vendre, ni comment le transformer en produit, ni comment trouver des gens prêts à payer. »</blockquote>
+        <figcaption>C'est peut-être toi, à 23 h, dans ton lit, en train de chercher « comment créer un produit digital » sur YouTube.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       3 · AGITATION -->
+  <section class="section section-gray" data-nav-section="Le coût de l'inaction">
+    <div class="container pi-narrow">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Le coût de l'inaction</div>
+        <h2>Pendant ce temps, des gens moins compétents que toi encaissent des paiements tous les jours.</h2>
+        <p class="lead">Chaque mois que tu passes sans agir&nbsp;:</p>
+      </div>
+
+      <ul class="pi-cost reveal" data-stagger>
+        <li><span class="pi-cost-ico">💸</span><p>Tu laisses <b>100 000 à 300 000 FCFA</b> de revenu supplémentaire sur la table.</p></li>
+        <li><span class="pi-cost-ico">👀</span><p>Tu regardes des freelances moins expérimentés que toi signer des clients à <b>150 000 FCFA/mois</b>.</p></li>
+        <li><span class="pi-cost-ico">🎁</span><p>Tu donnes tes conseils gratuitement dans des groupes WhatsApp pendant que d'autres les vendent sous forme de formation.</p></li>
+        <li><span class="pi-cost-ico">⏳</span><p>Tu passes ~260 heures par an à consommer du contenu sans jamais exécuter. C'est plus de <b>32 journées de travail complètes</b>.</p></li>
+      </ul>
+
+      <div class="pi-projection reveal">
+        <div class="pi-proj-item"><span class="pi-proj-h">Dans 1 an</span><span class="pi-proj-n">− 1 200 000 FCFA</span><span class="pi-proj-s">de revenu supplémentaire perdu</span></div>
+        <div class="pi-proj-item"><span class="pi-proj-h">Dans 3 ans</span><span class="pi-proj-n">− 3 600 000 FCFA</span><span class="pi-proj-s">de revenu supplémentaire perdu</span></div>
+      </div>
+
+      <p class="pi-reframe reveal">Les 65 000 FCFA de ce parcours, c'est environ <b>5 jours de ton salaire actuel</b> — pour apprendre une compétence qui peut te rapporter tous les mois.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       4 · SOLUTION -->
+  <section class="section" data-nav-section="La solution">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">La solution</div>
+        <h2>Le Parcours Initiation Bweb Academy&nbsp;: 30 jours pour transformer ta compétence en produit digital qui se vend.</h2>
+        <span class="pi-tag-atelier">📦 Un atelier de production, pas une bibliothèque de cours.</span>
+      </div>
+
+      <div class="pi-solution-grid">
+        <div class="pi-solution-text reveal">
+          <p class="lead">YouTube t'apprend des choses. Bweb Academy te fait <b>sortir avec quelque chose de construit, testé et mis sur le marché.</b></p>
+          <p>Tu ne viens pas pour « apprendre les produits digitaux ». Tu viens avec ta compétence, et tu repars avec&nbsp;:</p>
+          <div class="pi-promise">
+            En 30 jours, transforme une compétence que tu possèdes déjà en un produit digital prêt à vendre, mets-le en ligne et lance-toi pour décrocher tes premières ventes.
+          </div>
+        </div>
+        <div class="pi-solution-side reveal" data-delay=".1">
+          <figure class="pi-solution-art">
+            <img src="/images/parcours-initiation/glass-orbit.webp" alt="Formes 3D abstraites représentant la progression du parcours" width="1200" height="800" loading="lazy" decoding="async" />
+          </figure>
+          <ul class="tick-list card pi-outcomes">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Ton produit créé et accessible en ligne</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Ton offre structurée (promesse, prix, cible)</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Ta page de vente publiée</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Ta boutique configurée avec paiement Mobile Money</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Ta campagne d'acquisition lancée</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Tes premiers prospects contactés</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       5 · MÉCANIQUE (5 phases) -->
+  <section class="section section-gray" id="programme" data-nav-section="Le programme">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Le programme</div>
+        <h2>5 phases. 10 lives. 30 jours. Voici exactement ce que tu vas construire.</h2>
+        <p class="lead">Clique sur chaque phase pour voir ce que tu produis — et ce que tu repars avec.</p>
+      </div>
+
+      <div class="pi-stepper reveal">
+        <div class="pi-steps" id="steps" style={`--n:${phases.length}`}>
+          <div class="pi-steps-track" aria-hidden="true"></div>
+          <div class="pi-steps-fill" id="stepsFill" aria-hidden="true"></div>
+          {phases.map((p, i) => (
+            <button class:list={["pi-step", { active: i === 0 }]} data-i={i} type="button" aria-label={`Phase ${i + 1} : ${p.tag}`}>
+              <span class="pi-dot">{i + 1}</span>
+              <span class="pi-step-week">{p.week}</span>
+              <span class="pi-step-tag">{p.tag}</span>
+            </button>
+          ))}
+        </div>
+
+        <div class="pi-panel" id="panel">
+          {phases.map((p, i) => (
+            <div class:list={["pi-panel-body", { on: i === 0 }]} data-i={i}>
+              <div class="pi-panel-main">
+                <span class="pi-phase-pill">Phase {i + 1} · {p.week}</span>
+                <h3>{p.title}</h3>
+                <p class="pi-panel-sub">{p.sub}</p>
+                <ul class="pi-panel-list">
+                  {p.items.map((it) => <li>{it}</li>)}
+                </ul>
+                <div class="pi-livrable"><span class="pi-livrable-ico">🎯</span><span><b>Livrable&nbsp;:</b> {p.livrable}</span></div>
+                <div class="pi-panel-nav">
+                  <span class="pi-counter">Phase {i + 1} / {phases.length}</span>
+                  <div class="pi-panel-nav-btns">
+                    <button class="pi-pnav" data-nav="prev" type="button" disabled={i === 0}>← Précédent</button>
+                    <button class="pi-pnav" data-nav="next" type="button" disabled={i === phases.length - 1}>Suivant →</button>
+                  </div>
+                </div>
+              </div>
+              <div class="pi-panel-side" aria-hidden="true">
+                <div class:list={["pi-glass-frame", { "no-img": !imgSrc(`phase-${i + 1}`) }]}>
+                  {imgSrc(`phase-${i + 1}`) && <img src={imgSrc(`phase-${i + 1}`)} alt="" width="640" height="640" loading="lazy" decoding="async" />}
+                  <div class="pi-glass-fallback">
+                    <span class="pi-panel-index">{String(i + 1).padStart(2, "0")}</span>
+                    <span class="pi-panel-index-tag">{p.tag}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       6 · POURQUOI GODWIN -->
+  <section class="section pi-author" data-nav-section="Pourquoi Godwin">
+    <div class="pi-author-blobs" aria-hidden="true"></div>
+    <div class="container">
+      <div class="pi-author-grid">
+        <div class="reveal">
+          <div class="eyebrow">Pourquoi moi</div>
+          <h2>J'ai formé +15 000 personnes. Aujourd'hui, je structure tout dans un parcours.</h2>
+          <p class="lead" style="margin:20px 0 14px">Je m'appelle Godwin Soola. J'ai fondé Bweb Agence, un cabinet de conseil et formation à l'IA en Côte d'Ivoire.</p>
+          <p style="color:var(--c-gray-700)">Pendant longtemps, j'ai vendu des formations. Aujourd'hui, je construis une <b>machine à résultats.</b> Ce parcours, c'est la synthèse de tout ce que j'ai appris — structuré pour que tu ne passes pas 2 ans à chercher comme je l'ai fait.</p>
+        </div>
+        <figure class:list={["pi-portrait", "reveal", { "no-img": !imgSrc("godwin-portrait") }]} data-delay=".1">
+          {imgSrc("godwin-portrait") && <img src={imgSrc("godwin-portrait")} alt="Godwin Soola, fondateur de Bweb Agence" width="640" height="760" loading="lazy" decoding="async" />}
+          <div class="pi-portrait-fallback" aria-hidden="true"><span>GS</span></div>
+          <figcaption>Godwin Soola · Fondateur, Bweb Agence</figcaption>
+        </figure>
+      </div>
+      <div class="pi-author-stats reveal" data-stagger data-delay=".1">
+        <div class="pi-astat"><b>+15 000</b><span>personnes formées</span></div>
+        <div class="pi-astat"><b>+100M FCFA</b><span>générés avec mes business en ligne</span></div>
+        <div class="pi-astat"><b>+40 000 €</b><span>investis en publicité Facebook</span></div>
+        <div class="pi-astat"><b>92 %</b><span>de satisfaction sur mes formations</span></div>
+        <div class="pi-astat pi-astat--gold"><b>+63 453</b><span>ventes cumulées par nos apprenants</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       7 · PREUVES (navy rupture) -->
+  <section class="section section-dark pi-proofs" data-nav-section="Ils l'ont fait">
+    <div class="pi-mesh" aria-hidden="true"></div>
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow on-dark" style="justify-content:center">Témoignages</div>
+        <h2 class="text-white">Eux l'ont fait. Voici ce qu'ils ont construit.</h2>
+      </div>
+
+      {publishedTestimonials.length > 0 && (
+        <div class="pi-testi-carousel" data-testid="testimonials-carousel">
+          <p class="pi-testi-hint">Fais défiler pour voir les témoignages <span aria-hidden="true">→</span></p>
+          <div class="pi-testi" data-testimonials-track>
+            {publishedTestimonials.map((testimonial) => (
+              <button class:list={["pi-vslot", `pi-vslot--${testimonial.format}`]} type="button" data-video={testimonial.video} data-format={testimonial.format} aria-label={`Lire le témoignage de ${testimonial.name}`}>
+                <img class="pi-vthumb" src={`https://i.ytimg.com/vi/${testimonial.video}/hqdefault.jpg`} alt="" width="480" height="360" loading="lazy" decoding="async" />
+                <span class="pi-vshade" aria-hidden="true"></span>
+                <span class="pi-vplay"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
+                <span class="pi-vname">{testimonial.name}<small>Voir le témoignage</small></span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <dialog class="pi-video-dialog" id="testimonialDialog" aria-label="Témoignage vidéo">
+        <button class="pi-video-dialog-close" type="button" data-close-testimonial aria-label="Fermer la vidéo">×</button>
+        <div class="pi-video-dialog-player" id="testimonialPlayer">
+          <iframe id="testimonialFrame" title="Témoignage d'un apprenant" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+      </dialog>
+
+      <div class="pi-testi-stats-intro reveal">
+        <span>La preuve par les résultats</span>
+        <p>Un parcours conçu pour faire avancer, pas seulement apprendre.</p>
+      </div>
+      <div class="pi-testi-stats reveal" data-stagger>
+        <div class="pi-tstat pi-tstat--learners">
+          <span class="pi-tstat-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <b><span class="pi-count" data-count="572">572</span></b>
+          <span class="pi-tstat-l">personnes ont suivi le programme complet</span>
+        </div>
+        <div class="pi-tstat pi-tstat--satisfaction">
+          <span class="pi-tstat-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span>
+          <b><span class="pi-count" data-count="92">92</span>&nbsp;%</b>
+          <span class="pi-tstat-l">de satisfaction (110 avis)</span>
+        </div>
+        <div class="pi-tstat pi-tstat--sales">
+          <span class="pi-tstat-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="19" cy="21" r="1.6"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>
+          <b><span class="pi-count" data-count="63453" data-format="fr" data-prefix="+">+63 453</span></b>
+          <span class="pi-tstat-l">ventes cumulées par nos apprenants</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       8 · GARANTIE (navy rupture) -->
+  <section class="section pi-guarantee" data-nav-section="Garantie">
+    <div class="container">
+      <div class="pi-guar-grid">
+        <div class="pi-guar-content reveal">
+          <span class="pi-guar-eyebrow">● Garantie béton</span>
+          <h2>Garantie <span class="pi-gold">« Première vente ou on continue avec toi »</span></h2>
+          <p class="pi-guar-lede">Je suis tellement sûr que ce parcours va te faire passer à l'action que je prends le risque à ta place.</p>
+          <p class="pi-guar-lede">Si tu suis le programme, que tu soumets tes livrables chaque semaine et qu'à J+30 tu n'as pas de produit en ligne, <b>on continue de t'accompagner gratuitement jusqu'à ce que ce soit fait.</b></p>
+          <a href="#reserver" class="pi-btn-buy pi-cta pi-guar-cta">Je réserve ma place — sans risque <span class="pi-arrow">→</span></a>
+          <div class="pi-guar-sign">Mon engagement personnel&nbsp;: <span class="nm">Godwin Soola</span></div>
+        </div>
+
+        <div class="pi-guar-art" aria-hidden="true">
+          <video
+            class="pi-guar-video"
+            autoplay loop muted playsinline disablepictureinpicture preload="metadata"
+            poster="/images/parcours-initiation/guarantee-seal.jpg"
+            width="600" height="750"
+          >
+            <source src="/images/parcours-initiation/guarantee-seal.mp4" type="video/mp4" />
+          </video>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       9 · RARETÉ -->
+  <section class="section" data-nav-section="Les places">
+    <div class="container pi-narrow">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Rareté réelle</div>
+        <h2>30 places. Pas une de plus.</h2>
+      </div>
+      <div class="pi-scarcity reveal">
+        <div class="pi-scarcity-count">
+          <span class="pi-scarcity-n" id="placesLeft" data-places={PLACES_RESTANTES}>{PLACES_RESTANTES}</span>
+          <span class="pi-scarcity-l">places restantes pour la cohorte de Septembre</span>
+        </div>
+        <div class="pi-scarcity-text">
+          <p>Chaque cohorte est limitée à 30 personnes. Pour une raison simple&nbsp;: <b>chaque apprenant reçoit un suivi personnalisé.</b></p>
+          <p>Ton responsable de cohorte vérifie chacun de tes livrables. Ton mentor valide ton offre, ton produit, ta page de vente. Godwin est en direct 2 fois par semaine.</p>
+          <p>Avec 100 personnes, ce serait impossible. Avec 30, c'est intensif, exigeant — et ça produit des résultats.</p>
+        </div>
+      </div>
+      <div class="pi-scarcity-bar reveal" aria-hidden="true"><span id="placesBar"></span></div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       10 · BONUS -->
+  <section class="section section-gray" data-nav-section="Les bonus">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Les bonus</div>
+        <h2>En t'inscrivant aujourd'hui, tu reçois aussi&nbsp;:</h2>
+      </div>
+      <div class="pi-bonus-grid" data-stagger>
+        {bonuses.map((b, i) => (
+          <div class="pi-bonus-card">
+            <span class:list={["pi-bonus-ico", { "no-img": !imgSrc(`bonus-${i + 1}`) }]}>
+              {imgSrc(`bonus-${i + 1}`) && <img src={imgSrc(`bonus-${i + 1}`)} alt="" width="192" height="192" loading="lazy" decoding="async" />}
+              <span class="pi-bonus-emoji" aria-hidden="true">{b.icon}</span>
+            </span>
+            <div class="pi-bonus-body">
+              <h3>{b.title}</h3>
+              <p>{b.desc}</p>
+              <span class:list={["pi-bonus-value", { free: b.value === "Inestimable" }]}>{b.value}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p class="pi-bonus-total reveal">Total valeur des bonus&nbsp;: <b>180 000+ FCFA</b> — offerts avec le parcours.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       11 · PRIX -->
+  <section class="section" id="reserver" data-nav-section="Ton investissement">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Ton investissement</div>
+        <h2>Récapitulatif de ce que tu reçois</h2>
+      </div>
+      <div class="pi-pricing reveal">
+        <span class="pi-price-tag">🔥 Offre de lancement</span>
+        <ul class="pi-stack">
+          <li><span>Parcours Initiation — 5 phases, 10 lives, 30 jours</span><b>150 000 FCFA</b></li>
+          <li><span>Suivi personnalisé par ton responsable de cohorte</span><b>50 000 FCFA</b></li>
+          <li><span>Feedback mentor sur chaque livrable</span><b>50 000 FCFA</b></li>
+          <li><span>Bonus (8 ressources exclusives)</span><b>180 000+ FCFA</b></li>
+          <li class="pi-stack-total"><span>Valeur totale</span><b>430 000+ FCFA</b></li>
+        </ul>
+
+        <div class="pi-price-block">
+          <p class="pi-price-real">Coût réel du parcours&nbsp;: <s>150 000 FCFA</s></p>
+          <div class="pi-price">65 000 <small>FCFA</small></div>
+          <span class="pi-deal">✨ <b>− 57 %</b> pour ton inscription dans les 48 h</span>
+
+          <p class="pi-deal-timer" id="dealTimer">
+            ⏳ L'offre expire dans
+            <span class="pi-dt-clock"><span data-t="h">48</span><i>h</i><span data-t="m">00</span><i>m</i><span data-t="s">00</span><i>s</i></span>
+            — ensuite, retour à <b>150 000 FCFA</b>
+          </p>
+        </div>
+
+        <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">Je réserve ma place — 65 000 FCFA <span class="pi-arrow">→</span></a>
+        <p class="pi-price-note">30 places maximum par cohorte. 1 cohorte chaque mois.</p>
+
+        <div class="pi-assurances">
+          <div class="pi-assurance">
+            <span class="pi-assurance-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <b>Paiement 100 % sécurisé</b>
+            <span>Wave, Orange Money, carte bancaire</span>
+          </div>
+          <div class="pi-assurance">
+            <span class="pi-assurance-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+            <b>Accès immédiat</b>
+            <span>Ton espace client s'ouvre dès le paiement</span>
+          </div>
+          <div class="pi-assurance">
+            <span class="pi-assurance-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 2.5V11c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V5.5L12 3z"/><polyline points="8.5 12 11 14.5 15.5 9.5"/></svg></span>
+            <b>Garantie incluse</b>
+            <span>Première vente ou on continue avec toi</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       12 · FAQ -->
+  <section class="section section-gray" data-nav-section="Questions">
+    <div class="container pi-narrow">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Tes questions</div>
+        <h2>Tu te poses peut-être ces questions&nbsp;:</h2>
+      </div>
+      <div class="pi-faq reveal">
+        {faqs.map((f) => (
+          <div class="pi-faq-item">
+            <button class="pi-faq-q" type="button" aria-expanded="false">
+              <span>{f.q}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <div class="pi-faq-a"><div class="pi-faq-a-in">{f.a}</div></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       13 · CTA FINAL (closer navy + glass) -->
+  <section class="section pi-final" data-nav-section="Rejoindre">
+    <img class="pi-final-glass pi-final-glass--right" src="/images/parcours-initiation/glass-orbit.webp" alt="" aria-hidden="true" width="1200" height="800" loading="lazy" decoding="async" />
+    <img class="pi-final-glass pi-final-glass--left" src="/images/parcours-initiation/glass-shapes.webp" alt="" aria-hidden="true" width="1200" height="675" loading="lazy" decoding="async" />
+    <div class="container">
+      <div class="pi-final-inner">
+        <div class="eyebrow on-dark reveal" style="justify-content:center">Cohorte Septembre 2026 · 30 places</div>
+        <h2 class="reveal">C'est le moment d'arrêter d'apprendre.<br />Et de commencer à construire.</h2>
+        <p class="pi-final-sub reveal">Chaque place est un produit qui va naître. Une personne qui va lancer. Une compétence qui va enfin générer des revenus.</p>
+
+        <div class="pi-final-card reveal-scale">
+          <div class="pi-final-price">
+            <span class="pi-final-old">150 000 FCFA</span>
+            <span class="pi-final-now">65 000 <small>FCFA</small></span>
+            <span class="pi-save pi-save--dark">💥 Tu économises 85 000 FCFA</span>
+          </div>
+          <ul class="pi-final-ticks">
+            <li>Ton produit en ligne en 30 jours</li>
+            <li>Garantie « Première vente ou on continue »</li>
+            <li>8 bonus offerts (180 000+ FCFA)</li>
+          </ul>
+          <div class="pi-final-urgency">
+            <span class="pi-final-urgency-label">⏳ La cohorte démarre dans</span>
+            <div class="pi-fcd" data-target={COHORTE_ISO}>
+              <span class="pi-fcd-box"><span class="n" data-cd="d">00</span><span class="u">Jours</span></span>
+              <span class="pi-fcd-sep">:</span>
+              <span class="pi-fcd-box"><span class="n" data-cd="h">00</span><span class="u">Heures</span></span>
+              <span class="pi-fcd-sep">:</span>
+              <span class="pi-fcd-box"><span class="n" data-cd="m">00</span><span class="u">Min</span></span>
+              <span class="pi-fcd-sep">:</span>
+              <span class="pi-fcd-box"><span class="n" data-cd="s">00</span><span class="u">Sec</span></span>
+            </div>
+            <span class="pi-final-places">Il reste <b>{PLACES_RESTANTES}</b> places sur 30</span>
+          </div>
+          <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">Je réserve ma place — 65 000 FCFA →</a>
+          <div class="pi-final-trust">
+            <span>🔒 Paiement sécurisé</span>
+            <span>📱 Accès mobile</span>
+            <span>🛡️ Garantie satisfait ou accompagné</span>
+          </div>
+        </div>
+
+        <!-- 14 · PS -->
+        <p class="pi-ps reveal">
+          <b>PS&nbsp;:</b> Si t'as lu jusqu'ici, c'est que tu es sérieux. Tu sais que ta compétence a de la valeur. Tu sais que tu pourrais en faire quelque chose. La seule différence entre toi et ceux qui encaissent des paiements tous les jours, c'est qu'ils ont lancé. Rejoins la cohorte. Dans 30 jours, tu auras un produit. Pas juste des notes dans ton téléphone.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sticky CTA mobile -->
+  <div class="pi-sticky">
+    <a href="#reserver" class="pi-btn-buy pi-cta pi-sticky-buy">
+      <span>Je réserve ma place →</span>
+      <span class="pi-sticky-prices"><b>65 000 FCFA</b><s>150 000 FCFA</s></span>
+    </a>
+  </div>
+
+  <!-- Paiement Chariow : ouvert par chaque CTA de réservation -->
+  <dialog class="pi-payment-modal" id="paymentModal" aria-labelledby="paymentModalTitle">
+    <div class="pi-payment-shell" id="paiement">
+      <button class="pi-payment-close" type="button" aria-label="Fermer le paiement" data-payment-close>×</button>
+      <p class="pi-payment-eyebrow">Paiement sécurisé</p>
+      <h2 id="paymentModalTitle">Réserve ta place</h2>
+      <p class="pi-payment-intro">Finalise ton inscription au parcours en quelques instants.</p>
+      <div id="chariow-widget"
+        data-product-id="prd_cuwtrrgc"
+        data-store-domain="boutique.godwinsoola.com"
+        data-style="frame"
+        data-border-style="rounded"
+        data-cta-width="xs"
+        data-cta-animation="none"
+        data-locale="en"
+        data-background-color="#FFFFFF"></div>
+    </div>
+  </dialog>
+
+  <script define:vars={{ YOUTUBE_HERO }} is:inline>
+    (function () {
+      // ---- Vidéo hero (lazy YouTube) ----
+      var heroPlay = document.getElementById("heroPlay");
+      if (heroPlay) {
+        heroPlay.addEventListener("click", function () {
+          var frame = document.getElementById("heroFrame");
+          if (!YOUTUBE_HERO) { heroPlay.classList.add("shake"); setTimeout(function(){heroPlay.classList.remove("shake");}, 500); return; }
+          frame.src = "https://www.youtube.com/embed/" + YOUTUBE_HERO + "?autoplay=1&rel=0";
+          frame.hidden = false;
+          heroPlay.style.display = "none";
+        });
+      }
+
+      // ---- Témoignages : aperçu puis lecture complète dans une fenêtre dédiée ----
+      var testimonialDialog = document.getElementById("testimonialDialog");
+      var testimonialPlayer = document.getElementById("testimonialPlayer");
+      var testimonialFrame = document.getElementById("testimonialFrame");
+      function closeTestimonial() {
+        if (testimonialDialog && testimonialDialog.open) testimonialDialog.close();
+      }
+      document.querySelectorAll(".pi-vslot").forEach(function (el) {
+        el.addEventListener("click", function () {
+          var id = el.getAttribute("data-video");
+          if (!id || !testimonialDialog || !testimonialPlayer || !testimonialFrame) return;
+          testimonialPlayer.classList.toggle("is-portrait", el.getAttribute("data-format") === "portrait");
+          testimonialFrame.src = "https://www.youtube.com/embed/" + id + "?autoplay=1&rel=0";
+          testimonialDialog.showModal();
+        });
+      });
+      document.querySelectorAll("[data-close-testimonial]").forEach(function (btn) { btn.addEventListener("click", closeTestimonial); });
+      if (testimonialDialog && testimonialFrame) {
+        testimonialDialog.addEventListener("close", function () { testimonialFrame.src = ""; });
+        testimonialDialog.addEventListener("click", function (event) { if (event.target === testimonialDialog) closeTestimonial(); });
+      }
+
+      // ---- Témoignages : défilement lent, sans empêcher le geste horizontal ----
+      (function () {
+        var track = document.querySelector("[data-testimonials-track]");
+        if (!track || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        var paused = false;
+        function next() {
+          if (paused) return;
+          var card = track.querySelector(".pi-vslot");
+          if (!card) return;
+          var step = card.getBoundingClientRect().width + 16;
+          var end = track.scrollWidth - track.clientWidth;
+          var target = track.scrollLeft + step;
+          track.scrollTo({ left: target >= end - 4 ? 0 : target, behavior: "smooth" });
+        }
+        var timer = setInterval(next, 5000);
+        ["pointerdown", "pointerenter", "focusin"].forEach(function (event) {
+          track.addEventListener(event, function () { paused = true; });
+        });
+        ["pointerup", "pointerleave", "focusout"].forEach(function (event) {
+          track.addEventListener(event, function () { paused = false; });
+        });
+        window.addEventListener("pagehide", function () { clearInterval(timer); }, { once: true });
+      })();
+
+      // ---- Stepper programme ----
+      (function () {
+        var steps = [].slice.call(document.querySelectorAll(".pi-step"));
+        var bodies = [].slice.call(document.querySelectorAll(".pi-panel-body"));
+        var fill = document.getElementById("stepsFill");
+        if (!steps.length) return;
+        var n = steps.length, cur = 0;
+        function go(i) {
+          cur = i;
+          steps.forEach(function (s, idx) {
+            s.classList.toggle("active", idx === i);
+            s.classList.toggle("done", idx < i);
+          });
+          bodies.forEach(function (b) { b.classList.toggle("on", +b.dataset.i === i); });
+          // La ligne commence au centre de l'étape 1 et se termine au centre
+          // de l'étape 5 : elle ne doit jamais dépasser le dernier repère.
+          if (fill) fill.style.width = (i / n) * 100 + "%";
+        }
+        steps.forEach(function (s) { s.addEventListener("click", function () { go(+s.dataset.i); }); });
+        document.querySelectorAll(".pi-pnav").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            if (btn.dataset.nav === "next" && cur < n - 1) go(cur + 1);
+            if (btn.dataset.nav === "prev" && cur > 0) go(cur - 1);
+          });
+        });
+        go(0);
+      })();
+
+      // ---- FAQ accordéon ----
+      document.querySelectorAll(".pi-faq-q").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var item = btn.parentElement;
+          var open = item.classList.contains("open");
+          document.querySelectorAll(".pi-faq-item.open").forEach(function (i) {
+            i.classList.remove("open");
+            i.querySelector(".pi-faq-a").style.maxHeight = "0";
+            i.querySelector(".pi-faq-q").setAttribute("aria-expanded", "false");
+          });
+          if (!open) {
+            item.classList.add("open");
+            var a = item.querySelector(".pi-faq-a");
+            a.style.maxHeight = a.scrollHeight + "px";
+            btn.setAttribute("aria-expanded", "true");
+          }
+        });
+      });
+      window.addEventListener("resize", function () {
+        var o = document.querySelector(".pi-faq-item.open .pi-faq-a");
+        if (o) o.style.maxHeight = o.scrollHeight + "px";
+      });
+
+      // ---- Countdown (toutes les instances [data-target]) ----
+      (function () {
+        var roots = [].slice.call(document.querySelectorAll("[data-target]"));
+        if (!roots.length) return;
+        function pad(v) { return String(v).padStart(2, "0"); }
+        function tick() {
+          roots.forEach(function (root) {
+            var diff = new Date(root.getAttribute("data-target")).getTime() - Date.now();
+            if (diff < 0) diff = 0;
+            root.querySelector('[data-cd="d"]').textContent = pad(Math.floor(diff / 86400000));
+            root.querySelector('[data-cd="h"]').textContent = pad(Math.floor((diff % 86400000) / 3600000));
+            root.querySelector('[data-cd="m"]').textContent = pad(Math.floor((diff % 3600000) / 60000));
+            root.querySelector('[data-cd="s"]').textContent = pad(Math.floor((diff % 60000) / 1000));
+          });
+        }
+        tick();
+        setInterval(tick, 1000);
+      })();
+
+      // ---- Sceau garantie : respecte « réduire les animations » (fige le poster) ----
+      (function () {
+        var v = document.querySelector(".pi-guar-video");
+        if (v && matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          v.removeAttribute("autoplay");
+          v.addEventListener("loadeddata", function () { v.pause(); });
+          v.pause();
+        }
+      })();
+
+      // ---- Compte à rebours 48 h de l'offre (evergreen, par visiteur) ----
+      // Démarre à la 1re visite et persiste entre les rechargements ; une fois
+      // écoulé, il repart pour 48 h. Le prix affiché, lui, ne change pas.
+      (function () {
+        var root = document.getElementById("dealTimer");
+        if (!root) return;
+        var KEY = "pi_deal_deadline", DUR = 48 * 3600 * 1000, deadline;
+        try {
+          deadline = parseInt(localStorage.getItem(KEY), 10);
+          if (!deadline || deadline < Date.now()) {
+            deadline = Date.now() + DUR;
+            localStorage.setItem(KEY, String(deadline));
+          }
+        } catch (e) { deadline = Date.now() + DUR; } // navigation privée : timer de session
+        function pad(v) { return String(v).padStart(2, "0"); }
+        function tick() {
+          var d = deadline - Date.now();
+          if (d < 0) d = 0;
+          root.querySelector('[data-t="h"]').textContent = pad(Math.floor(d / 3600000));
+          root.querySelector('[data-t="m"]').textContent = pad(Math.floor((d % 3600000) / 60000));
+          root.querySelector('[data-t="s"]').textContent = pad(Math.floor((d % 60000) / 1000));
+        }
+        tick();
+        setInterval(tick, 1000);
+      })();
+
+      // ---- Count-up des chiffres témoignages ----
+      (function () {
+        var els = [].slice.call(document.querySelectorAll(".pi-count"));
+        if (!els.length || !("IntersectionObserver" in window)) return;
+        var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        function fmt(v, fr) { return fr ? v.toLocaleString("fr-FR").replace(/ | /g, " ") : String(v); }
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            io.unobserve(e.target);
+            var el = e.target, target = parseInt(el.dataset.count, 10) || 0, fr = el.dataset.format === "fr", prefix = el.dataset.prefix || "";
+            if (reduce) { el.textContent = prefix + fmt(target, fr); return; }
+            var t0 = null, dur = 1300;
+            function step(ts) {
+              if (!t0) t0 = ts;
+              var p = Math.min(1, (ts - t0) / dur);
+              var eased = 1 - Math.pow(1 - p, 3);
+              el.textContent = prefix + fmt(Math.round(target * eased), fr);
+              if (p < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+          });
+        }, { threshold: 0.4 });
+        els.forEach(function (el) { io.observe(el); });
+      })();
+
+      // ---- Jauge de places ----
+      (function () {
+        var el = document.getElementById("placesLeft");
+        var bar = document.getElementById("placesBar");
+        if (!el || !bar) return;
+        var left = parseInt(el.getAttribute("data-places"), 10) || 30;
+        var pct = Math.max(4, Math.min(100, (left / 30) * 100));
+        requestAnimationFrame(function () { bar.style.width = pct + "%"; });
+      })();
+
+      // ---- Sticky CTA : visible après le hero + le compte à rebours,
+      // pour ne jamais recouvrir la vidéo ou le CTA principal du hero. ----
+      (function () {
+        var sticky = document.querySelector(".pi-sticky");
+        var countdown = document.querySelector(".pi-countdown");
+        var pricing = document.getElementById("reserver");
+        if (!sticky || !("IntersectionObserver" in window)) return;
+        var pastIntro = false, atPricing = false;
+        function update() { sticky.classList.toggle("show", pastIntro && !atPricing); }
+        if (countdown) new IntersectionObserver(function (e) {
+          pastIntro = !e[0].isIntersecting && e[0].boundingClientRect.bottom < 0;
+          update();
+        }, { threshold: 0 }).observe(countdown);
+        if (pricing) new IntersectionObserver(function (e) { atPricing = e[0].isIntersecting; update(); }, { threshold: 0 }).observe(pricing);
+      })();
+
+      // ---- Landing CRO : la marque ne concurrence pas le CTA au défilement ----
+      (function () {
+        var nav = document.querySelector(".site-header--bare");
+        if (!nav) return;
+        function update() { nav.classList.toggle("pi-nav-hidden", window.scrollY > 28); }
+        update();
+        window.addEventListener("scroll", update, { passive: true });
+      })();
+    })();
+  </script>
+
+  <script is:inline>
+    (function () {
+      var modal = document.getElementById("paymentModal");
+      var close = document.querySelector("[data-payment-close]");
+      var triggers = document.querySelectorAll("[data-payment-trigger]");
+
+      function openPayment(event) {
+        event.preventDefault();
+        if (window.fbq) window.fbq("track", "InitiateCheckout");
+        if (modal && typeof modal.showModal === "function") modal.showModal();
+      }
+
+      triggers.forEach(function (trigger) {
+        trigger.addEventListener("click", openPayment);
+      });
+
+      if (close && modal) close.addEventListener("click", function () { modal.close(); });
+      if (modal) modal.addEventListener("click", function (event) {
+        if (event.target === modal) modal.close();
+      });
+
+      var stylesheet = document.createElement("link");
+      stylesheet.rel = "stylesheet";
+      stylesheet.href = "https://js.chariowcdn.com/v1/widget.min.css";
+      document.head.appendChild(stylesheet);
+
+      var widgetScript = document.createElement("script");
+      widgetScript.src = "https://js.chariowcdn.com/v1/widget.min.js";
+      widgetScript.async = true;
+      document.head.appendChild(widgetScript);
+    })();
+  </script>
+</BaseLayout>
+
+<style>
+  /* =====================================================================
+     PARCOURS INITIATION — styles page-scoped (préfixe .pi-)
+     S'appuient sur les tokens du design system (tokens.css).
+     ===================================================================== */
+
+  .pi-cta .pi-arrow { transition: transform var(--dur) var(--ease); display: inline-block; }
+  .pi-cta:hover .pi-arrow { transform: translateX(4px); }
+  .shake { animation: pi-shake .4s; }
+  @keyframes pi-shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+
+  /* ---------- 1 · HERO (clair) ---------- */
+  .pi-hero {
+    position: relative; overflow: hidden;
+    padding-top: clamp(130px, 13vw, 180px);
+    padding-bottom: clamp(48px, 5vw, 72px);
+    background:
+      radial-gradient(760px 380px at 50% -6%, rgba(31,108,237,.10), transparent 62%),
+      radial-gradient(620px 520px at 85% 20%, rgba(0,200,158,.07), transparent 60%),
+      var(--c-white);
+    text-align: center;
+  }
+  .pi-hero-halo {
+    position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(420px 360px at 12% 88%, rgba(255,131,95,.06), transparent 60%);
+  }
+  .pi-hero-inner { position: relative; z-index: 1; max-width: 880px; margin: 0 auto; }
+
+  /* Formes 3D glass flottantes autour du hero (déco, jamais devant le contenu) */
+  .pi-hero-glass { position: absolute; pointer-events: none; z-index: 0; height: auto; filter: drop-shadow(0 24px 40px rgba(2,11,80,.14)); }
+  .pi-hero-glass--right { width: clamp(420px, 44vw, 700px); right: max(-10vw, -140px); top: 110px; animation: pi-float 7s var(--ease) infinite; }
+  .pi-hero-glass--left { width: clamp(320px, 32vw, 520px); left: max(-9vw, -120px); bottom: -30px; transform: scaleX(-1); opacity: .85; animation: pi-float 9s var(--ease) infinite reverse; }
+  @media (max-width: 1100px) { .pi-hero-glass { display: none; } }
+
+  .pi-badge-urgence {
+    display: inline-block; font-weight: 700; font-size: .82rem; letter-spacing: .01em;
+    color: #fff; background: linear-gradient(135deg, var(--c-orange), #ef5f36);
+    padding: 9px 18px; border-radius: var(--radius-pill); margin-bottom: 22px;
+    box-shadow: 0 8px 22px -8px rgba(255,131,95,.7);
+    line-height: 1.35;
+  }
+
+  .pi-hero h1 {
+    font-size: clamp(2rem, 1.3rem + 3vw, 3.35rem);
+    line-height: 1.08; letter-spacing: -.02em; max-width: 20ch; margin: 0 auto;
+    color: var(--c-ink);
+  }
+  .pi-hl-gold {
+    white-space: nowrap; padding: 0 .1em; border-radius: 4px;
+    background: linear-gradient(rgba(255,199,42,.42), rgba(255,199,42,.42)) no-repeat;
+    background-size: 100% 42%; background-position: 0 82%;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+  }
+  .pi-h1-hook {
+    display: block; margin-top: .18em; color: var(--c-danger);
+    text-decoration: underline; text-decoration-thickness: 3px;
+    text-underline-offset: 5px; text-decoration-color: rgba(210,45,45,.4);
+  }
+  .pi-hero-sub { max-width: 620px; margin: 22px auto 0; color: var(--c-gray-700); }
+
+  .pi-video {
+    position: relative; margin: 34px auto 0; border-radius: var(--radius-lg);
+    overflow: hidden; box-shadow: var(--shadow-lg); aspect-ratio: 16/9;
+    background: var(--c-navy);
+  }
+  .pi-video--wide { max-width: 560px; }
+  .pi-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .pi-video-ph {
+    position: absolute; inset: 0; width: 100%; cursor: pointer; color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: #02114a; border: 0; padding: 20px; isolation: isolate;
+  }
+  .pi-video-cover { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+  .pi-video-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(1,5,46,.16) 30%, rgba(1,5,46,.62)); transition: background var(--dur) var(--ease); }
+  .pi-video-ph:hover .pi-video-shade { background: linear-gradient(180deg, rgba(1,5,46,.08) 30%, rgba(1,5,46,.5)); }
+  .pi-play {
+    width: 76px; height: 76px; border-radius: 50%; background: var(--c-blue);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 0 rgba(31,108,237,.55); animation: pi-pulse 2.2s infinite;
+  }
+  .pi-play svg { width: 30px; height: 30px; margin-left: 3px; }
+  .pi-video-ph:hover .pi-play { transform: scale(1.08); }
+  .pi-video-lbl { font-family: var(--f-display); font-weight: 600; font-size: .95rem; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+  @keyframes pi-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(31,108,237,.5)} 50%{box-shadow:0 0 0 16px rgba(31,108,237,0)} }
+
+  .pi-hero-cta { margin-top: 32px; }
+  .pi-cta-note { margin-top: 14px; font-size: .88rem; color: var(--c-gray-600); }
+
+  .pi-proof { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 32px; }
+  .pi-proof-chip {
+    background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius-pill);
+    padding: 10px 20px; font-size: .9rem; box-shadow: var(--shadow-sm);
+    display: inline-flex; align-items: baseline; gap: 7px;
+  }
+  .pi-proof-chip b { color: var(--c-blue); font-weight: 800; }
+  .pi-proof-chip span { color: var(--c-gray-700); }
+
+  /* ---------- Countdown ---------- */
+  .pi-countdown { background: var(--g-navy); color: #fff; padding: 20px 0; }
+  .pi-countdown-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 16px 22px; }
+  .pi-countdown-label { font-family: var(--f-display); font-weight: 700; font-size: .82rem; text-transform: uppercase; letter-spacing: .08em; color: var(--c-yellow); }
+  .pi-countdown-clock { justify-content: center; }
+
+  /* ---------- Largeur de lecture ---------- */
+  .pi-narrow { max-width: 820px; }
+
+  /* ---------- 2 · Problème ---------- */
+  .pi-prose { font-size: 1.06rem; color: var(--c-gray-700); }
+  .pi-prose p { margin-bottom: 16px; }
+  .pi-prose-punch { font-family: var(--f-display); font-weight: 700; font-size: 1.2rem; color: var(--c-ink); }
+  .pi-quote {
+    margin: 40px auto 0; max-width: 660px; text-align: center;
+    background: var(--surface-2); border: 1px solid var(--c-border-soft);
+    border-left: 4px solid var(--c-blue); border-radius: var(--radius-md);
+    padding: 32px 36px;
+  }
+  .pi-quote blockquote { font-family: var(--f-display); font-style: italic; font-size: 1.15rem; line-height: 1.5; color: var(--c-navy); }
+  .pi-quote figcaption { margin-top: 16px; font-size: .92rem; color: var(--c-gray-600); }
+
+  /* ---------- 3 · Agitation ---------- */
+  .pi-cost { list-style: none; max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .pi-cost li { display: flex; gap: 16px; align-items: flex-start; background: #fff; border: 1px solid var(--c-border-soft); border-radius: var(--radius-md); padding: 18px 22px; box-shadow: var(--shadow-sm); }
+  .pi-cost-ico { font-size: 1.3rem; line-height: 1.4; flex: none; }
+  .pi-cost p { color: var(--c-gray-700); }
+  .pi-cost b { color: var(--c-ink); }
+  .pi-projection { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 720px; margin: 26px auto 0; }
+  .pi-proj-item { text-align: center; background: var(--c-danger-bg); border: 1px solid rgba(210,45,45,.18); border-radius: var(--radius-md); padding: 24px 20px; }
+  .pi-proj-h { display: block; font-weight: 700; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--c-danger); }
+  .pi-proj-n { display: block; font-family: var(--f-display); font-weight: 700; font-size: clamp(1.5rem, 4vw, 2rem); color: var(--c-danger); margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+  .pi-proj-s { display: block; font-size: .86rem; color: var(--c-gray-600); }
+  .pi-reframe { max-width: 640px; margin: 28px auto 0; text-align: center; font-size: 1.06rem; color: var(--c-gray-700); background: var(--c-success-bg); border: 1px solid rgba(10,156,119,.2); border-radius: var(--radius-md); padding: 20px 26px; }
+  .pi-reframe b { color: var(--c-success); }
+
+  /* ---------- 4 · Solution ---------- */
+  .pi-tag-atelier { display: inline-block; margin-top: 16px; font-weight: 700; font-size: .9rem; color: var(--c-blue); background: var(--c-skyblue); border: 1px solid rgba(31,108,237,.18); padding: 9px 18px; border-radius: var(--radius-pill); }
+  .pi-solution-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; max-width: 1040px; margin: 0 auto; }
+  .pi-solution-text p { margin-bottom: 14px; color: var(--c-gray-700); }
+  .pi-promise { margin-top: 22px; font-family: var(--f-display); font-weight: 600; font-size: 1.06rem; line-height: 1.5; color: var(--c-navy); background: var(--surface-2); border-left: 4px solid var(--c-green); border-radius: var(--radius-md); padding: 20px 24px; }
+  .pi-solution-side { display: grid; gap: 20px; }
+  .pi-solution-art { margin: 0; overflow: visible; background: transparent; }
+  .pi-solution-art img { display: block; width: min(100%, 460px); height: auto; margin: 0 auto; filter: drop-shadow(0 18px 20px rgba(2,17,74,.13)); }
+  .pi-outcomes { gap: 16px; }
+  .pi-outcomes li { font-weight: 600; color: var(--c-gray-800); }
+
+  /* ---------- 5 · Mécanique (stepper) ---------- */
+  .pi-stepper { max-width: 1000px; margin: 0 auto; }
+  .pi-steps { position: relative; display: grid; grid-template-columns: repeat(var(--n), 1fr); margin-bottom: 34px; }
+  .pi-steps-track, .pi-steps-fill { position: absolute; top: 26px; height: 3px; border-radius: 2px; left: calc(50% / var(--n)); right: calc(50% / var(--n)); }
+  .pi-steps-track { background: var(--c-border); }
+  .pi-steps-fill { right: auto; width: 0; background: linear-gradient(90deg, var(--c-blue), var(--c-green)); transition: width var(--dur-slow) var(--ease); z-index: 1; }
+  .pi-step { position: relative; z-index: 2; background: none; border: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 4px; font-family: inherit; }
+  .pi-dot { width: 54px; height: 54px; border-radius: 50%; background: #fff; border: 2px solid var(--c-border); color: var(--c-gray-500); display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-weight: 700; font-size: 1.15rem; box-shadow: var(--shadow-sm); transition: all var(--dur) var(--ease); }
+  .pi-step-week { font-family: var(--f-display); font-weight: 700; font-size: .68rem; letter-spacing: .05em; text-transform: uppercase; color: var(--c-gray-500); }
+  .pi-step-tag { font-size: .82rem; color: var(--c-gray-600); }
+  .pi-step.done .pi-dot { background: var(--c-blue); border-color: var(--c-blue); color: #fff; }
+  .pi-step.active .pi-dot { background: var(--c-blue); border-color: var(--c-blue); color: #fff; transform: scale(1.08); box-shadow: 0 10px 24px -6px rgba(31,108,237,.5); }
+  .pi-step.active .pi-step-week { color: var(--c-blue); }
+  .pi-step.active .pi-step-tag { color: var(--c-ink); font-weight: 600; }
+
+  .pi-panel { position: relative; overflow: hidden; background: var(--g-navy); color: #fff; border-radius: var(--radius-xl); padding: clamp(28px, 4vw, 48px); box-shadow: var(--shadow-lg); }
+  .pi-panel-body { display: none; }
+  .pi-panel-body.on { display: grid; grid-template-columns: 1fr 300px; gap: 32px; align-items: center; animation: pi-fade .45s var(--ease); }
+  @keyframes pi-fade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .pi-phase-pill { display: inline-block; font-family: var(--f-display); font-weight: 700; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--c-navy); background: var(--c-yellow); padding: 5px 14px; border-radius: var(--radius-pill); margin-bottom: 14px; }
+  .pi-panel-main h3 { font-size: clamp(1.3rem, 2.4vw, 1.6rem); color: #fff; margin-bottom: 10px; }
+  .pi-panel-sub { color: var(--c-gray-300); font-style: italic; margin-bottom: 18px; }
+  .pi-panel-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .pi-panel-list li { position: relative; padding-left: 28px; color: #eef1f8; font-size: .96rem; }
+  .pi-panel-list li::before { content: "✓"; position: absolute; left: 0; color: var(--c-green); font-weight: 700; }
+  .pi-livrable { margin-top: 20px; display: flex; gap: 10px; align-items: flex-start; font-weight: 600; font-size: .96rem; color: #fff; line-height: 1.45; padding: 14px 18px; background: rgba(0,200,158,.1); border: 1px solid rgba(0,200,158,.3); border-radius: var(--radius-md); }
+  .pi-livrable-ico { flex: none; }
+  .pi-panel-nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 24px; }
+  .pi-counter { font-size: .85rem; color: var(--c-gray-400); white-space: nowrap; }
+  .pi-panel-nav-btns { display: flex; gap: 10px; }
+  .pi-pnav { font-family: var(--f-display); font-weight: 600; font-size: .88rem; color: #fff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); padding: 10px 20px; border-radius: var(--radius-pill); cursor: pointer; transition: background var(--dur-fast); white-space: nowrap; }
+  .pi-pnav:hover:not(:disabled) { background: rgba(255,255,255,.2); }
+  .pi-pnav:disabled { opacity: .35; cursor: default; }
+  .pi-panel-side { display: flex; align-items: center; justify-content: center; }
+
+  /* Visuel de phase : l'image (qui embarque déjà son propre carreau de verre)
+     flotte librement sur le panneau — le cadre CSS n'existe que pour le fallback. */
+  .pi-glass-frame { position: relative; width: 100%; max-width: 320px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+  .pi-glass-frame img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 12px 22px rgba(0,0,0,.22)); animation: pi-float 6s var(--ease) infinite; }
+  .pi-glass-fallback { display: none; position: absolute; inset: 0; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .pi-glass-frame.no-img {
+    max-width: 230px; border-radius: 26px; overflow: hidden;
+    background: linear-gradient(155deg, rgba(255,255,255,.16), rgba(255,255,255,.04) 55%, rgba(255,255,255,.09));
+    border: 1px solid rgba(255,255,255,.24);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -18px 34px rgba(255,255,255,.05), 0 22px 48px -20px rgba(0,0,0,.55);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  .pi-glass-frame.no-img::before {
+    content: ""; position: absolute; top: -60%; left: -30%; width: 70%; height: 220%;
+    background: linear-gradient(105deg, transparent, rgba(255,255,255,.14), transparent);
+    transform: rotate(18deg); pointer-events: none;
+  }
+  .pi-glass-frame.no-img .pi-glass-fallback { display: flex; }
+  .pi-panel-index { font-family: var(--f-display); font-weight: 700; font-size: clamp(3.4rem, 7vw, 5rem); line-height: 1; background: linear-gradient(150deg, #fff, rgba(255,255,255,.35)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .pi-panel-index-tag { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: .8rem; color: var(--c-yellow); }
+
+  /* ---------- 6 · Auteur (glass sur blobs colorés) ---------- */
+  .pi-author { position: relative; overflow: hidden; }
+  .pi-author-blobs {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(380px 320px at 10% 18%, rgba(31,108,237,.12), transparent 65%),
+      radial-gradient(440px 400px at 90% 26%, rgba(255,199,42,.14), transparent 65%),
+      radial-gradient(400px 360px at 68% 100%, rgba(0,200,158,.11), transparent 65%);
+  }
+  .pi-author .container { position: relative; z-index: 1; }
+  .pi-author-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center; }
+
+  /* Portrait dans un cadre glassmorphism */
+  .pi-portrait {
+    position: relative; margin: 0; max-width: 360px; justify-self: center; width: 100%;
+    padding: 14px; border-radius: 28px;
+    background: linear-gradient(155deg, rgba(255,255,255,.62), rgba(255,255,255,.22));
+    border: 1px solid rgba(255,255,255,.75);
+    box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,.9);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  }
+  .pi-portrait::before {
+    content: ""; position: absolute; top: -26px; right: -22px; width: 84px; height: 84px; border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255,199,42,.65), rgba(255,131,95,.55)); filter: blur(2px); z-index: -1;
+  }
+  .pi-portrait::after {
+    content: ""; position: absolute; bottom: -30px; left: -26px; width: 110px; height: 110px; border-radius: 50%;
+    background: linear-gradient(135deg, rgba(31,108,237,.5), rgba(0,200,158,.4)); filter: blur(4px); z-index: -1;
+  }
+  .pi-portrait img { display: block; width: 100%; height: auto; border-radius: 18px; }
+  .pi-portrait figcaption { text-align: center; padding: 12px 4px 2px; font-weight: 700; font-size: .88rem; color: var(--c-gray-700); }
+  .pi-portrait-fallback { display: none; aspect-ratio: 640/760; border-radius: 18px; background: var(--g-navy); align-items: center; justify-content: center; }
+  .pi-portrait-fallback span { font-family: var(--f-display); font-weight: 700; font-size: 4rem; color: rgba(255,255,255,.85); letter-spacing: .04em; }
+  .pi-portrait.no-img img { display: none; }
+  .pi-portrait.no-img .pi-portrait-fallback { display: flex; }
+
+  /* Bande de stats glass */
+  .pi-author-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 52px; }
+  .pi-astat {
+    background: linear-gradient(160deg, rgba(255,255,255,.78), rgba(255,255,255,.42));
+    border: 1px solid rgba(255,255,255,.85); outline: 1px solid var(--c-border-soft);
+    border-radius: 18px; padding: 22px 20px;
+    box-shadow: var(--shadow-sm), inset 0 1px 0 #fff;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  .pi-astat b { display: block; font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 1.8vw, 1.65rem); color: var(--c-blue); line-height: 1.1; }
+  .pi-astat span { display: block; margin-top: 5px; font-size: .86rem; color: var(--c-gray-700); }
+  .pi-astat--gold b { color: #b98600; }
+
+  /* ---------- 7 · Preuves (navy) ---------- */
+  .pi-proofs { position: relative; }
+  .pi-mesh { position: absolute; inset: 0; background: var(--g-mesh); opacity: .5; pointer-events: none; }
+  .pi-proofs .container { position: relative; z-index: 1; }
+  .pi-testi-carousel { max-width: 1100px; margin: 0 auto; }
+  .pi-testi-hint { margin: 0 0 12px; text-align: right; font-size: .82rem; color: var(--c-gray-400); }
+  .pi-testi { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 4px 2px 12px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.35) transparent; }
+  .pi-testi::-webkit-scrollbar { height: 6px; }
+  .pi-testi::-webkit-scrollbar-thumb { background: rgba(255,255,255,.35); border-radius: 999px; }
+  .pi-vslot { flex: 0 0 min(260px, 74vw); scroll-snap-align: start; aspect-ratio: 9/16; position: relative; isolation: isolate; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 0; background: transparent; border: 1px solid rgba(255,255,255,.28); border-radius: var(--radius-md); color: var(--c-gray-300); transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+  .pi-vslot--landscape { flex-basis: min(420px, 88vw); aspect-ratio: 16/9; }
+  .pi-vslot:hover { transform: translateY(-4px); border-color: rgba(255,199,42,.8); }
+  .pi-vthumb { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; background: transparent; }
+  .pi-vshade { position: absolute; z-index: -1; inset: 0; background: linear-gradient(180deg, rgba(1,5,46,.08) 22%, rgba(1,5,46,.76)); transition: background var(--dur) var(--ease); }
+  .pi-vslot:hover .pi-vshade { background: linear-gradient(180deg, rgba(1,5,46,.02) 20%, rgba(1,5,46,.58)); }
+  .pi-vplay { width: 52px; height: 52px; border-radius: 50%; background: var(--c-blue); display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 0 0 0 rgba(31,108,237,.45); animation: pi-pulse 2.2s infinite; }
+  .pi-vplay svg { width: 20px; height: 20px; margin-left: 2px; }
+  .pi-vname { font-family: var(--f-display); font-weight: 600; text-align: center; line-height: 1.4; color: #fff; }
+  .pi-vname small { display: block; color: var(--c-gray-400); font-weight: 400; font-size: .78rem; }
+  .pi-video-dialog { width: min(94vw, 900px); margin: auto; padding: 0; overflow: visible; background: transparent; border: 0; }
+  .pi-video-dialog::backdrop { background: rgba(1,5,46,.84); backdrop-filter: blur(8px); }
+  .pi-video-dialog-player { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; border-radius: 18px; background: #050a28; box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+  .pi-video-dialog-player.is-portrait { width: min(100%, 430px); margin: 0 auto; aspect-ratio: 9/16; }
+  .pi-video-dialog-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .pi-video-dialog-close { position: absolute; z-index: 2; top: -14px; right: -8px; width: 40px; height: 40px; border: 1px solid rgba(255,255,255,.25); border-radius: 50%; background: #fff; color: var(--c-navy); font-size: 1.7rem; line-height: 1; cursor: pointer; box-shadow: var(--shadow-md); }
+  .pi-video-dialog-close:hover { background: var(--c-yellow); }
+  /* Chiffres témoignages : bande de résultats — lisible avant tout */
+  .pi-testi-stats-intro { margin: 54px auto 16px; max-width: 1050px; display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
+  .pi-testi-stats-intro span { font-family: var(--f-display); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--c-yellow); }
+  .pi-testi-stats-intro p { margin: 0; color: rgba(255,255,255,.7); font-size: .95rem; }
+  .pi-testi-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; max-width: 1050px; margin: 0 auto; padding: 1px; overflow: hidden; background: rgba(255,255,255,.17); border: 1px solid rgba(255,255,255,.18); border-radius: 24px; box-shadow: 0 24px 50px -30px rgba(0,0,0,.85); }
+  .pi-tstat {
+    --pi-stat-accent: var(--c-blue);
+    position: relative; min-height: 205px; overflow: hidden; padding: 28px 26px 25px;
+    background: linear-gradient(145deg, rgba(255,255,255,.11), rgba(255,255,255,.035));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.14); transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .pi-tstat::before { content: ""; position: absolute; top: 0; left: 26px; width: 48px; height: 3px; border-radius: 0 0 4px 4px; background: var(--pi-stat-accent); box-shadow: 0 0 18px color-mix(in srgb, var(--pi-stat-accent) 70%, transparent); }
+  .pi-tstat--satisfaction { --pi-stat-accent: var(--c-green); }
+  .pi-tstat--sales { --pi-stat-accent: var(--c-yellow); }
+  .pi-tstat:hover { transform: translateY(-3px); background: linear-gradient(145deg, rgba(255,255,255,.15), rgba(255,255,255,.055)); }
+  .pi-tstat-ico {
+    width: 46px; height: 46px; border-radius: 13px; margin: 0 0 20px;
+    display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--pi-stat-accent) 16%, transparent); border: 1px solid color-mix(in srgb, var(--pi-stat-accent) 52%, transparent); color: var(--pi-stat-accent);
+  }
+  .pi-tstat-ico svg { width: 22px; height: 22px; }
+  .pi-tstat b {
+    display: block; font-family: var(--f-display); font-weight: 700;
+    font-size: clamp(2.15rem, 3.4vw, 2.8rem); line-height: 1.05; color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .pi-tstat-l { display: block; max-width: 24ch; margin-top: 10px; font-size: .9rem; line-height: 1.45; color: rgba(255,255,255,.74); }
+
+  /* ---------- 8 · Garantie (navy) ---------- */
+  .pi-guarantee { position: relative; overflow: hidden; color: #fff; background: radial-gradient(900px 480px at 78% 8%, rgba(31,108,237,.22), transparent 58%), radial-gradient(700px 520px at 8% 100%, rgba(0,200,158,.1), transparent 60%), linear-gradient(180deg, var(--c-navy), #01052e); }
+  .pi-guarantee::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, rgba(255,199,42,.8), transparent); }
+  .pi-guar-grid { display: grid; grid-template-columns: 1.02fr .98fr; gap: 56px; align-items: center; }
+  .pi-guar-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-display); font-weight: 700; font-size: .76rem; letter-spacing: .09em; text-transform: uppercase; color: var(--c-yellow); background: rgba(255,199,42,.1); border: 1px solid rgba(255,199,42,.32); padding: 8px 16px; border-radius: var(--radius-pill); margin-bottom: 22px; }
+  .pi-guar-content h2 { color: #fff; margin-bottom: 18px; }
+  .pi-gold { color: var(--c-yellow); }
+  .pi-guar-lede { color: var(--c-gray-300); font-size: 1.05rem; max-width: 520px; margin-bottom: 16px; }
+  .pi-guar-lede b { color: #fff; }
+  .pi-guar-cta.pi-btn-buy { margin-top: 12px; }
+  .pi-guar-sign { margin-top: 20px; display: flex; align-items: center; gap: 10px; color: var(--c-gray-400); font-size: .92rem; }
+  .pi-guar-sign .nm { font-family: var(--f-display); font-weight: 700; font-style: italic; color: #fff; font-size: 1.05rem; }
+  .pi-guar-art { display: flex; align-items: center; justify-content: center; }
+  /* Vidéo du sceau : fond noir « effacé » par screen → fondu invisible sur le
+     navy, comme une animation native. object-fit contain conserve le badge. */
+  .pi-guar-video {
+    width: 100%; max-width: 400px; height: auto; display: block;
+    mix-blend-mode: screen;
+    filter: drop-shadow(0 24px 44px rgba(0,0,0,.4)) saturate(1.05);
+    pointer-events: none;
+  }
+  @keyframes pi-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+  /* ---------- 9 · Rareté ---------- */
+  .pi-scarcity { display: grid; grid-template-columns: 240px 1fr; gap: 40px; align-items: center; }
+  .pi-scarcity-count { text-align: center; background: var(--surface-2); border: 1px solid var(--c-border-soft); border-radius: var(--radius-lg); padding: 32px 24px; box-shadow: var(--shadow-sm); }
+  .pi-scarcity-n { display: block; font-family: var(--f-display); font-weight: 700; font-size: 4.2rem; line-height: 1; color: var(--c-blue); font-variant-numeric: tabular-nums; }
+  .pi-scarcity-l { display: block; margin-top: 8px; font-size: .9rem; color: var(--c-gray-600); }
+  .pi-scarcity-text p { margin-bottom: 12px; color: var(--c-gray-700); }
+  .pi-scarcity-bar { max-width: 720px; margin: 28px auto 0; height: 10px; background: var(--c-gray-100); border-radius: var(--radius-pill); overflow: hidden; }
+  .pi-scarcity-bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--c-blue), var(--c-orange)); border-radius: var(--radius-pill); transition: width 1.1s var(--ease); }
+
+  /* ---------- 10 · Bonus ---------- */
+  .pi-bonus-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .pi-bonus-card { display: flex; gap: 16px; align-items: flex-start; background: #fff; border: 1px solid var(--c-border-soft); border-radius: var(--radius-lg); padding: 26px 26px; box-shadow: var(--shadow-sm); transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
+  .pi-bonus-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  /* Tuile glass de l'icône bonus (image générée, fallback emoji) */
+  .pi-bonus-ico {
+    flex: none; width: 64px; height: 64px; border-radius: 17px; position: relative; overflow: hidden;
+    background: linear-gradient(150deg, rgba(31,108,237,.12), rgba(0,200,158,.08) 60%, rgba(255,199,42,.1));
+    border: 1px solid rgba(31,108,237,.16);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 8px 18px -8px rgba(2,11,80,.18);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pi-bonus-ico::before {
+    content: ""; position: absolute; top: -50%; left: -25%; width: 55%; height: 200%;
+    background: linear-gradient(105deg, transparent, rgba(255,255,255,.5), transparent);
+    transform: rotate(18deg); pointer-events: none;
+  }
+  .pi-bonus-ico img { width: 84%; height: 84%; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(2,11,80,.22)); }
+  .pi-bonus-emoji { display: none; font-size: 1.6rem; }
+  .pi-bonus-ico.no-img img { display: none; }
+  .pi-bonus-ico.no-img .pi-bonus-emoji { display: block; }
+  .pi-bonus-body h3 { font-size: 1.08rem; margin-bottom: 6px; }
+  .pi-bonus-body p { font-size: .92rem; color: var(--c-gray-600); line-height: 1.55; }
+  .pi-bonus-value { display: inline-block; margin-top: 12px; font-family: var(--f-display); font-weight: 700; font-size: .82rem; color: var(--c-success); background: var(--c-success-bg); border: 1px solid rgba(10,156,119,.2); padding: 5px 14px; border-radius: var(--radius-pill); }
+  .pi-bonus-value.free { color: var(--c-blue); background: var(--c-skyblue); border-color: rgba(31,108,237,.18); }
+  .pi-bonus-total { text-align: center; margin-top: 30px; font-family: var(--f-display); font-size: 1.15rem; color: var(--c-navy); }
+  .pi-bonus-total b { color: var(--c-blue); }
+
+  /* ---------- 11 · Prix ---------- */
+  .pi-pricing {
+    position: relative; max-width: 620px; margin: 0 auto; text-align: center;
+    background: radial-gradient(420px 200px at 50% 0%, rgba(31,108,237,.05), transparent 70%), #fff;
+    border: 1px solid rgba(31,108,237,.22); border-radius: 30px;
+    padding: clamp(36px, 5vw, 52px) clamp(22px, 4vw, 48px) clamp(30px, 3vw, 40px);
+    box-shadow: 0 1px 2px rgba(2,11,80,.04), 0 24px 70px -28px rgba(2,11,80,.22), 0 0 0 6px rgba(31,108,237,.035);
+  }
+  /* filet dégradé au sommet de la carte */
+  .pi-pricing::before {
+    content: ""; position: absolute; top: -1px; left: 48px; right: 48px; height: 3px; border-radius: 3px;
+    background: linear-gradient(90deg, transparent, var(--c-blue) 30%, var(--c-green) 70%, transparent);
+  }
+  .pi-price-tag { position: absolute; top: -17px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--c-orange), #ef5f36); color: #fff; font-family: var(--f-display); font-weight: 700; font-size: .76rem; letter-spacing: .05em; text-transform: uppercase; padding: 9px 22px; border-radius: var(--radius-pill); white-space: nowrap; box-shadow: 0 10px 24px -8px rgba(255,131,95,.75); }
+
+  .pi-stack { list-style: none; text-align: left; margin: 6px 0 26px; }
+  .pi-stack li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 13px 2px; border-bottom: 1px dashed rgba(2,11,80,.1); font-size: .95rem; color: var(--c-gray-700); }
+  .pi-stack li b { font-family: var(--f-display); font-weight: 700; font-size: .92rem; color: var(--c-ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .pi-stack-total { border-bottom: none !important; margin-top: 8px; padding: 14px 16px !important; background: linear-gradient(135deg, rgba(31,108,237,.07), rgba(0,200,158,.06)); border: 1px solid rgba(31,108,237,.14); border-radius: 14px; }
+  .pi-stack-total span { font-family: var(--f-display); font-weight: 700; color: var(--c-ink); }
+  .pi-stack-total b { color: var(--c-blue) !important; font-size: 1.06rem; }
+
+  .pi-price-block { padding: 4px 0 2px; }
+  .pi-price-real { font-size: .92rem; color: var(--c-gray-600); }
+  .pi-price-real s { font-family: var(--f-display); font-weight: 600; color: var(--c-gray-500); text-decoration-thickness: 2px; }
+  .pi-price { font-family: var(--f-display); font-weight: 800; font-size: clamp(2.8rem, 6vw, 4rem); color: var(--c-ink); line-height: 1.05; letter-spacing: -.025em; margin: 6px 0 12px; font-variant-numeric: tabular-nums; }
+  .pi-price small { font-size: 1.3rem; color: var(--c-gray-600); font-weight: 600; }
+  .pi-deal { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,200,158,.1); border: 1px solid rgba(0,200,158,.3); color: #067a5d; font-weight: 700; font-size: .93rem; padding: 9px 20px; border-radius: var(--radius-pill); }
+  .pi-deal b { font-family: var(--f-display); font-size: 1.05rem; color: #067a5d; white-space: nowrap; }
+
+  /* Compte à rebours 48 h — inline, sur une seule phrase (evergreen, par visiteur) */
+  .pi-deal-timer { margin-top: 14px; font-size: .88rem; color: var(--c-gray-600); line-height: 1.9; }
+  .pi-deal-timer b { color: #d0491f; font-weight: 700; white-space: nowrap; }
+  .pi-dt-clock {
+    display: inline-flex; align-items: baseline; gap: 1px; margin: 0 3px;
+    vertical-align: baseline;
+    font-family: var(--f-display); font-weight: 800; font-size: .98rem;
+    color: #c2410c; font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .pi-dt-clock i { font-style: normal; font-weight: 600; font-size: .76rem; color: #b3593c; margin-right: 4px; }
+  .pi-dt-clock i:last-child { margin-right: 0; }
+
+  /* CTA en surbrillance */
+  .pi-btn-buy {
+    position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; max-width: 440px; margin-top: 26px; padding: 21px 40px; border-radius: var(--radius-pill); white-space: nowrap;
+    font-family: var(--f-display); font-weight: 700; font-size: 1.12rem; color: #fff;
+    background: linear-gradient(135deg, #2f7bff, var(--c-blue) 55%, var(--c-blue-dark));
+    box-shadow: 0 14px 38px -10px rgba(31,108,237,.65);
+    animation: pi-glow 2.6s ease-in-out infinite;
+    transition: transform var(--dur) var(--ease);
+  }
+  .pi-btn-buy:hover { transform: translateY(-2px); }
+  @keyframes pi-glow {
+    0%, 100% { box-shadow: 0 14px 38px -10px rgba(31,108,237,.65), 0 0 0 0 rgba(31,108,237,.4); }
+    50% { box-shadow: 0 14px 44px -8px rgba(31,108,237,.8), 0 0 0 12px rgba(31,108,237,0); }
+  }
+  .pi-btn-buy::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -70%; width: 40%;
+    background: linear-gradient(115deg, transparent, rgba(255,255,255,.45), transparent);
+    transform: skewX(-20deg); animation: pi-shine 3s ease-in-out infinite;
+  }
+
+  /* Paiement : le widget est chargé une fois puis ouvert depuis chaque CTA. */
+  .pi-payment-modal {
+    width: min(620px, calc(100% - 24px)); max-height: min(760px, calc(100dvh - 32px));
+    margin: auto; padding: 0; border: 0; border-radius: 24px; color: var(--c-navy); background: #fff;
+    box-shadow: 0 28px 80px rgba(5, 12, 40, .42);
+  }
+  .pi-payment-modal::backdrop { background: rgba(5, 12, 40, .72); backdrop-filter: blur(5px); }
+  .pi-payment-shell { position: relative; padding: 34px; }
+  .pi-payment-eyebrow { margin: 0 0 7px; color: var(--c-blue); font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+  .pi-payment-shell h2 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.15rem); }
+  .pi-payment-intro { margin: 8px 0 24px; color: var(--c-gray-600); }
+  .pi-payment-close {
+    position: absolute; top: 16px; right: 16px; display: grid; place-items: center; width: 44px; height: 44px;
+    padding: 0; border: 1px solid var(--c-border-soft); border-radius: 50%; color: var(--c-navy); background: #fff;
+    font-size: 1.7rem; line-height: 1; cursor: pointer; transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .pi-payment-close:hover { background: var(--c-gray-100); transform: scale(1.05); }
+  #chariow-widget { min-height: 72px; }
+  .pi-price-note { margin-top: 14px; font-size: .84rem; color: var(--c-gray-600); }
+
+  /* Les 3 assurances : colonnes fines à icônes */
+  .pi-assurances { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--c-border-soft); }
+  .pi-assurance { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 4px 14px; }
+  .pi-assurance + .pi-assurance { border-left: 1px solid var(--c-border-soft); }
+  .pi-assurance-ico { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: linear-gradient(150deg, rgba(31,108,237,.1), rgba(0,200,158,.08)); border: 1px solid rgba(31,108,237,.14); box-shadow: inset 0 1px 0 rgba(255,255,255,.9); color: var(--c-blue); }
+  .pi-assurance-ico svg { width: 19px; height: 19px; }
+  .pi-assurance b { font-family: var(--f-display); font-weight: 700; font-size: .8rem; color: var(--c-ink); line-height: 1.3; }
+  .pi-assurance span:not(.pi-assurance-ico) { font-size: .74rem; color: var(--c-gray-600); line-height: 1.4; }
+
+  /* ---------- 12 · FAQ ---------- */
+  .pi-faq { max-width: 760px; margin: 0 auto; }
+  .pi-faq-item { border: 1px solid var(--c-border-soft); border-radius: var(--radius-md); margin-bottom: 12px; background: #fff; overflow: hidden; transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
+  .pi-faq-item.open { border-color: rgba(31,108,237,.3); box-shadow: var(--shadow-sm); }
+  .pi-faq-q { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 16px; text-align: left; padding: 20px 24px; font-family: var(--f-display); font-weight: 700; font-size: 1rem; color: var(--c-navy); background: none; border: 0; cursor: pointer; }
+  .pi-faq-q svg { flex: none; width: 20px; height: 20px; color: var(--c-blue); transition: transform var(--dur) var(--ease); }
+  .pi-faq-item.open .pi-faq-q svg { transform: rotate(45deg); }
+  .pi-faq-a { max-height: 0; overflow: hidden; transition: max-height var(--dur-slow) var(--ease); }
+  .pi-faq-a-in { padding: 0 24px 22px; color: var(--c-gray-700); font-size: .96rem; line-height: 1.6; }
+
+  /* ---------- 13/14 · CTA final (closer) + PS ---------- */
+  .pi-final {
+    position: relative; overflow: hidden; color: #fff;
+    background:
+      radial-gradient(1000px 520px at 50% -8%, rgba(31,108,237,.32), transparent 62%),
+      radial-gradient(760px 560px at 92% 100%, rgba(0,200,158,.13), transparent 60%),
+      linear-gradient(180deg, var(--c-navy), #01052e);
+  }
+  .pi-final-glass { position: absolute; pointer-events: none; z-index: 0; height: auto; opacity: .9; }
+  .pi-final-glass--right { width: clamp(320px, 34vw, 520px); right: -90px; top: 40px; animation: pi-float 8s var(--ease) infinite; }
+  .pi-final-glass--left { width: clamp(300px, 30vw, 460px); left: -110px; bottom: -20px; transform: scaleX(-1); opacity: .55; animation: pi-float 10s var(--ease) infinite reverse; }
+  .pi-final .container { position: relative; z-index: 1; }
+  .pi-final-inner { max-width: 760px; margin: 0 auto; text-align: center; }
+  .pi-final-inner h2 { color: #fff; font-size: clamp(1.9rem, 4vw, 2.9rem); letter-spacing: -.02em; margin-bottom: 18px; }
+  .pi-final-sub { color: var(--c-gray-300); font-size: 1.08rem; max-width: 560px; margin: 0 auto; }
+
+  .pi-final-card {
+    margin-top: 44px; padding: clamp(28px, 4.5vw, 48px); border-radius: 30px;
+    background: linear-gradient(160deg, rgba(255,255,255,.11), rgba(255,255,255,.03));
+    border: 1px solid rgba(255,255,255,.18);
+    box-shadow: 0 34px 90px -34px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.22);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  }
+  .pi-final-price { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .pi-final-old { font-family: var(--f-display); font-weight: 600; font-size: 1.25rem; color: var(--c-gray-400); text-decoration: line-through; text-decoration-thickness: 2px; }
+  .pi-final-now { font-family: var(--f-display); font-weight: 700; font-size: clamp(3rem, 6.5vw, 4.2rem); line-height: 1.05; letter-spacing: -.02em; color: #fff; font-variant-numeric: tabular-nums; }
+  .pi-final-now small { font-size: 1.4rem; color: var(--c-gray-300); font-weight: 500; }
+  .pi-save { display: inline-block; font-family: var(--f-display); font-weight: 700; font-size: .9rem; color: var(--c-success); background: var(--c-success-bg); border: 1px solid rgba(10,156,119,.25); padding: 8px 18px; border-radius: var(--radius-pill); }
+  .pi-save--dark { margin-top: 10px; color: #7dffdc; background: rgba(0,200,158,.12); border-color: rgba(0,200,158,.35); }
+  .pi-final-ticks { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px; margin: 22px 0 24px; }
+  .pi-final-ticks li { position: relative; padding-left: 24px; color: #eef1f8; font-size: .95rem; font-weight: 600; }
+  .pi-final-ticks li::before { content: "✓"; position: absolute; left: 0; color: var(--c-green); font-weight: 700; }
+  /* Urgence finale : compteur à blocs chauds sur le navy */
+  .pi-final-urgency { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 30px; }
+  .pi-final-urgency-label { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--c-yellow); }
+  .pi-fcd { display: flex; align-items: center; gap: 8px; }
+  .pi-fcd-box {
+    min-width: 74px; padding: 12px 12px 9px; border-radius: 14px;
+    background: linear-gradient(160deg, #fff8f3, #ffe4d6);
+    border: 1px solid rgba(255,255,255,.5);
+    box-shadow: inset 0 1px 0 #fff, 0 14px 28px -14px rgba(0,0,0,.6);
+  }
+  .pi-fcd-box .n { display: block; font-family: var(--f-display); font-weight: 800; font-size: 1.85rem; line-height: 1.1; color: #b8380c; font-variant-numeric: tabular-nums; }
+  .pi-fcd-box .u { display: block; font-size: .62rem; text-transform: uppercase; letter-spacing: .09em; color: #a4553a; }
+  .pi-fcd-sep { font-family: var(--f-display); font-weight: 800; font-size: 1.5rem; color: rgba(255,255,255,.35); padding-bottom: 16px; }
+  .pi-final-places { font-size: .95rem; color: var(--c-gray-300); }
+  .pi-final-places b { font-family: var(--f-display); font-weight: 700; font-size: 1.25rem; color: var(--c-yellow); }
+
+  /* CTA or brillant */
+  .pi-btn-gold {
+    position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 20px 46px; border-radius: var(--radius-pill); white-space: nowrap;
+    font-family: var(--f-display); font-weight: 700; font-size: 1.12rem; color: #12163a;
+    background: linear-gradient(135deg, #FFE082, #FFC72A 48%, #ffb300);
+    box-shadow: 0 18px 46px -12px rgba(255,199,42,.6), inset 0 1px 0 rgba(255,255,255,.7);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .pi-btn-gold:hover { transform: translateY(-2px); box-shadow: 0 24px 56px -12px rgba(255,199,42,.75), inset 0 1px 0 rgba(255,255,255,.7); }
+  .pi-btn-gold::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -70%; width: 42%;
+    background: linear-gradient(115deg, transparent, rgba(255,255,255,.75), transparent);
+    transform: skewX(-20deg); animation: pi-shine 3.4s var(--ease) infinite;
+  }
+  @keyframes pi-shine { 0% { left: -70%; } 55%, 100% { left: 135%; } }
+
+  .pi-final-trust { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 26px; }
+  .pi-final-trust span { font-size: .84rem; color: rgba(255,255,255,.9); background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); padding: 8px 16px; border-radius: var(--radius-pill); }
+  .pi-ps { max-width: 700px; margin: 44px auto 0; text-align: center; font-size: 1rem; line-height: 1.7; color: var(--c-gray-400); }
+  .pi-ps b { color: #fff; }
+
+  /* ---------- Sticky CTA mobile ---------- */
+  .pi-sticky { display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-float); padding: 0 0 env(safe-area-inset-bottom); background: rgba(255,255,255,.97); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--c-border); box-shadow: 0 -8px 28px rgba(2,11,80,.12); transform: translateY(120%); transition: transform var(--dur) var(--ease); }
+  .pi-sticky.show { transform: translateY(0); }
+  .pi-sticky .pi-sticky-buy { flex: 1 1 100%; align-self: stretch; width: 100%; max-width: none; min-height: 64px; margin: 0; padding: 10px 20px 9px; border-radius: 0; flex-direction: column; gap: 2px; font-size: 1.05rem; line-height: 1.1; }
+  .pi-sticky-prices { display: inline-flex; align-items: baseline; gap: 8px; font-family: var(--f-display); font-size: .82rem; }
+  .pi-sticky-prices s { color: #fff; opacity: .52; font-size: .64rem; font-weight: 500; text-decoration-thickness: 1px; }
+
+  /* Le header ne doit pas concurrencer le CTA mobile après le premier scroll. */
+  :global(.site-header--bare) { transition: transform var(--dur) var(--ease), opacity var(--dur-fast) var(--ease); }
+  :global(.site-header--bare.pi-nav-hidden) { opacity: 0; pointer-events: none; transform: translateY(-140%); }
+
+  /* ---------- Rythme de la landing ----------
+     Les sections de décision (solution, programme, garantie, prix et CTA)
+     respirent davantage ; les sections de contexte restent plus compactes. */
+  .section-head { margin-bottom: clamp(36px, 4vw, 48px); }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1100px) {
+    .pi-author-stats { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .pi-solution-grid, .pi-author-grid, .pi-guar-grid { grid-template-columns: 1fr; gap: 36px; }
+    .pi-guar-art { order: -1; }
+    .pi-guar-video { max-width: 280px; }
+    .pi-portrait { max-width: 320px; }
+    .pi-scarcity { grid-template-columns: 1fr; gap: 24px; text-align: center; }
+    /* Mobile : priorité au contenu — le visuel devient un badge animé en haut
+       à droite du panneau, le texte démarre immédiatement. */
+    .pi-panel-body.on { grid-template-columns: 1fr; gap: 0; }
+    .pi-panel-side { position: absolute; top: 18px; right: 18px; width: 96px; z-index: 0; }
+    .pi-glass-frame { max-width: 96px; }
+    .pi-glass-frame img { filter: drop-shadow(0 6px 12px rgba(0,0,0,.2)); }
+    .pi-panel-main { position: relative; z-index: 1; }
+    .pi-panel-main h3, .pi-panel-sub { padding-right: 96px; }
+    .pi-livrable { display: none; }
+    .pi-final-glass { display: none; }
+  }
+  @media (max-width: 760px) {
+    /* Une échelle mobile volontaire : 48 / 56 / 64 / 72 px.
+       La hiérarchie se lit dans l'espace, pas seulement dans la couleur. */
+    .pi-hero { padding-top: 104px; padding-bottom: 48px; }
+    .pi-badge-urgence { margin-bottom: 18px; }
+    .pi-hero-sub { margin-top: 18px; }
+    .pi-hero-cta { margin-top: 24px; }
+    .pi-proof { gap: 8px; margin-top: 22px; }
+    .pi-proof-chip { padding: 8px 13px; font-size: .82rem; }
+    .pi-video { margin-top: 26px; }
+    .pi-countdown { padding: 16px 0; }
+    .pi-countdown-inner { gap: 12px; }
+
+    section.section { padding-top: 56px; padding-bottom: 56px; }
+    section[data-nav-section="La solution"],
+    section[data-nav-section="Le programme"],
+    section[data-nav-section="Ils l'ont fait"],
+    section[data-nav-section="Garantie"],
+    section[data-nav-section="Ton investissement"] { padding-top: 64px; padding-bottom: 64px; }
+    section[data-nav-section="Rejoindre"] { padding-top: 72px; padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+    .section-head { margin-bottom: 32px; }
+
+    /* Problème et coût de l'inaction */
+    .pi-prose p { margin-bottom: 14px; }
+    .pi-quote { margin-top: 28px; padding: 24px 22px; }
+    .pi-quote figcaption { margin-top: 12px; }
+    .pi-cost { gap: 10px; }
+    .pi-cost li { gap: 12px; padding: 16px; }
+    .pi-projection { gap: 12px; margin-top: 20px; }
+    .pi-proj-item { padding: 20px 14px; }
+    .pi-reframe { margin-top: 20px; padding: 18px; }
+
+    /* Solution et programme */
+    .pi-tag-atelier { margin-top: 12px; padding: 8px 14px; }
+    .pi-solution-grid { gap: 30px; }
+    .pi-solution-side { gap: 16px; }
+    .pi-promise { margin-top: 18px; padding: 18px; }
+    .pi-steps { margin-bottom: 24px; }
+    .pi-panel { padding: 24px 20px; }
+    .pi-panel-list { gap: 8px; }
+    .pi-panel-nav { margin-top: 20px; }
+
+    /* Autorité et preuves */
+    .pi-author-grid { gap: 30px; }
+    .pi-author-stats { gap: 12px; margin-top: 32px; }
+    .pi-astat { padding: 17px 15px; }
+    .pi-testi-carousel { margin-top: -4px; }
+    .pi-testi-stats-intro { margin-top: 36px; }
+
+    /* Garantie, rareté et bonus */
+    .pi-guar-grid { gap: 28px; }
+    .pi-guar-eyebrow { margin-bottom: 16px; }
+    .pi-guar-lede { margin-bottom: 13px; }
+    .pi-guar-sign { margin-top: 16px; }
+    .pi-scarcity { gap: 20px; }
+    .pi-scarcity-count { padding: 24px 20px; }
+    .pi-scarcity-bar { margin-top: 20px; }
+    .pi-bonus-grid { gap: 14px; }
+    .pi-bonus-card { gap: 14px; padding: 20px 18px; }
+    .pi-bonus-total { margin-top: 24px; }
+
+    /* Prix, FAQ et CTA final */
+    .pi-pricing { padding: 34px 20px 28px; }
+    .pi-stack { margin-bottom: 20px; }
+    .pi-stack li { padding: 11px 0; }
+    .pi-btn-buy { margin-top: 20px; }
+    .pi-assurances { margin-top: 20px; padding-top: 18px; }
+    .pi-faq-item { margin-bottom: 10px; }
+    .pi-faq-q { padding: 18px; }
+    .pi-faq-a-in { padding: 0 18px 18px; }
+    .pi-final-price { margin-top: 32px; padding: 24px 18px; }
+    .pi-final-urgency { margin-bottom: 24px; }
+    .pi-final-trust { margin-top: 20px; }
+    .pi-ps { margin-top: 32px; }
+
+    .pi-bonus-grid, .pi-projection, .pi-testi-stats { grid-template-columns: 1fr; }
+    .pi-testi-stats-intro { display: block; margin-top: 42px; }
+    .pi-testi-stats-intro p { margin-top: 8px; }
+    /* Trois preuves, mais sous forme de lignes compactes plutôt que de
+       grandes cartes successives : lecture rapide, sans alourdir le scroll. */
+    .pi-tstat { min-height: 0; display: grid; grid-template-columns: 46px minmax(0, 1fr); grid-template-areas: "icon value" "icon label"; column-gap: 16px; align-items: center; padding: 18px 22px 17px; }
+    .pi-tstat::before { top: 0; bottom: 0; left: 0; width: 3px; height: auto; border-radius: 0 3px 3px 0; }
+    .pi-tstat-ico { grid-area: icon; margin: 0; }
+    .pi-tstat b { grid-area: value; font-size: clamp(1.55rem, 7vw, 2rem); }
+    .pi-tstat-l { grid-area: label; max-width: none; margin-top: 3px; font-size: .83rem; line-height: 1.35; }
+    .pi-author-stats { grid-template-columns: 1fr 1fr; }
+    .pi-testi { gap: 14px; }
+    .pi-vslot { flex-basis: min(240px, 74vw); }
+    .pi-vslot--landscape { flex-basis: min(330px, 84vw); }
+    .pi-step-tag { display: none; }
+    .pi-dot { width: 46px; height: 46px; font-size: 1rem; }
+    .pi-steps-track, .pi-steps-fill { top: 22px; }
+    .pi-panel-nav { flex-direction: column; align-items: stretch; gap: 12px; }
+    .pi-panel-nav-btns { width: 100%; }
+    .pi-pnav { flex: 1; text-align: center; }
+    .pi-counter { text-align: center; }
+    .pi-sticky { display: flex; }
+    .pi-btn-gold { width: 100%; padding: 17px 14px; font-size: .86rem; }
+    .pi-final-trust { gap: 8px; }
+    .pi-final-trust span { font-size: .74rem; padding: 7px 12px; }
+    .pi-fcd { gap: 5px; }
+    .pi-fcd-box { min-width: 62px; padding: 10px 8px 8px; }
+    .pi-fcd-box .n { font-size: 1.5rem; }
+    .pi-fcd-sep { font-size: 1.2rem; padding-bottom: 14px; }
+    .pi-btn-buy { padding: 18px 16px; font-size: .92rem; }
+    .pi-payment-shell { padding: 30px 20px 24px; }
+    .pi-deal { font-size: .86rem; padding: 9px 16px; text-align: left; }
+    .pi-deal b { font-size: .98rem; }
+    .pi-assurances { grid-template-columns: 1fr; gap: 0; }
+    .pi-assurance { display: grid; grid-template-columns: 40px minmax(0, 1fr); grid-template-areas: "icon title" "icon text"; column-gap: 12px; row-gap: 3px; align-items: center; text-align: left; padding: 0; }
+    .pi-assurance + .pi-assurance { border-left: none; border-top: 1px solid var(--c-border-soft); padding-top: 14px; margin-top: 14px; }
+    .pi-assurance-ico { grid-area: icon; }
+    .pi-assurance b { grid-area: title; }
+    .pi-assurance span:not(.pi-assurance-ico) { grid-area: text; padding-left: 0; }
+  }
+
+  @media (max-width: 380px) {
+    .pi-fcd { gap: 3px; }
+    .pi-fcd-box { min-width: 52px; padding: 9px 6px 7px; }
+    .pi-fcd-box .n { font-size: 1.35rem; }
+    .pi-fcd-sep { font-size: 1.05rem; }
+  }
+  @media (max-width: 380px) {
+    .pi-cta { font-size: .88rem; padding-left: 18px; padding-right: 18px; }
+  }
+</style>

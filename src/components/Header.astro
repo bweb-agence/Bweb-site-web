@@ -2,8 +2,19 @@
 import { mainNav, navCta } from "../config/site";
 const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
 const isActive = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(href + "/"));
+/* Mode « focus CRO » : aucune sortie de page. Le logo n'est pas cliquable,
+   ni navigation, ni CTA, ni menu mobile — utilisé sur les landings de vente. */
+const { bare = false } = Astro.props;
 ---
 
+{bare ? (
+  <header class="site-header site-header--bare">
+    <div class="container">
+      <span class="brand brand--static" aria-label="Bweb Academy"><img src="/images/logo.svg" alt="Bweb Academy" width="171" height="40" /></span>
+    </div>
+  </header>
+) : (
+<Fragment>
 <header class="site-header">
   <div class="container">
     <a href="/" class="brand" aria-label="Bweb Agence — accueil"><img src="/images/logo.svg" alt="Bweb Agence" width="171" height="40" /></a>
@@ -86,3 +97,5 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path === href 
     ))}
   </div>
 </div>
+</Fragment>
+)}

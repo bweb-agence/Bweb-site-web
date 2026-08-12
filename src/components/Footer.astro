@@ -1,5 +1,10 @@
 ---
 import { footerNav, contact, site } from "../config/site";
+/* Mode « focus CRO » : footer minimal, sans aucun lien de navigation
+   (utilisé sur les landings de vente pour ne pas offrir de sortie de page).
+   On conserve uniquement la marque, le copyright et la gestion des cookies
+   (un bouton, pas un lien — requis pour le consentement). */
+const { bare = false } = Astro.props;
 const socials = [
   { key: "facebook", label: "Facebook", href: contact.social.facebook },
   { key: "instagram", label: "Instagram", href: contact.social.instagram },
@@ -7,6 +12,17 @@ const socials = [
 ].filter((s) => s.href); // masqué tant que le réseau n'a pas d'URL
 ---
 
+{bare ? (
+  <footer class="site-footer site-footer--bare">
+    <div class="container">
+      <div class="footer-bottom footer-bottom--bare">
+        <img src="/images/logo-white.svg" alt="Bweb Agence" width="120" height="28" />
+        <p>&copy; <span data-year>2026</span> {site.name}. Tous droits réservés.</p>
+        <button type="button" class="footer-cookies-btn" data-cc="show-preferencesModal">Gérer les cookies</button>
+      </div>
+    </div>
+  </footer>
+) : (
 <footer class="site-footer">
   <div class="container">
     <div class="footer-top">
@@ -54,3 +70,4 @@ const socials = [
     </div>
   </div>
 </footer>
+)}

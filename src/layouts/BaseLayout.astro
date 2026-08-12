@@ -24,11 +24,15 @@ interface Props {
   /* Masque le bouton WhatsApp flottant (ex. pages de présentation de formation
      où un CTA collant occupe déjà le bas de l'écran ; WhatsApp reste dans la navbar). */
   hideWhatsApp?: boolean;
+  /* Mode « focus CRO » : header et footer réduits à la marque, sans aucun lien
+     de navigation. Réservé aux landings de vente (parcours, offres). */
+  bareChrome?: boolean;
 }
 
 const {
   title, description = site.description, image = site.ogImage, noindex = false,
   ogType = "website", organization = false, breadcrumbs, schemas = [], hideWhatsApp = false,
+  bareChrome = false,
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, site.url).href.replace(/\/$/, "") || site.url;
 const ogImageUrl = new URL(image, site.url).href;
@@ -144,11 +148,11 @@ const breadcrumbLd = breadcrumbs?.length
   </head>
   <body>
     <a href="#main" class="skip-link">Aller au contenu</a>
-    <Header />
+    <Header bare={bareChrome} />
     <main id="main">
       <slot />
     </main>
-    <Footer />
+    <Footer bare={bareChrome} />
     {!hideWhatsApp && <WhatsAppFloat />}
     <script>
       import "../scripts/main.ts";

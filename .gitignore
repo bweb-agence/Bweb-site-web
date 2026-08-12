@@ -24,3 +24,7 @@ _build/
 
 # Claude Code (local)
 .claude/
+.gstack/
+
+# Sources de visuels (PNG lourds archivés hors production, optimisés en .webp)
+visuels-sources/
