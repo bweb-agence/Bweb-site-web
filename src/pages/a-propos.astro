@@ -12,14 +12,14 @@ function teamPhoto(filename: string) {
   const src = `/images/${filename}`;
   return { src, exists: existsSync(path.join(process.cwd(), "public", src)) };
 }
-const godwin = teamPhoto("godwin-soola.png");
-const opsManager = teamPhoto("ops-manager.png");
-const mediaBuyer = teamPhoto("media-buyer.png");
-const closerSenior = teamPhoto("closer-senior.png");
-const contentCreator2 = teamPhoto("content-creator-2.png");
-const techManager = teamPhoto("tech-manager.png");
-const contentCreator = teamPhoto("content-creator.png");
-const sdrCloser2 = teamPhoto("sdr-closer2.png");
+const godwin = teamPhoto("godwin-soola.webp");
+const opsManager = teamPhoto("ops-manager.webp");
+const mediaBuyer = teamPhoto("media-buyer.webp");
+const closerSenior = teamPhoto("closer-senior.webp");
+const contentCreator2 = teamPhoto("content-creator-2.webp");
+const techManager = teamPhoto("tech-manager.webp");
+const contentCreator = teamPhoto("content-creator.webp");
+const sdrCloser2 = teamPhoto("sdr-closer2.webp");
 ---
 
 <BaseLayout title="À propos — Cabinet conseil, formation & IA | Bweb" description="Bweb est un cabinet de conseil, de formation et d'accompagnement en IA et nouvelles technologies, fondé par Godwin Soola pour faire avancer les entreprises." breadcrumbs={[{ name: "Accueil", path: "/" }, { name: "À propos", path: "/a-propos" }]}>
@@ -104,12 +104,12 @@ const sdrCloser2 = teamPhoto("sdr-closer2.png");
     </div>
     <div class="mv-showcase" data-stagger>
       <div class="mv-photo-slot mv-photo-slot--tall reveal">
-        <img class="mv-photo" data-mv-photo="mission" src="/images/mission-formation-1.jpg" alt="Session de formation Bweb en salle, écran de projection en fond" loading="lazy" />
-        <img class="mv-photo mv-photo--portrait" data-mv-photo="vision" src="/images/mission-portrait.png" alt="Formateur Bweb en pleine session de formation" loading="lazy" hidden />
+        <img class="mv-photo" data-mv-photo="mission" src="/images/mission-formation-1.webp" width="1400" height="933" alt="Session de formation Bweb en salle, écran de projection en fond" loading="lazy" />
+        <img class="mv-photo mv-photo--portrait" data-mv-photo="vision" src="/images/mission-portrait.webp" width="800" height="1200" alt="Formateur Bweb en pleine session de formation" loading="lazy" hidden />
       </div>
       <div class="mv-photo-slot reveal" data-delay=".1">
-        <img class="mv-photo" data-mv-photo="mission" src="/images/mission-formation-2.jpg" alt="Formateur Bweb animant un atelier devant un groupe" loading="lazy" />
-        <img class="mv-photo" data-mv-photo="vision" src="/images/mission-groupe.jpg" alt="Groupe de participants à une formation Bweb, posant devant l'écran du site" loading="lazy" hidden />
+        <img class="mv-photo" data-mv-photo="mission" src="/images/mission-formation-2.webp" width="1400" height="933" alt="Formateur Bweb animant un atelier devant un groupe" loading="lazy" />
+        <img class="mv-photo" data-mv-photo="vision" src="/images/mission-groupe.webp" width="1400" height="933" alt="Groupe de participants à une formation Bweb, posant devant l'écran du site" loading="lazy" hidden />
       </div>
       <div class="mv-side reveal" data-delay=".2">
         <h3>Une équipe engagée à vos côtés</h3>
@@ -299,7 +299,7 @@ const sdrCloser2 = teamPhoto("sdr-closer2.png");
             <TeamAvatar photo={contentCreator2} name="Camille Kouassi" />
             <h4>Camille Kouassi</h4>
             <div class="role">Content Creator · Production visuelle</div>
-            <p>Produit les vidéos, visuels et contenus de la marque.</p>
+            <p>Conçoit les visuels et décline les contenus sur les réseaux.</p>
           </div>
           <div class="team-card card">
             <TeamAvatar photo={techManager} name="Olivier Nango" />
