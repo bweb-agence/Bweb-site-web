@@ -1,0 +1,285 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { contact, whatsappLink } from "../../config/site";
+import "../../styles/funnel-confirm.css";
+
+/* =========================================================
+   PARCOURS INITIATION — Page de remerciement après achat
+   ---------------------------------------------------------
+   Rangée sous /parcours-initiation (et non sous le webinaire) : la vente
+   se conclut aussi hors funnel webinaire — depuis la page de vente, une
+   publicité ou un lien direct. L'URL suit donc le produit, pas la source.
+
+   Page d'arrivée après paiement (Chariow redirige ici).
+   Elle a trois secondes pour éteindre le remords de l'acheteur :
+   confirmer, montrer le chemin, donner une première action.
+   C'est aussi le point de mesure de la conversion (pixel Purchase).
+   ========================================================= */
+
+const PRIX = 65000;
+
+/* À RENSEIGNER (Godwin). Tant qu'un lien est vide, la carte affiche une
+   consigne claire au lieu d'un lien mort — un acheteur qui clique dans le
+   vide juste après avoir payé, c'est un ticket de support garanti. */
+const ACCES = {
+  /** Espace de formation Chariow (les modules s'ouvrent au fil des phases). */
+  formation: "",
+  /** Groupe WhatsApp ou Telegram de la cohorte de septembre. */
+  groupe: "",
+};
+
+const aideUrl = whatsappLink(
+  "Bonjour, je viens de régler le Parcours Initiation et j'ai une question sur mes accès.",
+);
+---
+
+<BaseLayout
+  title="Bienvenue dans la cohorte de septembre | Bweb Academy"
+  description="Ton inscription au Parcours Initiation aux Produits Digitaux est confirmée. Voici ton parcours, tes accès et ta première action."
+  noindex={true}
+  hideWhatsApp={true}
+  bareChrome={true}
+>
+  <Fragment slot="head">
+    <script is:inline define:vars={{ PRIX }}>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '150267587094280');
+      fbq('track', 'PageView');
+
+      /* Purchase : un rafraîchissement ou un retour arrière ne doit pas
+         gonfler le chiffre d'affaires remonté à Meta — d'où le garde-fou
+         localStorage. Si le stockage est bloqué (navigation privée stricte),
+         on préfère compter la vente plutôt que la perdre. */
+      (function () {
+        var payload = { value: PRIX, currency: 'XOF', content_name: 'Parcours Initiation aux Produits Digitaux' };
+        try {
+          var cle = 'bweb_purchase_initiation';
+          if (localStorage.getItem(cle)) return;
+          localStorage.setItem(cle, String(Date.now()));
+        } catch (e) {}
+        fbq('track', 'Purchase', payload);
+      })();
+    </script>
+    <noscript><img height="1" width="1" style="display:none" alt=""
+      src="https://www.facebook.com/tr?id=150267587094280&ev=PageView&noscript=1"/></noscript>
+  </Fragment>
+
+  <!-- ═══════════ 1 · CONFIRMATION ═══════════ -->
+  <header class="fc-hero">
+    <div class="container fc-hero-inner">
+      <div class="fc-seal fc-seal--party" data-hero-in><span aria-hidden="true">🎉</span></div>
+
+      <h1 data-hero-in>Bienvenue dans la cohorte de septembre&nbsp;!</h1>
+
+      <p class="lead fc-hero-sub" data-hero-in>
+        Ta place est verrouillée. Le parcours démarre le <b>lundi 7 septembre</b>.
+        Tu fais partie des <b>30</b>.
+      </p>
+
+      <div class="fc-recap" data-hero-in>
+        <div class="fc-recap-row">
+          <span class="fc-recap-ic">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+          </span>
+          <span class="fc-recap-txt"><span>Démarrage</span><b>Lundi 7 septembre</b></span>
+        </div>
+        <div class="fc-recap-row">
+          <span class="fc-recap-ic">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="m9 13 2 2 4-4"/></svg>
+          </span>
+          <span class="fc-recap-txt"><span>Ton programme</span><b>Parcours Initiation aux Produits Digitaux</b></span>
+        </div>
+        <div class="fc-recap-row">
+          <span class="fc-recap-ic">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3.5"/><path d="M22 20v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.6a4 4 0 0 1 0 6.8"/></svg>
+          </span>
+          <span class="fc-recap-txt"><span>Accompagnement</span><b>Un responsable de cohorte te contacte sous 24 h</b></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════ 2 · CE QUI T'ATTEND ═══════════ -->
+  <section class="section section-gray">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Le parcours</div>
+        <h2>Ton parcours en un coup d'œil</h2>
+      </div>
+
+      <ul class="bv-stats reveal">
+        <li><b>30</b><span>jours</span></li>
+        <li><b>5</b><span>phases</span></li>
+        <li><b>10</b><span>lives</span></li>
+      </ul>
+
+      <div class="bv-outcome reveal">
+        <h3>Tu repars avec</h3>
+        <ul>
+          <li>Ton produit digital en ligne, prêt à être vendu</li>
+          <li>Ta page de vente qui convertit</li>
+          <li>Ta boutique qui encaisse — Mobile Money compris</li>
+        </ul>
+        <p class="bv-outcome-note">
+          Un <b>responsable de cohorte</b> te suit à chaque étape et valide tes livrables.
+          Tu n'avances jamais seul, et tu ne passes pas à la phase suivante sans avoir terminé la précédente.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3 · TA PREMIÈRE ACTION ═══════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="fc-todo reveal">
+        <span class="fc-todo-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M9 3h6a1 1 0 0 1 1 1v1H8V4a1 1 0 0 1 1-1z"/><path d="M16 5h2a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h2"/><path d="m9 13 2 2 4-4"/></svg>
+        </span>
+        <div>
+          <h2>Fais ça maintenant (2 minutes)</h2>
+          <p>
+            Note dans ton téléphone les <b>3 compétences</b> que tu utilises déjà pour aider les
+            autres. C'est la base de la Phase 1.
+          </p>
+          <p>Ton responsable de cohorte t'en reparlera au premier live — arrive avec ta liste.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 4 · TES ACCÈS ═══════════ -->
+  <section class="section section-gray">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Tout est prêt</div>
+        <h2>Tes accès</h2>
+      </div>
+
+      <div class="bv-access reveal">
+        <article class="bv-acc">
+          <span class="bv-acc-ic" style="--c:#1f6ced">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>
+          </span>
+          <h3>Espace de formation</h3>
+          <p>Les modules s'ouvrent au fil des phases, pour que tu avances dans l'ordre.</p>
+          {ACCES.formation
+            ? <a class="bv-acc-link" href={ACCES.formation} target="_blank" rel="noopener">Ouvrir mon espace →</a>
+            : <span class="bv-acc-soon">Tes identifiants arrivent par e-mail dans les minutes qui suivent ton paiement.</span>}
+        </article>
+
+        <article class="bv-acc">
+          <span class="bv-acc-ic" style="--c:#22c35e">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.8-.9L3 20.5l1.6-4.9A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
+          </span>
+          <h3>Groupe de la cohorte</h3>
+          <p>L'entraide entre les lives : questions, retours, et les annonces importantes.</p>
+          {ACCES.groupe
+            ? <a class="bv-acc-link" href={ACCES.groupe} target="_blank" rel="noopener">Rejoindre le groupe →</a>
+            : <span class="bv-acc-soon">Ton responsable de cohorte t'y ajoute dès son premier message.</span>}
+        </article>
+
+        <article class="bv-acc">
+          <span class="bv-acc-ic" style="--c:#ff835f">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+          </span>
+          <h3>Calendrier des lives</h3>
+          <p>Deux rendez-vous par semaine&nbsp;: <b>lundi et jeudi, 19 h</b> (heure d'Abidjan).</p>
+          <span class="bv-acc-soon">Le lien de connexion arrive sur WhatsApp avant chaque live.</span>
+        </article>
+      </div>
+
+      <!-- Astro mange le blanc entre une fin de ligne et une balise : les
+           espaces autour des liens sont volontairement écrits sur une ligne. -->
+      <p class="bv-help reveal">
+        Un souci avec tes accès&nbsp;? <a href={aideUrl} target="_blank" rel="noopener">Écris-nous sur WhatsApp</a> ou à <a href={`mailto:${contact.email}`}>{contact.email}</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════ 5 · RÉASSURANCE FINALE ═══════════ -->
+  <section class="section fc-closing">
+    <div class="container fc-closing-inner">
+      <div class="eyebrow on-dark reveal" style="justify-content:center">On y est</div>
+      <h2 class="reveal">Tu viens de faire le pas que 95 % des gens ne font jamais</h2>
+      <p class="reveal">
+        Ton responsable de cohorte te contacte sous 24 h. D'ici là, garde une chose en tête&nbsp;:
+        la partie difficile — décider — est derrière toi. <b>Le reste, c'est de l'exécution.</b>
+      </p>
+      <p class="reveal">Et sur cette partie-là, on est avec toi.</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* ===== Chiffres clés du parcours ===== */
+  .bv-stats {
+    list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;
+    max-width: 680px; margin: 0 auto 32px;
+  }
+  .bv-stats li {
+    flex: 1 1 160px; text-align: center; padding: 22px 18px;
+    background: #fff; border: 1px solid var(--c-border-soft); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  .bv-stats b {
+    display: block; font-family: var(--f-display); font-weight: 800; line-height: 1;
+    font-size: clamp(2rem, 1.4rem + 2vw, 2.6rem); color: var(--c-blue);
+  }
+  .bv-stats span { display: block; margin-top: 6px; font-size: .82rem; text-transform: uppercase; letter-spacing: .09em; color: var(--c-gray-600); }
+
+  /* ===== Ce que tu repars avec ===== */
+  .bv-outcome {
+    max-width: 680px; margin: 0 auto; background: #fff;
+    border: 1px solid var(--c-border-soft); border-radius: var(--radius-lg);
+    padding: 30px 32px; box-shadow: var(--shadow-sm);
+  }
+  .bv-outcome h3 { font-size: 1.1rem; margin-bottom: 16px; }
+  .bv-outcome ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .bv-outcome li { position: relative; padding-left: 32px; font-size: 1rem; color: var(--c-gray-700); line-height: 1.55; }
+  .bv-outcome li::before {
+    content: "✓"; position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%;
+    display: grid; place-items: center; font-size: .74rem; font-weight: 700;
+    background: var(--c-success-bg); color: var(--c-success);
+  }
+  .bv-outcome-note { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--c-border-soft); font-size: .95rem; line-height: 1.65; color: var(--c-gray-700); }
+  .bv-outcome-note b { color: var(--c-ink); }
+
+  /* ===== Tes accès ===== */
+  .bv-access { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; max-width: 1020px; margin: 0 auto; }
+  .bv-acc {
+    display: flex; flex-direction: column; background: #fff;
+    border: 1px solid var(--c-border); border-radius: 22px; padding: 24px;
+    transition: transform .35s var(--ease), box-shadow .35s var(--ease), border-color .35s var(--ease);
+  }
+  .bv-acc:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--c) 45%, var(--c-border)); }
+  .bv-acc-ic {
+    width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; margin-bottom: 16px;
+    background: color-mix(in srgb, var(--c) 12%, transparent); color: var(--c);
+  }
+  .bv-acc-ic svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .bv-acc h3 { font-size: 1.06rem; margin: 0 0 6px; }
+  .bv-acc p { font-size: .9rem; color: var(--c-gray-600); line-height: 1.55; margin: 0; }
+  /* Le lien (ou son remplaçant) est poussé en pied : les trois cartes s'alignent. */
+  .bv-acc-link { margin-top: auto; padding-top: 16px; font-family: var(--f-display); font-weight: 700; font-size: .92rem; color: var(--c); }
+  .bv-acc-link:hover { text-decoration: underline; }
+  .bv-acc-soon { margin-top: auto; padding-top: 16px; font-size: .84rem; line-height: 1.5; color: var(--c-gray-600); }
+
+  .bv-help { max-width: 680px; margin: 30px auto 0; text-align: center; font-size: .94rem; color: var(--c-gray-600); }
+  .bv-help a { color: var(--c-blue); font-weight: 600; }
+  .bv-help a:hover { text-decoration: underline; }
+
+  @media (max-width: 900px) {
+    .bv-access { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .bv-outcome { padding: 26px 22px; }
+    .bv-stats li { flex-basis: 100%; padding: 18px; }
+  }
+</style>

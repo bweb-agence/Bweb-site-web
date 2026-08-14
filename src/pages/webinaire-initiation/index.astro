@@ -1,0 +1,632 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PhoneField from "../../components/PhoneField.astro";
+import VideoLazy from "../../components/VideoLazy.astro";
+/* Tuiles .tb-* partagées avec « Nos valeurs » (a-propos) et les thématiques
+   (formations) : une seule source de vérité, ~2 Ko au lieu des 88 Ko de
+   formations.css qu'une landing n'a aucune raison de charger. */
+import "../../styles/tiles.css";
+
+/* =========================================================
+   WEBINAIRE « De ta compétence à tes premières ventes »
+   Landing d'inscription — l'inscription EST la conversion.
+   Le funnel : cette page → /webinaire-initiation/merci
+   ========================================================= */
+
+/* Le live est à 20 h heure d'Abidjan (UTC+0). Le « Z » est important :
+   sans lui, le navigateur interpréterait 20:00 dans SON fuseau, et un
+   inscrit à Paris verrait un décompte faux de 2 heures. */
+const LIVE_ISO = "2026-09-06T20:00:00Z";
+const PLACES = 500;
+
+/* Vidéo de présentation du live. Coller l'ID YouTube (ex. "z_h3zF0Xzjk").
+   Tant qu'il est vide, le bloc vidéo n'est pas rendu du tout — pas de
+   lecteur mort sur la page. */
+const VIDEO_ID = "";
+---
+
+<BaseLayout
+  title="Webinaire gratuit — De ta compétence à tes premières ventes | Bweb Academy"
+  description="Live unique le dimanche 6 septembre à 20h (Abidjan) : la méthode en 3 étapes pour transformer une compétence que tu as déjà en produit digital qui encaisse. Gratuit, 500 places."
+  hideWhatsApp={true}
+  bareChrome={true}
+>
+  <Fragment slot="head">
+    <script is:inline>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '150267587094280');
+      fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none" alt=""
+      src="https://www.facebook.com/tr?id=150267587094280&ev=PageView&noscript=1"/></noscript>
+  </Fragment>
+
+  <!-- ═══════════ 1 · HERO ═══════════ -->
+  <header class="wb-hero">
+    <div class="wb-hero-halo" aria-hidden="true"></div>
+    <div class="container wb-hero-inner">
+      <span class="wb-badge-live" data-hero-in>
+        <span class="wb-dot" aria-hidden="true"></span>
+        Événement en direct · Dimanche 6 septembre · 20 h · {PLACES} places
+      </span>
+
+      <h1 data-hero-in>
+        De ta compétence à tes premières ventes&nbsp;:
+        <span class="wb-h1-accent">la méthode exacte en 3 étapes.</span>
+      </h1>
+
+      <p class="lead wb-hero-sub" data-hero-in>
+        Un live unique de 60 minutes où je te donne, gratuitement, la méthode que je facture <b>150 000 FCFA</b> en coaching privé pour transformer ton savoir-faire que tu as déjà en produit digital qui rapporte.
+      </p>
+
+      <div data-hero-in>
+        <a href="#inscription" class="wb-cta wb-cta--glow">Je réserve ma place — c'est gratuit <span class="wb-arrow">→</span></a>
+        <p class="wb-cta-note">{PLACES} places · une seule date · replay 48 h réservé aux inscrits</p>
+      </div>
+
+      <div class="wb-countdown" data-hero-in>
+        <span class="wb-cd-label">⏳ Le live démarre dans</span>
+        <div class="wb-cd" data-countdown={LIVE_ISO}>
+          <span class="wb-cd-box"><b data-cd="d">00</b><span>Jours</span></span>
+          <span class="wb-cd-sep">:</span>
+          <span class="wb-cd-box"><b data-cd="h">00</b><span>Heures</span></span>
+          <span class="wb-cd-sep">:</span>
+          <span class="wb-cd-box"><b data-cd="m">00</b><span>Min</span></span>
+          <span class="wb-cd-sep">:</span>
+          <span class="wb-cd-box"><b data-cd="s">00</b><span>Sec</span></span>
+        </div>
+      </div>
+
+      <!-- Vidéo de présentation, juste sous le compte à rebours. -->
+      <div class="wb-video-slot" data-hero-in>
+        <VideoLazy
+          id={VIDEO_ID}
+          label="Découvre en 1 minute ce qu'on va construire ensemble"
+          title="Présentation du webinaire — Godwin Soola"
+          hint="VIDEO_ID · src/pages/webinaire-initiation/index.astro"
+        />
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════ 2 · CE QUE TU VAS RÉCUPÉRER ═══════════ -->
+  <section class="section" data-nav-section="Le contenu">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Le contenu du live</div>
+        <h2>Ce que tu repars avec, gratuitement, en 60 minutes</h2>
+      </div>
+
+      <!-- Mêmes tuiles que la section « Nos valeurs » du site (.tb-tile) :
+           une seule identité visuelle sur l'ensemble du domaine. -->
+      <div class="tb-bento wb-bento" data-stagger>
+        <article class="tb-tile" style="--c:#1f6ced">
+          <span class="tb-num">01</span>
+          <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3z"/><circle cx="17.5" cy="17.5" r="3.5"/></svg></span>
+          <h3>La matrice compétence × problème × client</h3>
+          <p>Le cadre exact pour savoir quoi vendre — et à qui — en 15 minutes, au lieu de 3 semaines.</p>
+          <span class="wb-value-price">Valeur 50 000 FCFA</span>
+        </article>
+        <article class="tb-tile" style="--c:#00c89e">
+          <span class="tb-num">02</span>
+          <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.8-.9L3 20.5l1.6-4.9A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg></span>
+          <h3>La règle des 10 conversations</h3>
+          <p>Le script mot à mot pour valider ton idée <b>avant</b> de créer — et ne plus perdre 2 semaines sur un produit que personne n'achète.</p>
+          <span class="wb-value-price">Valeur 50 000 FCFA</span>
+        </article>
+        <article class="tb-tile" style="--c:#ff835f">
+          <span class="tb-num">03</span>
+          <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M13 2 4.5 13H11l-1 9 8.5-11H12z"/></svg></span>
+          <h3>« Vends avant de perfectionner »</h3>
+          <p>Pourquoi ta première version suffit pour encaisser, avec 2 exemples réels d'élèves.</p>
+          <span class="wb-value-price">Valeur 50 000 FCFA</span>
+        </article>
+      </div>
+
+      <p class="wb-value-total reveal">
+        Valeur totale&nbsp;: <b>150 000 FCFA</b> — ce soir-là, pour <span class="wb-free">0 FCFA</span>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3 · POURQUOI C'EST GRATUIT (rupture navy) ═══════════ -->
+  <section class="section wb-why" data-nav-section="Pourquoi c'est gratuit">
+    <div class="container wb-why-inner">
+      <div class="eyebrow on-dark reveal" style="justify-content:center">La transparence d'abord</div>
+      <h2 class="reveal">Pourquoi je te donne <span class="wb-gold">150 000 FCFA</span> de méthode, gratuitement</h2>
+      <p class="wb-why-text reveal">
+        D'habitude, je facture cette méthode 150 000 FCFA en coaching privé. Ce soir-là, je la donne
+        en public pour une seule raison&nbsp;: te montrer, preuves à l'appui, que ta compétence a de
+        la valeur — et que je peux t'aider à l'encaisser.
+      </p>
+      <p class="wb-why-text reveal"><b>C'est une occasion, pas une habitude.</b> Je ne le referai pas avant plusieurs semaines.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════ 4 · POUR QUI / PAS POUR QUI ═══════════ -->
+  <section class="section section-gray" data-nav-section="Pour qui">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Le filtre</div>
+        <h2>Ce live est fait pour toi… ou pas.</h2>
+      </div>
+
+      <div class="wb-fit-grid">
+        <div class="wb-fit wb-fit--yes reveal">
+          <h3><span class="wb-fit-ico" aria-hidden="true">✓</span> C'est pour toi si…</h3>
+          <ul>
+            <li>Tu as une compétence que d'autres pourraient payer pour apprendre</li>
+            <li>Tu regardes des tutos mais tu ne lances jamais rien</li>
+            <li>Tu veux un revenu en plus sans quitter ton travail</li>
+          </ul>
+        </div>
+        <div class="wb-fit wb-fit--no reveal" data-delay=".1">
+          <h3><span class="wb-fit-ico" aria-hidden="true">✕</span> Ce n'est pas pour toi si…</h3>
+          <ul>
+            <li>Tu cherches « de l'argent facile » sans rien faire</li>
+            <li>Tu n'es pas prêt à exécuter — le live donne la méthode, c'est <b>toi</b> qui l'appliques</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 5 · QUI ANIME ═══════════ -->
+  <section class="section" data-nav-section="L'animateur">
+    <div class="container">
+      <div class="wb-host reveal">
+        <div class="wb-host-photo" aria-hidden="true">
+          <img src="/images/godwin-soola.webp" alt="" width="800" height="800" loading="lazy" decoding="async" />
+        </div>
+        <div class="wb-host-body">
+          <div class="eyebrow">Animé par</div>
+          <h2>Godwin Soola</h2>
+          <p class="lead">Fondateur de Bweb Agence, cabinet de conseil et de formation à l'IA en Côte d'Ivoire.</p>
+          <ul class="wb-host-stats">
+            <li><b>17 116</b><span>personnes formées</span></li>
+            <li><b>95 %</b><span>d'avis positifs sur 593 clients</span></li>
+            <li><b>42 948 €</b><span>investis en publicité Facebook</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 6 · FORMULAIRE (le seul CTA) ═══════════ -->
+  <section class="section wb-form-section" id="inscription" data-nav-section="Réserver">
+    <div class="container">
+      <div class="wb-form-card reveal">
+        <span class="wb-form-tag">Gratuit · {PLACES} places</span>
+        <h2>Réserve ta place maintenant</h2>
+        <p class="wb-form-intro">Dimanche 6 septembre, 20 h (heure d'Abidjan). Le lien arrive sur WhatsApp.</p>
+
+        <form id="wbForm" novalidate>
+          <div class="wb-field">
+            <label for="wb-prenom">Prénom</label>
+            <input id="wb-prenom" name="prenom" type="text" autocomplete="given-name" required minlength="2" maxlength="80" placeholder="Marius" />
+          </div>
+
+          <div class="wb-field">
+            <label for="wb-phone">Numéro WhatsApp</label>
+            <PhoneField id="wb-phone" />
+          </div>
+
+          <div class="wb-field">
+            <label for="wb-email">E-mail</label>
+            <input id="wb-email" name="email" type="email" autocomplete="email" required maxlength="160" placeholder="marius@exemple.com" />
+          </div>
+
+          <!-- Honeypot : invisible pour l'humain, rempli par les bots. -->
+          <div class="wb-hp" aria-hidden="true">
+            <label for="wb-website">Ne pas remplir</label>
+            <input id="wb-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <p class="wb-form-error" id="wbError" role="alert" hidden></p>
+
+          <button type="submit" class="wb-cta wb-cta--block wb-cta--glow" id="wbSubmit">
+            <span data-label>Je réserve ma place maintenant</span> <span class="wb-arrow">→</span>
+          </button>
+          <p class="wb-form-note">Gratuit. Lien envoyé sur WhatsApp. Une seule date, {PLACES} places.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 7 · URGENCE + FAQ ═══════════ -->
+  <section class="section section-gray" data-nav-section="Questions">
+    <div class="container wb-narrow">
+      <p class="wb-urgency reveal">
+        Les places partent dans l'ordre d'inscription. <b>Quand c'est plein, c'est plein.</b>
+      </p>
+
+      <div class="wb-faq reveal">
+        <div class="wb-faq-item">
+          <button class="wb-faq-q" type="button" aria-expanded="false">
+            <span>C'est vraiment gratuit&nbsp;?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="wb-faq-a"><div class="wb-faq-a-in">Oui. Le live est gratuit et tu repars avec la méthode. À la fin, je présente la cohorte — optionnelle, 65 000 FCFA. Tu n'es obligé à rien.</div></div>
+        </div>
+        <div class="wb-faq-item">
+          <button class="wb-faq-q" type="button" aria-expanded="false">
+            <span>Je ne peux pas être là à 20 h&nbsp;?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="wb-faq-a"><div class="wb-faq-a-in">Un replay est disponible 48 h pour les inscrits. Mais tu perds la possibilité de poser tes questions en direct — et les personnes présentes au live ont accès à des choses que les autres n'ont pas.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA collant mobile -->
+  <div class="wb-sticky">
+    <a href="#inscription" class="wb-cta wb-sticky-cta">Je réserve ma place — gratuit →</a>
+  </div>
+
+  <script is:inline>
+    (function () {
+      /* ---------- Compte à rebours vers le live ---------- */
+      var root = document.querySelector("[data-countdown]");
+      if (root) {
+        var target = new Date(root.getAttribute("data-countdown")).getTime();
+        var pad = function (v) { return String(v).padStart(2, "0"); };
+        var tick = function () {
+          var d = target - Date.now();
+          if (d < 0) d = 0;
+          root.querySelector('[data-cd="d"]').textContent = pad(Math.floor(d / 86400000));
+          root.querySelector('[data-cd="h"]').textContent = pad(Math.floor((d % 86400000) / 3600000));
+          root.querySelector('[data-cd="m"]').textContent = pad(Math.floor((d % 3600000) / 60000));
+          root.querySelector('[data-cd="s"]').textContent = pad(Math.floor((d % 60000) / 1000));
+        };
+        tick();
+        setInterval(tick, 1000);
+      }
+
+      /* ---------- FAQ ---------- */
+      document.querySelectorAll(".wb-faq-q").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var item = btn.parentElement;
+          var open = item.classList.contains("open");
+          document.querySelectorAll(".wb-faq-item.open").forEach(function (i) {
+            i.classList.remove("open");
+            i.querySelector(".wb-faq-a").style.maxHeight = "0";
+            i.querySelector(".wb-faq-q").setAttribute("aria-expanded", "false");
+          });
+          if (!open) {
+            item.classList.add("open");
+            var a = item.querySelector(".wb-faq-a");
+            a.style.maxHeight = a.scrollHeight + "px";
+            btn.setAttribute("aria-expanded", "true");
+          }
+        });
+      });
+
+      /* ---------- CTA collant : visible après le hero, masqué sur le formulaire ---------- */
+      (function () {
+        var sticky = document.querySelector(".wb-sticky");
+        var hero = document.querySelector(".wb-hero");
+        var form = document.getElementById("inscription");
+        if (!sticky || !("IntersectionObserver" in window)) return;
+        var pastHero = false, atForm = false;
+        var update = function () { sticky.classList.toggle("show", pastHero && !atForm); };
+        new IntersectionObserver(function (e) { pastHero = !e[0].isIntersecting; update(); }, { threshold: 0 }).observe(hero);
+        if (form) new IntersectionObserver(function (e) { atForm = e[0].isIntersecting; update(); }, { threshold: 0 }).observe(form);
+      })();
+
+      /* ---------- Formulaire ---------- */
+      var form = document.getElementById("wbForm");
+      if (!form) return;
+      var errorBox = document.getElementById("wbError");
+      var submit = document.getElementById("wbSubmit");
+      var label = submit.querySelector("[data-label]");
+      var labelInitial = label.textContent;
+
+      var MESSAGES = {
+        prenom_invalide: "Merci d'indiquer ton prénom.",
+        whatsapp_invalide: "Ce numéro WhatsApp ne semble pas valide.",
+        email_invalide: "Cette adresse e-mail ne semble pas valide.",
+        rate_limited: "Trop de tentatives. Patiente une minute avant de réessayer.",
+        not_configured: "L'inscription est momentanément indisponible. Écris-nous sur WhatsApp, on te réserve ta place.",
+        ingest_failed: "L'inscription n'a pas pu être enregistrée. Réessaie dans un instant.",
+        ingest_unreachable: "Connexion interrompue. Vérifie ton réseau et réessaie.",
+        reseau: "Connexion interrompue. Vérifie ton réseau et réessaie.",
+      };
+
+      var showError = function (key) {
+        errorBox.textContent = MESSAGES[key] || MESSAGES.reseau;
+        errorBox.hidden = false;
+      };
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        errorBox.hidden = true;
+
+        var data = new FormData(form);
+        var prenom = (data.get("prenom") || "").toString().trim();
+        var email = (data.get("email") || "").toString().trim();
+        // PhoneField fournit l'indicatif et le numéro séparément : on les fusionne.
+        var whatsapp = ((data.get("phone_cc") || "") + " " + (data.get("phone") || "")).trim();
+
+        // Validation côté client : un message immédiat vaut mieux qu'un aller-retour réseau.
+        if (prenom.length < 2) return showError("prenom_invalide");
+        if ((data.get("phone") || "").toString().replace(/\D/g, "").length < 6) return showError("whatsapp_invalide");
+        if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) return showError("email_invalide");
+
+        submit.disabled = true;
+        label.textContent = "Réservation en cours…";
+
+        fetch("/api/webinaire/inscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prenom: prenom,
+            whatsapp: whatsapp,
+            email: email,
+            website: (data.get("website") || "").toString(),
+          }),
+        })
+          .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+          .then(function (res) {
+            if (res && res.ok) {
+              if (window.fbq) window.fbq("track", "Lead");
+              window.location.href = "/webinaire-initiation/merci";
+              return;
+            }
+            showError(res && res.error);
+            submit.disabled = false;
+            label.textContent = labelInitial;
+          })
+          .catch(function () {
+            showError("reseau");
+            submit.disabled = false;
+            label.textContent = labelInitial;
+          });
+      });
+    })();
+  </script>
+</BaseLayout>
+
+<style>
+  /* ===== CTA (pilule bleue, flèche animée) ===== */
+  .wb-cta {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 19px 40px; border-radius: var(--radius-pill); white-space: nowrap;
+    font-family: var(--f-display); font-weight: 700; font-size: 1.08rem; color: #fff;
+    background: linear-gradient(135deg, #2f7bff, var(--c-blue) 55%, var(--c-blue-dark));
+    box-shadow: 0 14px 38px -10px rgba(31,108,237,.6);
+    border: 0; cursor: pointer;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .wb-cta:hover { transform: translateY(-2px); box-shadow: 0 20px 46px -10px rgba(31,108,237,.72); }
+  .wb-cta:disabled { opacity: .7; cursor: progress; transform: none; }
+  .wb-arrow { transition: transform var(--dur) var(--ease); }
+  .wb-cta:hover .wb-arrow { transform: translateX(4px); }
+  .wb-cta--block { width: 100%; margin-top: 6px; }
+
+  /* Surbrillance : halo pulsé + balayage lumineux, comme sur la page de vente. */
+  .wb-cta--glow { position: relative; overflow: hidden; animation: wb-glow 2.6s ease-in-out infinite; }
+  @keyframes wb-glow {
+    0%, 100% { box-shadow: 0 14px 38px -10px rgba(31,108,237,.65), 0 0 0 0 rgba(31,108,237,.4); }
+    50% { box-shadow: 0 14px 44px -8px rgba(31,108,237,.8), 0 0 0 12px rgba(31,108,237,0); }
+  }
+  .wb-cta--glow::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -70%; width: 40%;
+    background: linear-gradient(115deg, transparent, rgba(255,255,255,.45), transparent);
+    transform: skewX(-20deg); animation: wb-shine 3s ease-in-out infinite;
+  }
+  @keyframes wb-shine { 0% { left: -70%; } 55%, 100% { left: 135%; } }
+  /* Bouton désactivé pendant l'envoi : on coupe l'agitation visuelle. */
+  .wb-cta--glow:disabled { animation: none; }
+  .wb-cta--glow:disabled::after { display: none; }
+
+  /* ===== Vidéo de présentation (sous le compte à rebours) ===== */
+  /* L'habillage vit dans VideoLazy.astro ; la page ne fixe que sa place. */
+  .wb-video-slot { max-width: 620px; margin: 40px auto 0; }
+
+  /* ===== 1 · Hero ===== */
+  .wb-hero {
+    position: relative; overflow: hidden; text-align: center;
+    padding-top: clamp(130px, 13vw, 180px); padding-bottom: clamp(48px, 5vw, 72px);
+    background:
+      radial-gradient(760px 380px at 50% -6%, rgba(31,108,237,.1), transparent 62%),
+      radial-gradient(620px 520px at 85% 20%, rgba(255,131,95,.07), transparent 60%),
+      var(--c-white);
+  }
+  .wb-hero-halo { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(420px 360px at 10% 90%, rgba(0,200,158,.07), transparent 60%); }
+  .wb-hero-inner { position: relative; z-index: 1; max-width: 860px; }
+
+  .wb-badge-live {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-weight: 700; font-size: .8rem; line-height: 1.35; color: #fff;
+    background: linear-gradient(135deg, var(--c-orange), #ef5f36);
+    padding: 9px 18px; border-radius: var(--radius-pill); margin-bottom: 22px;
+    box-shadow: 0 8px 22px -8px rgba(255,131,95,.7);
+  }
+  .wb-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: wb-pulse 1.8s ease-in-out infinite; }
+  @keyframes wb-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
+
+  .wb-hero h1 { font-size: clamp(2rem, 1.3rem + 3vw, 3.3rem); line-height: 1.1; letter-spacing: -.02em; max-width: 20ch; margin: 0 auto; color: var(--c-ink); }
+  .wb-h1-accent { display: block; margin-top: .16em; color: var(--c-blue); }
+  .wb-hero-sub { max-width: 640px; margin: 22px auto 32px; color: var(--c-gray-700); }
+  .wb-hero-sub b { color: var(--c-ink); }
+  .wb-cta-note { margin-top: 14px; font-size: .88rem; color: var(--c-gray-600); }
+
+  /* Compte à rebours */
+  .wb-countdown { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 36px; }
+  .wb-cd-label { font-family: var(--f-display); font-weight: 700; font-size: .78rem; text-transform: uppercase; letter-spacing: .09em; color: #d0491f; }
+  .wb-cd { display: flex; align-items: center; gap: 7px; }
+  .wb-cd-box {
+    min-width: 72px; padding: 11px 12px 8px; border-radius: 14px; text-align: center;
+    background: linear-gradient(160deg, #fff5f0, #ffe6db);
+    border: 1px solid rgba(255,131,95,.38);
+    box-shadow: inset 0 1px 0 #fff, 0 8px 18px -12px rgba(255,131,95,.6);
+  }
+  .wb-cd-box b { display: block; font-family: var(--f-display); font-weight: 800; font-size: 1.7rem; line-height: 1.1; color: #b8380c; font-variant-numeric: tabular-nums; }
+  .wb-cd-box span { display: block; font-size: .6rem; text-transform: uppercase; letter-spacing: .09em; color: #a4553a; }
+  .wb-cd-sep { font-family: var(--f-display); font-weight: 800; font-size: 1.3rem; color: rgba(184,56,12,.35); padding-bottom: 14px; }
+
+  /* ===== 2 · Valeur empilée (tuiles .tb-tile du site) ===== */
+  /* 3 tuiles seulement : on force 3 colonnes au lieu des 4 par défaut. */
+  .wb-bento { max-width: 1040px; margin-inline: auto; }
+  @media (min-width: 1000px) { .wb-bento { grid-template-columns: repeat(3, 1fr); } }
+  .wb-bento .tb-tile { min-height: 236px; }
+  /* Par défaut la tuile pousse son contenu vers le bas (margin-bottom:auto sur
+     l'icône). Ici on veut l'inverse : icône, puis titre et description collés
+     dessous, et la valeur seule repoussée en pied de carte — les trois tuiles
+     alignent ainsi leurs prix, quelle que soit la longueur du texte. */
+  .wb-bento .tb-ic { margin-bottom: 0; }
+  .wb-bento .wb-value-price { margin-top: auto; }
+  .wb-value-price {
+    align-self: flex-start; margin-top: 14px; font-family: var(--f-display); font-weight: 700; font-size: .8rem;
+    color: var(--c-success); background: var(--c-success-bg); border: 1px solid rgba(10,156,119,.22);
+    padding: 6px 14px; border-radius: var(--radius-pill);
+  }
+  .wb-value-total {
+    max-width: 620px; margin: 32px auto 0; text-align: center; padding: 20px 26px;
+    font-family: var(--f-display); font-size: 1.1rem; color: #fff;
+    background: var(--g-navy); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
+  }
+  .wb-value-total b { color: var(--c-yellow); }
+  .wb-free { color: var(--c-green); font-weight: 700; }
+
+  /* ===== 3 · Pourquoi c'est gratuit (rupture navy) ===== */
+  .wb-why {
+    position: relative; overflow: hidden; color: #fff; text-align: center;
+    background:
+      radial-gradient(900px 460px at 50% 0%, rgba(31,108,237,.26), transparent 60%),
+      linear-gradient(180deg, var(--c-navy), #01052e);
+  }
+  .wb-why-inner { max-width: 760px; }
+  .wb-why h2 { color: #fff; font-size: clamp(1.7rem, 3.4vw, 2.5rem); margin-bottom: 22px; }
+  .wb-gold { color: var(--c-yellow); }
+  .wb-why-text { color: var(--c-gray-300); font-size: 1.06rem; line-height: 1.7; margin-bottom: 14px; }
+  .wb-why-text b { color: #fff; }
+
+  /* ===== 4 · Pour qui / pas pour qui ===== */
+  .wb-fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; max-width: 940px; margin: 0 auto; }
+  .wb-fit { background: #fff; border: 1px solid var(--c-border-soft); border-left: 4px solid; border-radius: var(--radius-lg); padding: 28px 28px 26px; box-shadow: var(--shadow-sm); }
+  .wb-fit--yes { border-left-color: var(--c-green); }
+  .wb-fit--no { border-left-color: var(--c-danger); }
+  .wb-fit h3 { display: flex; align-items: center; gap: 11px; font-size: 1.1rem; margin-bottom: 16px; }
+  .wb-fit-ico { flex: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .9rem; font-weight: 700; }
+  .wb-fit--yes .wb-fit-ico { background: var(--c-success-bg); color: var(--c-success); }
+  .wb-fit--no .wb-fit-ico { background: var(--c-danger-bg); color: var(--c-danger); }
+  .wb-fit ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .wb-fit li { position: relative; padding-left: 18px; font-size: .96rem; color: var(--c-gray-700); line-height: 1.55; }
+  .wb-fit li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .35; }
+
+  /* ===== 5 · Animateur ===== */
+  /* Photo à 340 px : sa hauteur s'aligne sur le bloc texte + la rangée de stats. */
+  .wb-host { display: grid; grid-template-columns: 340px 1fr; gap: 48px; align-items: center; max-width: 1000px; margin: 0 auto; }
+  .wb-host-photo { border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); background: var(--g-navy); }
+  .wb-host-photo img { display: block; width: 100%; height: auto; }
+  .wb-host-body h2 { margin-bottom: 12px; }
+  .wb-host-stats { list-style: none; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .wb-host-stats li { flex: 1 1 150px; background: var(--surface-2); border: 1px solid var(--c-border-soft); border-radius: var(--radius-md); padding: 16px 18px; }
+  .wb-host-stats b { display: block; font-family: var(--f-display); font-weight: 700; font-size: 1.3rem; color: var(--c-blue); line-height: 1.1; }
+  .wb-host-stats span { display: block; margin-top: 4px; font-size: .84rem; color: var(--c-gray-700); }
+
+  /* ===== 6 · Formulaire ===== */
+  .wb-form-section { background: var(--surface-2); }
+  .wb-form-card {
+    position: relative; max-width: 560px; margin: 0 auto; text-align: center; background: #fff;
+    border: 1px solid rgba(31,108,237,.2); border-radius: 28px;
+    padding: clamp(36px, 5vw, 52px) clamp(22px, 4vw, 44px) clamp(30px, 3vw, 40px);
+    box-shadow: 0 1px 2px rgba(2,11,80,.04), 0 24px 70px -28px rgba(2,11,80,.22);
+  }
+  .wb-form-tag {
+    position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--c-green), #04a982); color: #062b22;
+    font-family: var(--f-display); font-weight: 700; font-size: .76rem; letter-spacing: .04em;
+    text-transform: uppercase; white-space: nowrap; padding: 8px 20px; border-radius: var(--radius-pill);
+    box-shadow: 0 10px 24px -10px rgba(0,200,158,.8);
+  }
+  .wb-form-intro { color: var(--c-gray-600); font-size: .95rem; margin: 8px 0 26px; }
+  .wb-field { text-align: left; margin-bottom: 16px; }
+  .wb-field label { display: block; font-weight: 700; font-size: .88rem; color: var(--c-gray-800); margin-bottom: 7px; }
+  .wb-field input[type="text"], .wb-field input[type="email"] {
+    width: 100%; padding: 14px 16px; font-family: var(--f-body); font-size: 1rem; color: var(--c-ink);
+    background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  }
+  .wb-field input:focus { outline: 0; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31,108,237,.15); }
+
+  /* Champ WhatsApp : PhoneField apporte son propre habillage. On le réaligne
+     sur les champs Prénom / E-mail pour un formulaire homogène.
+     :global() est indispensable — le composant a son propre scope Astro,
+     un sélecteur scopé ne l'atteindrait pas. */
+  .wb-field :global(.phone-field) { gap: 8px; }
+  .wb-field :global(.phone-field input[type="tel"]),
+  .wb-field :global(.phone-field .pf-trigger),
+  .wb-field :global(.phone-field .phone-cc) {
+    height: 56px; padding: 0 16px; font-family: var(--f-body); font-size: 1rem; color: var(--c-ink);
+    background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  }
+  .wb-field :global(.phone-field .pf-combo) { flex: 0 0 auto; }
+  .wb-field :global(.phone-field .pf-trigger) { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+  .wb-field :global(.phone-field input[type="tel"]:focus),
+  .wb-field :global(.phone-field .pf-trigger:focus-visible),
+  .wb-field :global(.phone-field .phone-cc:focus) {
+    outline: 0; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31,108,237,.15);
+  }
+  .wb-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .wb-form-error {
+    margin: 4px 0 12px; padding: 11px 14px; font-size: .9rem; text-align: left;
+    color: var(--c-danger); background: var(--c-danger-bg); border: 1px solid rgba(210,45,45,.2);
+    border-radius: var(--radius-sm);
+  }
+  .wb-form-note { margin-top: 14px; font-size: .84rem; color: var(--c-gray-600); }
+
+  /* ===== 7 · Urgence + FAQ ===== */
+  .wb-narrow { max-width: 760px; }
+  .wb-urgency {
+    text-align: center; margin-bottom: 34px; padding: 18px 24px;
+    font-size: 1rem; color: #a8410f; background: linear-gradient(160deg, #fff5f0, #ffe6db);
+    border: 1px solid rgba(255,131,95,.35); border-radius: var(--radius-md);
+  }
+  .wb-urgency b { color: #8f3208; }
+  .wb-faq-item { border: 1px solid var(--c-border-soft); border-radius: var(--radius-md); margin-bottom: 12px; background: #fff; overflow: hidden; transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
+  .wb-faq-item.open { border-color: rgba(31,108,237,.28); box-shadow: var(--shadow-sm); }
+  .wb-faq-q { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 16px; text-align: left; padding: 20px 24px; font-family: var(--f-display); font-weight: 700; font-size: 1rem; color: var(--c-navy); background: none; border: 0; cursor: pointer; }
+  .wb-faq-q svg { flex: none; width: 20px; height: 20px; color: var(--c-blue); transition: transform var(--dur) var(--ease); }
+  .wb-faq-item.open .wb-faq-q svg { transform: rotate(45deg); }
+  .wb-faq-a { max-height: 0; overflow: hidden; transition: max-height var(--dur-slow) var(--ease); }
+  .wb-faq-a-in { padding: 0 24px 22px; color: var(--c-gray-700); font-size: .96rem; line-height: 1.6; }
+
+  /* ===== CTA collant mobile ===== */
+  .wb-sticky {
+    display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-float);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(255,255,255,.97); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--c-border); box-shadow: 0 -8px 28px rgba(2,11,80,.12);
+    transform: translateY(120%); transition: transform var(--dur) var(--ease);
+  }
+  .wb-sticky.show { transform: translateY(0); }
+  .wb-sticky-cta { width: 100%; padding: 16px 20px; font-size: .96rem; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 900px) {
+    .wb-value-grid { grid-template-columns: 1fr; }
+    .wb-fit-grid { grid-template-columns: 1fr; }
+    .wb-host { grid-template-columns: 1fr; gap: 28px; }
+    .wb-host-photo { max-width: 220px; margin: 0 auto; }
+  }
+  @media (max-width: 760px) {
+    .wb-sticky { display: block; }
+    .wb-cd-box { min-width: 60px; padding: 9px 8px 7px; }
+    .wb-cd-box b { font-size: 1.4rem; }
+    .wb-cd-sep { font-size: 1.1rem; padding-bottom: 12px; }
+    .wb-cta { padding: 17px 22px; font-size: .96rem; }
+    .wb-badge-live { font-size: .74rem; padding: 8px 14px; }
+    .wb-host-stats li { flex-basis: 100%; }
+  }
+</style>
