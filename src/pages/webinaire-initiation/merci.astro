@@ -1,0 +1,240 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import VideoLazy from "../../components/VideoLazy.astro";
+import { site } from "../../config/site";
+import "../../styles/funnel-confirm.css";
+
+/* =========================================================
+   WEBINAIRE — Page post-inscription
+   ---------------------------------------------------------
+   Trois rôles, dans cet ordre :
+     1. confirmer (le doute tue la présence au live) ;
+     2. pré-cadrer (l'inscrit arrive préparé, pas curieux) ;
+     3. amorcer la boucle virale (il invite quelqu'un).
+   Arrivée : redirection depuis le formulaire de /webinaire-initiation.
+   ========================================================= */
+
+const LANDING = `${site.url}/webinaire-initiation`;
+
+/* À RENSEIGNER (Godwin) — liens d'invitation aux canaux où le lien du live
+   sera envoyé. Renseigner l'un, l'autre, ou les deux : la page s'adapte.
+   Tant que les deux sont vides, le bloc n'apparaît qu'en développement,
+   pour ne pas exposer un bouton mort à un inscrit. */
+const CANAUX = {
+  whatsapp: "",
+  telegram: "",
+};
+
+/* Vidéo d'accueil : Godwin invite à rejoindre les canaux et annonce ce qui
+   s'y passe. Coller l'ID YouTube (ex. "z_h3zF0Xzjk"). */
+const VIDEO_ACCUEIL = "";
+
+const aUnCanal = Boolean(CANAUX.whatsapp || CANAUX.telegram);
+const montrerCanaux = aUnCanal || import.meta.env.DEV;
+
+/* Google Agenda : un inscrit qui pose l'événement dans son agenda vient.
+   Abidjan est à UTC+0, donc 20 h = 20:00Z — le format attendu par Google. */
+const CAL = new URL("https://calendar.google.com/calendar/render");
+CAL.searchParams.set("action", "TEMPLATE");
+CAL.searchParams.set("text", "Live gratuit — De ta compétence à tes premières ventes");
+CAL.searchParams.set("dates", "20260906T200000Z/20260906T210000Z");
+CAL.searchParams.set("location", "En ligne (le lien arrive sur WhatsApp)");
+CAL.searchParams.set(
+  "details",
+  `Live de 60 minutes avec Godwin Soola (Bweb Academy).\n\nPrépare un carnet et connecte-toi 5 minutes en avance.\nLe lien de connexion est envoyé sur WhatsApp le jeudi 4 septembre.\n\n${LANDING}`,
+);
+const calendarUrl = CAL.href;
+
+/* Partage : wa.me sans numéro ouvre le sélecteur de contacts WhatsApp. */
+const shareText = `Je viens de réserver ma place pour ce live gratuit : « De ta compétence à tes premières ventes », dimanche 6 septembre à 20 h.
+
+Godwin Soola y donne la méthode qu'il facture 150 000 FCFA en coaching privé — pour transformer une compétence qu'on a déjà en produit digital qui rapporte.
+
+Il reste des places ici : ${LANDING}`;
+const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+---
+
+<BaseLayout
+  title="C'est réservé — Rendez-vous dimanche 6 septembre à 20 h | Bweb Academy"
+  description="Ta place au live « De ta compétence à tes premières ventes » est confirmée. Voici ce qui t'attend et la seule chose à faire d'ici dimanche."
+  noindex={true}
+  hideWhatsApp={true}
+  bareChrome={true}
+>
+  <Fragment slot="head">
+    <script is:inline>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '150267587094280');
+      fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none" alt=""
+      src="https://www.facebook.com/tr?id=150267587094280&ev=PageView&noscript=1"/></noscript>
+  </Fragment>
+
+  <!-- ═══════════ 1 · CONFIRMATION ═══════════ -->
+  <header class="fc-hero">
+    <div class="container fc-hero-inner">
+      <div class="fc-seal" data-hero-in>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4.5 12.5 5 5 10-11" /></svg>
+      </div>
+
+      <h1 data-hero-in>C'est réservé. Bienvenue au live.</h1>
+
+      <p class="lead fc-hero-sub" data-hero-in>
+        Ta place au live du <b>dimanche 6 septembre à 20 h</b> (heure d'Abidjan) est verrouillée.
+        Je t'envoie le lien sur WhatsApp 48 h avant, le <b>jeudi 4 septembre</b>.
+      </p>
+
+      <div class="fc-recap" data-hero-in>
+        <div class="fc-recap-row">
+          <span class="fc-recap-ic">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+          </span>
+          <span class="fc-recap-txt"><span>Quand</span><b>Dimanche 6 septembre · 20 h 00 (Abidjan)</b></span>
+        </div>
+        <div class="fc-recap-row">
+          <span class="fc-recap-ic">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+          </span>
+          <span class="fc-recap-txt"><span>Durée</span><b>60 minutes, en direct</b></span>
+        </div>
+        <div class="fc-recap-row">
+          <span class="fc-recap-ic">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.8-.9L3 20.5l1.6-4.9A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
+          </span>
+          <span class="fc-recap-txt"><span>Où</span><b>En ligne — lien envoyé sur WhatsApp</b></span>
+        </div>
+      </div>
+
+      <!-- Ordre voulu : rejoindre le canal (c'est par là qu'arrive le lien du
+           live), la vidéo qui explique ce qu'on y trouve, puis l'agenda. -->
+      {montrerCanaux && (
+        <div class="mc-canaux" data-hero-in>
+          <p class="mc-canaux-lbl">C'est ici que j'envoie le lien du live</p>
+          <div class="fc-actions">
+            {CANAUX.whatsapp && (
+              <a href={CANAUX.whatsapp} class="btn btn-whatsapp" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2m0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23a8.2 8.2 0 0 1 8.24 8.24c0 4.54-3.7 8.23-8.24 8.23m4.52-6.16c-.25-.13-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.13-.56-1.35-.77-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.22.25-.87.85-.87 2.07s.9 2.4 1.02 2.56c.12.17 1.75 2.67 4.25 3.75.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29"/></svg>
+                Rejoindre le groupe WhatsApp
+              </a>
+            )}
+            {CANAUX.telegram && (
+              <a href={CANAUX.telegram} class="btn btn-telegram" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.6 4.3 2.9 11.5c-.9.3-.9 1.6.1 1.9l4.7 1.5 1.8 5.5c.2.7 1.1.9 1.6.4l2.6-2.5 4.6 3.4c.6.4 1.4.1 1.6-.6l3.2-15c.2-.8-.6-1.5-1.5-1.2M8.6 14.1l9.1-5.6c.2-.1.4.2.2.3l-7.5 6.8c-.3.2-.4.6-.5.9l-.3 2c0 .1-.2.2-.2 0l-1-3.2c-.1-.4 0-.9.2-1.2"/></svg>
+                Rejoindre le canal Telegram
+              </a>
+            )}
+            {!aUnCanal && <span class="mc-arenseigner">Lien d'invitation à renseigner — <code>CANAUX</code> dans <code>merci.astro</code></span>}
+          </div>
+        </div>
+      )}
+
+      <div class="mc-video" data-hero-in>
+        <VideoLazy
+          id={VIDEO_ACCUEIL}
+          label="Godwin t'explique ce qui t'attend dans le groupe"
+          title="Bienvenue — ce qui t'attend d'ici au live"
+          hint="VIDEO_ACCUEIL · src/pages/webinaire-initiation/merci.astro"
+        />
+      </div>
+
+      <div class="fc-actions" data-hero-in>
+        <a href={calendarUrl} class="btn btn-outline" target="_blank" rel="noopener">
+          Ajouter à mon agenda
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════ 2 · CE QUI VA SE PASSER ═══════════ -->
+  <section class="section section-gray">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Le déroulé</div>
+        <h2>Voici ce qui t'attend</h2>
+      </div>
+
+      <div class="fc-steps reveal">
+        <div class="fc-step">
+          <span class="fc-step-tag">J-2 · Jeudi 4 septembre</span>
+          <h3>Tu reçois le lien du live sur WhatsApp</h3>
+          <p>Garde le numéro dans tes contacts pour être sûr de voir le message arriver.</p>
+        </div>
+        <div class="fc-step">
+          <span class="fc-step-tag">J-0 · Dimanche 20 h</span>
+          <h3>On démarre — sois là 5 minutes en avance</h3>
+          <p>Prépare un carnet et un stylo. Ce live se prend en notes, pas en spectateur : tu repars avec un plan, pas avec une vidéo de plus.</p>
+        </div>
+        <div class="fc-step fc-step--blue">
+          <span class="fc-step-tag">À la fin</span>
+          <h3>Je te montre la méthode complète, puis j'annonce la suite</h3>
+          <p>La suite est optionnelle. Même si tu ne la prends pas, tu repars avec la méthode entière.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3 · PREMIÈRE ACTION ═══════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="fc-todo reveal">
+        <span class="fc-todo-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M9 3h6a1 1 0 0 1 1 1v1H8V4a1 1 0 0 1 1-1z"/><path d="M16 5h2a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h2"/><path d="m9 13 2 2 4-4"/></svg>
+        </span>
+        <div>
+          <h2>Une chose à faire tout de suite</h2>
+          <p>
+            Note dans ton téléphone les <b>3 compétences</b> que tu utilises déjà pour aider les
+            autres. Même celles qui te paraissent banales — ce sont souvent les plus vendables.
+          </p>
+          <p>On s'en servira pendant le live : c'est la base de ta première étape.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 4 · INVITE UN AMI ═══════════ -->
+  <section class="section fc-closing">
+    <div class="container fc-closing-inner">
+      <div class="eyebrow on-dark reveal" style="justify-content:center">Une dernière chose</div>
+      <h2 class="reveal">Tu connais quelqu'un qui a une compétence et qui ne la vend pas&nbsp;?</h2>
+      <p class="reveal">
+        Envoie-lui le live. Il te remerciera — et vous serez deux à appliquer la méthode,
+        ce qui change tout quand vient le moment de s'y mettre.
+      </p>
+      <a href={shareUrl} class="btn btn-whatsapp reveal" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2m0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23a8.2 8.2 0 0 1 8.24 8.24c0 4.54-3.7 8.23-8.24 8.23m4.52-6.16c-.25-.13-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.13-.56-1.35-.77-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.22.25-.87.85-.87 2.07s.9 2.4 1.02 2.56c.12.17 1.75 2.67 4.25 3.75.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29"/></svg>
+        Partager sur WhatsApp
+      </a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* ===== Rejoindre le canal (action principale de la page) ===== */
+  .mc-canaux { margin-top: 34px; }
+  .mc-canaux-lbl {
+    font-family: var(--f-display); font-weight: 700; font-size: .8rem;
+    text-transform: uppercase; letter-spacing: .09em; color: var(--c-success);
+  }
+  .mc-canaux .fc-actions { margin-top: 14px; }
+  .btn-telegram { background: #229ed9; color: #fff; box-shadow: 0 10px 24px -8px rgba(34,158,217,.55); }
+  .btn-telegram:hover { background: #1c87ba; color: #fff; }
+  /* Repère de développement : jamais rendu en production. */
+  .mc-arenseigner { font-size: .86rem; color: var(--c-gray-600); background: var(--c-cream); border: 1px dashed rgba(255,199,42,.7); padding: 10px 16px; border-radius: var(--radius-sm); }
+  .mc-arenseigner code { font-family: ui-monospace, monospace; font-size: .82rem; color: var(--c-ink); }
+
+  /* ===== Vidéo d'accueil ===== */
+  .mc-video { max-width: 560px; margin: 26px auto 0; }
+
+  /* L'agenda passe en action secondaire : le canal prime. */
+  .mc-video + .fc-actions { margin-top: 22px; }
+</style>

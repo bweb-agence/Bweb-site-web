@@ -1,0 +1,140 @@
+/* =========================================================
+   BWEB ACADEMY — Pages de confirmation du funnel (.fc-*)
+   ---------------------------------------------------------
+   Habillage commun aux deux fins de parcours :
+     · /webinaire-initiation/merci     — inscription au live confirmée
+     · /webinaire-initiation/bienvenue — achat du parcours confirmé
+
+   Même moment émotionnel (« c'est bon, tu es dedans »), donc même
+   grammaire visuelle : sceau vert animé, carte récapitulative,
+   chronologie verticale, encart « à faire maintenant ».
+   Feuille partagée pour ne pas dupliquer ces règles sur deux pages ;
+   ce qui est propre à une page reste dans son <style> scopé.
+   ========================================================= */
+
+/* ===== Bandeau de confirmation ===== */
+/* Le header « bare » est fixe : le padding haut évite qu'il recouvre le sceau. */
+.fc-hero {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding-top: clamp(126px, 12vw, 168px);
+  padding-bottom: clamp(40px, 4.5vw, 64px);
+  background:
+    radial-gradient(720px 380px at 50% -8%, rgba(0, 200, 158, 0.16), transparent 62%),
+    radial-gradient(560px 420px at 88% 24%, rgba(31, 108, 237, 0.07), transparent 60%),
+    var(--c-white);
+}
+.fc-hero-inner { position: relative; z-index: 1; max-width: 720px; }
+
+/* Sceau : le trait du ✓ se dessine, puis une onde part du cercle. */
+.fc-seal {
+  width: 88px; height: 88px; margin: 0 auto 26px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: linear-gradient(140deg, var(--c-green), #04a982);
+  box-shadow: 0 18px 40px -14px rgba(0, 200, 158, 0.85);
+  animation: fc-seal-in 0.5s cubic-bezier(0.2, 1.3, 0.5, 1) both, fc-seal-ring 2.6s 0.6s ease-out infinite;
+}
+.fc-seal svg {
+  width: 44px; height: 44px; fill: none; stroke: #fff;
+  stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 32; stroke-dashoffset: 32;
+  animation: fc-check 0.45s 0.28s ease-out forwards;
+}
+.fc-seal--party { background: linear-gradient(140deg, #ffd45e, var(--c-yellow) 55%, #f0a500); box-shadow: 0 18px 40px -14px rgba(255, 199, 42, 0.9); }
+.fc-seal--party span { font-size: 2.4rem; line-height: 1; }
+@keyframes fc-seal-in { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+@keyframes fc-check { to { stroke-dashoffset: 0; } }
+@keyframes fc-seal-ring {
+  0% { box-shadow: 0 18px 40px -14px rgba(0, 200, 158, 0.85), 0 0 0 0 rgba(0, 200, 158, 0.4); }
+  70%, 100% { box-shadow: 0 18px 40px -14px rgba(0, 200, 158, 0.85), 0 0 0 22px rgba(0, 200, 158, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fc-seal, .fc-seal svg { animation: none; stroke-dashoffset: 0; }
+}
+
+.fc-hero h1 {
+  font-size: clamp(1.85rem, 1.2rem + 2.6vw, 2.9rem);
+  line-height: 1.12; letter-spacing: -0.02em; color: var(--c-ink);
+  max-width: 18ch; margin: 0 auto;
+}
+.fc-hero-sub { max-width: 560px; margin: 20px auto 0; color: var(--c-gray-700); }
+.fc-hero-sub b { color: var(--c-ink); }
+
+/* ===== Carte récapitulative (date, heure, durée…) ===== */
+.fc-recap {
+  max-width: 560px; margin: 34px auto 0; text-align: left;
+  background: #fff; border: 1px solid rgba(0, 200, 158, 0.28); border-radius: var(--radius-lg);
+  padding: 8px 26px; box-shadow: 0 1px 2px rgba(2, 11, 80, 0.04), 0 20px 56px -30px rgba(2, 11, 80, 0.28);
+}
+.fc-recap-row { display: flex; align-items: center; gap: 14px; padding: 15px 0; }
+.fc-recap-row + .fc-recap-row { border-top: 1px solid var(--c-border-soft); }
+.fc-recap-ic {
+  flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--c-success-bg); color: var(--c-success);
+}
+.fc-recap-ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.fc-recap-txt { min-width: 0; }
+.fc-recap-txt span { display: block; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--c-gray-600); }
+.fc-recap-txt b { display: block; margin-top: 2px; font-family: var(--f-display); font-weight: 700; font-size: 1rem; color: var(--c-ink); }
+
+.fc-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 28px; }
+
+/* ===== Chronologie « voici ce qui t'attend » ===== */
+.fc-steps { position: relative; max-width: 680px; margin: 0 auto; padding-left: 36px; }
+.fc-steps::before {
+  content: ""; position: absolute; left: 9px; top: 12px; bottom: 12px; width: 2px; border-radius: 2px;
+  background: linear-gradient(180deg, var(--c-green), rgba(31, 108, 237, 0.4));
+}
+.fc-step { position: relative; padding-bottom: 30px; }
+.fc-step:last-child { padding-bottom: 0; }
+.fc-step::before {
+  content: ""; position: absolute; left: -36px; top: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--c-green); box-shadow: 0 0 0 4px rgba(0, 200, 158, 0.13);
+}
+.fc-step--blue::before { border-color: var(--c-blue); box-shadow: 0 0 0 4px rgba(31, 108, 237, 0.13); }
+.fc-step-tag {
+  display: inline-block; font-family: var(--f-display); font-weight: 700; font-size: 0.72rem;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--c-success);
+  background: var(--c-success-bg); padding: 5px 12px; border-radius: var(--radius-pill);
+}
+.fc-step--blue .fc-step-tag { color: var(--c-blue); background: rgba(31, 108, 237, 0.1); }
+.fc-step h3 { font-size: 1.08rem; margin: 12px 0 0; color: var(--c-ink); }
+.fc-step p { margin: 6px 0 0; font-size: 0.96rem; line-height: 1.6; color: var(--c-gray-700); }
+
+/* ===== Encart « à faire maintenant » ===== */
+.fc-todo {
+  max-width: 680px; margin: 0 auto; display: flex; gap: 20px;
+  background: linear-gradient(150deg, #fffaf0, var(--c-cream));
+  border: 1px solid rgba(255, 199, 42, 0.45); border-left: 5px solid var(--c-yellow);
+  border-radius: var(--radius-lg); padding: 28px 30px;
+}
+.fc-todo-ic {
+  flex: none; width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center;
+  background: rgba(255, 199, 42, 0.28); color: #8a6100;
+}
+.fc-todo-ic svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.fc-todo h2 { font-size: 1.24rem; margin: 0 0 8px; }
+.fc-todo p { margin: 0; font-size: 1rem; line-height: 1.65; color: #6b4f14; }
+.fc-todo p b { color: #4a3609; }
+.fc-todo p + p { margin-top: 10px; }
+
+/* ===== Bloc de clôture navy (partage, réassurance) ===== */
+.fc-closing {
+  position: relative; overflow: hidden; color: #fff; text-align: center;
+  background:
+    radial-gradient(880px 420px at 50% 0%, rgba(31, 108, 237, 0.28), transparent 60%),
+    linear-gradient(180deg, var(--c-navy), #01052e);
+}
+.fc-closing-inner { position: relative; z-index: 1; max-width: 700px; }
+.fc-closing h2 { color: #fff; font-size: clamp(1.55rem, 3vw, 2.2rem); }
+.fc-closing p { color: var(--c-gray-300); font-size: 1.04rem; line-height: 1.7; margin-top: 16px; }
+.fc-closing p b { color: #fff; }
+.fc-closing .btn { margin-top: 28px; }
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+  .fc-recap { padding: 6px 20px; }
+  .fc-todo { flex-direction: column; gap: 16px; padding: 24px 22px; }
+  .fc-actions .btn { width: 100%; }
+}

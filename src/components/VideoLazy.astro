@@ -1,0 +1,131 @@
+---
+/* =========================================================
+   VideoLazy — lecteur YouTube à chargement différé
+   ---------------------------------------------------------
+   Affiche la miniature YouTube ; l'<iframe> n'est créée qu'au clic.
+   Une iframe YouTube posée d'emblée coûte ~1 Mo et plombe le LCP :
+   sur une landing, c'est le premier chiffre que Google regarde.
+
+   `id` vide = vidéo pas encore tournée. En développement on rend un
+   cadre repère (on voit la place que prendra la vidéo), en production
+   on ne rend rien du tout — jamais de lecteur mort en ligne.
+   ========================================================= */
+interface Props {
+  /** ID YouTube (ex. "z_h3zF0Xzjk"). Vide tant que la vidéo n'existe pas. */
+  id?: string;
+  /** Accroche affichée sous le bouton de lecture. */
+  label?: string;
+  /** Titre de l'iframe — lu par les lecteurs d'écran. */
+  title?: string;
+  /** Où coller l'ID : affiché uniquement dans le cadre repère de dev. */
+  hint?: string;
+  class?: string;
+}
+
+const { id = "", label, title = "Vidéo", hint, class: className = "" } = Astro.props;
+const showPlaceholder = !id && import.meta.env.DEV;
+---
+
+{id && (
+  <div class={`vl ${className}`} data-video={id}>
+    <button class="vl-ph" type="button" aria-label={`Lire la vidéo : ${title}`}>
+      {/* hqdefault existe pour TOUTES les vidéos ; maxresdefault non (Shorts,
+          uploads anciens). On tente la haute définition et on retombe sur
+          hqdefault si elle manque — sinon la miniature reste blanche. */}
+      <img class="vl-cover" src={`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`}
+        alt="" width="1280" height="720" loading="lazy" decoding="async" />
+      <span class="vl-shade" aria-hidden="true"></span>
+      <span class="vl-play" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+      </span>
+      {label && <span class="vl-lbl">{label}</span>}
+    </button>
+    <iframe data-frame title={title} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen hidden></iframe>
+  </div>
+)}
+
+{showPlaceholder && (
+  <div class={`vl vl--empty ${className}`}>
+    <span class="vl-play vl-play--muted" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+    </span>
+    <p><b>Vidéo à venir</b>{label && <><br />{label}</>}</p>
+    {hint && <code>{hint}</code>}
+  </div>
+)}
+
+<script>
+  /* Un seul script pour toutes les instances de la page : Astro dédoublonne
+     les <script> de composant, il n'est donc inclus qu'une fois. */
+  document.querySelectorAll<HTMLElement>("[data-video]").forEach((box) => {
+    const btn = box.querySelector<HTMLButtonElement>(".vl-ph");
+    const frame = box.querySelector<HTMLIFrameElement>("[data-frame]");
+    const cover = box.querySelector<HTMLImageElement>(".vl-cover");
+    if (!btn || !frame) return;
+
+    /* Miniature HD absente (Shorts, vieux uploads) : on repasse en hqdefault,
+       qui existe pour TOUTES les vidéos.
+
+       Piège vérifié en conditions réelles : quand `maxresdefault.jpg` n'existe
+       pas, YouTube ne renvoie PAS une 404 — il sert une image grise de 120×90
+       avec un statut 200. L'événement `error` ne se déclenche donc jamais et
+       `object-fit: cover` étire ce timbre-poste en un rectangle gris flou, ce
+       qui ressemble à une miniature cassée. On la reconnaît à sa taille. */
+    if (cover) {
+      const versHqdefault = () => {
+        if (cover.src.includes("hqdefault")) return; // déjà au repli : pas de boucle
+        cover.src = `https://i.ytimg.com/vi/${box.dataset.video}/hqdefault.jpg`;
+      };
+      const verifier = () => {
+        if (!cover.complete || cover.naturalWidth === 0) return; // chargement en cours
+        if (cover.naturalWidth <= 120) versHqdefault(); // le placeholder gris
+      };
+      cover.addEventListener("load", verifier);
+      cover.addEventListener("error", versHqdefault);
+      verifier(); // image déjà en cache : `load` ne se déclenchera pas
+    }
+
+    btn.addEventListener("click", () => {
+      frame.src = `https://www.youtube-nocookie.com/embed/${box.dataset.video}?autoplay=1&rel=0`;
+      frame.hidden = false;
+      btn.style.display = "none";
+    });
+  });
+</script>
+
+<style>
+  .vl {
+    position: relative; aspect-ratio: 16/9; overflow: hidden;
+    border-radius: var(--radius-lg); background: var(--c-navy); box-shadow: var(--shadow-lg);
+  }
+  .vl-ph {
+    position: absolute; inset: 0; width: 100%; border: 0; padding: 20px; cursor: pointer;
+    background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  }
+  .vl-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .vl-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(1,5,46,.2) 30%, rgba(1,5,46,.72)); transition: background var(--dur) var(--ease); }
+  .vl-ph:hover .vl-shade { background: linear-gradient(180deg, rgba(1,5,46,.1) 30%, rgba(1,5,46,.6)); }
+  .vl-play {
+    position: relative; width: 74px; height: 74px; border-radius: 50%; color: #fff;
+    background: var(--c-blue); display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 0 rgba(31,108,237,.55); animation: vl-pulse 2.2s infinite;
+    transition: transform var(--dur) var(--ease);
+  }
+  .vl-play svg { width: 30px; height: 30px; margin-left: 3px; }
+  .vl-ph:hover .vl-play { transform: scale(1.08); }
+  @keyframes vl-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(31,108,237,.5); } 50% { box-shadow: 0 0 0 16px rgba(31,108,237,0); } }
+  .vl-lbl { position: relative; font-family: var(--f-display); font-weight: 600; font-size: .95rem; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.55); }
+  .vl iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+  /* Cadre repère (développement uniquement) */
+  .vl--empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    padding: 20px; text-align: center; color: rgba(255,255,255,.85);
+    background: repeating-linear-gradient(45deg, #0a1470, #0a1470 14px, #0d1a7d 14px, #0d1a7d 28px);
+    border: 2px dashed rgba(255,255,255,.28); box-shadow: none;
+  }
+  .vl-play--muted { background: rgba(255,255,255,.16); animation: none; width: 58px; height: 58px; }
+  .vl--empty p { margin: 0; font-size: .92rem; line-height: 1.5; }
+  .vl--empty code { font-size: .78rem; color: var(--c-yellow); background: rgba(0,0,0,.3); padding: 4px 10px; border-radius: 8px; }
+  @media (prefers-reduced-motion: reduce) { .vl-play { animation: none; } }
+</style>

@@ -18,7 +18,10 @@ export default defineConfig({
       filter: (page) =>
         !page.includes("/admin") &&
         !page.includes("/formations/paiement-retour") &&
-        !page.includes("/merci"),
+        !page.includes("/merci") &&
+        // Page d'après-achat du parcours : en noindex, donc la lister ici
+        // produirait une erreur « exclue par la balise noindex » dans GSC.
+        !page.includes("/parcours-initiation/bienvenue"),
       // Retire le slash final : Vercel (`trailingSlash: false`) sert les URLs
       // sans slash et redirige (308) `/page/` -> `/page`. Sans ceci, le sitemap
       // listerait des URLs qui redirigent (« Page avec redirection » dans GSC),
