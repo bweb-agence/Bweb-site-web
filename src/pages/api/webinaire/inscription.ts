@@ -49,6 +49,13 @@ function cleanPrenom(v: unknown): string {
  * WhatsApp → E.164. Les visiteurs saisissent aussi bien « 07 01 92 60 28 »
  * que « +225 0701926028 ». Sans indicatif explicite on préfixe la Côte
  * d'Ivoire (+225), marché principal ; les autres pays saisissent le leur.
+ *
+ * On NE retire PAS le 0 initial : depuis le passage à 10 chiffres (2021), il
+ * fait partie du numéro ivoirien — 07 01 92 60 28 donne +225 07 01 92 60 28.
+ * Le réflexe de le supprimer vient de la France, où c'est un préfixe
+ * interurbain. Le numéro de Bweb le confirme : contact.whatsapp.primary vaut
+ * « 2250701926028 ». L'enlever produisait un numéro à 9 chiffres, injoignable
+ * sur WhatsApp — et un lead silencieusement perdu.
  */
 function normalizeWhatsapp(v: unknown): string {
   if (typeof v !== "string") return "";
@@ -57,7 +64,7 @@ function normalizeWhatsapp(v: unknown): string {
   const digits = raw.replace(/\D/g, "").replace(/^00/, "");
   if (!digits) return "";
   if (plus) return "+" + digits;
-  return "+225" + digits.replace(/^0+/, "");
+  return "+225" + digits;
 }
 
 function isWhatsappValid(e164: string): boolean {
@@ -71,6 +78,34 @@ function isEmailValid(v: string): boolean {
 /** Un lien dans le prénom = bot. Signal simple et efficace. */
 function containsUrl(v: string): boolean {
   return /https?:\/\/|www\.|\.[a-z]{2,}\//i.test(v);
+}
+
+/* ---------- Lecture des secrets, à l'exécution ----------
+   Volontairement `process.env` et non `import.meta.env` : ce dernier est
+   remplacé par sa valeur à la COMPILATION. Si la variable manque au moment
+   du build, Vite écrit `undefined` et l'élimination de code mort supprime
+   tout l'appel à ACQ Hub qui suit — la route répond alors `not_configured`
+   pour toujours, même une fois la variable renseignée dans Vercel, et il
+   faut redéployer pour s'en rendre compte. Vérifié : le bundle passe de
+   3 642 à 2 634 octets et perd son `fetch`. En prime, `import.meta.env`
+   inscrit la clé en clair dans l'artefact déployé.
+
+   `import.meta.env` reste consulté en second, en accès DYNAMIQUE — Vite ne
+   remplace que les accès littéraux (`import.meta.env.FOO`), donc la clé
+   variable échappe à l'inlining et au code mort. C'est ce qui fait marcher
+   le test en local : le serveur de dev charge les fichiers `.env` dans
+   `import.meta.env` et non dans `process.env`.
+
+   Plusieurs noms acceptés : le premier renseigné gagne. Permet de renommer
+   une variable dans Vercel sans casser la production entre-temps. */
+function secret(...noms: string[]): string {
+  const runtime = globalThis.process?.env ?? {};
+  const build = import.meta.env as Record<string, string | undefined>;
+  for (const nom of noms) {
+    const valeur = runtime[nom] || build[nom];
+    if (valeur) return valeur;
+  }
+  return "";
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
@@ -100,13 +135,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!isWhatsappValid(whatsapp)) return json({ ok: false, error: "whatsapp_invalide" });
   if (!isEmailValid(email)) return json({ ok: false, error: "email_invalide" });
 
-  const ingestKey = import.meta.env.TUNNEL_INGEST_KEY;
-  const ingestUrl = import.meta.env.INGEST_URL;
+  const ingestKey = secret("TUNNEL_KEY_WEBINAIRE_INITIATION", "TUNNEL_INGEST_KEY");
+  const ingestUrl = secret("INGEST_URL");
 
   if (!ingestKey || !ingestUrl) {
     // Configuration incomplète : on le trace côté serveur, et le client bascule
     // sur WhatsApp plutôt que de perdre le prospect (même contrat que contact.ts).
-    console.error("[webinaire] ingestion non configurée (TUNNEL_INGEST_KEY / INGEST_URL absents)");
+    // Le détail dit laquelle manque — sinon on cherche à l'aveugle en prod.
+    console.error(
+      "[webinaire] ingestion non configurée —" +
+        (ingestKey ? "" : " TUNNEL_KEY_WEBINAIRE_INITIATION absente") +
+        (ingestUrl ? "" : " INGEST_URL absente"),
+    );
     return json({ ok: false, error: "not_configured" });
   }
 
