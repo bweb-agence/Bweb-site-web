@@ -122,9 +122,11 @@ export function renderCanaux(el: HTMLElement, canaux: CanalInfo[]): void {
 }
 
 /* ---------- Pagination ----------
-   12 lignes par page : de quoi tenir dans un écran sans faire défiler la page
-   entière, et un repère stable — on sait où l'on en est dans la liste. */
-export const PAR_PAGE = 12;
+   10 lignes par page : la valeur a été réglée à l'écran, pas au jugé. Avec 12,
+   le bas du tableau passait sous la ligne de flottaison sur un portable —
+   il fallait défiler pour voir les dernières lignes. À 10, la liste entière
+   tient à l'écran, et 10 est un repère plus simple à compter. */
+export const PAR_PAGE = 10;
 
 /** Fenêtre de pages affichée autour de la page courante (« 1 … 4 5 6 … 12 »). */
 function fenetre(page: number, pages: number): Array<number | "…"> {
