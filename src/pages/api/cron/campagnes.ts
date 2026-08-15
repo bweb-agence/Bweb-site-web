@@ -47,7 +47,7 @@ async function handle(request: Request): Promise<Response> {
   // raison que les rappels : le plan Hobby n'autorise que 2 crons Vercel, déjà
   // pris (03 h réconciliation, 06 h ce cron). Pour une heure précise — minuit —
   // un cron externe appelle /api/cron/hub-sync, qui fait exactement la même chose.
-  let hub: Awaited<ReturnType<typeof syncContactsToHub>> = { traites: 0, transmis: 0, echecs: 0, reste: 0 };
+  let hub: Awaited<ReturnType<typeof syncContactsToHub>> = { traites: 0, transmis: 0, echecs: 0 };
   try { hub = await syncContactsToHub(admin); } catch { /* non bloquant */ }
 
   const { data: due } = await admin
