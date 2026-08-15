@@ -74,11 +74,22 @@ const accentClass: Record<string, string> = {
     </div>
 
     <Card class="gap-0 overflow-hidden p-0">
-      <div class="acq-head acq-sub">
-        <span>Reçue</span><span>Personne</span><span>Formulaire</span>
-        <span>Canal</span><span>Aperçu</span><span class="ta-c">Statut</span><span></span>
+      <div class="acq-tablewrap">
+        <table class="acq-table acq-tsub">
+          <colgroup>
+            <col style="width:132px" /><col /><col style="width:170px" /><col style="width:120px" />
+            <col style="width:26%" /><col style="width:108px" /><col style="width:34px" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">Reçue</th><th scope="col">Personne</th><th scope="col">Formulaire</th>
+              <th scope="col">Canal</th><th scope="col">Aperçu</th><th scope="col" class="ta-c">Statut</th><th scope="col"><span class="sr-only">Ouvrir</span></th>
+            </tr>
+          </thead>
+          <tbody data-rows><tr><td colspan="7"><div class="acq-load">Chargement…</div></td></tr></tbody>
+        </table>
       </div>
-      <div data-rows><div class="acq-load">Chargement…</div></div>
+      <div class="acq-pager" data-pager></div>
     </Card>
 
     <p class="admin-legend">
@@ -105,7 +116,7 @@ const accentClass: Record<string, string> = {
   import { esc, toast } from "../../scripts/adminUtils";
   import {
     canalOf, downloadCsv, dwhen, firstName, formColor, formLabel,
-    renderCanaux, utmSummary, digitsOnly, type CanalInfo,
+    renderCanaux, renderPager, utmSummary, digitsOnly, PAR_PAGE, type CanalInfo,
   } from "../../scripts/acquisition";
 
   type Submission = {
@@ -121,6 +132,7 @@ const accentClass: Record<string, string> = {
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
   const canauxEl = document.querySelector("[data-canaux]") as HTMLElement;
+  const pagerEl = document.querySelector("[data-pager]") as HTMLElement;
 
   const STATUTS: Record<string, { cls: string; label: string }> = {
     nouveau: { cls: "pub", label: "Nouveau" },
@@ -134,6 +146,7 @@ const accentClass: Record<string, string> = {
 
   let toutes: Submission[] = [];
   let visibles: Submission[] = [];
+  let page = 1;
   const canalCache = new Map<string, CanalInfo>();
   const canal = (s: Submission): CanalInfo => {
     let c = canalCache.get(s.id);
@@ -154,28 +167,39 @@ const accentClass: Record<string, string> = {
   }
 
   function render(list: Submission[]) {
-    // Le spam ne pèse pas dans la lecture des canaux : ce n'est pas de l'acquisition.
+    // Les canaux se lisent sur TOUTE la sélection, pas sur la page affichée :
+    // une répartition qui changerait en tournant les pages ne voudrait rien dire.
+    // Le spam en est exclu — ce n'est pas de l'acquisition.
     renderCanaux(canauxEl, list.filter((s) => s.status !== "spam").map(canal));
 
-    rows.innerHTML = list.length
-      ? list.map((s, idx) => {
+    page = renderPager(pagerEl, list.length, page, (p) => { page = p; render(list); }, "soumission");
+    const tranche = list.slice((page - 1) * PAR_PAGE, page * PAR_PAGE);
+
+    rows.innerHTML = tranche.length
+      ? tranche.map((s, idx) => {
           const c = canal(s);
           const qui = s.full_name || s.email || s.phone || "Anonyme";
           const joignable = s.email || s.phone || "—";
-          return `<button type="button" class="acq-row acq-sub${s.status === "nouveau" ? " is-new" : ""}" data-idx="${idx}">
-            <span class="acq-date">${esc(dwhen(s.submitted_at))}</span>
-            <span class="acq-qui"><b>${esc(qui)}</b><span class="sub">${esc(joignable)}</span></span>
-            <span class="acq-form"><i style="background:${esc(formColor(s.form_key))}"></i><span>${esc(formLabel(s.form_key, s.form_title))}</span></span>
-            <span class="acq-cell">${esc(c.label)}</span>
-            <span class="acq-apercu">${esc(s.message || "—")}</span>
-            <span class="acq-statut">${pill(s.status)}</span>
-            <span class="acq-chev" aria-hidden="true">›</span>
-          </button>`;
+          return `<tr class="${s.status === "nouveau" ? "is-new" : ""}" data-idx="${idx}" tabindex="0" role="button" aria-label="Ouvrir la soumission de ${esc(qui)}">
+            <td class="acq-date">${esc(dwhen(s.submitted_at))}</td>
+            <td class="acq-qui"><b>${esc(qui)}</b><span class="sub">${esc(joignable)}</span></td>
+            <td class="acq-formcell"><span class="acq-form"><i style="background:${esc(formColor(s.form_key))}"></i><span>${esc(formLabel(s.form_key, s.form_title))}</span></span></td>
+            <td class="acq-canalcell acq-cell">${esc(c.label)}</td>
+            <td class="acq-apercu">${esc(s.message || "—")}</td>
+            <td class="acq-statut ta-c">${pill(s.status)}</td>
+            <td class="acq-chev" aria-hidden="true">›</td>
+          </tr>`;
         }).join("")
-      : `<div class="acq-vide">Aucune soumission ne correspond à ces filtres.</div>`;
+      : `<tr><td colspan="7"><div class="acq-vide">${toutes.length ? "Aucune soumission ne correspond à ces filtres." : "Aucune soumission pour l'instant. Elles apparaîtront ici dès qu'un formulaire du site sera envoyé."}</div></td></tr>`;
 
-    rows.querySelectorAll<HTMLElement>(".acq-row").forEach((row) =>
-      row.addEventListener("click", () => ouvrir(list[+row.dataset.idx!])));
+    rows.querySelectorAll<HTMLElement>("tr[data-idx]").forEach((row) => {
+      const go = () => ouvrir(tranche[+row.dataset.idx!]);
+      row.addEventListener("click", go);
+      row.addEventListener("keydown", (e) => {
+        const k = (e as KeyboardEvent).key;
+        if (k === "Enter" || k === " ") { e.preventDefault(); go(); }
+      });
+    });
   }
 
   /* ---------- Tiroir ---------- */
@@ -191,8 +215,16 @@ const accentClass: Record<string, string> = {
     setD("meta", `<span class="acq-form"><i style="background:${esc(formColor(s.form_key))}"></i><span>${esc(formLabel(s.form_key, s.form_title))}</span></span> · ${esc(dwhen(s.submitted_at))}`);
 
     // Le payload est la vérité de ce qui a été envoyé : on l'affiche en entier,
-    // dans l'ordre reçu, sans présumer des champs qu'un futur formulaire aura.
-    const champs = Object.entries(s.payload || {});
+    // sans présumer des champs qu'un futur formulaire aura.
+    //
+    // Postgres ne conserve PAS l'ordre des clés d'un jsonb (il les range par
+    // longueur puis par octet) : « budget » sortirait avant « fullname ». On
+    // impose donc un ordre de lecture — qui est-ce, comment le joindre, puis ce
+    // qu'il demande — et le reste derrière, par ordre alphabétique.
+    const PRIORITE = ["fullname", "nom", "prenom", "name", "full_name", "email", "phone", "whatsapp", "company", "entreprise", "service", "message", "description"];
+    const rang = (k: string) => { const i = PRIORITE.indexOf(k.toLowerCase()); return i === -1 ? PRIORITE.length : i; };
+    const champs = Object.entries(s.payload || {})
+      .sort((a, b) => rang(a[0]) - rang(b[0]) || a[0].localeCompare(b[0], "fr"));
     const payloadHtml = champs.length
       ? `<div class="acq-payload"><dl>${champs.map(([k, v]) =>
           `<dt>${esc(k.replace(/[-_]+/g, " "))}</dt><dd>${esc(Array.isArray(v) ? v.join(", ") : String(v))}</dd>`).join("")}</dl></div>`
@@ -220,7 +252,12 @@ const accentClass: Record<string, string> = {
           <dt>Campagne</dt><dd>${esc(utmSummary(s.utm))}</dd>
           <dt>Contact</dt><dd>${s.contact_id
             ? `<a href="/admin/contacts?c=${encodeURIComponent(s.contact_id)}">Voir la fiche</a>`
-            : "aucun (ni e-mail ni téléphone exploitable)"}</dd>
+            : (s.email || s.phone)
+              // Des coordonnées mais pas de fiche : le rattachement a échoué au
+              // moment de la soumission. Le dire, plutôt que laisser croire
+              // qu'on n'avait pas de quoi identifier la personne.
+              ? "non rattaché — coordonnées présentes, fiche à recréer"
+              : "aucun (ni e-mail ni téléphone)"}</dd>
           ${handled}
         </dl>
       </div>`);
@@ -260,7 +297,8 @@ const accentClass: Record<string, string> = {
     if (error) { toast("Enregistrement impossible.", "err"); return; }
     Object.assign(s, patch);
     toast(statut === "traite" ? "Marquée comme traitée ✓" : statut === "spam" ? "Signalée comme spam ✓" : "Remise à traiter ✓");
-    renderKpis(); appliquer(); ouvrir(s);
+    const pageCourante = page;
+    renderKpis(); appliquer(); page = pageCourante; render(visibles); ouvrir(s);
   }
 
   document.getElementById("close-btn")!.addEventListener("click", fermer);
@@ -292,6 +330,7 @@ const accentClass: Record<string, string> = {
       (!limite || +new Date(s.submitted_at) >= limite) &&
       (!q || `${s.full_name || ""} ${s.email || ""} ${s.phone || ""} ${s.message || ""}`.toLowerCase().includes(q)));
 
+    page = 1;
     const portee = document.querySelector("[data-canaux-portee]");
     if (portee) portee.textContent = jours ? `${visibles.length} soumission${visibles.length > 1 ? "s" : ""} sur la période` : `${visibles.length} soumission${visibles.length > 1 ? "s" : ""}`;
     render(visibles);

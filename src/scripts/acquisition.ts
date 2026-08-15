@@ -121,6 +121,65 @@ export function renderCanaux(el: HTMLElement, canaux: CanalInfo[]): void {
     </div>`).join("");
 }
 
+/* ---------- Pagination ----------
+   12 lignes par page : de quoi tenir dans un écran sans faire défiler la page
+   entière, et un repère stable — on sait où l'on en est dans la liste. */
+export const PAR_PAGE = 12;
+
+/** Fenêtre de pages affichée autour de la page courante (« 1 … 4 5 6 … 12 »). */
+function fenetre(page: number, pages: number): Array<number | "…"> {
+  if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+  const set = new Set<number>([1, pages, page, page - 1, page + 1]);
+  const liste = [...set].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+  const out: Array<number | "…"> = [];
+  liste.forEach((n, i) => {
+    if (i && n - (liste[i - 1] as number) > 1) out.push("…");
+    out.push(n);
+  });
+  return out;
+}
+
+/**
+ * Dessine la pagination et câble ses boutons. Renvoie la page effective —
+ * elle peut différer de celle demandée si la liste a rétréci (filtre appliqué
+ * alors qu'on était en page 5 : on ne reste pas sur une page vide).
+ */
+export function renderPager(
+  el: HTMLElement,
+  total: number,
+  page: number,
+  aller: (p: number) => void,
+  nom = "élément",
+): number {
+  const pages = Math.max(1, Math.ceil(total / PAR_PAGE));
+  const courante = Math.min(Math.max(1, page), pages);
+
+  if (total <= PAR_PAGE) {
+    // Une seule page : afficher un compteur suffit, des boutons inertes non.
+    el.innerHTML = total
+      ? `<span class="compte">${total} ${esc(nom)}${total > 1 ? "s" : ""}</span>`
+      : "";
+    return courante;
+  }
+
+  const debut = (courante - 1) * PAR_PAGE + 1;
+  const fin = Math.min(courante * PAR_PAGE, total);
+  el.innerHTML =
+    `<span class="compte">${debut}–${fin} sur ${total} ${esc(nom)}s</span>` +
+    `<button type="button" data-go="${courante - 1}" ${courante === 1 ? "disabled" : ""} aria-label="Page précédente">‹</button>` +
+    fenetre(courante, pages)
+      .map((p) => p === "…"
+        ? `<span class="ecart">…</span>`
+        : `<button type="button" data-go="${p}" class="${p === courante ? "on" : ""}" ${p === courante ? 'aria-current="page"' : ""}>${p}</button>`)
+      .join("") +
+    `<button type="button" data-go="${courante + 1}" ${courante === pages ? "disabled" : ""} aria-label="Page suivante">›</button>`;
+
+  el.querySelectorAll<HTMLButtonElement>("[data-go]").forEach((b) =>
+    b.addEventListener("click", () => { if (!b.disabled) aller(Number(b.dataset.go)); }));
+
+  return courante;
+}
+
 /* ---------- Export CSV ----------
    BOM en tête : sans lui, Excel lit l'UTF-8 comme du latin-1 et affiche
    « RÃ©servation ». */

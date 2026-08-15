@@ -647,41 +647,53 @@
 
 /* =========================================================
    ACQUISITION — Soumissions & Contacts
-   Mêmes fondations que la liste Clients (grille alignée sur desktop, cartes
-   empilées sur mobile) ; seules les colonnes changent.
+   Vrai tableau (thead/tbody) : les colonnes s'alignent seules, l'en-tête est
+   annoncé par les lecteurs d'écran, et la largeur se pilote par <colgroup>.
+   Sur mobile, chaque ligne redevient une carte empilée (même bascule que la
+   liste Clients) — un tableau à 7 colonnes n'est pas lisible sur 375 px.
    ========================================================= */
-.acq-head, .acq-row { display: grid; align-items: center; gap: 14px; }
-.acq-head { padding: 11px 18px; border-bottom: 1px solid var(--c-border); }
-.acq-head span { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-gray-500); }
-.acq-head .ta-c { text-align: center; }
-.acq-row { padding: 13px 18px; border-bottom: 1px solid var(--c-border-soft); cursor: pointer; transition: background var(--dur-fast) var(--ease); width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; border-top: 0; font: inherit; color: inherit; }
-.acq-row:last-child { border-bottom: 0; }
-.acq-row:hover { background: var(--surface-2); }
-.acq-row:focus-visible { outline: 2px solid var(--c-blue); outline-offset: -2px; }
+.acq-tablewrap { overflow-x: auto; }
+.acq-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.acq-table thead th {
+  padding: 11px 18px; text-align: left; border-bottom: 1px solid var(--c-border);
+  font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-gray-500);
+}
+.acq-table th.ta-c, .acq-table td.ta-c { text-align: center; }
+.acq-table tbody tr { border-bottom: 1px solid var(--c-border-soft); cursor: pointer; transition: background var(--dur-fast) var(--ease); }
+.acq-table tbody tr:last-child { border-bottom: 0; }
+.acq-table tbody tr:hover { background: var(--surface-2); }
+.acq-table tbody tr:focus-visible { outline: 2px solid var(--c-blue); outline-offset: -2px; }
 /* Filet bleu sur ce qui n'a pas encore été traité : la page se lit d'abord par
    ce qui reste à faire. */
-.acq-row.is-new { box-shadow: inset 3px 0 0 var(--c-blue); }
-
-/* Soumissions : Reçue · Personne · Formulaire · Canal · Aperçu · Statut */
-.acq-sub { grid-template-columns: 132px minmax(0, 1.6fr) 160px 118px minmax(0, 1.9fr) 104px 34px; }
-/* Contacts : avatar · Contact · Coordonnées · Origine · Statut · Dernière activité */
-.acq-ct { grid-template-columns: 44px minmax(0, 1.7fr) minmax(0, 1.4fr) 152px 96px 132px 34px; }
+.acq-table tbody tr.is-new td:first-child { box-shadow: inset 3px 0 0 var(--c-blue); }
+.acq-table td { padding: 13px 18px; vertical-align: middle; overflow: hidden; }
 
 .acq-date { font-size: 0.8rem; font-weight: 600; color: var(--c-gray-700); font-variant-numeric: tabular-nums; }
-.acq-qui { min-width: 0; }
 .acq-qui b { display: block; font-weight: 800; font-size: 0.88rem; color: var(--c-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acq-qui .sub { display: block; color: var(--c-gray-500); font-size: 0.76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.acq-cell { color: var(--c-gray-600); font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.acq-apercu { color: var(--c-gray-500); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.acq-statut { text-align: center; }
+.acq-cell { color: var(--c-gray-600); font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acq-apercu { color: var(--c-gray-500); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acq-chev { color: var(--c-gray-400); text-align: center; }
+.acq-avcell { width: 44px; }
 
 /* Pastille de formulaire : un carré de couleur stable + le libellé. */
-.acq-form { display: inline-flex; align-items: center; gap: 7px; font-size: 0.78rem; font-weight: 700; color: var(--c-gray-700); min-width: 0; }
+.acq-form { display: inline-flex; align-items: center; gap: 7px; font-size: 0.78rem; font-weight: 700; color: var(--c-gray-700); max-width: 100%; }
 .acq-form i { width: 8px; height: 8px; border-radius: 3px; flex: none; }
 .acq-form span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .acq-vide, .acq-load { padding: 30px 18px; text-align: center; color: var(--c-gray-500); }
+
+/* Pagination — 12 lignes par page */
+.acq-pager { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--c-border); }
+.acq-pager .compte { font-size: 0.78rem; color: var(--c-gray-500); margin-right: auto; font-variant-numeric: tabular-nums; }
+.acq-pager button {
+  min-width: 32px; height: 32px; padding: 0 9px; border: 1px solid var(--c-border); border-radius: 8px;
+  background: #fff; color: var(--c-gray-700); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+}
+.acq-pager button:hover:not(:disabled) { border-color: var(--c-blue); color: var(--c-blue); }
+.acq-pager button:disabled { opacity: 0.42; cursor: default; }
+.acq-pager button.on { background: var(--c-blue); border-color: var(--c-blue); color: #fff; }
+.acq-pager .ecart { color: var(--c-gray-400); padding: 0 2px; }
 
 /* Répartition par canal */
 .acq-canaux { padding: 12px 18px; display: flex; flex-direction: column; gap: 9px; }
@@ -718,31 +730,30 @@
 
 /* Cartes empilées sur mobile — même bascule que la liste Clients */
 @media (max-width: 900px) {
-  .acq-head { display: none; }
-  .acq-sub {
-    grid-template-columns: 1fr auto;
-    grid-template-areas: "qui statut" "form date" "apercu apercu";
-    row-gap: 4px; column-gap: 12px; padding: 14px 16px;
-  }
-  .acq-sub .acq-qui { grid-area: qui; }
-  .acq-sub .acq-statut { grid-area: statut; justify-self: end; }
-  .acq-sub .acq-form { grid-area: form; }
-  .acq-sub .acq-date { grid-area: date; justify-self: end; }
-  .acq-sub .acq-apercu { grid-area: apercu; white-space: normal; }
-  .acq-sub .acq-cell, .acq-sub .acq-chev { display: none; }
+  .acq-tablewrap { overflow-x: visible; }
+  .acq-table, .acq-table tbody, .acq-table tr, .acq-table td { display: block; }
+  .acq-table thead { display: none; }
+  .acq-table td { padding: 0; overflow: visible; }
+  .acq-table tbody tr { padding: 14px 16px; row-gap: 4px; column-gap: 12px; }
+  .acq-table tbody tr.is-new td:first-child { box-shadow: none; }
+  .acq-table tbody tr.is-new { box-shadow: inset 3px 0 0 var(--c-blue); }
 
-  .acq-ct {
-    grid-template-columns: auto 1fr auto;
-    grid-template-areas: "av qui statut" "av coord coord" "av origine date";
-    row-gap: 3px; column-gap: 12px; padding: 14px 16px;
-  }
-  .acq-ct .acq-av { grid-area: av; align-self: start; }
-  .acq-ct .acq-qui { grid-area: qui; }
-  .acq-ct .acq-coord { grid-area: coord; }
-  .acq-ct .acq-origine { grid-area: origine; }
-  .acq-ct .acq-vu { grid-area: date; justify-self: end; }
-  .acq-ct .acq-statut { grid-area: statut; justify-self: end; }
-  .acq-ct .acq-chev { display: none; }
+  .acq-tsub tbody tr { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "qui statut" "form date" "apercu apercu"; }
+  .acq-tsub .acq-qui { grid-area: qui; }
+  .acq-tsub .acq-statut { grid-area: statut; justify-self: end; }
+  .acq-tsub .acq-formcell { grid-area: form; }
+  .acq-tsub .acq-date { grid-area: date; justify-self: end; }
+  .acq-tsub .acq-apercu { grid-area: apercu; white-space: normal; }
+  .acq-tsub .acq-canalcell, .acq-tsub .acq-chev { display: none; }
+
+  .acq-tct tbody tr { display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "av qui statut" "av coord coord" "av origine date"; }
+  .acq-tct .acq-avcell { grid-area: av; align-self: start; width: auto; }
+  .acq-tct .acq-qui { grid-area: qui; }
+  .acq-tct .acq-coord { grid-area: coord; white-space: normal; }
+  .acq-tct .acq-origine { grid-area: origine; }
+  .acq-tct .acq-vu { grid-area: date; justify-self: end; }
+  .acq-tct .acq-statut { grid-area: statut; justify-self: end; }
+  .acq-tct .acq-chev { display: none; }
 
   .acq-canal { grid-template-columns: 116px 1fr 34px; }
 }

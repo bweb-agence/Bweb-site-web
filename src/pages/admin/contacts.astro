@@ -15,11 +15,22 @@ import Button from "../../components/starwind/button/Button.astro";
    se met dans les étiquettes, qui sont libres.
    ========================================================= */
 
+/* Les quatre indicateurs comptent des PERSONNES : leurs icônes forment donc une
+   même famille — la silhouette est identique partout, seul le signe qui la
+   qualifie change (deux silhouettes pour l'ensemble, « + » pour les nouveaux,
+   « ✓ » pour ceux qui ont payé, rien pour les leads). Un compteur illustré par
+   un symbole abstrait rompait la lecture : on ne voyait plus qu'il s'agissait
+   des mêmes gens, répartis autrement. */
+const SILHOUETTE = '<circle cx="10" cy="8.5" r="3.3"/><path d="M3.6 20a6.4 6.4 0 0 1 12.8 0"/>';
 const kpis = [
-  { key: "total", label: "Contacts", accent: "navy", icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M22 19a6 6 0 0 0-4-5.6"/>' },
-  { key: "nouveaux", label: "Nouveaux (7 j)", accent: "blue", icon: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>' },
-  { key: "clients", label: "Clients", accent: "green", icon: '<path d="M20 6 9 17l-5-5"/>' },
-  { key: "leads", label: "Leads", accent: "violet", icon: '<circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>' },
+  { key: "total", label: "Contacts", accent: "navy",
+    icon: '<circle cx="9" cy="8.5" r="3.3"/><path d="M2.6 20a6.4 6.4 0 0 1 12.8 0"/><path d="M16.2 6.1a3.3 3.3 0 0 1 0 5.6M21.4 20a6.4 6.4 0 0 0-4.2-6"/>' },
+  { key: "nouveaux", label: "Nouveaux (7 j)", accent: "blue",
+    icon: SILHOUETTE + '<path d="M18.5 4.6v5.2M15.9 7.2h5.2"/>' },
+  { key: "clients", label: "Clients", accent: "green",
+    icon: SILHOUETTE + '<path d="M15.8 7.4 17.6 9.2 21 5.6"/>' },
+  { key: "leads", label: "Leads", accent: "violet",
+    icon: '<circle cx="12" cy="8.5" r="3.3"/><path d="M5.6 20a6.4 6.4 0 0 1 12.8 0"/>' },
 ];
 const accentClass: Record<string, string> = {
   green: "bg-success text-success-foreground",
@@ -66,11 +77,22 @@ const accentClass: Record<string, string> = {
     </div>
 
     <Card class="gap-0 overflow-hidden p-0">
-      <div class="acq-head acq-ct">
-        <span></span><span>Contact</span><span>Coordonnées</span>
-        <span>Origine</span><span class="ta-c">Statut</span><span>Dernière activité</span><span></span>
+      <div class="acq-tablewrap">
+        <table class="acq-table acq-tct">
+          <colgroup>
+            <col style="width:62px" /><col /><col style="width:26%" /><col style="width:160px" />
+            <col style="width:100px" /><col style="width:140px" /><col style="width:34px" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col"><span class="sr-only">Initiales</span></th><th scope="col">Contact</th><th scope="col">Coordonnées</th>
+              <th scope="col">Origine</th><th scope="col" class="ta-c">Statut</th><th scope="col">Dernière activité</th><th scope="col"><span class="sr-only">Ouvrir</span></th>
+            </tr>
+          </thead>
+          <tbody data-rows><tr><td colspan="7"><div class="acq-load">Chargement…</div></td></tr></tbody>
+        </table>
       </div>
-      <div data-rows><div class="acq-load">Chargement…</div></div>
+      <div class="acq-pager" data-pager></div>
     </Card>
 
     <p class="admin-legend">
@@ -101,7 +123,7 @@ const accentClass: Record<string, string> = {
   import { esc, toast } from "../../scripts/adminUtils";
   import {
     avatarBg, downloadCsv, dwhen, firstName, formLabel, initials,
-    utmSummary, digitsOnly,
+    renderPager, utmSummary, digitsOnly, PAR_PAGE,
   } from "../../scripts/acquisition";
 
   type Contact = {
@@ -120,6 +142,7 @@ const accentClass: Record<string, string> = {
 
   const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
   const rows = document.querySelector("[data-rows]")!;
+  const pagerEl = document.querySelector("[data-pager]") as HTMLElement;
 
   const ETIQUETTES_SUGGEREES = ["VIP", "Entreprise", "Fidèle", "Chaud", "À rappeler"];
 
@@ -143,6 +166,7 @@ const accentClass: Record<string, string> = {
 
   let contacts: Contact[] = [];
   let visibles: Contact[] = [];
+  let page = 1;
 
   const nomDe = (c: Contact) => c.full_name || c.email || c.phone || "Sans nom";
   const origineDe = (c: Contact) =>
@@ -160,27 +184,36 @@ const accentClass: Record<string, string> = {
   }
 
   function render(list: Contact[]) {
-    rows.innerHTML = list.length
-      ? list.map((c, idx) => {
+    page = renderPager(pagerEl, list.length, page, (p) => { page = p; render(list); }, "contact");
+    const tranche = list.slice((page - 1) * PAR_PAGE, page * PAR_PAGE);
+
+    rows.innerHTML = tranche.length
+      ? tranche.map((c, idx) => {
           const etiquettes = c.tags.slice(0, 2).map((t) => `<span class="crm-tag sm">${esc(t)}</span>`).join("")
             + (c.tags.length > 2 ? `<span class="crm-tag sm more" title="${esc(c.tags.slice(2).join(", "))}">+${c.tags.length - 2}</span>` : "");
-          return `<button type="button" class="acq-row acq-ct" data-idx="${idx}">
-            <span class="avatar acq-av" style="background:${avatarBg(c.id)}">${esc(initials(nomDe(c)))}</span>
-            <span class="acq-qui">
+          return `<tr data-idx="${idx}" tabindex="0" role="button" aria-label="Ouvrir la fiche de ${esc(nomDe(c))}">
+            <td class="acq-avcell"><span class="avatar" style="background:${avatarBg(c.id)}">${esc(initials(nomDe(c)))}</span></td>
+            <td class="acq-qui">
               <b>${esc(nomDe(c))}${c.company ? `<span class="sub" style="display:inline;margin-left:6px">${esc(c.company)}</span>` : ""}</b>
-              ${etiquettes ? `<span class="crm-tags-inline">${etiquettes}</span>` : `<span class="sub">${esc(c.email ? "" : "sans e-mail")}</span>`}
-            </span>
-            <span class="acq-coord acq-cell">${esc(c.email || "—")}<br>${esc(c.phone || "—")}</span>
-            <span class="acq-origine acq-cell">${esc(origineDe(c))}</span>
-            <span class="acq-statut">${badge(c.status)}</span>
-            <span class="acq-vu acq-cell">${esc(dwhen(c.last_activity_at))}</span>
-            <span class="acq-chev" aria-hidden="true">›</span>
-          </button>`;
+              ${etiquettes ? `<span class="crm-tags-inline">${etiquettes}</span>` : (c.email ? "" : `<span class="sub">sans e-mail</span>`)}
+            </td>
+            <td class="acq-coord acq-cell">${esc(c.email || "—")}<br>${esc(c.phone || "—")}</td>
+            <td class="acq-origine acq-cell">${esc(origineDe(c))}</td>
+            <td class="acq-statut ta-c">${badge(c.status)}</td>
+            <td class="acq-vu acq-cell">${esc(dwhen(c.last_activity_at))}</td>
+            <td class="acq-chev" aria-hidden="true">›</td>
+          </tr>`;
         }).join("")
-      : `<div class="acq-vide">Aucun contact ne correspond à ces filtres.</div>`;
+      : `<tr><td colspan="7"><div class="acq-vide">${contacts.length ? "Aucun contact ne correspond à ces filtres." : "Aucun contact pour l'instant."}</div></td></tr>`;
 
-    rows.querySelectorAll<HTMLElement>(".acq-row").forEach((row) =>
-      row.addEventListener("click", () => ouvrir(list[+row.dataset.idx!])));
+    rows.querySelectorAll<HTMLElement>("tr[data-idx]").forEach((row) => {
+      const go = () => ouvrir(tranche[+row.dataset.idx!]);
+      row.addEventListener("click", go);
+      row.addEventListener("keydown", (e) => {
+        const k = (e as KeyboardEvent).key;
+        if (k === "Enter" || k === " ") { e.preventDefault(); go(); }
+      });
+    });
   }
 
   /* ---------- Fiche (tiroir) ---------- */
@@ -273,7 +306,7 @@ const accentClass: Record<string, string> = {
       b.addEventListener("click", async () => {
         const t = b.dataset.tag!;
         const tags = c.tags.includes(t) ? c.tags.filter((x) => x !== t) : [...c.tags, t];
-        if (await enregistrer(c, { tags })) { appliquer(); ouvrir(c, true); }
+        if (await enregistrer(c, { tags })) { rafraichir(); ouvrir(c, true); }
         else toast("Enregistrement impossible.", "err");
       }));
 
@@ -283,7 +316,7 @@ const accentClass: Record<string, string> = {
       e.preventDefault();
       const v = nouvelle.value.trim();
       if (!v || c.tags.includes(v)) { nouvelle.value = ""; return; }
-      if (await enregistrer(c, { tags: [...c.tags, v] })) { appliquer(); ouvrir(c, true); }
+      if (await enregistrer(c, { tags: [...c.tags, v] })) { rafraichir(); ouvrir(c, true); }
       else toast("Enregistrement impossible.", "err");
     });
 
@@ -362,11 +395,20 @@ const accentClass: Record<string, string> = {
     if (tags.includes(courant)) $("c-tag").value = courant;
   }
 
+  /** Recalcule la liste sans quitter la page où l'on se trouve. */
+  function rafraichir() {
+    const courante = page;
+    appliquer();
+    page = courante;
+    render(visibles);
+  }
+
   function appliquer() {
     const q = ($("c-search").value || "").toLowerCase().trim();
     const origine = $("c-origine").value, statut = $("c-statut").value;
     const tag = $("c-tag").value, com = $("c-com").value;
 
+    page = 1;
     visibles = contacts.filter((c) =>
       (!origine || (c.first_source || "") === origine) &&
       (!statut || (statut === "client" ? c.status === "client" : c.status !== "client")) &&
