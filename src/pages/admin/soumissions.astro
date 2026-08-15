@@ -22,12 +22,6 @@ const kpis = [
   { key: "semaine", label: "7 derniers jours", accent: "violet", icon: '<path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/>' },
   { key: "atraiter", label: "Non traitées", accent: "amber", icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
 ];
-const accentClass: Record<string, string> = {
-  blue: "bg-blue/10 text-blue",
-  navy: "bg-navy/10 text-navy",
-  violet: "bg-[color-mix(in_srgb,#6b4df0_12%,#fff)] text-[#6b4df0]",
-  amber: "bg-warning text-warning-foreground",
-};
 ---
 
 <AdminLayout title="Soumissions" active="soumissions">
@@ -36,7 +30,7 @@ const accentClass: Record<string, string> = {
       {kpis.map((k) => (
         <Card class="p-3.5 sm:p-5">
           <div class="flex items-center gap-2.5 sm:gap-3.5">
-            <span class={`grid size-9 shrink-0 place-items-center rounded-xl sm:size-11 ${accentClass[k.accent]}`}>
+            <span class={`kpi-ico ${k.accent} size-9 sm:size-11`}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-[18px] sm:size-5" set:html={k.icon} />
             </span>
             <div class="min-w-0">
@@ -73,7 +67,7 @@ const accentClass: Record<string, string> = {
       <Button id="s-export" variant="outline" size="sm" class="crm-export">⬇ Exporter CSV</Button>
     </div>
 
-    <Card class="gap-0 overflow-hidden p-0">
+    <Card class="gap-0 p-0">
       <div class="acq-tablewrap">
         <table class="acq-table acq-tsub">
           <colgroup>

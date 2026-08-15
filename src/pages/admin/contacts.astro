@@ -32,12 +32,6 @@ const kpis = [
   { key: "leads", label: "Leads", accent: "violet",
     icon: '<circle cx="12" cy="8.5" r="3.3"/><path d="M5.6 20a6.4 6.4 0 0 1 12.8 0"/>' },
 ];
-const accentClass: Record<string, string> = {
-  green: "bg-success text-success-foreground",
-  blue: "bg-blue/10 text-blue",
-  navy: "bg-navy/10 text-navy",
-  violet: "bg-[color-mix(in_srgb,#6b4df0_12%,#fff)] text-[#6b4df0]",
-};
 ---
 
 <AdminLayout title="Contacts" active="contacts">
@@ -46,7 +40,7 @@ const accentClass: Record<string, string> = {
       {kpis.map((k) => (
         <Card class="p-3.5 sm:p-5">
           <div class="flex items-center gap-2.5 sm:gap-3.5">
-            <span class={`grid size-9 shrink-0 place-items-center rounded-xl sm:size-11 ${accentClass[k.accent]}`}>
+            <span class={`kpi-ico ${k.accent} size-9 sm:size-11`}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-[18px] sm:size-5" set:html={k.icon} />
             </span>
             <div class="min-w-0">
@@ -76,7 +70,7 @@ const accentClass: Record<string, string> = {
       <Button id="c-export" variant="outline" size="sm" class="crm-export">⬇ Exporter CSV</Button>
     </div>
 
-    <Card class="gap-0 overflow-hidden p-0">
+    <Card class="gap-0 p-0">
       <div class="acq-tablewrap">
         <table class="acq-table acq-tct">
           <colgroup>

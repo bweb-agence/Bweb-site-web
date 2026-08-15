@@ -683,8 +683,20 @@
 
 .acq-vide, .acq-load { padding: 30px 18px; text-align: center; color: var(--c-gray-500); }
 
-/* Pagination — 12 lignes par page */
-.acq-pager { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--c-border); }
+/* Pagination — 12 lignes par page.
+   Collée au bas de la fenêtre tant que la liste est à l'écran : avec 12 lignes,
+   le pied du tableau tombe sous la ligne de flottaison, et il fallait faire
+   défiler toute la page pour changer de page. */
+.acq-pager {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 12px 18px; border-top: 1px solid var(--c-border);
+  position: sticky; bottom: 0; z-index: 2;
+  background: var(--surface);
+  /* Décolle visuellement la barre du contenu qui passe dessous. */
+  box-shadow: 0 -6px 16px -12px rgba(2, 11, 80, 0.45);
+}
+/* Liste vide : pas de barre fantôme. */
+.acq-pager:empty { display: none; }
 .acq-pager .compte { font-size: 0.78rem; color: var(--c-gray-500); margin-right: auto; font-variant-numeric: tabular-nums; }
 .acq-pager button {
   min-width: 32px; height: 32px; padding: 0 9px; border: 1px solid var(--c-border); border-radius: 8px;
@@ -767,3 +779,15 @@
 .acq-optin input { width: 16px; height: 16px; accent-color: var(--c-blue); cursor: pointer; }
 .acq-optin input:disabled { cursor: not-allowed; opacity: 0.5; }
 .acq-optin:has(input:disabled) { color: var(--c-gray-400); cursor: not-allowed; }
+
+/* Tuile d'icône des cartes KPI (acquisition).
+   Les utilitaires `bg-navy/10` / `bg-blue/10` employés ailleurs dans l'admin ne
+   rendent rien : `navy` et `blue` ne sont pas des couleurs déclarées du thème
+   Tailwind, donc ni le fond ni la teinte du trait ne s'appliquent. On passe par
+   les tokens `--acc-*`, qui existent, et toutes les tuiles se ressemblent. */
+.kpi-ico { display: grid; place-items: center; border-radius: 12px; flex: none; }
+.kpi-ico.navy   { background: color-mix(in srgb, var(--acc-navy) 10%, #fff);   color: var(--acc-navy); }
+.kpi-ico.blue   { background: color-mix(in srgb, var(--acc-blue) 12%, #fff);   color: var(--acc-blue); }
+.kpi-ico.green  { background: color-mix(in srgb, var(--acc-green) 14%, #fff);  color: var(--acc-green); }
+.kpi-ico.violet { background: color-mix(in srgb, var(--acc-violet) 12%, #fff); color: var(--acc-violet); }
+.kpi-ico.amber  { background: color-mix(in srgb, var(--acc-amber) 15%, #fff);  color: var(--acc-amber); }
