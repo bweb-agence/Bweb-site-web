@@ -12,13 +12,6 @@ const kpis = [
   { key: "taux", label: "Taux conversion", accent: "violet", icon: '<path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/>' },
   { key: "relance", label: "À relancer", accent: "amber", icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>' },
 ];
-const accentClass: Record<string, string> = {
-  green: "bg-success text-success-foreground",
-  blue: "bg-blue/10 text-blue",
-  navy: "bg-navy/10 text-navy",
-  violet: "bg-[color-mix(in_srgb,#6b4df0_12%,#fff)] text-[#6b4df0]",
-  amber: "bg-warning text-warning-foreground",
-};
 ---
 
 <AdminLayout title="Clients" active="clients">
@@ -28,7 +21,7 @@ const accentClass: Record<string, string> = {
       {kpis.map((k) => (
         <Card class="p-3.5 sm:p-5">
           <div class="flex items-center gap-2.5 sm:gap-3.5">
-            <span class={`grid size-9 shrink-0 place-items-center rounded-xl sm:size-11 ${accentClass[k.accent]}`}>
+            <span class={`kpi-ico ${k.accent} size-9 sm:size-11`}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-[18px] sm:size-5" set:html={k.icon} />
             </span>
             <div class="min-w-0">

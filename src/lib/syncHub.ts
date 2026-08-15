@@ -58,11 +58,14 @@ interface ContactRow {
 export async function syncContactsToHub(admin: SupabaseClient): Promise<HubSyncReport> {
   const report: HubSyncReport = { traites: 0, transmis: 0, echecs: 0 };
 
-  /* La clé du tunnel « site » est distincte de celle du tunnel webinaire : côté
-     ACQ Hub, chaque tunnel a la sienne (le Hub n'en stocke que le hash). On
-     accepte les anciens noms en repli pour ne pas dépendre d'un renommage. */
+  /* AUCUN repli sur la clé d'un autre tunnel. Côté ACQ Hub, `ingest` retrouve le
+     tunnel PAR le hash de la clé, puis exige que le champ `tunnel` du corps
+     corresponde à son slug — sinon `tunnel_mismatch`, rejet 400 et mise en file
+     d'erreurs. Emprunter la clé du tunnel webinaire enverrait donc chaque
+     contact, chaque jour, directement à la DLQ. Mieux vaut ne rien synchroniser
+     que polluer le Hub en silence. */
   const ingestUrl = secret("INGEST_URL");
-  const ingestKey = secret("TUNNEL_KEY_SITE", "TUNNEL_KEY_WEBINAIRE_INITIATION", "TUNNEL_INGEST_KEY");
+  const ingestKey = secret("TUNNEL_KEY_SITE");
   const tunnel = secret("HUB_TUNNEL_SITE") || "site-bwebagence";
 
   if (!ingestUrl || !ingestKey) {
@@ -106,7 +109,14 @@ export async function syncContactsToHub(admin: SupabaseClient): Promise<HubSyncR
           idempotency_key: `site:contact:${contact.id}`,
           tunnel,
           step: "synchronisation",
-          type: "contact_synced",
+          /* `type` est un ENUM fermé côté Hub : lead_captured, page_viewed,
+             video_watched, whatsapp_joined, purchase, status_change, note,
+             custom. Une valeur hors liste est rejetée (400) et part en file
+             d'erreurs. « custom » est le seul honnête ici : ce n'est pas une
+             capture de lead — l'annoncer comme telle déclencherait les
+             automatisations d'entrée du Hub sur des contacts déjà connus. La
+             nature réelle de l'événement voyage dans le payload. */
+          type: "custom",
           occurred_at: new Date().toISOString(),
           contact: {
             phone: contact.phone || undefined,
@@ -115,6 +125,7 @@ export async function syncContactsToHub(admin: SupabaseClient): Promise<HubSyncR
             last_name: (contact.full_name || "").trim().split(/\s+/).slice(1).join(" ") || undefined,
           },
           payload: {
+            evenement: "contact_synced",
             source: "site-bwebagence",
             origine: contact.first_source,
             utm: contact.first_utm || {},
