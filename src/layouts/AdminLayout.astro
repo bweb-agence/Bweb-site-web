@@ -9,7 +9,7 @@ import "../styles/admin.css";
 
 interface Props {
   title: string;
-  active?: "dashboard" | "articles" | "formations" | "sessions" | "reservations" | "clients" | "packs" | "packs-vendus" | "campagnes" | "emails" | "avis" | "themes" | "equipe";
+  active?: "dashboard" | "soumissions" | "contacts" | "articles" | "formations" | "sessions" | "reservations" | "clients" | "packs" | "packs-vendus" | "campagnes" | "emails" | "avis" | "themes" | "equipe";
 }
 const { title, active } = Astro.props;
 
@@ -18,6 +18,10 @@ const { title, active } = Astro.props;
 const navGroups = [
   { label: null, items: [
     { key: "dashboard", href: "/admin", label: "Tableau de bord", icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>' },
+  ] },
+  { label: "Acquisition", items: [
+    { key: "soumissions", href: "/admin/soumissions", label: "Soumissions", badge: "soumissions", icon: '<path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>' },
+    { key: "contacts", href: "/admin/contacts", label: "Contacts", icon: '<path d="M4 4h16v16H4z"/><circle cx="12" cy="10" r="2.6"/><path d="M7.5 17a4.5 4.5 0 0 1 9 0"/>' },
   ] },
   { label: "Ventes", items: [
     { key: "reservations", href: "/admin/reservations", label: "Réservations", badge: "reservations", icon: '<path d="M4 6h16v12H4z"/><path d="M4 10h16"/>' },
@@ -140,8 +144,9 @@ const navGroups = [
           document.body.dataset.role = role;
 
           if (role === "commercial") {
-            // Le commercial ne voit que : tableau de bord, réservations, clients, packs vendus.
-            const allowed = new Set(["dashboard", "reservations", "clients", "packs-vendus"]);
+            // Le commercial ne voit que : tableau de bord, acquisition (soumissions +
+            // contacts), réservations, clients, packs vendus.
+            const allowed = new Set(["dashboard", "soumissions", "contacts", "reservations", "clients", "packs-vendus"]);
             document.querySelectorAll("[data-nav]").forEach((a) => {
               if (!allowed.has((a as HTMLElement).dataset.nav || "")) (a as HTMLElement).style.display = "none";
             });
@@ -170,6 +175,19 @@ const navGroups = [
           // Badges de NOUVEAUTÉS du menu : nombre de réservations / clients arrivés
           // depuis la dernière visite de la page. Le compteur se remet à 0 quand on
           // ouvre la page concernée (horodatage « vu » mémorisé en local, par admin).
+          //
+          // Soumissions : ce badge-là ne compte PAS les nouveautés depuis la dernière
+          // visite mais ce qui reste À TRAITER — une demande non traitée doit rester
+          // visible tant que personne ne s'en est occupé, même après l'avoir vue.
+          (async () => {
+            try {
+              const { count } = await supabaseBrowser
+                .from("form_submissions").select("id", { count: "exact", head: true }).eq("status", "nouveau");
+              const el = document.querySelector('[data-navbadge="soumissions"]');
+              if (el && count) { el.textContent = count > 99 ? "99+" : String(count); el.removeAttribute("hidden"); }
+            } catch { /* silencieux : le menu marche sans badge */ }
+          })();
+
           (async () => {
             try {
               const SEEN = { reservations: "bweb_seen_reservations", clients: "bweb_seen_clients" };

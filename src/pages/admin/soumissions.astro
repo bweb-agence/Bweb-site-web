@@ -1,0 +1,347 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
+
+/* =========================================================
+   ADMIN — Soumissions
+   -----------------------------------------------------------
+   Tout ce qui est envoyé depuis un formulaire du site : contact, devis,
+   inscription à un webinaire, lead magnet. Une ligne = une soumission, telle
+   qu'elle a été reçue (table `form_submissions`, append-only).
+
+   Ce que la page répond, dans l'ordre : combien, par quel canal, depuis quel
+   formulaire, quand, et par qui. Le détail complet — chaque champ envoyé —
+   s'ouvre dans le tiroir.
+   ========================================================= */
+
+const kpis = [
+  { key: "total", label: "Soumissions (30 j)", accent: "navy", icon: '<path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>' },
+  { key: "jour", label: "Aujourd'hui", accent: "blue", icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>' },
+  { key: "semaine", label: "7 derniers jours", accent: "violet", icon: '<path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/>' },
+  { key: "atraiter", label: "Non traitées", accent: "amber", icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
+];
+const accentClass: Record<string, string> = {
+  blue: "bg-blue/10 text-blue",
+  navy: "bg-navy/10 text-navy",
+  violet: "bg-[color-mix(in_srgb,#6b4df0_12%,#fff)] text-[#6b4df0]",
+  amber: "bg-warning text-warning-foreground",
+};
+---
+
+<AdminLayout title="Soumissions" active="soumissions">
+  <div class="sw space-y-6">
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {kpis.map((k) => (
+        <Card class="p-3.5 sm:p-5">
+          <div class="flex items-center gap-2.5 sm:gap-3.5">
+            <span class={`grid size-9 shrink-0 place-items-center rounded-xl sm:size-11 ${accentClass[k.accent]}`}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="size-[18px] sm:size-5" set:html={k.icon} />
+            </span>
+            <div class="min-w-0">
+              <div class="text-[0.68rem] leading-tight font-bold tracking-wide text-muted-foreground uppercase sm:text-xs">{k.label}</div>
+              <div class="mt-1 font-display text-lg leading-tight font-extrabold text-foreground tabular-nums sm:text-xl md:text-2xl" data-kpi={k.key}>—</div>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+
+    <!-- D'où viennent-ils : lisible sans ouvrir une seule ligne. Suit les filtres. -->
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="acq-cardhead">Canaux d'arrivée <em data-canaux-portee>sur la sélection</em></div>
+      <div class="acq-canaux" data-canaux><div class="acq-load">Chargement…</div></div>
+    </Card>
+
+    <div class="admin-toolbar crm-toolbar">
+      <input class="admin-search" id="s-search" type="search" placeholder="Nom, e-mail, téléphone, message…" />
+      <select class="admin-filter" id="s-form"><option value="">Tous les formulaires</option></select>
+      <select class="admin-filter" id="s-canal"><option value="">Tous les canaux</option></select>
+      <select class="admin-filter" id="s-periode">
+        <option value="30">30 derniers jours</option>
+        <option value="1">Aujourd'hui</option>
+        <option value="7">7 derniers jours</option>
+        <option value="">Tout l'historique</option>
+      </select>
+      <select class="admin-filter" id="s-statut">
+        <option value="">Tous les statuts</option>
+        <option value="nouveau">Nouveau</option>
+        <option value="traite">Traité</option>
+        <option value="spam">Spam</option>
+      </select>
+      <Button id="s-export" variant="outline" size="sm" class="crm-export">⬇ Exporter CSV</Button>
+    </div>
+
+    <Card class="gap-0 overflow-hidden p-0">
+      <div class="acq-head acq-sub">
+        <span>Reçue</span><span>Personne</span><span>Formulaire</span>
+        <span>Canal</span><span>Aperçu</span><span class="ta-c">Statut</span><span></span>
+      </div>
+      <div data-rows><div class="acq-load">Chargement…</div></div>
+    </Card>
+
+    <p class="admin-legend">
+      <b>Formulaire</b> = le tunnel d'où vient la soumission · <b>Canal</b> = ce qui a amené la personne sur la page.
+    </p>
+  </div>
+
+  <div class="a-drawer-overlay" id="overlay"></div>
+  <aside class="a-drawer" id="drawer" aria-hidden="true" aria-label="Détail de la soumission">
+    <div class="a-drawer-head">
+      <div>
+        <h2 data-d="titre">—</h2>
+        <div class="meta" data-d="meta">—</div>
+      </div>
+      <button class="icon-btn" id="close-btn" aria-label="Fermer">✕</button>
+    </div>
+    <div class="a-drawer-body" data-d="body"></div>
+    <div class="a-drawer-foot" data-d="foot"></div>
+  </aside>
+</AdminLayout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+  import { esc, toast } from "../../scripts/adminUtils";
+  import {
+    canalOf, downloadCsv, dwhen, firstName, formColor, formLabel,
+    renderCanaux, utmSummary, digitsOnly, type CanalInfo,
+  } from "../../scripts/acquisition";
+
+  type Submission = {
+    id: string; contact_id: string | null;
+    form_key: string; form_title: string | null; page_path: string | null;
+    full_name: string | null; email: string | null; phone: string | null;
+    message: string | null;
+    payload: Record<string, unknown>; attachments: unknown[]; utm: Record<string, string> | null;
+    referrer: string | null; status: string; handled_by: string | null; handled_at: string | null;
+    submitted_at: string;
+  };
+
+  const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+  const rows = document.querySelector("[data-rows]")!;
+  const canauxEl = document.querySelector("[data-canaux]") as HTMLElement;
+
+  const STATUTS: Record<string, { cls: string; label: string }> = {
+    nouveau: { cls: "pub", label: "Nouveau" },
+    traite: { cls: "ok", label: "Traité" },
+    spam: { cls: "archived", label: "Spam" },
+  };
+  const pill = (s: string) => {
+    const m = STATUTS[s] || STATUTS.nouveau;
+    return `<span class="tag-pill ${m.cls} dot">${m.label}</span>`;
+  };
+
+  let toutes: Submission[] = [];
+  let visibles: Submission[] = [];
+  const canalCache = new Map<string, CanalInfo>();
+  const canal = (s: Submission): CanalInfo => {
+    let c = canalCache.get(s.id);
+    if (!c) { c = canalOf(s.utm, s.referrer); canalCache.set(s.id, c); }
+    return c;
+  };
+
+  /* ---------- Rendu ---------- */
+
+  function renderKpis() {
+    const now = Date.now();
+    const depuis = (j: number) => toutes.filter((s) => now - +new Date(s.submitted_at) < j * 86_400_000 && s.status !== "spam").length;
+    const set = (k: string, v: string) => { const el = document.querySelector(`[data-kpi="${k}"]`); if (el) el.textContent = v; };
+    set("total", String(depuis(30)));
+    set("jour", String(toutes.filter((s) => new Date(s.submitted_at).toDateString() === new Date().toDateString() && s.status !== "spam").length));
+    set("semaine", String(depuis(7)));
+    set("atraiter", String(toutes.filter((s) => s.status === "nouveau").length));
+  }
+
+  function render(list: Submission[]) {
+    // Le spam ne pèse pas dans la lecture des canaux : ce n'est pas de l'acquisition.
+    renderCanaux(canauxEl, list.filter((s) => s.status !== "spam").map(canal));
+
+    rows.innerHTML = list.length
+      ? list.map((s, idx) => {
+          const c = canal(s);
+          const qui = s.full_name || s.email || s.phone || "Anonyme";
+          const joignable = s.email || s.phone || "—";
+          return `<button type="button" class="acq-row acq-sub${s.status === "nouveau" ? " is-new" : ""}" data-idx="${idx}">
+            <span class="acq-date">${esc(dwhen(s.submitted_at))}</span>
+            <span class="acq-qui"><b>${esc(qui)}</b><span class="sub">${esc(joignable)}</span></span>
+            <span class="acq-form"><i style="background:${esc(formColor(s.form_key))}"></i><span>${esc(formLabel(s.form_key, s.form_title))}</span></span>
+            <span class="acq-cell">${esc(c.label)}</span>
+            <span class="acq-apercu">${esc(s.message || "—")}</span>
+            <span class="acq-statut">${pill(s.status)}</span>
+            <span class="acq-chev" aria-hidden="true">›</span>
+          </button>`;
+        }).join("")
+      : `<div class="acq-vide">Aucune soumission ne correspond à ces filtres.</div>`;
+
+    rows.querySelectorAll<HTMLElement>(".acq-row").forEach((row) =>
+      row.addEventListener("click", () => ouvrir(list[+row.dataset.idx!])));
+  }
+
+  /* ---------- Tiroir ---------- */
+
+  const drawer = document.getElementById("drawer")!, overlay = document.getElementById("overlay")!;
+  const setD = (k: string, html: string) => { document.querySelector(`[data-d="${k}"]`)!.innerHTML = html; };
+  const fermer = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); document.body.style.overflow = ""; };
+
+  function ouvrir(s: Submission) {
+    const c = canal(s);
+    const qui = s.full_name || s.email || s.phone || "Anonyme";
+    setD("titre", esc(qui));
+    setD("meta", `<span class="acq-form"><i style="background:${esc(formColor(s.form_key))}"></i><span>${esc(formLabel(s.form_key, s.form_title))}</span></span> · ${esc(dwhen(s.submitted_at))}`);
+
+    // Le payload est la vérité de ce qui a été envoyé : on l'affiche en entier,
+    // dans l'ordre reçu, sans présumer des champs qu'un futur formulaire aura.
+    const champs = Object.entries(s.payload || {});
+    const payloadHtml = champs.length
+      ? `<div class="acq-payload"><dl>${champs.map(([k, v]) =>
+          `<dt>${esc(k.replace(/[-_]+/g, " "))}</dt><dd>${esc(Array.isArray(v) ? v.join(", ") : String(v))}</dd>`).join("")}</dl></div>`
+      : `<p class="acq-vide">Aucun champ enregistré.</p>`;
+
+    const fichiers = Array.isArray(s.attachments) ? (s.attachments as Array<{ name?: string; path?: string }>) : [];
+    const fichiersHtml = fichiers.length
+      ? `<div class="cd-sect"><h4>Pièces jointes</h4><div class="acq-payload" style="padding:12px 15px">
+           ${fichiers.map((f) => esc(f.name || f.path || "fichier")).join("<br>")}
+           <div class="hint" style="margin-top:6px">Les liens de téléchargement sont dans l'e-mail de notification (valables 30 jours).</div>
+         </div></div>`
+      : "";
+
+    const handled = s.handled_at
+      ? `<dt>Traitée par</dt><dd>${esc(s.handled_by || "—")} · ${esc(dwhen(s.handled_at))}</dd>` : "";
+
+    setD("body", `
+      <div class="cd-sect" style="margin-top:0"><h4>Statut</h4>${pill(s.status)}</div>
+      <div class="cd-sect"><h4>Ce qui a été soumis</h4>${payloadHtml}</div>
+      ${fichiersHtml}
+      <div class="cd-sect"><h4>Provenance</h4>
+        <dl class="acq-kv">
+          <dt>Canal</dt><dd>${esc(c.label)}</dd>
+          <dt>Page</dt><dd>${esc(s.page_path || "—")}</dd>
+          <dt>Campagne</dt><dd>${esc(utmSummary(s.utm))}</dd>
+          <dt>Contact</dt><dd>${s.contact_id
+            ? `<a href="/admin/contacts?c=${encodeURIComponent(s.contact_id)}">Voir la fiche</a>`
+            : "aucun (ni e-mail ni téléphone exploitable)"}</dd>
+          ${handled}
+        </dl>
+      </div>`);
+
+    // Répondre : le canal le plus direct d'abord — WhatsApp si on a un numéro.
+    const tel = digitsOnly(s.phone);
+    const bonjour = `Bonjour ${firstName(s.full_name) || ""} 👋 C'est l'équipe Bweb Agence, suite à votre message.`;
+    const repondre = tel
+      ? `<a class="abtn wa sm" target="_blank" rel="noopener" href="https://wa.me/${tel}?text=${encodeURIComponent(bonjour)}">WhatsApp</a>`
+      : s.email
+        ? `<a class="abtn sm" target="_blank" rel="noopener" href="mailto:${encodeURIComponent(s.email)}?subject=${encodeURIComponent("Votre demande — Bweb Agence")}">Répondre par e-mail</a>`
+        : "";
+
+    setD("foot", `
+      ${s.status === "traite"
+        ? `<button type="button" class="abtn" data-act="nouveau">↩ Remettre à traiter</button>`
+        : `<button type="button" class="abtn primary" data-act="traite">✓ Marquer traité</button>`}
+      ${repondre}
+      <span class="grow"></span>
+      ${s.status === "spam"
+        ? `<button type="button" class="abtn" data-act="nouveau">Ce n'est pas du spam</button>`
+        : `<button type="button" class="abtn" data-act="spam">Signaler comme spam</button>`}`);
+
+    document.querySelectorAll<HTMLElement>('[data-d="foot"] [data-act]').forEach((b) =>
+      b.addEventListener("click", () => marquer(s, b.dataset.act!)));
+
+    drawer.classList.add("open"); overlay.classList.add("open"); document.body.style.overflow = "hidden";
+  }
+
+  /** Change le statut de traitement. Trace qui a traité et quand. */
+  async function marquer(s: Submission, statut: string) {
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    const patch = statut === "nouveau"
+      ? { status: "nouveau", handled_by: null, handled_at: null }
+      : { status: statut, handled_by: session?.user?.email || null, handled_at: new Date().toISOString() };
+    const { error } = await supabaseBrowser.from("form_submissions").update(patch).eq("id", s.id);
+    if (error) { toast("Enregistrement impossible.", "err"); return; }
+    Object.assign(s, patch);
+    toast(statut === "traite" ? "Marquée comme traitée ✓" : statut === "spam" ? "Signalée comme spam ✓" : "Remise à traiter ✓");
+    renderKpis(); appliquer(); ouvrir(s);
+  }
+
+  document.getElementById("close-btn")!.addEventListener("click", fermer);
+  overlay.addEventListener("click", fermer);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") fermer(); });
+
+  /* ---------- Filtres ---------- */
+
+  function remplirFiltres() {
+    const formulaires = [...new Map(toutes.map((s) => [s.form_key, formLabel(s.form_key, s.form_title)])).entries()]
+      .sort((a, b) => a[1].localeCompare(b[1], "fr"));
+    $("s-form").innerHTML = '<option value="">Tous les formulaires</option>'
+      + formulaires.map(([k, l]) => `<option value="${esc(k)}">${esc(l)}</option>`).join("");
+    const canaux = [...new Set(toutes.map((s) => canal(s).label))].sort((a, b) => a.localeCompare(b, "fr"));
+    $("s-canal").innerHTML = '<option value="">Tous les canaux</option>'
+      + canaux.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  }
+
+  function appliquer() {
+    const q = ($("s-search").value || "").toLowerCase().trim();
+    const form = $("s-form").value, cnl = $("s-canal").value, statut = $("s-statut").value;
+    const jours = $("s-periode").value ? Number($("s-periode").value) : 0;
+    const limite = jours ? Date.now() - jours * 86_400_000 : 0;
+
+    visibles = toutes.filter((s) =>
+      (!form || s.form_key === form) &&
+      (!cnl || canal(s).label === cnl) &&
+      (!statut || s.status === statut) &&
+      (!limite || +new Date(s.submitted_at) >= limite) &&
+      (!q || `${s.full_name || ""} ${s.email || ""} ${s.phone || ""} ${s.message || ""}`.toLowerCase().includes(q)));
+
+    const portee = document.querySelector("[data-canaux-portee]");
+    if (portee) portee.textContent = jours ? `${visibles.length} soumission${visibles.length > 1 ? "s" : ""} sur la période` : `${visibles.length} soumission${visibles.length > 1 ? "s" : ""}`;
+    render(visibles);
+  }
+
+  function exporter() {
+    downloadCsv(
+      "soumissions-bweb.csv",
+      ["Reçue", "Formulaire", "Nom", "E-mail", "Téléphone", "Canal", "Campagne", "Page", "Message", "Statut", "Traitée par", "Traitée le"],
+      visibles.map((s) => [
+        new Date(s.submitted_at).toISOString(),
+        formLabel(s.form_key, s.form_title),
+        s.full_name, s.email, s.phone,
+        canal(s).label, utmSummary(s.utm), s.page_path, s.message,
+        STATUTS[s.status]?.label || s.status, s.handled_by,
+        s.handled_at ? new Date(s.handled_at).toISOString() : "",
+      ]),
+    );
+  }
+
+  ["s-search"].forEach((id) => $(id).addEventListener("input", appliquer));
+  ["s-form", "s-canal", "s-periode", "s-statut"].forEach((id) => $(id).addEventListener("change", appliquer));
+  document.getElementById("s-export")!.addEventListener("click", exporter);
+
+  /* ---------- Chargement ---------- */
+
+  (async () => {
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    if (!session) return; // AdminLayout gère la redirection
+
+    const { data, error } = await supabaseBrowser
+      .from("form_submissions")
+      .select("id,contact_id,form_key,form_title,page_path,full_name,email,phone,message,payload,attachments,utm,referrer,status,handled_by,handled_at,submitted_at")
+      .order("submitted_at", { ascending: false })
+      .limit(2000);
+
+    if (error) {
+      rows.innerHTML = `<div class="acq-vide">Lecture impossible : ${esc(error.message)}</div>`;
+      return;
+    }
+    toutes = (data || []) as unknown as Submission[];
+    renderKpis();
+    remplirFiltres();
+    appliquer();
+
+    // Arrivée depuis la fiche d'un contact : on ouvre directement la soumission.
+    const cible = new URLSearchParams(location.search).get("s");
+    if (cible) {
+      const s = toutes.find((x) => x.id === cible);
+      if (s) ouvrir(s);
+    }
+  })();
+</script>
