@@ -5,6 +5,7 @@ import { createAdminClient } from "../../../lib/supabaseAdmin";
 import { sendCampaignEmails, type Recipient } from "../../../lib/sendCampaign";
 import { sendDueRappels } from "../../../lib/sendRappels";
 import { enrollDuePackHolders } from "../../../lib/enrollPack";
+import { syncContactsToHub } from "../../../lib/syncHub";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -42,6 +43,13 @@ async function handle(request: Request): Promise<Response> {
   let packEnrol = { sessions: 0, enrolled: 0 };
   try { packEnrol = await enrollDuePackHolders(admin); } catch { /* non bloquant */ }
 
+  // Mise à niveau quotidienne des bases avec ACQ Hub. Chaînée ici pour la même
+  // raison que les rappels : le plan Hobby n'autorise que 2 crons Vercel, déjà
+  // pris (03 h réconciliation, 06 h ce cron). Pour une heure précise — minuit —
+  // un cron externe appelle /api/cron/hub-sync, qui fait exactement la même chose.
+  let hub: Awaited<ReturnType<typeof syncContactsToHub>> = { traites: 0, transmis: 0, echecs: 0 };
+  try { hub = await syncContactsToHub(admin); } catch { /* non bloquant */ }
+
   const { data: due } = await admin
     .from("campaigns")
     .select("id, subject, message, body_html, recipients")
@@ -50,7 +58,7 @@ async function handle(request: Request): Promise<Response> {
     .lte("scheduled_at", nowIso)
     .limit(20);
 
-  if (!due || due.length === 0) return json({ ok: true, processed: 0, rappels, packEnrol });
+  if (!due || due.length === 0) return json({ ok: true, processed: 0, rappels, packEnrol, hub });
 
   const results: any[] = [];
   for (const c of due as any[]) {
@@ -77,7 +85,7 @@ async function handle(request: Request): Promise<Response> {
       results.push({ id: c.id, error: true });
     }
   }
-  return json({ ok: true, processed: results.length, results, rappels, packEnrol });
+  return json({ ok: true, processed: results.length, results, rappels, packEnrol, hub });
 }
 
 export const GET: APIRoute = ({ request }) => handle(request);

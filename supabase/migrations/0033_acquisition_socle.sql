@@ -59,8 +59,11 @@ create table if not exists public.contacts (
   phone              text,                       -- E.164 (normalize_phone)
   full_name          text,
   company            text,
+  -- Deux états seulement, volontairement : a payé, ou pas encore. Un « prospect »
+  -- intermédiaire se discute sans fin et ne change aucune décision — la nuance
+  -- vit dans les étiquettes, qui elles sont libres.
   status             text not null default 'lead'
-                       check (status in ('lead', 'prospect', 'client')),
+                       check (status in ('lead', 'client')),
   tags               text[] not null default '{}',
   notes              text,
   first_source       text,                       -- form_key de la 1re soumission
@@ -69,6 +72,9 @@ create table if not exists public.contacts (
   whatsapp_opt_in    boolean not null default true,
   unsubscribed_at    timestamptz,
   unsubscribe_token  uuid not null default gen_random_uuid(),
+  -- Dernière transmission réussie vers ACQ Hub (synchro quotidienne, lib/syncHub.ts).
+  -- NULL = jamais transmis. Comparé à `updated_at` pour ne renvoyer que ce qui a bougé.
+  hub_synced_at      timestamptz,
   -- Deux fiches que tout désigne comme la même personne (l'e-mail pointe vers
   -- l'une, le téléphone vers l'autre). On NE fusionne PAS automatiquement : une
   -- fusion qui se trompe est irréversible. On signale, l'humain tranche.
@@ -90,10 +96,30 @@ create index if not exists contacts_activity_idx on public.contacts (last_activi
 create index if not exists contacts_status_idx   on public.contacts (status);
 create index if not exists contacts_source_idx   on public.contacts (first_source);
 create index if not exists contacts_tags_idx     on public.contacts using gin (tags);
+-- File d'attente de la synchro : les jamais-transmis d'abord, puis les modifiés.
+create index if not exists contacts_hub_sync_idx on public.contacts (hub_synced_at nulls first, updated_at);
+
+-- `updated_at` maison plutôt que le `touch_updated_at()` partagé : horodater une
+-- transmission vers ACQ Hub ne doit PAS compter comme une modification du
+-- contact. Sinon la synchro se mord la queue — elle écrit `hub_synced_at`, le
+-- trigger avance `updated_at`, le contact redevient « modifié depuis sa dernière
+-- transmission », et il repart à chaque passe, indéfiniment.
+create or replace function public.touch_contact_updated_at()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.hub_synced_at is distinct from old.hub_synced_at
+     and to_jsonb(new) - 'hub_synced_at' - 'updated_at'
+       = to_jsonb(old) - 'hub_synced_at' - 'updated_at' then
+    new.updated_at = old.updated_at;   -- seule la synchro a bougé
+    return new;
+  end if;
+  new.updated_at = now();
+  return new;
+end $$;
 
 drop trigger if exists contacts_touch on public.contacts;
 create trigger contacts_touch before update on public.contacts
-  for each row execute function public.touch_updated_at();
+  for each row execute function public.touch_contact_updated_at();
 
 -- -----------------------------------------------------------------------------
 -- 2) form_submissions — le brut de chaque soumission
@@ -114,8 +140,10 @@ create table if not exists public.form_submissions (
   referrer     text,
   user_agent   text,
   ip_hash      text,                   -- haché : anti-abus, jamais l'IP en clair
-  -- Relais vers un système externe (ACQ Hub) : on garde la trace de l'échec pour
-  -- pouvoir rejouer, sans jamais perdre la soumission elle-même.
+  -- Trace TECHNIQUE de la notification e-mail / du relais immédiat. Jamais
+  -- affichée dans la liste des soumissions : elle ne sert qu'au support, quand
+  -- quelqu'un dit « je n'ai jamais reçu cette demande ». La mise à niveau des
+  -- bases avec ACQ Hub, elle, passe par contacts.hub_synced_at.
   relay_target text,
   relay_status text check (relay_status in ('sent', 'failed', 'skipped')),
   relay_error  text,
@@ -339,7 +367,7 @@ select
   case when exists (
     select 1 from public.bookings b
      where lower(btrim(b.email)) = src.email and b.status = 'confirmed'
-  ) then 'client' else 'prospect' end,
+  ) then 'client' else 'lead' end,
   src.tags,
   src.notes,
   'billetterie',
