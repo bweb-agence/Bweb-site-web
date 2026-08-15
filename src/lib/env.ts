@@ -22,7 +22,9 @@
 /** Valeur d'un secret serveur, résolue à l'exécution. Chaîne vide si absent. */
 export function secret(...noms: string[]): string {
   const runtime = globalThis.process?.env ?? {};
-  const build = import.meta.env as Record<string, string | undefined>;
+  // `?? {}` : hors Vite (test unitaire en Node nu), `import.meta.env` n'existe
+  // pas — sans ce filet, la lecture de la clé suivante lèverait.
+  const build = (import.meta.env ?? {}) as Record<string, string | undefined>;
   for (const nom of noms) {
     const valeur = runtime[nom] || build[nom];
     if (valeur && valeur !== "A_COMPLETER") return valeur;
