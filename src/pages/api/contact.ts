@@ -4,10 +4,13 @@ export const prerender = false;
    BWEB AGENCE — Endpoint de collecte de leads (Contact & Devis)
    -----------------------------------------------------------
    Route serveur Astro (nécessite output: "hybrid" + adaptateur Vercel).
-   Reçoit la soumission du formulaire (FormData), la fiabilise puis envoie
-   par e-mail via Bird (@messagebird/sdk, cf. src/lib/email.ts) :
-     1. Notification de lead vers la boîte Bweb (BWEB_INBOX).
-     2. Accusé de réception au client.
+   Reçoit la soumission du formulaire (FormData), la fiabilise, puis :
+     1. ENREGISTRE la soumission + le contact (src/lib/leads.ts) — avant tout
+        envoi, pour qu'une panne e-mail ne fasse plus disparaître le lead.
+     2. Notification de lead vers la boîte Bweb (BWEB_INBOX) via Bird.
+     3. Accusé de réception au client.
+   Sert TOUS les formulaires `<form data-form>` du site (contact, devis, et les
+   suivants) : le champ caché `form_key` les distingue dans l'admin.
    Protections : honeypot, validation, limite de débit best-effort par IP.
    Renvoie { ok:false, error:"not_configured" } (HTTP 200) si Bird n'est pas
    configuré → le client bascule proprement sur WhatsApp (même contrat que
@@ -16,6 +19,7 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { sendEmail } from "../../lib/email";
 import { createAdminClient } from "../../lib/supabaseAdmin";
+import { markRelay, payloadFromFormData, recordSubmission, utmFromFormData } from "../../lib/leads";
 import { BUCKET, SIGNED_DOWNLOAD_TTL } from "../../lib/uploads";
 
 const json = (obj: unknown, status = 200) =>
@@ -39,6 +43,12 @@ const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 const firstName = (n: string) => (n || "").trim().split(/\s+/)[0] || "";
+/** Chemin d'un Referer, sans jamais lever : une en-tête douteuse ne doit pas
+    faire échouer la soumission (le catch global renverrait une erreur 500). */
+const pathOf = (url: string | null): string | undefined => {
+  if (!url) return undefined;
+  try { return new URL(url).pathname; } catch { return undefined; }
+};
 
 /* Gabarit de marque (aligné sur src/lib/email.ts, autonome). */
 function shell(inner: string): string {
@@ -97,12 +107,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     // (URLs signées) et nous transmet la liste des chemins. On regénère des
     // liens de téléchargement signés (30 j) pour l'e-mail de notification.
     let attachmentsHtml = "";
+    let attachmentList: Array<{ path?: string; name?: string }> = [];
     try {
       const raw = get("attachments");
       const list: Array<{ path?: string; name?: string }> = raw ? JSON.parse(raw) : [];
       const clean = list
         .filter((a) => a?.path && !a.path.includes("..") && !a.path.startsWith("/"))
         .slice(0, 20);
+      attachmentList = clean;
       if (clean.length) {
         const svcKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
         if (svcKey && svcKey !== "A_COMPLETER") {
@@ -124,7 +136,28 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       }
     } catch { /* pièces jointes best-effort — n'affecte jamais le lead */ }
 
-    // 1) Notification de lead vers Bweb (répondre au client via son e-mail affiché).
+    // 1) Enregistrement AVANT tout envoi. C'est ce qui change tout : jusqu'ici un
+    // lead Contact ou Devis n'existait que dans une boîte e-mail — Bird en panne
+    // ou mal configuré et le prospect disparaissait. Désormais la soumission est
+    // en base quoi qu'il arrive, l'e-mail n'est plus qu'une notification.
+    const submission = await recordSubmission({
+      formKey: get("form_key") || "contact",
+      formTitle: subject,
+      pagePath: get("page_path") || pathOf(request.headers.get("referer")),
+      fullName: name,
+      email,
+      phone,
+      company: get("company"),
+      message: summary,
+      payload: payloadFromFormData(fd),
+      attachments: attachmentList,
+      utm: utmFromFormData(fd),
+      referrer: request.headers.get("referer") || undefined,
+      userAgent: request.headers.get("user-agent") || undefined,
+      ip,
+    });
+
+    // 2) Notification de lead vers Bweb (répondre au client via son e-mail affiché).
     const inbox = import.meta.env.BWEB_INBOX || "info@bwebagence.com";
     const notif = shell(`<div style="padding:22px">
       <div style="font-size:11px;letter-spacing:.1em;color:#1f6ced;font-weight:700;text-transform:uppercase;margin-bottom:6px">Nouveau lead</div>
@@ -138,11 +171,17 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       ${attachmentsHtml}
     </div>`);
     const notifOk = await sendEmail({ to: inbox, subject: `Lead — ${subject}`, html: notif, text: summary });
+    await markRelay(submission?.submissionId, {
+      target: "bird",
+      status: notifOk ? "sent" : "failed",
+      error: notifOk ? undefined : "notification Bird non envoyée",
+    });
 
     // Bird non configuré → le client bascule sur WhatsApp (contrat reserver.ts).
+    // La soumission, elle, est déjà enregistrée : le lead n'est plus perdu.
     if (!notifOk) return json({ ok: false, error: "not_configured" });
 
-    // 2) Accusé de réception au client (best-effort, n'affecte pas le statut).
+    // 3) Accusé de réception au client (best-effort, n'affecte pas le statut).
     const ack = shell(`<div style="padding:22px">
       <p style="font-size:15px;color:#3f4568;margin:0 0 12px">Bonjour ${esc(firstName(name)) || "et merci"},</p>
       <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">

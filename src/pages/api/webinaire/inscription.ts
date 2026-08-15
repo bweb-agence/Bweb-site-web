@@ -3,9 +3,16 @@ export const prerender = false;
 /* =========================================================
    BWEB ACADEMY — Inscription au webinaire
    -----------------------------------------------------------
-   Reçoit le formulaire de /webinaire-initiation et transmet le lead à
-   l'Edge Function `ingest` d'ACQ Hub (point d'entrée unique des tunnels :
-   identité résolue, timeline append-only, idempotence, DLQ).
+   Reçoit le formulaire de /webinaire-initiation, ENREGISTRE l'inscription dans
+   la base du site (src/lib/leads.ts) puis transmet le lead à l'Edge Function
+   `ingest` d'ACQ Hub (point d'entrée unique des tunnels : identité résolue,
+   timeline append-only, idempotence, DLQ).
+
+   L'ordre n'est pas anodin : le relais est un appel réseau vers un autre projet.
+   Tant qu'il était seul dépositaire du lead, une panne (ou une variable
+   manquante) faisait disparaître l'inscrit — le formulaire basculait sur
+   WhatsApp et rien n'était conservé. Le site garde désormais sa propre trace,
+   et `form_submissions.relay_status` dit si ACQ Hub l'a bien reçue.
 
    Pourquoi une route serveur plutôt qu'un appel direct depuis le navigateur :
    la clé `x-tunnel-key` est un SECRET. Exposée côté client, n'importe qui
@@ -18,6 +25,7 @@ export const prerender = false;
      { ok: false, error: "..." }   → le client affiche le message adapté
    ========================================================= */
 import type { APIRoute } from "astro";
+import { markRelay, recordSubmission } from "../../../lib/leads";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -135,6 +143,34 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!isWhatsappValid(whatsapp)) return json({ ok: false, error: "whatsapp_invalide" });
   if (!isEmailValid(email)) return json({ ok: false, error: "email_invalide" });
 
+  /* Enregistrement local AVANT le relais. ACQ Hub reste le CRM d'acquisition,
+     mais il est joignable par le réseau : s'il tombe, le formulaire bascule sur
+     WhatsApp et l'inscrit n'existait jusqu'ici nulle part. Le site garde donc sa
+     propre trace de tout ce qui est soumis chez lui. Best-effort : la fonction
+     n'échoue jamais et ne bloque pas l'inscription. */
+  const submission = await recordSubmission({
+    formKey: "webinaire-initiation",
+    formTitle: "Inscription webinaire — Initiation",
+    pagePath: "/webinaire-initiation",
+    fullName: prenom,
+    email,
+    phone: whatsapp,
+    message: `Inscription au webinaire du 6 septembre 2026 — ${prenom}`,
+    payload: { prenom, email, whatsapp, evenement: "webinaire-initiation-2026-09-06" },
+    utm: typeof body.utm_source === "string" || typeof body.utm_campaign === "string"
+      ? Object.fromEntries(
+          ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"]
+            .map((k) => [k.replace("utm_", ""), typeof body[k] === "string" ? (body[k] as string).slice(0, 200) : ""])
+            .filter(([, v]) => v),
+        )
+      : undefined,
+    referrer: request.headers.get("referer") || undefined,
+    userAgent: request.headers.get("user-agent") || undefined,
+    ip,
+    eventType: "webinaire_inscrit",
+    eventTitle: "Inscrit au webinaire Initiation (6 septembre 2026)",
+  });
+
   const ingestKey = secret("TUNNEL_KEY_WEBINAIRE_INITIATION", "TUNNEL_INGEST_KEY");
   const ingestUrl = secret("INGEST_URL");
 
@@ -142,11 +178,17 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     // Configuration incomplète : on le trace côté serveur, et le client bascule
     // sur WhatsApp plutôt que de perdre le prospect (même contrat que contact.ts).
     // Le détail dit laquelle manque — sinon on cherche à l'aveugle en prod.
+    // L'inscription, elle, est déjà enregistrée en base juste au-dessus.
     console.error(
       "[webinaire] ingestion non configurée —" +
         (ingestKey ? "" : " TUNNEL_KEY_WEBINAIRE_INITIATION absente") +
         (ingestUrl ? "" : " INGEST_URL absente"),
     );
+    await markRelay(submission?.submissionId, {
+      target: "acq_hub",
+      status: "skipped",
+      error: "relais non configuré",
+    });
     return json({ ok: false, error: "not_configured" });
   }
 
@@ -177,11 +219,22 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       console.error(`[webinaire] ingest a refusé le lead (${res.status}) ${detail.slice(0, 200)}`);
+      await markRelay(submission?.submissionId, {
+        target: "acq_hub",
+        status: "failed",
+        error: `HTTP ${res.status} ${detail.slice(0, 200)}`,
+      });
       return json({ ok: false, error: "ingest_failed" });
     }
+    await markRelay(submission?.submissionId, { target: "acq_hub", status: "sent" });
     return json({ ok: true });
   } catch (err) {
     console.error("[webinaire] ingest injoignable", err);
+    await markRelay(submission?.submissionId, {
+      target: "acq_hub",
+      status: "failed",
+      error: err instanceof Error ? err.message : "ingest injoignable",
+    });
     return json({ ok: false, error: "ingest_unreachable" });
   }
 };
