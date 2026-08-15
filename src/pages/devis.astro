@@ -27,7 +27,7 @@ import PhoneField from "../components/PhoneField.astro";
         <!-- Formulaire segmenté en assistant multi-étapes par src/scripts/wizard.ts.
              Sans JS, toutes les étapes restent visibles et le formulaire fonctionne
              normalement (soumission gérée par src/scripts/forms.ts). -->
-        <form data-form data-wizard data-wizard-cta="Démarrer ma demande" data-form-title="Nouvelle demande de devis">
+        <form data-form data-form-key="devis" data-wizard data-wizard-cta="Démarrer ma demande" data-form-title="Nouvelle demande de devis">
           <!-- Honeypot anti-spam : masqué aux humains, laissé vide ; rejeté côté serveur si rempli. -->
           <div class="hp-field" aria-hidden="true"><label>Ne pas remplir<input type="text" name="company_site" tabindex="-1" autocomplete="off" /></label></div>
 

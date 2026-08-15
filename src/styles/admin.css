@@ -644,3 +644,153 @@
 .rbtn.wa:hover { background: var(--c-whatsapp-dark); color: #fff; }
 .rbtn.mail { background: #fff; border-color: var(--c-border); color: var(--c-navy); }
 .rbtn.mail:hover { border-color: var(--c-blue); color: var(--c-blue); }
+
+/* =========================================================
+   ACQUISITION — Soumissions & Contacts
+   Vrai tableau (thead/tbody) : les colonnes s'alignent seules, l'en-tête est
+   annoncé par les lecteurs d'écran, et la largeur se pilote par <colgroup>.
+   Sur mobile, chaque ligne redevient une carte empilée (même bascule que la
+   liste Clients) — un tableau à 7 colonnes n'est pas lisible sur 375 px.
+   ========================================================= */
+.acq-tablewrap { overflow-x: auto; }
+.acq-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.acq-table thead th {
+  padding: 11px 18px; text-align: left; border-bottom: 1px solid var(--c-border);
+  font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-gray-500);
+}
+.acq-table th.ta-c, .acq-table td.ta-c { text-align: center; }
+.acq-table tbody tr { border-bottom: 1px solid var(--c-border-soft); cursor: pointer; transition: background var(--dur-fast) var(--ease); }
+.acq-table tbody tr:last-child { border-bottom: 0; }
+.acq-table tbody tr:hover { background: var(--surface-2); }
+.acq-table tbody tr:focus-visible { outline: 2px solid var(--c-blue); outline-offset: -2px; }
+/* Filet bleu sur ce qui n'a pas encore été traité : la page se lit d'abord par
+   ce qui reste à faire. */
+.acq-table tbody tr.is-new td:first-child { box-shadow: inset 3px 0 0 var(--c-blue); }
+/* 10 px et non 13 : la hauteur de ligne est dictée par la cellule Coordonnées,
+   qui empile e-mail et téléphone. À 13 px, dix lignes dépassaient d'un cran le
+   bas d'un écran de portable — le réglage vient de la mesure à l'écran. */
+.acq-table td { padding: 10px 18px; vertical-align: middle; overflow: hidden; }
+
+.acq-date { font-size: 0.8rem; font-weight: 600; color: var(--c-gray-700); font-variant-numeric: tabular-nums; }
+.acq-qui b { display: block; font-weight: 800; font-size: 0.88rem; color: var(--c-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acq-qui .sub { display: block; color: var(--c-gray-500); font-size: 0.76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acq-cell { color: var(--c-gray-600); font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acq-apercu { color: var(--c-gray-500); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acq-chev { color: var(--c-gray-400); text-align: center; }
+.acq-avcell { width: 44px; }
+
+/* Pastille de formulaire : un carré de couleur stable + le libellé. */
+.acq-form { display: inline-flex; align-items: center; gap: 7px; font-size: 0.78rem; font-weight: 700; color: var(--c-gray-700); max-width: 100%; }
+.acq-form i { width: 8px; height: 8px; border-radius: 3px; flex: none; }
+.acq-form span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.acq-vide, .acq-load { padding: 30px 18px; text-align: center; color: var(--c-gray-500); }
+
+/* Pagination — 12 lignes par page.
+   Collée au bas de la fenêtre tant que la liste est à l'écran : avec 12 lignes,
+   le pied du tableau tombe sous la ligne de flottaison, et il fallait faire
+   défiler toute la page pour changer de page. */
+.acq-pager {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 12px 18px; border-top: 1px solid var(--c-border);
+  position: sticky; bottom: 0; z-index: 2;
+  background: var(--surface);
+  /* Décolle visuellement la barre du contenu qui passe dessous. */
+  box-shadow: 0 -6px 16px -12px rgba(2, 11, 80, 0.45);
+}
+/* Liste vide : pas de barre fantôme. */
+.acq-pager:empty { display: none; }
+.acq-pager .compte { font-size: 0.78rem; color: var(--c-gray-500); margin-right: auto; font-variant-numeric: tabular-nums; }
+.acq-pager button {
+  min-width: 32px; height: 32px; padding: 0 9px; border: 1px solid var(--c-border); border-radius: 8px;
+  background: #fff; color: var(--c-gray-700); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+}
+.acq-pager button:hover:not(:disabled) { border-color: var(--c-blue); color: var(--c-blue); }
+.acq-pager button:disabled { opacity: 0.42; cursor: default; }
+.acq-pager button.on { background: var(--c-blue); border-color: var(--c-blue); color: #fff; }
+.acq-pager .ecart { color: var(--c-gray-400); padding: 0 2px; }
+
+/* Répartition par canal */
+.acq-canaux { padding: 12px 18px; display: flex; flex-direction: column; gap: 9px; }
+.acq-canal { display: grid; grid-template-columns: 150px 1fr 42px; align-items: center; gap: 12px; }
+.acq-canal-lbl { font-size: 0.82rem; font-weight: 600; color: var(--c-gray-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acq-canal-bar { height: 9px; border-radius: var(--radius-pill); background: var(--c-gray-100); overflow: hidden; }
+.acq-canal-bar i { display: block; height: 100%; border-radius: var(--radius-pill); }
+.acq-canal b { font-family: var(--f-display); font-size: 0.9rem; text-align: right; font-variant-numeric: tabular-nums; }
+.acq-cardhead { display: flex; align-items: baseline; gap: 10px; padding: 13px 18px 11px; border-bottom: 1px solid var(--c-border); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-gray-600); }
+.acq-cardhead em { font-style: normal; font-size: 0.68rem; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--c-gray-400); }
+
+/* Détail d'une soumission : tous les champs, tels qu'ils ont été envoyés */
+.acq-payload { background: var(--surface-2); border: 1px solid var(--c-border-soft); border-radius: 11px; padding: 2px 15px; }
+.acq-payload dl { display: grid; grid-template-columns: minmax(120px, 40%) 1fr; gap: 0 12px; margin: 0; font-size: 0.83rem; }
+.acq-payload dt { color: var(--c-gray-500); font-weight: 700; padding: 9px 0; border-bottom: 1px solid var(--c-border-soft); }
+.acq-payload dd { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--c-border-soft); overflow-wrap: anywhere; }
+.acq-payload dt:last-of-type, .acq-payload dd:last-of-type { border-bottom: 0; }
+
+.acq-kv { display: grid; grid-template-columns: 132px 1fr; gap: 7px 12px; font-size: 0.85rem; margin: 0; }
+.acq-kv dt { color: var(--c-gray-500); font-weight: 600; }
+.acq-kv dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+
+/* Historique du contact */
+.acq-tl { display: flex; flex-direction: column; }
+.acq-tl-item { display: grid; grid-template-columns: 28px 1fr; gap: 12px; }
+.acq-tl-rail { display: flex; flex-direction: column; align-items: center; }
+.acq-tl-dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex: none; font-size: 0.72rem; font-weight: 800; }
+.acq-tl-line { width: 2px; flex: 1; background: var(--c-border); min-height: 10px; }
+.acq-tl-item:last-child .acq-tl-line { display: none; }
+.acq-tl-body { padding-bottom: 16px; min-width: 0; }
+.acq-tl-t { font-size: 0.87rem; font-weight: 700; color: var(--c-navy); }
+.acq-tl-m { font-size: 0.76rem; color: var(--c-gray-500); margin-top: 2px; }
+.acq-tl-m .money { font-family: var(--f-display); font-weight: 800; color: var(--c-success); }
+
+/* Cartes empilées sur mobile — même bascule que la liste Clients */
+@media (max-width: 900px) {
+  .acq-tablewrap { overflow-x: visible; }
+  .acq-table, .acq-table tbody, .acq-table tr, .acq-table td { display: block; }
+  .acq-table thead { display: none; }
+  .acq-table td { padding: 0; overflow: visible; }
+  .acq-table tbody tr { padding: 14px 16px; row-gap: 4px; column-gap: 12px; }
+  .acq-table tbody tr.is-new td:first-child { box-shadow: none; }
+  .acq-table tbody tr.is-new { box-shadow: inset 3px 0 0 var(--c-blue); }
+
+  .acq-tsub tbody tr { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "qui statut" "form date" "apercu apercu"; }
+  .acq-tsub .acq-qui { grid-area: qui; }
+  .acq-tsub .acq-statut { grid-area: statut; justify-self: end; }
+  .acq-tsub .acq-formcell { grid-area: form; }
+  .acq-tsub .acq-date { grid-area: date; justify-self: end; }
+  .acq-tsub .acq-apercu { grid-area: apercu; white-space: normal; }
+  .acq-tsub .acq-canalcell, .acq-tsub .acq-chev { display: none; }
+
+  .acq-tct tbody tr { display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "av qui statut" "av coord coord" "av origine date"; }
+  .acq-tct .acq-avcell { grid-area: av; align-self: start; width: auto; }
+  .acq-tct .acq-qui { grid-area: qui; }
+  .acq-tct .acq-coord { grid-area: coord; white-space: normal; }
+  .acq-tct .acq-origine { grid-area: origine; }
+  .acq-tct .acq-vu { grid-area: date; justify-self: end; }
+  .acq-tct .acq-statut { grid-area: statut; justify-self: end; }
+  .acq-tct .acq-chev { display: none; }
+
+  .acq-canal { grid-template-columns: 116px 1fr 34px; }
+}
+
+/* Petits utilitaires des écrans d'acquisition */
+.admin-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.78rem; color: var(--c-gray-500); padding: 0 2px; margin: 0; }
+.admin-legend b { color: var(--c-gray-700); }
+.acq-hint { font-size: 0.76rem; color: var(--c-gray-500); margin: 8px 0 0; }
+.acq-saved { font-size: 0.66rem; font-weight: 700; color: var(--c-success); text-transform: none; letter-spacing: 0; margin-left: 6px; }
+.acq-optin { display: flex; align-items: center; gap: 9px; font-size: 0.86rem; font-weight: 600; color: var(--c-gray-700); padding: 7px 0; cursor: pointer; }
+.acq-optin input { width: 16px; height: 16px; accent-color: var(--c-blue); cursor: pointer; }
+.acq-optin input:disabled { cursor: not-allowed; opacity: 0.5; }
+.acq-optin:has(input:disabled) { color: var(--c-gray-400); cursor: not-allowed; }
+
+/* Tuile d'icône des cartes KPI (acquisition).
+   Les utilitaires `bg-navy/10` / `bg-blue/10` employés ailleurs dans l'admin ne
+   rendent rien : `navy` et `blue` ne sont pas des couleurs déclarées du thème
+   Tailwind, donc ni le fond ni la teinte du trait ne s'appliquent. On passe par
+   les tokens `--acc-*`, qui existent, et toutes les tuiles se ressemblent. */
+.kpi-ico { display: grid; place-items: center; border-radius: 12px; flex: none; }
+.kpi-ico.navy   { background: color-mix(in srgb, var(--acc-navy) 10%, #fff);   color: var(--acc-navy); }
+.kpi-ico.blue   { background: color-mix(in srgb, var(--acc-blue) 12%, #fff);   color: var(--acc-blue); }
+.kpi-ico.green  { background: color-mix(in srgb, var(--acc-green) 14%, #fff);  color: var(--acc-green); }
+.kpi-ico.violet { background: color-mix(in srgb, var(--acc-violet) 12%, #fff); color: var(--acc-violet); }
+.kpi-ico.amber  { background: color-mix(in srgb, var(--acc-amber) 15%, #fff);  color: var(--acc-amber); }

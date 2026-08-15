@@ -114,6 +114,43 @@ function setStatus(form: HTMLFormElement, msg: string, kind: "error" | "success"
   if (kind) status.classList.add(kind);
 }
 
+/* ---------- Attribution (utm_*) ----------
+   Les paramètres de campagne sont sur la page d'ARRIVÉE (une publicité pointe
+   vers /parcours-initiation, pas vers /contact). Sans mémorisation, la
+   soumission d'un formulaire atteint deux clics plus loin serait attribuée à
+   « direct » et le budget publicitaire deviendrait illisible. On les garde donc
+   le temps de la visite (sessionStorage : effacé à la fermeture de l'onglet,
+   jamais partagé entre visites — pas de suivi durable). */
+const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
+const UTM_STORE = "bweb_utm";
+
+function readUtm(): Record<string, string> {
+  try {
+    const params = new URLSearchParams(location.search);
+    const fromUrl: Record<string, string> = {};
+    for (const key of UTM_KEYS) {
+      const value = params.get(key);
+      if (value) fromUrl[key] = value.slice(0, 200);
+    }
+    if (Object.keys(fromUrl).length) {
+      sessionStorage.setItem(UTM_STORE, JSON.stringify(fromUrl));
+      return fromUrl;
+    }
+    return JSON.parse(sessionStorage.getItem(UTM_STORE) || "{}");
+  } catch {
+    return {}; // navigation privée, stockage refusé : l'attribution est un bonus
+  }
+}
+
+/** Identifiant du formulaire dans l'admin : explicite, sinon déduit de la page. */
+function formKey(form: HTMLFormElement): string {
+  return (
+    form.dataset.formKey ||
+    location.pathname.replace(/^\/+|\/+$/g, "").replace(/\//g, "-") ||
+    "accueil"
+  );
+}
+
 async function sendEmail(form: HTMLFormElement, attachments: Attachment[] = []): Promise<boolean> {
   // Endpoint serveur Bird (route Astro /api/contact). En l'absence de couche
   // serveur (prod statique) ou si Bird n'est pas configuré, l'appel échoue ou
@@ -123,6 +160,11 @@ async function sendEmail(form: HTMLFormElement, attachments: Attachment[] = []):
   fd.append("subject", form.getAttribute("data-form-title") || "Nouvelle demande — Bweb");
   fd.append("message", composeMessage(form, attachments)); // récap lisible réutilisé pour l'e-mail
   if (attachments.length) fd.append("attachments", JSON.stringify(attachments));
+  // Contexte de la soumission : identifie le formulaire et sa provenance dans
+  // l'admin (form_submissions). Sans effet sur l'e-mail ni sur WhatsApp.
+  fd.append("form_key", formKey(form));
+  fd.append("page_path", location.pathname);
+  for (const [key, value] of Object.entries(readUtm())) fd.append(key, value);
   try {
     const res = await fetch(endpoint, {
       method: "POST",
