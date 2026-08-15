@@ -37,7 +37,12 @@ export default defineConfig({
   // dynamiques (calendrier, réservation, admin, API) restent rendues à la
   // demande via `export const prerender = false`.
   output: "static",
-  adapter: vercel(),
+  // 60 s = plafond du plan Hobby. Sert la synchro ACQ Hub, qui traite des
+  // contacts par vagues : sans cela la fonction est coupée vers 15 s et la
+  // passe perd son compte-rendu. C'est un PLAFOND, pas une réservation — les
+  // autres routes répondent toujours aussi vite. Le budget interne de la
+  // synchro (50 s) reste sous ce plafond pour avoir le temps de répondre.
+  adapter: vercel({ maxDuration: 60 }),
   build: {
     // Génère /services/index.html -> URL propre /services
     format: "directory",
