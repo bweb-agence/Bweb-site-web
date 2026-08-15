@@ -22,14 +22,45 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { secret } from "./env";
 
-/** Nombre de contacts traités par passe. Borne le temps d'exécution serverless. */
-const BATCH = 300;
+/* ---------- Cadence d'une passe ----------
+   Mesuré en production le 15/08/2026 : ~2 s par contact (aller-retour vers
+   l'Edge Function + écriture de l'horodatage). En séquentiel, 1 000 contacts
+   demanderaient plus de 30 minutes — impossible dans une fonction serverless.
+
+   Deux garde-fous, complémentaires :
+   - CONCURRENCE : plusieurs envois en vol. C'est le seul levier qui change
+     vraiment le débit (~4 contacts/s à 8 en parallèle).
+   - BUDGET : on s'arrête AVANT que la plateforme ne coupe. Une passe tronquée
+     par le délai serverless perd son compte-rendu, et on ne sait plus où on en
+     est ; une passe qui s'arrête d'elle-même rend un état exact et le reste à
+     faire. La reprise est gratuite : `hub_synced_at` est posé contact par
+     contact, donc la passe suivante repart exactement où celle-ci s'arrête.
+
+   Le budget doit rester SOUS le `maxDuration` de la fonction (60 s, réglé dans
+   astro.config.mjs) : 50 s laissent de quoi rendre la réponse. */
+const CONCURRENCE = 8;
+const BUDGET_MS_DEFAUT = 50_000;
+
+/** Borne haute de lecture. Au-delà, c'est la passe suivante qui prend le relais. */
+const BATCH = 400;
 
 export interface HubSyncReport {
   /** Contacts éligibles traités pendant la passe. */
   traites: number;
   transmis: number;
   echecs: number;
+  /** Éligibles lus mais NON traités faute de temps, dans cette passe. */
+  reste: number;
+  /**
+   * Contacts encore jamais transmis APRÈS la passe, toutes fenêtres confondues.
+   * C'est le chiffre qui répond à « faut-il relancer ? » : `reste` ne voit que
+   * les BATCH contacts lus, et sous-estimerait un arriéré de plusieurs milliers.
+   */
+  jamais_transmis?: number;
+  /** Vrai si la passe s'est arrêtée sur le budget plutôt que faute de travail. */
+  budget_atteint?: boolean;
+  /** Durée réelle de la passe, en secondes (utile pour régler la cadence). */
+  duree_s?: number;
   /** Raison d'une passe sans effet (configuration absente, rien à envoyer). */
   ignore?: string;
 }
@@ -56,7 +87,7 @@ interface ContactRow {
  * dernière transmission. À appeler une fois par jour.
  */
 export async function syncContactsToHub(admin: SupabaseClient): Promise<HubSyncReport> {
-  const report: HubSyncReport = { traites: 0, transmis: 0, echecs: 0 };
+  const report: HubSyncReport = { traites: 0, transmis: 0, echecs: 0, reste: 0 };
 
   /* AUCUN repli sur la clé d'un autre tunnel. Côté ACQ Hub, `ingest` retrouve le
      tunnel PAR le hash de la clé, puis exige que le champ `tunnel` du corps
@@ -98,7 +129,8 @@ export async function syncContactsToHub(admin: SupabaseClient): Promise<HubSyncR
     return report;
   }
 
-  for (const contact of candidats as ContactRow[]) {
+  /** Transmet UN contact. Ne lève pas : renseigne le compte-rendu et rend la main. */
+  const transmettre = async (contact: ContactRow): Promise<void> => {
     report.traites++;
     try {
       const res = await fetch(ingestUrl, {
@@ -146,7 +178,7 @@ export async function syncContactsToHub(admin: SupabaseClient): Promise<HubSyncR
         report.echecs++;
         const detail = await res.text().catch(() => "");
         console.error(`[syncHub] contact ${contact.id} refusé (${res.status}) ${detail.slice(0, 160)}`);
-        continue; // pas d'horodatage : la passe suivante réessaiera
+        return; // pas d'horodatage : la passe suivante réessaiera
       }
 
       // Horodaté seulement après un succès — sinon un échec serait oublié.
@@ -156,6 +188,47 @@ export async function syncContactsToHub(admin: SupabaseClient): Promise<HubSyncR
       report.echecs++;
       console.error(`[syncHub] contact ${contact.id} injoignable —`, err instanceof Error ? err.message : err);
     }
+  };
+
+  /* Vagues parallèles, sous surveillance du budget.
+     On vérifie l'échéance ENTRE deux vagues, jamais au milieu : couper une vague
+     en cours laisserait des requêtes en vol dont on ne saurait pas si le Hub les
+     a reçues — donc des contacts potentiellement transmis mais non horodatés,
+     qui repartiraient à la passe suivante (sans dommage grâce à l'idempotence,
+     mais pour rien). */
+  const debut = Date.now();
+  const budgetMs = Number(secret("HUB_SYNC_BUDGET_MS")) || BUDGET_MS_DEFAUT;
+  const liste = candidats as ContactRow[];
+  let curseur = 0;
+
+  while (curseur < liste.length) {
+    if (Date.now() - debut > budgetMs) {
+      report.budget_atteint = true;
+      break;
+    }
+    const vague = liste.slice(curseur, curseur + CONCURRENCE);
+    await Promise.all(vague.map(transmettre));
+    curseur += vague.length;
+  }
+
+  report.reste = liste.length - curseur;
+  report.duree_s = Math.round((Date.now() - debut) / 100) / 10;
+
+  /* Arriéré réel, au-delà de la fenêtre lue. Un simple comptage, sans ramener
+     les lignes. Ne couvre pas les contacts « modifiés depuis » (comparaison
+     colonne à colonne, inexprimable en filtre PostgREST) : c'est volontaire,
+     ceux-là sont marginaux et rattrapés par la passe du lendemain. */
+  const { count } = await admin
+    .from("contacts")
+    .select("id", { count: "exact", head: true })
+    .is("hub_synced_at", null);
+  if (typeof count === "number") report.jamais_transmis = count;
+
+  if (report.budget_atteint) {
+    console.warn(
+      `[syncHub] budget de ${budgetMs} ms atteint — ${report.transmis} transmis, ${report.reste} en attente. ` +
+        "Relancer /api/cron/hub-sync pour continuer, ou attendre la passe suivante.",
+    );
   }
 
   return report;
