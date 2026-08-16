@@ -191,6 +191,33 @@ export const POST: APIRoute = async ({ request }) => {
   }
 };
 
-/** Une requête GET sur l'URL du Pulse : réponse lisible, sans rien exposer. */
+/* Un GET sur cette URL n'est jamais normal — et il a une cause presque unique,
+   coûteuse, qu'il faut nommer.
+
+   `bwebagence.com` redirige en **301** vers `www.bwebagence.com`. Or un 301
+   transforme un POST en GET chez la plupart des clients HTTP. Un Pulse configuré
+   sur le domaine nu envoie donc son POST, suit la redirection en GET, et atterrit
+   ici. C'est exactement ce qui s'est produit au premier essai.
+
+   La première version de cette sonde répondait `{ok:true}` avec un 200 : Chariow
+   enregistrait une livraison RÉUSSIE, et la vente était perdue sans un bruit —
+   le pire mode de défaillance possible, une perte de données sous voyant vert.
+
+   D'où un 405, qui apparaît en rouge dans l'onglet Deliveries avec le message
+   ci-dessous. Après cinq échecs le Pulse sera désactivé et un e-mail partira :
+   bruyant, mais infiniment préférable à des ventes qui disparaissent. */
 export const GET: APIRoute = () =>
-  json({ ok: true, endpoint: "chariow-pulse", methode_attendue: "POST" });
+  new Response(
+    JSON.stringify({
+      ok: false,
+      error: "methode_incorrecte",
+      attendu: "POST",
+      cause_probable:
+        "Un GET ici provient presque toujours d'un POST redirigé : " +
+        "https://bwebagence.com répond 301 vers https://www.bwebagence.com, " +
+        "et un 301 change le POST en GET.",
+      correction:
+        "Configurer le Pulse sur https://www.bwebagence.com/api/webhooks/chariow (avec le www).",
+    }),
+    { status: 405, headers: { "Content-Type": "application/json", Allow: "POST" } },
+  );
