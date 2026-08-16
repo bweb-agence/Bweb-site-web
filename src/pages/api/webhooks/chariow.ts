@@ -103,11 +103,29 @@ export const POST: APIRoute = async ({ request }) => {
 
   const evenement = corps.event || request.headers.get("x-pulse-event") || "";
 
-  /* Envoi de test depuis le tableau de bord : signé comme un vrai, mais sans
-     identifiant de livraison et avec un champ `note`. On confirme que la
-     signature passe, sans rien écrire en base. */
-  if (corps.note && !request.headers.get("x-pulse-delivery-id")) {
-    return json({ ok: true, test: true, signature: "valide", evenement });
+  /* ── Détection des envois de test ────────────────────────────────────────
+     La documentation annonce un champ `note` et l'absence de
+     `x-pulse-delivery-id`. Constaté en vrai le 16/08/2026 : ce n'est pas
+     suffisant — un « Send test pulse » est passé au travers et a créé un
+     contact « John Doe / test@example.com » avec un achat de 9 999 USD dans la
+     base de production. Il a fallu l'effacer à la main.
+
+     Le signal fiable est dans les identifiants : Chariow préfixe TOUT par
+     `test_` (`test_sale_…`, `test_customer_…`, `test_product_…`). On teste donc
+     les deux, en commençant par le plus sûr. Une donnée de démonstration n'a
+     rien à faire dans la base clients — et si un jour Chariow changeait ses
+     préfixes, `note` reste en second rideau. */
+  const identifiantsDeTest =
+    (corps.sale?.id || "").startsWith("test_") || (corps.customer?.id || "").startsWith("test_");
+
+  if (identifiantsDeTest || (corps.note && !request.headers.get("x-pulse-delivery-id"))) {
+    return json({
+      ok: true,
+      test: true,
+      signature: "valide",
+      evenement,
+      note: "Envoi de test reconnu : signature vérifiée, rien n'a été écrit en base.",
+    });
   }
 
   // Tout le reste (vente abandonnée, licences, affiliés…) est acquitté sans
