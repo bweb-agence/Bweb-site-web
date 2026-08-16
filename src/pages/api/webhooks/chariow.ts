@@ -103,11 +103,29 @@ export const POST: APIRoute = async ({ request }) => {
 
   const evenement = corps.event || request.headers.get("x-pulse-event") || "";
 
-  /* Envoi de test depuis le tableau de bord : signé comme un vrai, mais sans
-     identifiant de livraison et avec un champ `note`. On confirme que la
-     signature passe, sans rien écrire en base. */
-  if (corps.note && !request.headers.get("x-pulse-delivery-id")) {
-    return json({ ok: true, test: true, signature: "valide", evenement });
+  /* ── Détection des envois de test ────────────────────────────────────────
+     La documentation annonce un champ `note` et l'absence de
+     `x-pulse-delivery-id`. Constaté en vrai le 16/08/2026 : ce n'est pas
+     suffisant — un « Send test pulse » est passé au travers et a créé un
+     contact « John Doe / test@example.com » avec un achat de 9 999 USD dans la
+     base de production. Il a fallu l'effacer à la main.
+
+     Le signal fiable est dans les identifiants : Chariow préfixe TOUT par
+     `test_` (`test_sale_…`, `test_customer_…`, `test_product_…`). On teste donc
+     les deux, en commençant par le plus sûr. Une donnée de démonstration n'a
+     rien à faire dans la base clients — et si un jour Chariow changeait ses
+     préfixes, `note` reste en second rideau. */
+  const identifiantsDeTest =
+    (corps.sale?.id || "").startsWith("test_") || (corps.customer?.id || "").startsWith("test_");
+
+  if (identifiantsDeTest || (corps.note && !request.headers.get("x-pulse-delivery-id"))) {
+    return json({
+      ok: true,
+      test: true,
+      signature: "valide",
+      evenement,
+      note: "Envoi de test reconnu : signature vérifiée, rien n'a été écrit en base.",
+    });
   }
 
   // Tout le reste (vente abandonnée, licences, affiliés…) est acquitté sans
@@ -191,6 +209,33 @@ export const POST: APIRoute = async ({ request }) => {
   }
 };
 
-/** Une requête GET sur l'URL du Pulse : réponse lisible, sans rien exposer. */
+/* Un GET sur cette URL n'est jamais normal — et il a une cause presque unique,
+   coûteuse, qu'il faut nommer.
+
+   `bwebagence.com` redirige en **301** vers `www.bwebagence.com`. Or un 301
+   transforme un POST en GET chez la plupart des clients HTTP. Un Pulse configuré
+   sur le domaine nu envoie donc son POST, suit la redirection en GET, et atterrit
+   ici. C'est exactement ce qui s'est produit au premier essai.
+
+   La première version de cette sonde répondait `{ok:true}` avec un 200 : Chariow
+   enregistrait une livraison RÉUSSIE, et la vente était perdue sans un bruit —
+   le pire mode de défaillance possible, une perte de données sous voyant vert.
+
+   D'où un 405, qui apparaît en rouge dans l'onglet Deliveries avec le message
+   ci-dessous. Après cinq échecs le Pulse sera désactivé et un e-mail partira :
+   bruyant, mais infiniment préférable à des ventes qui disparaissent. */
 export const GET: APIRoute = () =>
-  json({ ok: true, endpoint: "chariow-pulse", methode_attendue: "POST" });
+  new Response(
+    JSON.stringify({
+      ok: false,
+      error: "methode_incorrecte",
+      attendu: "POST",
+      cause_probable:
+        "Un GET ici provient presque toujours d'un POST redirigé : " +
+        "https://bwebagence.com répond 301 vers https://www.bwebagence.com, " +
+        "et un 301 change le POST en GET.",
+      correction:
+        "Configurer le Pulse sur https://www.bwebagence.com/api/webhooks/chariow (avec le www).",
+    }),
+    { status: 405, headers: { "Content-Type": "application/json", Allow: "POST" } },
+  );
