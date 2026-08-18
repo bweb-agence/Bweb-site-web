@@ -1,5 +1,10 @@
 ---
+/* Rendu à la demande : le compteur de places doit refléter le tableau de bord
+   à chaque visite, pas l'état du dernier déploiement. */
+export const prerender = false;
+
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { supabase } from "../lib/supabase";
 
 /* Les visuels WebP optimisés font partie du dépôt et sont servis directement
    depuis /public : cela évite toute dépendance au système de fichiers du build. */
@@ -14,14 +19,38 @@ const imgSrc = (base: string): string => IMG_BASE + base + ".webp";
    stack de prix, sticky CTA).
    ---------------------------------------------------------
    À CONFIGURER (Godwin) :
+   - Places et date de démarrage : écran /admin/cohortes (cohorte
+     « parcours-initiation ») — plus rien à toucher dans ce fichier
    - Paiement Chariow : product_id / store-domain ci-dessous
-   - COHORTE_ISO   : date/heure de démarrage (countdown)
-   - PLACES_RESTANTES : à brancher sur /api/count (Notion)
    - YOUTUBE_HERO / témoignages : IDs vidéo
    ========================================================= */
 
-const COHORTE_ISO = "2026-09-01T09:00:00";
-const PLACES_RESTANTES = 25; // TODO: /api/count (Notion)
+/* Places restantes : source de vérité = la cohorte du tableau de bord.
+   `cohorte_places` additionne les ventes Chariow déjà reçues par le Pulse et
+   les places prises à la main, puis ne rend que des compteurs — le rôle public
+   ne lit ni la table `cohortes` ni la timeline des contacts.
+   Si la base est injoignable, on retombe sur les valeurs de secours : mieux
+   vaut une landing vendable avec un chiffre daté qu'un compteur vide. */
+const COHORTE_SLUG = "parcours-initiation";
+const SECOURS = { capacity: 30, remaining: 25, starts_at: "2026-09-01T09:00:00" };
+
+const { data: cohorteRows } = await supabase.rpc("cohorte_places", { p_slug: COHORTE_SLUG });
+const cohorte = (Array.isArray(cohorteRows) ? cohorteRows[0] : cohorteRows) ?? null;
+
+const CAPACITE = cohorte?.capacity ?? SECOURS.capacity;
+const PLACES_RESTANTES = cohorte?.remaining ?? SECOURS.remaining;
+const COMPLET = PLACES_RESTANTES <= 0;
+const COHORTE_ISO = cohorte?.starts_at ?? SECOURS.starts_at;
+
+/* « Septembre 2026 » : écrit une fois, réutilisé dans tous les rappels de la
+   page (badge, CTA, rareté, section finale). */
+const moisAnnee = new Date(COHORTE_ISO).toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
+const COHORTE_LABEL = moisAnnee.charAt(0).toUpperCase() + moisAnnee.slice(1);
+
+/* Le rendu est dynamique, mais la page encaisse du trafic publicitaire : on la
+   laisse en cache 60 s au bord plutôt que de la recalculer à chaque clic. */
+Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=300");
+
 const YOUTUBE_HERO = ""; // ex: "dQw4w9WgXcQ"
 
 const proof = [
@@ -48,6 +77,8 @@ const testimonials = [
   { name: "Joseph Amon", url: "https://youtube.com/shorts/ViMoaJH7XHA?feature=share" },
   { name: "Kendra Anudike", url: "https://youtube.com/shorts/BnY0sYFcJws?feature=share" },
   { name: "Khalil", url: "https://youtube.com/shorts/xjAyKr5OXwY?feature=share" },
+  { name: "Jennifer", url: "https://youtube.com/shorts/fj6dGj8ZUKw?feature=share" },
+  { name: "Membre du programme", url: "https://youtube.com/shorts/93Adl9t8aDc?feature=share" },
 ];
 const publishedTestimonials = testimonials
   .map((testimonial) => ({
@@ -150,7 +181,7 @@ const faqs = [
 
 <BaseLayout
   title="Parcours Initiation aux Produits Digitaux | Bweb Academy"
-  description="En 30 jours, transforme une compétence que tu possèdes déjà en un produit digital prêt à vendre, mets-le en ligne et décroche tes premières ventes. Cohorte Septembre 2026 — 30 places."
+  description={`En 30 jours, transforme une compétence que tu possèdes déjà en un produit digital prêt à vendre, mets-le en ligne et décroche tes premières ventes. Cohorte ${COHORTE_LABEL} — ${CAPACITE} places.`}
   hideWhatsApp={true}
   bareChrome={true}
 >
@@ -180,7 +211,7 @@ const faqs = [
     <img class="pi-hero-glass pi-hero-glass--left" src="/images/parcours-initiation/glass-shapes.webp" alt="" aria-hidden="true" width="1200" height="675" loading="lazy" decoding="async" />
     <div class="container">
       <div class="pi-hero-inner">
-        <span class="pi-badge-urgence" data-hero-in>🚀 Cohorte Septembre 2026 — 30 places uniquement</span>
+        <span class="pi-badge-urgence" data-hero-in>🚀 Cohorte {COHORTE_LABEL} — {CAPACITE} places uniquement</span>
 
         <h1 data-hero-in>
           Tu possèdes déjà une compétence qui peut te rapporter <span class="pi-hl-gold">325 000 FCFA</span> par mois.
@@ -194,7 +225,7 @@ const faqs = [
 
         <div class="pi-hero-cta" data-hero-in>
           <a href="#reserver" class="pi-btn-buy pi-cta">Je réserve ma place — 65 000 FCFA <span class="pi-arrow">→</span></a>
-          <p class="pi-cta-note">Prochaine cohorte : Septembre 2026 · 30 places · Paiement sécurisé</p>
+          <p class="pi-cta-note">Prochaine cohorte : {COHORTE_LABEL} · {CAPACITE} places · Paiement sécurisé</p>
         </div>
 
         <div class="pi-proof" data-hero-in>
@@ -494,17 +525,17 @@ const faqs = [
     <div class="container pi-narrow">
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">Rareté réelle</div>
-        <h2>30 places. Pas une de plus.</h2>
+        <h2>{CAPACITE} places. Pas une de plus.</h2>
       </div>
       <div class="pi-scarcity reveal">
         <div class="pi-scarcity-count">
-          <span class="pi-scarcity-n" id="placesLeft" data-places={PLACES_RESTANTES}>{PLACES_RESTANTES}</span>
-          <span class="pi-scarcity-l">places restantes pour la cohorte de Septembre</span>
+          <span class="pi-scarcity-n" id="placesLeft" data-places={PLACES_RESTANTES} data-capacity={CAPACITE}>{PLACES_RESTANTES}</span>
+          <span class="pi-scarcity-l">{COMPLET ? `cohorte de ${COHORTE_LABEL} complète` : `places restantes pour la cohorte de ${COHORTE_LABEL}`}</span>
         </div>
         <div class="pi-scarcity-text">
-          <p>Chaque cohorte est limitée à 30 personnes. Pour une raison simple&nbsp;: <b>chaque apprenant reçoit un suivi personnalisé.</b></p>
+          <p>Chaque cohorte est limitée à {CAPACITE} personnes. Pour une raison simple&nbsp;: <b>chaque apprenant reçoit un suivi personnalisé.</b></p>
           <p>Ton responsable de cohorte vérifie chacun de tes livrables. Ton mentor valide ton offre, ton produit, ta page de vente. Godwin est en direct 2 fois par semaine.</p>
-          <p>Avec 100 personnes, ce serait impossible. Avec 30, c'est intensif, exigeant — et ça produit des résultats.</p>
+          <p>Avec 100 personnes, ce serait impossible. Avec {CAPACITE}, c'est intensif, exigeant — et ça produit des résultats.</p>
         </div>
       </div>
       <div class="pi-scarcity-bar reveal" aria-hidden="true"><span id="placesBar"></span></div>
@@ -569,7 +600,7 @@ const faqs = [
         </div>
 
         <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">Je réserve ma place — 65 000 FCFA <span class="pi-arrow">→</span></a>
-        <p class="pi-price-note">30 places maximum par cohorte. 1 cohorte chaque mois.</p>
+        <p class="pi-price-note">{CAPACITE} places maximum par cohorte. 1 cohorte chaque mois.</p>
 
         <div class="pi-assurances">
           <div class="pi-assurance">
@@ -621,7 +652,7 @@ const faqs = [
     <img class="pi-final-glass pi-final-glass--left" src="/images/parcours-initiation/glass-shapes.webp" alt="" aria-hidden="true" width="1200" height="675" loading="lazy" decoding="async" />
     <div class="container">
       <div class="pi-final-inner">
-        <div class="eyebrow on-dark reveal" style="justify-content:center">Cohorte Septembre 2026 · 30 places</div>
+        <div class="eyebrow on-dark reveal" style="justify-content:center">Cohorte {COHORTE_LABEL} · {CAPACITE} places</div>
         <h2 class="reveal">C'est le moment d'arrêter d'apprendre.<br />Et de commencer à construire.</h2>
         <p class="pi-final-sub reveal">Chaque place est un produit qui va naître. Une personne qui va lancer. Une compétence qui va enfin générer des revenus.</p>
 
@@ -647,7 +678,7 @@ const faqs = [
               <span class="pi-fcd-sep">:</span>
               <span class="pi-fcd-box"><span class="n" data-cd="s">00</span><span class="u">Sec</span></span>
             </div>
-            <span class="pi-final-places">Il reste <b>{PLACES_RESTANTES}</b> places sur 30</span>
+            <span class="pi-final-places">{COMPLET ? `Cohorte de ${COHORTE_LABEL} complète` : (<>Il reste <b>{PLACES_RESTANTES}</b> places sur {CAPACITE}</>)}</span>
           </div>
           <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">Je réserve ma place — 65 000 FCFA →</a>
           <div class="pi-final-trust">
@@ -889,8 +920,9 @@ const faqs = [
         var el = document.getElementById("placesLeft");
         var bar = document.getElementById("placesBar");
         if (!el || !bar) return;
-        var left = parseInt(el.getAttribute("data-places"), 10) || 30;
-        var pct = Math.max(4, Math.min(100, (left / 30) * 100));
+        var left = parseInt(el.getAttribute("data-places"), 10) || 0;
+        var cap = parseInt(el.getAttribute("data-capacity"), 10) || 30;
+        var pct = Math.max(4, Math.min(100, (left / cap) * 100));
         requestAnimationFrame(function () { bar.style.width = pct + "%"; });
       })();
 
