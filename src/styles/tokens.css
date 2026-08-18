@@ -34,11 +34,11 @@
   --c-border-soft: rgba(2, 11, 80, 0.06);
 
   /* ---------- Couleurs sémantiques (état) ---------- */
-  --c-success: #0a9c77;
+  --c-success: #087c5f; /* corrigé (ancien #0A9C77 : 3.04:1 sur --c-success-bg, échouait AA) */
   --c-success-bg: #dcf5ec;
-  --c-warning: #b98600;
+  --c-warning: #8f6700; /* corrigé (ancien #B98600 : 2.88:1 sur --c-warning-bg, échouait AA) */
   --c-warning-bg: #fbf1d6;
-  --c-danger: #d22d2d;
+  --c-danger: #cb2b2b; /* corrigé (ancien #D22D2D : 4.26:1 sur --c-danger-bg, échouait AA) */
   --c-danger-bg: #fbe7e7;
   --c-info: var(--c-blue);
 
