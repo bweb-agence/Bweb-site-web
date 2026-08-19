@@ -193,7 +193,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
         <div class="wb-host-body">
           <div class="eyebrow">Animé par</div>
           <h2>Godwin Soola</h2>
-          <p class="lead">Fondateur de Bweb Agence, cabinet de conseil et de formation à l'IA en Côte d'Ivoire.</p>
+          <p class="lead">Fondateur de Bweb Agence, spécialiste en marketing digital, ayant déjà aidé ses apprenants à générer plus de <b>300&nbsp;000&nbsp;000&nbsp;FCFA</b> avec les produits digitaux.</p>
           <ul class="wb-host-stats">
             <li><b>17 116</b><span>personnes formées</span></li>
             <li><b>95 %</b><span>d'avis positifs sur 593 clients</span></li>
@@ -509,8 +509,14 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
   /* ===== 2 · Valeur empilée (tuiles .tb-tile du site) ===== */
   /* 3 tuiles seulement : on force 3 colonnes au lieu des 4 par défaut. */
   .wb-bento { max-width: 1040px; margin-inline: auto; }
+  /* Les tuiles du site s'affichent par deux dès le plus petit écran. Ici elles
+     portent un titre long, une description ET une pastille de valeur : à deux
+     par ligne sur 375 px, tout se retrouve à l'étroit. Une seule colonne tant
+     qu'on n'a pas la place de faire autrement. */
+  @media (max-width: 719px) { .wb-bento { grid-template-columns: 1fr; } }
   @media (min-width: 1000px) { .wb-bento { grid-template-columns: repeat(3, 1fr); } }
   .wb-bento .tb-tile { min-height: 236px; }
+  @media (max-width: 719px) { .wb-bento .tb-tile { min-height: 0; } }
   /* Par défaut la tuile pousse son contenu vers le bas (margin-bottom:auto sur
      l'icône). Ici on veut l'inverse : icône, puis titre et description collés
      dessous, et la valeur seule repoussée en pied de carte — les trois tuiles
