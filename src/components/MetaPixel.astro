@@ -1,0 +1,49 @@
+---
+/* =========================================================
+   Pixel Meta, branché sur le consentement
+   ---------------------------------------------------------
+   Le pixel se charge sur toutes les pages qui l'appellent, mais il démarre en
+   `revoke` : dans cet état, Meta ne dépose AUCUN cookie et met les événements
+   en file d'attente au lieu de les envoyer. Dès que le visiteur accepte les
+   contenus externes, on passe en `grant` — et la file part d'un coup, y compris
+   la vue de page enregistrée avant la réponse. Un visiteur qui accepte après
+   avoir lu la moitié de la page n'est donc pas perdu pour la mesure.
+
+   S'il refuse, le pixel reste muet. C'est le contrat du consentement : il n'y a
+   pas de mode « sans cookie mais quand même suivi » côté navigateur. Pour
+   continuer à mesurer les conversions dans ce cas, la voie est l'API
+   Conversions, côté serveur — c'est un autre chantier.
+
+   `revoke` AVANT `init` : dans l'autre ordre, l'initialisation dépose déjà son
+   cookie `_fbp` et le mal est fait.
+   ========================================================= */
+interface Props {
+  /** Identifiant du pixel. */
+  id: string;
+}
+const { id } = Astro.props;
+---
+
+<script is:inline define:vars={{ PIXEL_ID: id }}>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+
+  /* La classe est posée par le gestionnaire de consentement au chargement ;
+     tant qu'elle est absente, on considère qu'on n'a pas de réponse. */
+  var accorde = document.documentElement.classList.contains('consent-externes');
+  fbq('consent', accorde ? 'grant' : 'revoke');
+  fbq('init', PIXEL_ID);
+  fbq('track', 'PageView');
+
+  window.addEventListener('bweb:consent', function (e) {
+    fbq('consent', e.detail && e.detail.externes ? 'grant' : 'revoke');
+  });
+</script>
+<noscript><img height="1" width="1" style="display:none" alt=""
+  src={`https://www.facebook.com/tr?id=${id}&ev=PageView&noscript=1`} /></noscript>
