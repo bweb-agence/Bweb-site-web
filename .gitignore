@@ -30,3 +30,4 @@ _build/
 visuels-sources/
 # Visuels bruts hors site (couvertures, exports) — non servis en production
 assets/
+.env*

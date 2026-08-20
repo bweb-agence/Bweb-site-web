@@ -1,65 +1,72 @@
 ---
+import { marked } from "marked";
+import raw from "../data/conditions-generales-de-vente.md?raw";
+import { site, contact } from "../config/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+/* Conditions générales de vente — texte de référence dans
+   src/data/conditions-generales-de-vente.md, rendu via marked.
+   Nettoyage léger pour l'affichage web :
+   - on retire le titre H1 et le sous-titre (déjà présents dans le hero) ;
+   - le fichier source est déjà la version « publiée » (identité SARLU
+     renseignée, notes internes retirées, périmètre B2B précisé). */
+let md = raw
+  .replace(/^#\s+CONDITIONS GÉNÉRALES DE VENTE.*$/m, "")
+  .replace(/^##\s+BWEB AGENCE.*$/m, "")
+  .trim();
+
+let html = await marked.parse(md);
+// Rendre les tableaux défilables horizontalement sur petit écran.
+html = html.replace(/<table>/g, '<div class="legal-table"><table>').replace(/<\/table>/g, "</table></div>");
 ---
 
-<BaseLayout title="Conditions générales — Bweb Agence" description="Conditions générales de service de Bweb Agence.">
-<section class="page-hero" style="padding-bottom:56px" data-nav-section="Conditions générales">
-  <div class="mesh-bg"></div>
-  <div class="grid-lines"></div>
-  <div class="container">
-    <div class="breadcrumb"><a href="/">Accueil</a>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
-      <span>Conditions générales</span>
+<BaseLayout
+  title="Conditions générales de vente — Bweb Agence"
+  description="Conditions générales de vente de Bweb Agence : prestations numériques, développement, design, marketing, IA et automatisation. Version 1.0."
+>
+  <section class="page-hero" style="padding-bottom:56px" data-nav-section="CGV">
+    <div class="mesh-bg"></div>
+    <div class="grid-lines"></div>
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/">Accueil</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18" /></svg>
+        <span>Conditions générales de vente</span>
+      </div>
+      <div class="text-white" data-hero-in>
+        <div class="eyebrow on-dark">Informations légales</div>
+        <h1>Conditions générales de vente</h1>
+      </div>
     </div>
-    <div class="text-white" data-hero-in>
-      <div class="eyebrow on-dark">Cadre contractuel</div>
-      <h1>Conditions générales de service</h1>
+  </section>
+
+  <section class="section" data-nav-section="Le texte">
+    <div class="container">
+      <div class="container-narrow legal-content legal-prose" set:html={html} />
     </div>
-  </div>
-</section>
-
-<section class="section" data-nav-section="Le texte">
-  <div class="container">
-    <div class="container-narrow legal-content">
-      <p class="placeholder-note">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/></svg>
-        Document type à faire valider par un professionnel du droit avant mise en ligne, et à adapter selon les prestations réellement contractualisées.
-      </p>
-      <p class="legal-updated">Dernière mise à jour : 23 juillet 2026</p>
-
-      <h2>1. Objet</h2>
-      <p>Les présentes conditions générales encadrent les prestations de conseil, formation, création de SaaS, marketing digital, digitalisation et automatisation proposées par Bweb Agence à ses clients.</p>
-
-      <h2>2. Services proposés</h2>
-      <p>Bweb Agence propose des prestations décrites sur son site et précisées dans chaque devis ou proposition commerciale transmise au client.</p>
-
-      <h2>3. Devis et commande</h2>
-      <p>Toute prestation fait l'objet d'un devis préalable. La prestation débute après validation écrite du devis par le client, selon les modalités convenues (acompte éventuel, calendrier).</p>
-
-      <h2>4. Tarifs et paiement</h2>
-      <p>Les tarifs sont communiqués dans le devis. Les modalités de paiement (échéancier, moyens de paiement acceptés) sont précisées avant le démarrage de la prestation.</p>
-
-      <h2>5. Délais</h2>
-      <p>Les délais indiqués sont donnés à titre indicatif et peuvent varier selon la disponibilité des informations et validations attendues du client.</p>
-
-      <h2>6. Obligations du client</h2>
-      <p>Le client s'engage à fournir les informations, contenus et validations nécessaires à la bonne exécution de la prestation dans les délais convenus.</p>
-
-      <h2>7. Obligations de Bweb Agence</h2>
-      <p>Bweb Agence s'engage à mettre en œuvre les moyens nécessaires à la bonne exécution des prestations commandées, dans le respect des règles de l'art.</p>
-
-      <h2>8. Propriété intellectuelle</h2>
-      <p>Sauf mention contraire dans le devis, les livrables finaux sont cédés au client après paiement intégral de la prestation. Bweb Agence conserve le droit de mentionner le projet dans son portfolio, sauf demande contraire du client.</p>
-
-      <h2>9. Résiliation</h2>
-      <p>Les conditions de résiliation ou d'interruption d'une prestation en cours sont précisées dans le devis ou le contrat signé entre les parties.</p>
-
-      <h2>10. Responsabilité</h2>
-      <p>La responsabilité de Bweb Agence ne saurait être engagée en cas de mauvaise utilisation des outils livrés ou de non-respect des recommandations formulées.</p>
-
-      <h2>11. Droit applicable et litiges</h2>
-      <p>Les présentes conditions générales sont soumises au droit ivoirien. En cas de litige, une solution amiable sera recherchée en priorité avant toute action judiciaire.</p>
-    </div>
-  </div>
-</section>
+  </section>
 </BaseLayout>
+
+<style is:global>
+  /* Rendu du Markdown légal (contenu injecté via set:html → styles globaux). */
+  .legal-prose { max-width: 80ch; }
+  .legal-prose > * + * { margin-top: 1em; }
+  .legal-prose h2 { font-family: var(--f-display); font-weight: 800; font-size: var(--fs-h3); color: var(--c-navy); margin-top: 2em; letter-spacing: -0.01em; }
+  .legal-prose > h2:first-child { margin-top: 0; }
+  .legal-prose h3 { font-family: var(--f-display); font-weight: 700; font-size: var(--fs-h4); color: var(--c-navy); margin-top: 1.6em; }
+  .legal-prose h4 { font-family: var(--f-display); font-weight: 700; font-size: 1.05rem; color: var(--c-navy); margin-top: 1.3em; }
+  .legal-prose p, .legal-prose li { color: var(--c-gray-700); line-height: 1.75; font-size: .98rem; }
+  .legal-prose ul, .legal-prose ol { padding-left: 1.4em; }
+  .legal-prose ul li { list-style: disc; margin-top: .3em; }
+  .legal-prose ol li { list-style: decimal; margin-top: .3em; }
+  .legal-prose a { color: var(--c-blue); text-underline-offset: 3px; text-decoration: underline; }
+  .legal-prose strong { color: var(--c-navy); }
+  .legal-prose blockquote { border-left: 3px solid var(--c-orange); background: var(--c-cream); padding: 14px 18px; border-radius: 0 12px 12px 0; color: var(--c-navy); }
+  .legal-prose blockquote p { color: var(--c-navy); }
+  .legal-prose hr { border: 0; border-top: 1px solid var(--c-border); margin: 2.2em 0; }
+  .legal-prose code { background: var(--c-gray-100); padding: .12em .4em; border-radius: 5px; font-size: .88em; color: var(--c-navy); }
+  .legal-table { overflow-x: auto; margin-top: 1em; -webkit-overflow-scrolling: touch; }
+  .legal-prose table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: .9rem; }
+  .legal-prose th, .legal-prose td { border: 1px solid var(--c-border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  .legal-prose th { background: var(--surface-2); font-weight: 700; color: var(--c-navy); }
+</style>

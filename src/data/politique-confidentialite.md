@@ -66,15 +66,16 @@ Bweb Agence est une agence de conseil et de réalisation numérique. Elle accomp
 
 Pour les traitements liés à son propre site, à sa prospection, à sa relation commerciale, à ses comptes utilisateurs, à sa facturation, à ses événements et à ses communications, l’entité ci-dessous est en principe responsable du traitement :
 
-| Information | Coordonnée à compléter |
+| Information | Coordonnée |
 | --- | --- |
-| Dénomination sociale | **Bweb Agence – [forme juridique exacte]** |
-| Siège social | [adresse complète] |
-| Immatriculation / RCCM | [numéro] |
+| Dénomination sociale | **Bweb Agence SARLU** |
+| Capital social | 5 000 000 FCFA |
+| Siège social | Abidjan Cocody Riviera Abatta, Côte d'Ivoire |
+| Immatriculation / RCCM | CI-ABJ-03-2026-B13-11577 |
 | Identifiant fiscal | [numéro, si pertinent] |
-| E-mail vie privée | [privacy@domaine.tld] |
-| Téléphone | [numéro] |
-| Correspondant à la protection des données | [nom ou fonction, coordonnées] |
+| E-mail vie privée | contact@bwebagence.com |
+| Téléphone | +225 07 01 92 60 28 |
+| Correspondant à la protection des données | Godwin Soola, fondateur — contact@bwebagence.com |
 
 Le « responsable du traitement » est l’organisation qui détermine les finalités et les moyens essentiels d’un traitement. Bweb Agence n’occupe pas toujours ce rôle. Lorsqu’elle fournit à un client un service de développement, d’hébergement applicatif, de maintenance, de marketing, d’automatisation ou d’IA et qu’elle traite des données selon les instructions documentées de ce client, le client demeure généralement responsable du traitement et Bweb Agence intervient comme sous-traitante. Dans cette hypothèse, la politique du client et le contrat de traitement applicable prévalent pour les données concernées ; toute demande doit de préférence être adressée au client, que nous assisterons selon nos obligations contractuelles.
 
