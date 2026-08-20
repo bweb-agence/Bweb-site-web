@@ -14,10 +14,10 @@ import "../../styles/tiles.css";
    Le funnel : cette page → /webinaire-initiation/merci
    ========================================================= */
 
-/* Le live est à 20 h heure d'Abidjan (UTC+0). Le « Z » est important :
-   sans lui, le navigateur interpréterait 20:00 dans SON fuseau, et un
+/* Le live est à 19 h heure d'Abidjan (UTC+0). Le « Z » est important :
+   sans lui, le navigateur interpréterait 19:00 dans SON fuseau, et un
    inscrit à Paris verrait un décompte faux de 2 heures. */
-const LIVE_ISO = "2026-09-06T20:00:00Z";
+const LIVE_ISO = "2026-09-06T19:00:00Z";
 const PLACES = 500;
 
 /* Vidéo de présentation du live. Coller l'ID YouTube (ex. "z_h3zF0Xzjk").
@@ -32,7 +32,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
 
 <BaseLayout
   title="Webinaire gratuit — ta compétence en 325 000 FCFA/mois | Bweb Academy"
-  description="Live unique le dimanche 6 septembre à 20 h (Abidjan) : la méthode en 3 étapes pour transformer une compétence que tu as déjà en produit digital à 325 000 FCFA/mois. Gratuit, 500 places."
+  description="Live unique le dimanche 6 septembre à 19 h (Abidjan) : la méthode en 3 étapes pour transformer une compétence que tu as déjà en produit digital à 325 000 FCFA/mois. Gratuit, 500 places."
   hideWhatsApp={true}
   bareChrome={true}
 >
@@ -59,7 +59,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
     <div class="container wb-hero-inner">
       <span class="wb-badge-live" data-hero-in>
         <span class="wb-dot" aria-hidden="true"></span>
-        Événement en direct · Dimanche 6 septembre · 20 h
+        Événement en direct · Dimanche 6 septembre · 19 h
       </span>
 
       <h1 data-hero-in>
@@ -210,7 +210,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
       <div class="wb-form-card reveal">
         <span class="wb-form-tag">Gratuit · {PLACES} places</span>
         <h2>Réserve ta place maintenant</h2>
-        <p class="wb-form-intro">Dimanche 6 septembre, 20 h (heure d'Abidjan). Le lien arrive sur WhatsApp.</p>
+        <p class="wb-form-intro">Dimanche 6 septembre, 19 h (heure d'Abidjan). Le lien arrive sur WhatsApp.</p>
 
         <form id="wbForm" novalidate>
           <div class="wb-field">
@@ -272,7 +272,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
         </div>
         <div class="wb-faq-item">
           <button class="wb-faq-q" type="button" aria-expanded="false">
-            <span>Je ne peux pas être là à 20 h&nbsp;?</span>
+            <span>Je ne peux pas être là à 19 h&nbsp;?</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
           <div class="wb-faq-a"><div class="wb-faq-a-in">Un replay est disponible 48 h pour les inscrits. Mais tu perds la possibilité de poser tes questions en direct — et les personnes présentes au live ont accès à des choses que les autres n'ont pas.</div></div>
