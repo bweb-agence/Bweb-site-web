@@ -5,6 +5,7 @@
    Silencieux si non configuré (renvoie false).
    ========================================================= */
 import { BirdClient } from "@messagebird/sdk";
+import { secret } from "./env";
 
 const SITE = "https://www.bwebagence.com";
 
@@ -15,10 +16,17 @@ type EmailAttachment = { filename: string; content: string; content_type?: strin
 type EmailOpts = { to: string; subject: string; html: string; text?: string; attachments?: EmailAttachment[] };
 
 export async function sendEmail(opts: EmailOpts): Promise<boolean> {
-  const key = import.meta.env.BIRD_API_KEY || import.meta.env.BIRD_ACCESS_KEY;
-  const from = import.meta.env.BIRD_FROM || "Bweb Agence <no-reply@mail.bwebagence.com>";
-  const replyTo = import.meta.env.BIRD_REPLY_TO || "info@bwebagence.com";
-  if (!key || key === "A_COMPLETER") return false;
+  /* Lecture À L'EXÉCUTION (cf. src/lib/env.ts). En accès littéral,
+     `import.meta.env.BIRD_API_KEY` est remplacé par sa valeur au BUILD : une
+     clé absente à ce moment-là devient `undefined` dans l'artefact, et plus
+     aucun e-mail ne part — même une fois la variable renseignée. Constaté sur
+     un déploiement de prévisualisation le 20/08/2026 : l'inscription au
+     webinaire était enregistrée, sa confirmation n'atteignait jamais Bird.
+     C'est le même piège que celui documenté pour le tunnel (PR #92/#93). */
+  const key = secret("BIRD_API_KEY", "BIRD_ACCESS_KEY");
+  const from = secret("BIRD_FROM") || "Bweb Agence <no-reply@mail.bwebagence.com>";
+  const replyTo = secret("BIRD_REPLY_TO") || "info@bwebagence.com";
+  if (!key) return false;
   const attachments = opts.attachments?.length
     ? opts.attachments.map((a) => {
         const ct = a.content_type || a.type;
