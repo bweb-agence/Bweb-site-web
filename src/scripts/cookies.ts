@@ -24,7 +24,15 @@ function applyConsent(): void {
   window.dispatchEvent(new CustomEvent("bweb:consent", { detail: { externes: ok } }));
 }
 
-export function initCookies(): void {
+/**
+ * @param autoShow  Faux sur les landings de vente et les pages d'inscription :
+ *   la bannière s'y ouvrait au-dessus du CTA, au moment précis où le visiteur
+ *   décide. On charge quand même la librairie — le choix déjà exprimé ailleurs
+ *   continue de s'appliquer, le bouton « Gérer les cookies » du pied de page
+ *   ouvre toujours le panneau, et rien ne se règle en douce derrière le dos du
+ *   visiteur : la bannière est seulement silencieuse, pas absente.
+ */
+export function initCookies(autoShow = true): void {
   // Exposé pour les boutons hors de ce bundle (ex. « Afficher la carte »).
   window.bwebCookies = {
     show: () => CookieConsent.showPreferences(),
@@ -32,6 +40,7 @@ export function initCookies(): void {
   };
 
   CookieConsent.run({
+    autoShow,
     guiOptions: {
       consentModal: { layout: "box wide", position: "bottom left", flipButtons: false, equalWeightButtons: true },
       preferencesModal: { layout: "box", position: "right", flipButtons: false, equalWeightButtons: true },

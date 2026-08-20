@@ -45,7 +45,12 @@ function hideDecorativeSvg(): void {
 }
 
 function boot(): void {
-  initCookies();
+  /* Bannière de consentement : silencieuse sur les landings de vente et les
+     pages d'inscription (attribut posé par BaseLayout). Elle s'y ouvrait
+     au-dessus du CTA, au moment précis où le visiteur décide. La librairie est
+     tout de même chargée : le choix exprimé ailleurs s'applique, et le bouton
+     « Gérer les cookies » du pied de page ouvre le panneau partout. */
+  initCookies(!document.body.hasAttribute("data-sans-banniere-cookies"));
   setYear();
   hideDecorativeSvg();
   initContactLinks();
