@@ -6,6 +6,7 @@ import { sendCampaignEmails, type Recipient } from "../../../lib/sendCampaign";
 import { sendDueRappels } from "../../../lib/sendRappels";
 import { enrollDuePackHolders } from "../../../lib/enrollPack";
 import { syncContactsToHub } from "../../../lib/syncHub";
+import { envoyerSequenceWebinaire, type RapportSequence } from "../../../lib/webinaireEmails";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -50,6 +51,13 @@ async function handle(request: Request): Promise<Response> {
   let hub: Awaited<ReturnType<typeof syncContactsToHub>> = { traites: 0, transmis: 0, echecs: 0, reste: 0 };
   try { hub = await syncContactsToHub(admin); } catch { /* non bloquant */ }
 
+  /* Séquence du tunnel webinaire — rappels du matin (J-1, jour J) et replay.
+     Chaînée ici pour la même raison que les rappels de session : le plan Hobby
+     n'autorise que 2 crons Vercel. Les deux messages du soir (une heure avant,
+     ouverture) passent par /api/cron/webinaire, appelé depuis le VPS. */
+  let webinaire: RapportSequence = { kinds: [], inscrits: 0, envoyes: 0, deja: 0, echecs: 0, ignores: 0, reste: 0 };
+  try { webinaire = await envoyerSequenceWebinaire(admin); } catch { /* non bloquant */ }
+
   const { data: due } = await admin
     .from("campaigns")
     .select("id, subject, message, body_html, recipients")
@@ -58,7 +66,7 @@ async function handle(request: Request): Promise<Response> {
     .lte("scheduled_at", nowIso)
     .limit(20);
 
-  if (!due || due.length === 0) return json({ ok: true, processed: 0, rappels, packEnrol, hub });
+  if (!due || due.length === 0) return json({ ok: true, processed: 0, rappels, packEnrol, hub, webinaire });
 
   const results: any[] = [];
   for (const c of due as any[]) {
@@ -85,7 +93,7 @@ async function handle(request: Request): Promise<Response> {
       results.push({ id: c.id, error: true });
     }
   }
-  return json({ ok: true, processed: results.length, results, rappels, packEnrol, hub });
+  return json({ ok: true, processed: results.length, results, rappels, packEnrol, hub, webinaire });
 }
 
 export const GET: APIRoute = ({ request }) => handle(request);
