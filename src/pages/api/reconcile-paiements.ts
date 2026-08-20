@@ -2,6 +2,7 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 import { createAdminClient } from "../../lib/supabaseAdmin";
+import { secret } from "../../lib/env";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -18,16 +19,15 @@ const json = (obj: unknown, status = 200) =>
  */
 async function handle(request: Request): Promise<Response> {
   // Fail-closed : sans secret configuré, l'endpoint est fermé (jamais public).
-  const secret = import.meta.env.CRON_SECRET;
-  if (!secret) return json({ ok: false, error: "not_configured" }, 503);
+  const cronSecret = secret("CRON_SECRET");
+  if (!cronSecret) return json({ ok: false, error: "not_configured" }, 503);
   const auth = request.headers.get("authorization") || "";
   const key = new URL(request.url).searchParams.get("key") || "";
-  if (auth !== `Bearer ${secret}` && key !== secret) {
+  if (auth !== `Bearer ${cronSecret}` && key !== cronSecret) {
     return json({ ok: false, error: "unauthorized" }, 401);
   }
 
-  const serviceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceKey || serviceKey === "A_COMPLETER") return json({ ok: false, error: "not_configured" });
+  if (!secret("SUPABASE_SERVICE_ROLE_KEY")) return json({ ok: false, error: "not_configured" });
 
   const origin = new URL(request.url).origin;
   const admin = createAdminClient();
