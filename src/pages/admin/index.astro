@@ -4,11 +4,12 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 // KPIs — icônes statiques ; valeurs + pied remplis côté client (data-k / data-foot).
 const kpis = [
-  { key: "ca", label: "CA confirmé", accent: "green", icon: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 10v4M18 10v4"/>' },
+  { key: "ca", label: "CA site", accent: "green", icon: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 10v4M18 10v4"/>' },
   { key: "paid", label: "Réservations payées", accent: "blue", icon: '<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>' },
   { key: "rate", label: "Taux de paiement", accent: "violet", icon: '<path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/>' },
   { key: "clients", label: "Clients payants", accent: "navy", icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5"/>' },
   { key: "relance", label: "À relancer", accent: "amber", icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>' },
+  { key: "chariow", label: "CA Chariow", accent: "amber", icon: '<path d="M3 3h2l2.4 12.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>' },
   { key: "session", label: "Prochaine session", accent: "rose", icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>' },
 ];
 ---
@@ -110,14 +111,30 @@ const kpis = [
 
   async function loadBookings() {
     // Stats unifiées : billets (bookings) + achats de parcours (pack_purchases).
-    const [bkRes, pkRes] = await Promise.all([
+    const [bkRes, pkRes, chRes] = await Promise.all([
       supabaseBrowser.from("bookings")
         .select("id,reference,full_name,email,phone,status,payment_status,amount_due,amount_paid,is_deposit,created_at,payment_method,source,session_id,sessions(title,starts_at),ticket_types(name)")
         .order("created_at", { ascending: false }),
       supabaseBrowser.from("pack_purchases")
         .select("id,reference,full_name,email,phone,status,payment_status,amount_due,amount_paid,created_at,payment_method,packs(title)")
         .order("created_at", { ascending: false }),
+      /* Ventes encaissées sur Chariow, reçues par le Pulse depuis le 16/08/2026
+         et inscrites dans la timeline. La boutique porte aussi des produits
+         GRATUITS (guides, formations d'appel) : ils arrivent par le même
+         événement, avec un montant nul. Les mélanger gonflerait le nombre de
+         ventes d'un facteur trente sans ajouter un franc — on les sépare. */
+      supabaseBrowser.from("contact_events")
+        .select("amount,occurred_at,title,contact_id,contacts(email)")
+        .eq("type", "achat").eq("source", "chariow")
+        .order("occurred_at", { ascending: false }),
     ]);
+    const chariow = (chRes.data || []) as any[];
+    const chPayantes = chariow.filter((e) => (e.amount || 0) > 0);
+    const chGratuits = chariow.length - chPayantes.length;
+    const caChariow = chPayantes.reduce((a, e) => a + (e.amount || 0), 0);
+    const caChariowIn = (from: number, to: number) => chPayantes
+      .filter((e) => +new Date(e.occurred_at) >= from && +new Date(e.occurred_at) < to)
+      .reduce((a, e) => a + (e.amount || 0), 0);
     // Un billet « source=pack » = place déjà payée au niveau du pack (montant 0) :
     // on l'EXCLUT des ventes pour ne pas compter deux fois — c'est le pack qui porte
     // la transaction et le chiffre d'affaires.
@@ -141,20 +158,39 @@ const kpis = [
     const reconciled = reconciledRelanceIds(all);
     const recoverList = all.filter((b) => ["echoue", "abandon"].includes(stateOf(b)) && !reconciled.has(b.id));
     const recoverable = recoverList.reduce((a, b) => a + dueOf(b), 0);
-    const clientsPayants = new Set(all.filter((b) => stateOf(b) === "paye").map((b) => (b.email || "").toLowerCase()).filter(Boolean)).size;
+    const emailsPayants = new Set(all.filter((b) => stateOf(b) === "paye").map((b) => (b.email || "").toLowerCase()).filter(Boolean));
+    // Un acheteur Chariow est un client payant, même s'il n'est jamais passé par
+    // la billetterie : le CA le compte, le compteur de clients doit suivre.
+    chPayantes.forEach((e) => { const m = (e.contacts?.email || "").toLowerCase(); if (m) emailsPayants.add(m); });
+    const clientsPayants = emailsPayants.size;
     const allEmails = new Set(all.map((b) => (b.email || "").toLowerCase()).filter(Boolean));
+    chariow.forEach((e) => { const m = (e.contacts?.email || "").toLowerCase(); if (m) allEmails.add(m); });
     const prospects = Math.max(0, allEmails.size - clientsPayants);
 
     // Delta CA : 30 derniers jours vs 30 précédents.
     const d30 = now - 30 * 864e5, d60 = now - 60 * 864e5;
     const caIn = (from: number, to: number) => all.filter((b) => stateOf(b) === "paye" && +new Date(b.created_at) >= from && +new Date(b.created_at) < to).reduce((a, b) => a + paidOf(b), 0);
-    const ca30 = caIn(d30, now + 1), caPrev = caIn(d60, d30);
+    /* Le delta porte sur le CA du SITE, qui est celui de sa tuile. Chariow n'en
+       a pas : le Pulse ne remonte que depuis le 16 août, donc les « 30 jours
+       précédents » n'existent pas encore et afficheraient une hausse infinie. */
+    const ca30 = caIn(d30, now + 1);
+    const caPrev = caIn(d60, d30);
     const delta = caPrev > 0 ? Math.round(((ca30 - caPrev) / caPrev) * 100) : 0;
     const deltaHtml = caPrev === 0 ? "sur les 30 derniers jours"
       : delta === 0 ? "stable vs 30 j préc."
       : `<span class="delta ${delta > 0 ? "up" : "down"}">${delta > 0 ? "▲" : "▼"} ${Math.abs(delta)}%</span> vs 30 j préc.`;
 
-    setKpi("ca", fmtFCFA(ca), deltaHtml);
+    /* Deux tuiles, deux origines. Un total unique masquait ce qui vient de la
+       billetterie du site et ce qui vient de la boutique — or les deux ne se
+       pilotent pas de la même façon. Le delta, lui, reste calculé sur
+       l'ensemble : c'est la tendance de l'argent qui rentre, toutes origines
+       confondues. */
+    const pluriel = (n: number) => (n > 1 ? "s" : "");
+    setKpi("ca", fmtFCFA(ca), `billets et packs · ${deltaHtml}`);
+    // Chariow : pas de delta tant que l'historique ne couvre pas deux périodes.
+    setKpi("chariow", fmtFCFA(caChariow), chPayantes.length
+      ? `${chPayantes.length} vente${pluriel(chPayantes.length)} · ${chGratuits} téléchargement${pluriel(chGratuits)} gratuit${pluriel(chGratuits)}`
+      : `aucune vente · ${chGratuits} téléchargement${pluriel(chGratuits)} gratuit${pluriel(chGratuits)}`);
     setKpi("paid", String(counts.paye), `sur ${tentatives} tentatives`);
     setKpi("rate", taux + "%", "paiements aboutis");
     setKpi("clients", String(clientsPayants), `${prospects} prospect${prospects > 1 ? "s" : ""} à convertir`);

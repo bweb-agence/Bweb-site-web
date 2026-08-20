@@ -511,7 +511,8 @@
 .dash { display: flex; flex-direction: column; gap: 18px; }
 
 /* KPI strip */
-.dash-kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 13px; }
+/* auto-fit : la rangée absorbe une tuile de plus (Chariow) sans laisser d'orpheline. */
+.dash-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 13px; }
 .dash-kpi { background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 15px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 9px; }
 .dash-kpi .dic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
 .dash-kpi .dic svg { width: 18px; height: 18px; }
