@@ -85,11 +85,11 @@ revoke all on function public.webinaire_public(text) from public;
 grant execute on function public.webinaire_public(text) to anon, authenticated, service_role;
 
 -- ---------- Le live du 6 septembre ----------
--- Reprend à l'identique les constantes de /webinaire-initiation (20 h Abidjan,
--- soit 20:00 UTC). Le lien de connexion se renseigne dans le tableau de bord.
+-- Reprend à l'identique les constantes de /webinaire-initiation (19 h Abidjan,
+-- soit 19:00 UTC). Le lien de connexion se renseigne dans le tableau de bord.
 insert into public.webinaires (slug, title, starts_at, duration_min, join_info)
 values ('webinaire-initiation',
         'De ta compétence à tes premières ventes : la méthode exacte en 3 étapes',
-        '2026-09-06 20:00:00+00', 60,
+        '2026-09-06 19:00:00+00', 60,
         'Connecte-toi 5 minutes en avance, avec un carnet.')
 on conflict (slug) do nothing;
