@@ -39,30 +39,52 @@ export type KindWebinaire = "confirmation" | "reminder_1d" | "reminder_0d" | "re
 
 export interface Webinaire {
   id: string;
+  /** Identité stable de l'entonnoir, partagée par toutes les éditions. */
+  tunnel: string;
+  /** Propre à l'édition : « webinaire-initiation-2026-09 ». */
   slug: string;
   title: string;
   starts_at: string;
   duration_min: number;
+  places: number;
+  /** Borne d'appartenance : les inscrits d'avant sont ceux de l'édition passée. */
+  inscrits_depuis: string | null;
   join_url: string | null;
   join_info: string | null;
   replay_url: string | null;
 }
 
-const CHAMPS = "id, slug, title, starts_at, duration_min, join_url, join_info, replay_url";
+const CHAMPS = "id, tunnel, slug, title, starts_at, duration_min, places, inscrits_depuis, join_url, join_info, replay_url";
 
-/** Le webinaire actif portant ce slug, ou null (base injoignable comprise). */
-export async function getWebinaire(admin: any, slug = WEBINAIRE_SLUG): Promise<Webinaire | null> {
+/* Le live est mensuel : plusieurs éditions coexistent en base. « L'édition en
+   cours » est la prochaine à venir — et, dans les trois jours qui suivent un
+   live, celle qui vient d'avoir lieu, puisque sa fenêtre de replay court
+   encore. Même règle que la fonction SQL `webinaire_public`, pour que la page
+   publique et les e-mails ne parlent jamais de deux éditions différentes. */
+const FENETRE_REPLAY_MS = 72 * 3_600_000;
+
+export function editionCourante(editions: Webinaire[], maintenant = new Date()): Webinaire | null {
+  if (!editions.length) return null;
+  const seuil = maintenant.getTime() - FENETRE_REPLAY_MS;
+  const encoreVivantes = editions
+    .filter((w) => new Date(w.starts_at).getTime() >= seuil)
+    .sort((a, b) => +new Date(a.starts_at) - +new Date(b.starts_at));
+  if (encoreVivantes.length) return encoreVivantes[0];
+  return [...editions].sort((a, b) => +new Date(b.starts_at) - +new Date(a.starts_at))[0];
+}
+
+/** L'édition en cours de cet entonnoir, ou null (base injoignable comprise). */
+export async function getWebinaire(admin: any, tunnel = WEBINAIRE_SLUG): Promise<Webinaire | null> {
   const { data, error } = await admin
     .from("webinaires")
     .select(CHAMPS)
-    .eq("slug", slug)
-    .eq("active", true)
-    .maybeSingle();
+    .or(`tunnel.eq.${tunnel},slug.eq.${tunnel}`)
+    .eq("active", true);
   if (error) {
     console.error("[webinaire] lecture impossible —", error.message);
     return null;
   }
-  return (data as Webinaire) || null;
+  return editionCourante((data || []) as Webinaire[]);
 }
 
 /* Le live est annoncé à l'heure d'Abidjan partout (landing, page de
@@ -314,14 +336,18 @@ interface Inscrit {
   unsubToken: string | null;
 }
 
-/** Les inscrits joignables : dédoublonnés par adresse, désabonnés exclus. */
-async function inscrits(admin: any, slug: string): Promise<Inscrit[]> {
-  const { data, error } = await admin
+/** Les inscrits joignables d'une ÉDITION : dédoublonnés, désabonnés exclus. */
+async function inscrits(admin: any, w: Webinaire): Promise<Inscrit[]> {
+  /* `inscrits_depuis` sépare les éditions. Sans elle, les inscrits de
+     septembre recevraient les rappels d'octobre alors qu'ils ont déjà vu le
+     live — et la première édition, qui n'a pas de borne, prend tout le monde. */
+  let requete = admin
     .from("form_submissions")
     .select("email, full_name, contact_id, contacts(email_opt_in, unsubscribed_at, unsubscribe_token)")
-    .eq("form_key", slug)
-    .not("email", "is", null)
-    .order("submitted_at", { ascending: true });
+    .eq("form_key", w.tunnel)
+    .not("email", "is", null);
+  if (w.inscrits_depuis) requete = requete.gte("submitted_at", w.inscrits_depuis);
+  const { data, error } = await requete.order("submitted_at", { ascending: true });
   if (error) {
     console.error("[webinaire] liste des inscrits illisible —", error.message);
     return [];
@@ -385,7 +411,7 @@ export async function envoyerSequenceWebinaire(admin: any, maintenant = new Date
     rapport.webinaire = w.slug;
     rapport.kinds.push(...kinds);
 
-    const liste = await inscrits(admin, w.slug);
+    const liste = await inscrits(admin, w);
     rapport.inscrits += liste.length;
 
     for (const kind of kinds) {
