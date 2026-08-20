@@ -27,12 +27,19 @@ interface Props {
   /* Mode « focus CRO » : header et footer réduits à la marque, sans aucun lien
      de navigation. Réservé aux landings de vente (parcours, offres). */
   bareChrome?: boolean;
+  /* Masque la bannière de consentement. Sur une landing de vente ou une page
+     d'inscription, elle s'ouvre au-dessus du CTA au moment précis où le
+     visiteur décide — et le fait décider d'autre chose. Par défaut, les pages
+     en `bareChrome` (les landings) la masquent ; les pages du site la gardent.
+     Le bouton « Gérer les cookies » du pied de page reste disponible partout,
+     et l'onglet reste accessible aux pages classiques. */
+  hideCookieBanner?: boolean;
 }
 
 const {
   title, description = site.description, image = site.ogImage, noindex = false,
   ogType = "website", organization = false, breadcrumbs, schemas = [], hideWhatsApp = false,
-  bareChrome = false,
+  bareChrome = false, hideCookieBanner = bareChrome,
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, site.url).href.replace(/\/$/, "") || site.url;
 const ogImageUrl = new URL(image, site.url).href;
@@ -146,7 +153,7 @@ const breadcrumbLd = breadcrumbs?.length
       })();
     </script>
   </head>
-  <body>
+  <body data-sans-banniere-cookies={hideCookieBanner ? "" : undefined}>
     <a href="#main" class="skip-link">Aller au contenu</a>
     <Header bare={bareChrome} />
     <main id="main">
