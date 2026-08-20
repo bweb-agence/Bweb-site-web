@@ -64,6 +64,34 @@ export function googleCalendarUrl(e: CalEvent): string {
 // Échappement iCalendar (RFC 5545) : \ , ; et sauts de ligne.
 const esc = (s: string) => (s || "").replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 
+/* Pliage RFC 5545 : une ligne d'un fichier .ics ne dépasse pas 75 OCTETS, la
+   suite étant reprise sur la ligne suivante précédée d'une espace. Les parseurs
+   stricts (Outlook en tête) rejettent le fichier entier sinon — et un titre de
+   webinaire ou une description avec lien de connexion dépasse vite la limite.
+   On compte en octets, pas en caractères : « é » en vaut deux, et couper au
+   milieu d'un caractère produirait un fichier illisible. */
+function plier(ligne: string): string {
+  const enc = new TextEncoder();
+  if (enc.encode(ligne).length <= 75) return ligne;
+  const morceaux: string[] = [];
+  let courante = "";
+  let taille = 0;
+  for (const ch of ligne) {
+    const n = enc.encode(ch).length;
+    // Les lignes de continuation commencent par une espace : un octet de moins.
+    const max = morceaux.length === 0 ? 75 : 74;
+    if (taille + n > max) {
+      morceaux.push(courante);
+      courante = "";
+      taille = 0;
+    }
+    courante += ch;
+    taille += n;
+  }
+  if (courante) morceaux.push(courante);
+  return morceaux.join("\r\n ");
+}
+
 /** Contenu d'un fichier .ics (Apple Calendar, Outlook, etc.). */
 export function icsFromEvent(e: CalEvent, uid: string): string {
   return [
@@ -88,5 +116,5 @@ export function icsFromEvent(e: CalEvent, uid: string): string {
     "END:VALARM",
     "END:VEVENT",
     "END:VCALENDAR",
-  ].join("\r\n");
+  ].map(plier).join("\r\n");
 }
