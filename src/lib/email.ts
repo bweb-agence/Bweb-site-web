@@ -420,3 +420,74 @@ export function packEnrollmentEmail(b: BookingEmail & { remaining?: number }) {
     </div>`),
   };
 }
+
+/* =========================================================
+   WEBINAIRE — confirmation d'inscription
+   ---------------------------------------------------------
+   Tutoiement, contrairement aux e-mails de billetterie : c'est la voix du
+   tunnel webinaire (landing, page de remerciement, publicité). Un inscrit qui
+   se fait vouvoyer par e-mail après avoir été tutoyé partout ailleurs a
+   l'impression de recevoir le message d'un autre expéditeur.
+
+   Le lien de connexion n'est pas toujours connu au moment de l'inscription :
+   quand il manque, on le dit franchement plutôt que d'afficher un bloc vide —
+   l'inscrit sait alors qu'il n'a rien raté.
+   ========================================================= */
+export type WebinaireEmail = {
+  prenom: string;
+  title: string;
+  /** « dimanche 6 septembre 2026 à 20 h » — déjà formaté à l'heure d'Abidjan. */
+  date_label: string;
+  duration_min: number;
+  join_url?: string | null;
+  join_info?: string | null;
+  calendarGoogle: string;
+  calendarIcs: string;
+};
+
+export function webinaireConfirmationEmail(w: WebinaireEmail) {
+  const acces = w.join_url
+    ? `<div style="margin:4px 0"><b style="color:#0a0e27">Ton lien de connexion :</b><br><a href="${w.join_url}" style="color:#1f6ced;word-break:break-all">${esc(w.join_url)}</a></div>`
+    : `<div style="margin:4px 0;color:#565d80">Ton lien de connexion t'arrive par e-mail le jour du live — garde un œil sur ta boîte.</div>`;
+  const consigne = w.join_info
+    ? `<div style="margin:6px 0 0;color:#565d80">${esc(w.join_info)}</div>`
+    : "";
+
+  return {
+    subject: `C'est réservé — ${w.date_label}`,
+    html: shell(`<div style="padding:24px 22px 6px;text-align:center">
+      <div style="width:56px;height:56px;border-radius:50%;background:#00c89e;color:#fff;font-size:30px;line-height:56px;margin:0 auto 10px">&#10003;</div>
+      <div style="font-size:19px;font-weight:800;color:#0a0e27">Ta place est réservée</div>
+      <div style="font-size:13.5px;color:#565d80;margin-top:4px">Rendez-vous ${esc(w.date_label)}.</div>
+    </div>
+    <div style="padding:10px 20px 24px">
+      <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Bonjour ${esc(firstName(w.prenom))},</p>
+      <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">
+        Tu es bien inscrit au live <b>« ${esc(w.title)} »</b>. ${w.duration_min} minutes en direct, et tu repars avec la méthode
+        pour transformer une compétence que tu as déjà en produit digital qui encaisse.</p>
+      <div style="font-size:13px;line-height:1.55;background:#f8faff;border:1px solid #eef2fb;border-radius:12px;padding:12px 14px;margin:12px 0">
+        <div style="margin:4px 0"><b style="color:#0a0e27">Quand :</b> ${esc(w.date_label)} (heure d'Abidjan)</div>
+        ${acces}
+        ${consigne}
+      </div>
+      <div style="text-align:center;font-size:12px;color:#8b91ae;margin-top:16px">La seule chose à faire d'ici là : bloque le créneau.</div>
+      ${calendarButtonsHtml(w.calendarGoogle, w.calendarIcs)}
+      <p style="font-size:14px;color:#3f4568;margin:18px 0 0">À dimanche,<br>Godwin</p>
+    </div>`),
+    text: [
+      `Bonjour ${firstName(w.prenom)},`,
+      "",
+      `Ta place est réservée pour le live « ${w.title} ».`,
+      `Quand : ${w.date_label} (heure d'Abidjan), ${w.duration_min} minutes en direct.`,
+      w.join_url
+        ? `Ton lien de connexion : ${w.join_url}`
+        : "Ton lien de connexion t'arrive par e-mail le jour du live.",
+      w.join_info || "",
+      "",
+      `Ajoute la date à ton agenda : ${w.calendarGoogle}`,
+      "",
+      "À dimanche,",
+      "Godwin — Bweb Agence",
+    ].filter(Boolean).join("\n"),
+  };
+}

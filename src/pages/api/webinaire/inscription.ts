@@ -26,6 +26,7 @@ export const prerender = false;
    ========================================================= */
 import type { APIRoute } from "astro";
 import { markRelay, recordSubmission } from "../../../lib/leads";
+import { envoyerConfirmationWebinaire } from "../../../lib/webinaireEmails";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -170,6 +171,21 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     eventType: "webinaire_inscrit",
     eventTitle: "Inscrit au webinaire Initiation (6 septembre 2026)",
   });
+
+  /* Confirmation par e-mail, AVANT le relais : c'est le seul message que
+     l'inscrit reçoit tout de suite, et il ne doit pas dépendre de la santé
+     d'ACQ Hub. La fonction tient son propre journal anti-doublon (une deuxième
+     soumission de la même adresse ne renvoie rien) et ne lève jamais. */
+  const confirmation = await envoyerConfirmationWebinaire({
+    email,
+    prenom,
+    contactId: submission?.contactId,
+  });
+  if (confirmation === "echec" || confirmation === "webinaire_inconnu") {
+    // Tracé côté serveur seulement : l'inscription, elle, a bien eu lieu et le
+    // visiteur n'a rien à faire de cette information.
+    console.error(`[webinaire] confirmation non envoyée à ${email} (${confirmation})`);
+  }
 
   const ingestKey = secret("TUNNEL_KEY_WEBINAIRE_INITIATION", "TUNNEL_INGEST_KEY");
   const ingestUrl = secret("INGEST_URL");
