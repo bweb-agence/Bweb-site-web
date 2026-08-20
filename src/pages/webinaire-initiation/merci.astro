@@ -37,11 +37,11 @@ const montrerCanaux = aUnCanal || import.meta.env.DEV;
 const CAL = new URL("https://calendar.google.com/calendar/render");
 CAL.searchParams.set("action", "TEMPLATE");
 CAL.searchParams.set("text", "Live gratuit — De ta compétence à tes premières ventes");
-CAL.searchParams.set("dates", "20260906T190000Z/20260906T200000Z");
+CAL.searchParams.set("dates", "20260906T190000Z/20260906T203000Z");
 CAL.searchParams.set("location", "En ligne (le lien arrive sur WhatsApp)");
 CAL.searchParams.set(
   "details",
-  `Live de 60 minutes avec Godwin Soola (Bweb Academy).\n\nPrépare un carnet et connecte-toi 5 minutes en avance.\nLe lien de connexion est envoyé sur WhatsApp le jeudi 4 septembre.\n\n${LANDING}`,
+  `Live de 90 minutes avec Godwin Soola (Bweb Academy).\n\nPrépare un carnet et connecte-toi 5 minutes en avance.\nLe lien de connexion est envoyé sur WhatsApp le jeudi 4 septembre.\n\n${LANDING}`,
 );
 const calendarUrl = CAL.href;
 
@@ -103,7 +103,7 @@ const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
           <span class="fc-recap-ic">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
           </span>
-          <span class="fc-recap-txt"><span>Durée</span><b>60 minutes, en direct</b></span>
+          <span class="fc-recap-txt"><span>Durée</span><b>90 minutes, en direct</b></span>
         </div>
         <div class="fc-recap-row">
           <span class="fc-recap-ic">
