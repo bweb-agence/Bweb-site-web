@@ -4,12 +4,12 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
 // KPIs — icônes statiques ; valeurs + pied remplis côté client (data-k / data-foot).
 const kpis = [
-  { key: "ca", label: "CA confirmé", accent: "green", icon: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 10v4M18 10v4"/>' },
+  { key: "ca", label: "CA site", accent: "green", icon: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/><path d="M6 10v4M18 10v4"/>' },
   { key: "paid", label: "Réservations payées", accent: "blue", icon: '<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>' },
   { key: "rate", label: "Taux de paiement", accent: "violet", icon: '<path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/>' },
   { key: "clients", label: "Clients payants", accent: "navy", icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.6 5.6 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5"/>' },
   { key: "relance", label: "À relancer", accent: "amber", icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>' },
-  { key: "chariow", label: "Ventes Chariow", accent: "amber", icon: '<path d="M3 3h2l2.4 12.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>' },
+  { key: "chariow", label: "CA Chariow", accent: "amber", icon: '<path d="M3 3h2l2.4 12.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>' },
   { key: "session", label: "Prochaine session", accent: "rose", icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>' },
 ];
 ---
@@ -170,22 +170,27 @@ const kpis = [
     // Delta CA : 30 derniers jours vs 30 précédents.
     const d30 = now - 30 * 864e5, d60 = now - 60 * 864e5;
     const caIn = (from: number, to: number) => all.filter((b) => stateOf(b) === "paye" && +new Date(b.created_at) >= from && +new Date(b.created_at) < to).reduce((a, b) => a + paidOf(b), 0);
-    const ca30 = caIn(d30, now + 1) + caChariowIn(d30, now + 1);
-    const caPrev = caIn(d60, d30) + caChariowIn(d60, d30);
+    /* Le delta porte sur le CA du SITE, qui est celui de sa tuile. Chariow n'en
+       a pas : le Pulse ne remonte que depuis le 16 août, donc les « 30 jours
+       précédents » n'existent pas encore et afficheraient une hausse infinie. */
+    const ca30 = caIn(d30, now + 1);
+    const caPrev = caIn(d60, d30);
     const delta = caPrev > 0 ? Math.round(((ca30 - caPrev) / caPrev) * 100) : 0;
     const deltaHtml = caPrev === 0 ? "sur les 30 derniers jours"
       : delta === 0 ? "stable vs 30 j préc."
       : `<span class="delta ${delta > 0 ? "up" : "down"}">${delta > 0 ? "▲" : "▼"} ${Math.abs(delta)}%</span> vs 30 j préc.`;
 
-    /* Le CA réunit les trois origines — billets, packs, Chariow — et le pied
-       dit laquelle a produit quoi : un total qui ne se décompose pas ne sert à
-       aucune décision. */
-    const caTotal = ca + caChariow;
-    const origines = caChariow > 0 ? `<br><span style="color:var(--c-gray-500)">site ${fmtFCFA(ca)} · Chariow ${fmtFCFA(caChariow)}</span>` : "";
-    setKpi("ca", fmtFCFA(caTotal), deltaHtml + origines);
-    setKpi("chariow", String(chPayantes.length), chPayantes.length
-      ? `<b>${fmtFCFA(caChariow)}</b> encaissés · ${chGratuits} téléchargement${chGratuits > 1 ? "s" : ""} gratuit${chGratuits > 1 ? "s" : ""}`
-      : `${chGratuits} téléchargement${chGratuits > 1 ? "s" : ""} gratuit${chGratuits > 1 ? "s" : ""}, aucune vente`);
+    /* Deux tuiles, deux origines. Un total unique masquait ce qui vient de la
+       billetterie du site et ce qui vient de la boutique — or les deux ne se
+       pilotent pas de la même façon. Le delta, lui, reste calculé sur
+       l'ensemble : c'est la tendance de l'argent qui rentre, toutes origines
+       confondues. */
+    const pluriel = (n: number) => (n > 1 ? "s" : "");
+    setKpi("ca", fmtFCFA(ca), `billets et packs · ${deltaHtml}`);
+    // Chariow : pas de delta tant que l'historique ne couvre pas deux périodes.
+    setKpi("chariow", fmtFCFA(caChariow), chPayantes.length
+      ? `${chPayantes.length} vente${pluriel(chPayantes.length)} · ${chGratuits} téléchargement${pluriel(chGratuits)} gratuit${pluriel(chGratuits)}`
+      : `aucune vente · ${chGratuits} téléchargement${pluriel(chGratuits)} gratuit${pluriel(chGratuits)}`);
     setKpi("paid", String(counts.paye), `sur ${tentatives} tentatives`);
     setKpi("rate", taux + "%", "paiements aboutis");
     setKpi("clients", String(clientsPayants), `${prospects} prospect${prospects > 1 ? "s" : ""} à convertir`);
