@@ -5,6 +5,7 @@
    Silencieux si non configuré (renvoie false).
    ========================================================= */
 import { BirdClient } from "@messagebird/sdk";
+import { secret } from "./env";
 
 const SITE = "https://www.bwebagence.com";
 
@@ -12,13 +13,38 @@ const SITE = "https://www.bwebagence.com";
 // tolérance mais on sérialise toujours vers le contrat exact de Bird (sinon 422
 // « champ inconnu » → l'envoi échoue et le billet ne part jamais).
 type EmailAttachment = { filename: string; content: string; content_type?: string; type?: string; content_id?: string };
-type EmailOpts = { to: string; subject: string; html: string; text?: string; attachments?: EmailAttachment[] };
+type EmailOpts = {
+  to: string; subject: string; html: string; text?: string; attachments?: EmailAttachment[];
+  /** Expéditeur, quand il ne doit pas être celui de l'agence (cf. `expediteur`). */
+  from?: string;
+};
+
+/* L'ADRESSE d'expédition ne se choisit pas : elle doit rester sur le domaine
+   vérifié chez Bird, sous peine de refus pur et simple. Seul le NOM affiché
+   varie — celui que le destinataire lit dans sa liste avant d'ouvrir.
+   D'où cette fonction : on reprend l'adresse configurée et on ne remplace que
+   l'étiquette. Sert au tunnel webinaire, animé par une personne et non par une
+   entité ; la billetterie, elle, écrit au nom de l'agence. */
+export function expediteur(nom: string): string {
+  const configure = secret("BIRD_FROM") || "Bweb Agence <no-reply@mail.bwebagence.com>";
+  const entreChevrons = configure.match(/<([^>]+)>/);
+  const adresse = (entreChevrons ? entreChevrons[1] : configure).trim();
+  return `${nom} <${adresse}>`;
+}
 
 export async function sendEmail(opts: EmailOpts): Promise<boolean> {
-  const key = import.meta.env.BIRD_API_KEY || import.meta.env.BIRD_ACCESS_KEY;
-  const from = import.meta.env.BIRD_FROM || "Bweb Agence <no-reply@mail.bwebagence.com>";
-  const replyTo = import.meta.env.BIRD_REPLY_TO || "info@bwebagence.com";
-  if (!key || key === "A_COMPLETER") return false;
+  /* Lecture À L'EXÉCUTION (cf. src/lib/env.ts). En accès littéral,
+     `import.meta.env.BIRD_API_KEY` est remplacé par sa valeur au BUILD : une
+     clé absente à ce moment-là devient `undefined` dans l'artefact, et plus
+     aucun e-mail ne part — même une fois la variable renseignée. Constaté sur
+     un déploiement de prévisualisation le 20/08/2026 : l'inscription au
+     webinaire était enregistrée, sa confirmation n'atteignait jamais Bird.
+     C'est le même piège que celui documenté pour le tunnel (PR #92/#93). */
+  const key = secret("BIRD_API_KEY", "BIRD_ACCESS_KEY");
+  // Par défaut, l'agence écrit en son nom ; un appelant peut passer le sien.
+  const from = opts.from || secret("BIRD_FROM") || "Bweb Agence <no-reply@mail.bwebagence.com>";
+  const replyTo = secret("BIRD_REPLY_TO") || "info@bwebagence.com";
+  if (!key) return false;
   const attachments = opts.attachments?.length
     ? opts.attachments.map((a) => {
         const ct = a.content_type || a.type;
@@ -419,4 +445,216 @@ export function packEnrollmentEmail(b: BookingEmail & { remaining?: number }) {
       <p style="font-size:11.5px;color:#8b91ae;line-height:1.5;margin:14px 4px 0;text-align:center">${leftNote}</p>
     </div>`),
   };
+}
+
+/* =========================================================
+   WEBINAIRE — la séquence complète (6 e-mails)
+   ---------------------------------------------------------
+   Tutoiement et signature « Godwin », contrairement aux e-mails de billetterie
+   qui vouvoient au nom de l'agence : c'est la voix du tunnel (landing, page de
+   remerciement, publicité). Un inscrit tutoyé partout puis vouvoyé par e-mail
+   a l'impression de recevoir le message d'un autre expéditeur.
+
+   Les textes viennent du brief d'acquisition (emails-pre-webinaire.md).
+   Deux écarts assumés :
+   - la confirmation ne porte PAS le lien du live, même quand il est connu.
+     C'est le choix du brief : le lien est la raison d'ouvrir les rappels.
+   - le brief annonçait le lien « sur WhatsApp vendredi » ; il part désormais
+     aussi par e-mail la veille, donc la promesse est reformulée sans date.
+
+   `webinaireEmail` rend `null` quand le message n'a pas de sens sans son lien
+   (les quatre rappels du jour J, le replay). Mieux vaut ne rien envoyer qu'un
+   « voici ton lien » sans lien — l'inscrit se sentirait floué et écrirait au
+   support à l'heure exacte où personne n'est disponible.
+   ========================================================= */
+export type WebinaireEmailData = {
+  prenom: string;
+  title: string;
+  /** « dimanche 6 septembre 2026 à 19 h » — déjà formaté à l'heure d'Abidjan. */
+  date_label: string;
+  /** « 19 h » seul, pour les phrases courtes. */
+  heure_label: string;
+  duration_min: number;
+  join_url?: string | null;
+  join_info?: string | null;
+  replay_url?: string | null;
+  calendarGoogle: string;
+  calendarIcs: string;
+  /** Page d'inscription, pour le parrainage. */
+  landing: string;
+  /** Lien wa.me pour répondre « PLACE ». */
+  whatsapp: string;
+  /** Désabonnement (absent sur la confirmation, qui suit un acte volontaire). */
+  unsubUrl?: string | null;
+};
+
+const wbBouton = (url: string, libelle: string) =>
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 6px"><tr><td align="center">
+    <a href="${url}" style="display:inline-block;background:#1f6ced;color:#fff;text-decoration:none;font-weight:800;font-size:15px;padding:14px 28px;border-radius:12px">${libelle}</a>
+  </td></tr></table>`;
+
+const wbEncadre = (lignes: string[]) =>
+  `<div style="font-size:13px;line-height:1.6;background:#f8faff;border:1px solid #eef2fb;border-radius:12px;padding:12px 14px;margin:14px 0">${lignes.join("")}</div>`;
+
+const wbEntete = (accent: string, tag: string, titre: string, sous: string) =>
+  `<div style="padding:24px 22px 6px;text-align:center">
+    <div style="display:inline-block;font-family:'Courier New',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${accent};font-weight:800;border:1px solid ${accent};border-radius:999px;padding:4px 12px">${tag}</div>
+    <div style="font-size:19px;font-weight:800;color:#0a0e27;margin-top:12px">${titre}</div>
+    <div style="font-size:13.5px;color:#565d80;margin-top:4px">${sous}</div>
+  </div>`;
+
+const wbPied = (d: WebinaireEmailData, signature = "Godwin") =>
+  `<p style="font-size:14px;color:#3f4568;margin:18px 0 0">${signature}</p>` +
+  (d.unsubUrl
+    ? `<p style="font-size:11px;color:#aab0c8;margin:20px 0 0;padding-top:12px;border-top:1px solid #eef2fb">
+        Tu reçois ces messages parce que tu t'es inscrit au live.
+        <a href="${d.unsubUrl}" style="color:#8b91ae;text-decoration:underline">Ne plus recevoir d'e-mails</a>.
+      </p>`
+    : "");
+
+/**
+ * Un e-mail de la séquence. `null` = ce message ne peut pas être envoyé
+ * maintenant (lien manquant) ; l'appelant n'inscrit alors rien au journal.
+ */
+export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: string; html: string; text: string } | null {
+  const p = esc(firstName(d.prenom));
+  const lien = d.join_url || "";
+  const replay = d.replay_url || d.join_url || "";
+
+  if (kind === "confirmation") {
+    return {
+      subject: `✅ Ta place au live du ${d.date_label.replace(/ à .*/, "")} est réservée`,
+      html: shell(`${wbEntete("#00c89e", "Inscription confirmée", "Ta place est verrouillée", `Rendez-vous ${esc(d.date_label)}.`)}
+      <div style="padding:8px 20px 24px">
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 4px">C'est fait : ta place au live de dimanche est verrouillée. 🎉</p>
+        ${wbEncadre([
+          `<div style="margin:4px 0"><b style="color:#0a0e27">📅 Le live :</b> ${esc(d.date_label)} (Abidjan) — ${esc(d.heure_label)} Dakar, ${esc(d.heure_label.replace(/^(\d+)/, (m) => String(Number(m) + 1)))} Douala</div>`,
+          `<div style="margin:4px 0"><b style="color:#0a0e27">⏱️ Durée :</b> ${d.duration_min} minutes &nbsp;·&nbsp; <b style="color:#0a0e27">💰 Coût :</b> 0 FCFA</div>`,
+        ])}
+        <div style="text-align:center;font-size:12.5px;color:#565d80;margin-top:14px"><b style="color:#0a0e27">Bloque le créneau dans ton agenda.</b><br>Un clic, et le live est dans ton téléphone — l'action la plus rapide pour ne pas le rater.</div>
+        ${calendarButtonsHtml(d.calendarGoogle, d.calendarIcs)}
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:18px 0 6px"><b style="color:#0a0e27">Ce qui t'attend :</b></p>
+        <ul style="font-size:13.5px;color:#3f4568;line-height:1.6;margin:0 0 12px;padding-left:18px">
+          <li>La méthode que je facture <b>150 000 FCFA</b> en coaching privé : la matrice compétence × problème × client, la règle des 10 conversations, « vends avant de perfectionner »</li>
+          <li>Une méthode applicable tout de suite — pas de la théorie</li>
+        </ul>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b style="color:#0a0e27">Ton lien de connexion arrive avant le live</b>, par e-mail et sur WhatsApp. Surveille tes messages.</p>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b style="color:#0a0e27">Une chose à faire tout de suite (2 minutes) :</b> note dans ton téléphone les <b>3 compétences</b> que tu utilises déjà pour aider les autres. On s'en servira pendant le live.</p>
+        <p style="font-size:13.5px;color:#565d80;line-height:1.6;margin:0">Tu connais quelqu'un qui a une compétence et qui ne la vend pas ? Envoie-lui <a href="${d.landing}" style="color:#1f6ced;font-weight:700">le lien d'inscription</a>. Il te remerciera.</p>
+        ${wbPied(d, "À dimanche,<br>Godwin Soola — Bweb Academy")}
+      </div>`),
+      text: [
+        `Salut ${firstName(d.prenom)},`, "",
+        "C'est fait : ta place au live de dimanche est verrouillée.", "",
+        `Le live : ${d.date_label} (Abidjan). Durée : ${d.duration_min} minutes. Coût : 0 FCFA.`,
+        `Bloque le créneau : ${d.calendarGoogle}`, "",
+        "Ce qui t'attend : la méthode que je facture 150 000 FCFA en coaching privé — la matrice compétence x problème x client, la règle des 10 conversations, « vends avant de perfectionner ».", "",
+        "Ton lien de connexion arrive avant le live, par e-mail et sur WhatsApp.", "",
+        "Une chose à faire tout de suite (2 minutes) : note les 3 compétences que tu utilises déjà pour aider les autres.", "",
+        `Tu connais quelqu'un qui ne vend pas sa compétence ? Envoie-lui : ${d.landing}`, "",
+        "À dimanche,", "Godwin Soola — Bweb Academy",
+      ].join("\n"),
+    };
+  }
+
+  if (kind === "reminder_1d") {
+    if (!lien) return null;
+    return {
+      subject: `⚡ Demain ${d.heure_label} : la matrice que je facture 150 000 FCFA, gratuitement`,
+      html: shell(`${wbEntete("#f0a500", "C'est demain", "Demain, je montre ce que je ne montre jamais", `${esc(d.date_label)} · ${d.duration_min} minutes`)}
+      <div style="padding:8px 20px 24px">
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Demain ${esc(d.heure_label)}, c'est le live. Et je vais te montrer quelque chose que je ne montre jamais en public.</p>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">La <b>matrice compétence × problème × client</b>. En 15 minutes, elle te dit quoi vendre, à qui, et combien ça vaut. Moi, je la facture <b>150 000 FCFA</b> en coaching privé. Demain, tu la reçois gratuitement, détaillée sur des cas réels.</p>
+        ${wbBouton(lien, "📺 Mon lien pour le live")}
+        <div style="text-align:center;font-size:12.5px;color:#8b91ae;margin-top:8px">${esc(d.date_label)} (Abidjan) · ${d.duration_min} minutes · viens 5 min en avance</div>
+        ${wbPied(d, "À demain,<br>Godwin")}
+      </div>`),
+      text: [`Salut ${firstName(d.prenom)},`, "",
+        `Demain ${d.heure_label}, c'est le live.`, "",
+        "La matrice compétence x problème x client : en 15 minutes, elle te dit quoi vendre, à qui, et combien ça vaut. Je la facture 150 000 FCFA en coaching privé. Demain, tu la reçois gratuitement.", "",
+        `Ton lien : ${lien}`,
+        `${d.date_label} (Abidjan) · ${d.duration_min} minutes · viens 5 min en avance`, "",
+        "À demain,", "Godwin"].join("\n"),
+    };
+  }
+
+  if (kind === "reminder_0d") {
+    if (!lien) return null;
+    return {
+      subject: `🔴 C'est ce soir, ${d.heure_label}. Ton lien est ici.`,
+      html: shell(`${wbEntete("#e0523c", "Aujourd'hui", "C'est ce soir 🌅", `${esc(d.heure_label)} précises, heure d'Abidjan`)}
+      <div style="padding:8px 20px 24px">
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">C'est ce soir.</p>
+        ${wbBouton(lien, "📺 Rejoindre le live")}
+        <div style="text-align:center;font-size:12.5px;color:#8b91ae;margin:8px 0 16px">⏰ ${esc(d.heure_label)} précises (Abidjan) — viens 5 min en avance</div>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Tu repars avec une méthode qui vaut <b>150 000 FCFA</b>, pour 0 FCFA. La seule condition : être présent.</p>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0">Un carnet, tes 3 compétences, et toi. C'est tout ce qu'il faut.</p>
+        ${wbPied(d, "On se voit ce soir.<br>Godwin")}
+      </div>`),
+      text: [`Salut ${firstName(d.prenom)},`, "", "C'est ce soir.", "",
+        `Lien : ${lien}`, `${d.heure_label} précises (Abidjan) — viens 5 min en avance`, "",
+        "Tu repars avec une méthode qui vaut 150 000 FCFA, pour 0 FCFA. La seule condition : être présent.",
+        "Un carnet, tes 3 compétences, et toi.", "", "On se voit ce soir.", "Godwin"].join("\n"),
+    };
+  }
+
+  if (kind === "reminder_1h") {
+    if (!lien) return null;
+    return {
+      subject: "🔴 On est en direct dans 1 heure",
+      html: shell(`${wbEntete("#e0523c", "Dans 1 heure", "On est en direct dans 1 heure", `Rendez-vous à ${esc(d.heure_label)}`)}
+      <div style="padding:8px 20px 24px">
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Dans 1 heure, je donne en public la méthode que je facture <b>150 000 FCFA</b>. Gratuite, ce soir seulement.</p>
+        ${wbBouton(lien, "📺 Ton lien pour le live")}
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:14px 0 0">Carnet, tes 3 compétences, et toi. On se voit à ${esc(d.heure_label)}.</p>
+        ${wbPied(d)}
+      </div>`),
+      text: [`Salut ${firstName(d.prenom)},`, "",
+        "Dans 1 heure, je donne en public la méthode que je facture 150 000 FCFA. Gratuite, ce soir seulement.", "",
+        `Ton lien : ${lien}`, "", `Carnet, tes 3 compétences, et toi. On se voit à ${d.heure_label}.`, "", "Godwin"].join("\n"),
+    };
+  }
+
+  if (kind === "live") {
+    if (!lien) return null;
+    return {
+      subject: "🚪 Les portes sont ouvertes — rejoins-nous maintenant",
+      html: shell(`${wbEntete("#00c89e", "En direct", "Les portes sont ouvertes 🚪", "On commence maintenant.")}
+      <div style="padding:8px 20px 24px">
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0">On commence.</p>
+        ${wbBouton(lien, "📺 Rejoindre maintenant")}
+        ${wbPied(d)}
+      </div>`),
+      text: [`Salut ${firstName(d.prenom)},`, "", "On commence.", "", lien, "", "Godwin"].join("\n"),
+    };
+  }
+
+  if (kind === "replay") {
+    if (!replay) return null;
+    return {
+      subject: "⏳ Tu as raté le live ? 72 h pour le rattraper",
+      html: shell(`${wbEntete("#1f6ced", "Replay 72 h", "72 h pour rattraper le live", "Ensuite, il disparaît.")}
+      <div style="padding:8px 20px 24px">
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Tu as raté le live d'hier ? Les gens qui étaient là sont repartis avec une méthode à <b>150 000 FCFA</b>, gratuitement.</p>
+        ${wbBouton(replay, "▶️ Voir le replay")}
+        <div style="text-align:center;font-size:12.5px;color:#e0523c;font-weight:700;margin:8px 0 18px">⚠️ Le replay disparaît mercredi soir.</div>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b style="color:#0a0e27">Et si tu étais au live :</b> la cohorte de septembre du Parcours Initiation démarre <b>aujourd'hui</b>. 30 places, 5 phases, 10 lives. Ton produit en ligne en 30 jours — sinon on continue avec toi gratuitement.</p>
+        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0">👉 Réponds <b>« PLACE »</b> sur <a href="${d.whatsapp}" style="color:#1f6ced;font-weight:700">WhatsApp</a> — les places partent dans l'ordre des inscriptions, et la prochaine cohorte, c'est dans un mois.</p>
+        ${wbPied(d)}
+      </div>`),
+      text: [`Salut ${firstName(d.prenom)},`, "",
+        "Tu as raté le live d'hier ? Les gens qui étaient là sont repartis avec une méthode à 150 000 FCFA, gratuitement.", "",
+        `Le replay est disponible 72 h : ${replay}`, "Il disparaît mercredi soir.", "",
+        "Et si tu étais au live : la cohorte de septembre du Parcours Initiation démarre aujourd'hui. 30 places, 5 phases, 10 lives.",
+        `Réponds « PLACE » sur WhatsApp : ${d.whatsapp}`, "", "Godwin"].join("\n"),
+    };
+  }
+
+  return null;
 }
