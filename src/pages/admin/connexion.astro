@@ -18,18 +18,29 @@ import "../../styles/admin.css";
   </head>
   <body class="admin-body">
     <div class="login-wrap">
-      <div class="login-card">
-        <div class="brand"><span class="m">B</span> Espace admin</div>
+      <main class="login-card">
+        <h1 class="brand"><span class="m" aria-hidden="true">B</span> Espace admin</h1>
         <p class="sub">Réservé à l'équipe Bweb Agence.</p>
 
-        <form id="login-form">
+        <!-- Le message d'erreur est AU-DESSUS du formulaire et porte `role=alert` :
+             sous le bouton, il passait sous la ligne de flottaison au premier
+             échec sur un petit écran, et les lecteurs d'écran ne l'annonçaient
+             pas. C'est la première chose à voir quand la connexion échoue. -->
+        <div class="login-msg" id="msg" role="alert" style="display:none"></div>
+
+        <form id="login-form" novalidate>
           <div class="login-field">
             <label for="email">E-mail</label>
-            <input class="login-input" id="email" type="email" autocomplete="username" required placeholder="info@bwebagence.com" />
+            <input class="login-input" id="email" type="email" autocomplete="username"
+                   inputmode="email" autocapitalize="off" spellcheck="false" required
+                   placeholder="prenom@bwebagence.com" />
           </div>
           <div class="login-field" id="pw-field">
             <label for="password">Mot de passe</label>
-            <input class="login-input" id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+            <div class="login-pw">
+              <input class="login-input" id="password" type="password" autocomplete="current-password" placeholder="Votre mot de passe" />
+              <button type="button" class="login-pw-toggle" id="pw-toggle" aria-pressed="false" aria-label="Afficher le mot de passe">Afficher</button>
+            </div>
           </div>
           <button class="login-btn" id="submit" type="submit">Se connecter</button>
         </form>
@@ -37,10 +48,10 @@ import "../../styles/admin.css";
         <div class="login-sep">ou</div>
         <p class="login-alt">
           <button type="button" id="magic-btn">Recevoir un lien de connexion par e-mail</button>
+          <span class="login-alt-hint">Pratique si vous avez oublié votre mot de passe.</span>
         </p>
-
-        <div class="login-msg" id="msg" style="display:none"></div>
-      </div>
+      </main>
+      <a class="login-retour" href="/">← Retour au site</a>
     </div>
 
     <script>
@@ -84,6 +95,19 @@ import "../../styles/admin.css";
         const { data: isAdmin } = await supabaseBrowser.rpc("is_admin");
         if (!isAdmin) { await supabaseBrowser.auth.signOut(); show("err", "Ce compte n'est pas autorisé."); return; }
         location.replace(next);
+      });
+
+      /* Afficher le mot de passe : sur un téléphone, une saisie masquée qu'on ne
+         peut pas relire est la première cause d'échec — et la deuxième tentative
+         se fait souvent au clavier tactile, donc à l'aveugle. */
+      const pwToggle = document.getElementById("pw-toggle") as HTMLButtonElement;
+      pwToggle?.addEventListener("click", () => {
+        const visible = pwEl.type === "text";
+        pwEl.type = visible ? "password" : "text";
+        pwToggle.textContent = visible ? "Afficher" : "Masquer";
+        pwToggle.setAttribute("aria-pressed", visible ? "false" : "true");
+        pwToggle.setAttribute("aria-label", visible ? "Afficher le mot de passe" : "Masquer le mot de passe");
+        pwEl.focus();
       });
 
       document.getElementById("magic-btn")?.addEventListener("click", async () => {
