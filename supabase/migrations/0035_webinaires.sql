@@ -90,6 +90,6 @@ grant execute on function public.webinaire_public(text) to anon, authenticated, 
 insert into public.webinaires (slug, title, starts_at, duration_min, join_info)
 values ('webinaire-initiation',
         'De ta compétence à tes premières ventes : la méthode exacte en 3 étapes',
-        '2026-09-06 19:00:00+00', 60,
+        '2026-09-06 19:00:00+00', 90,
         'Connecte-toi 5 minutes en avance, avec un carnet.')
 on conflict (slug) do nothing;
