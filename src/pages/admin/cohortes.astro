@@ -1,0 +1,202 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import Card from "../../components/starwind/card/Card.astro";
+import Button from "../../components/starwind/button/Button.astro";
+---
+
+<AdminLayout title="Cohortes" active="cohortes">
+  <div class="sw space-y-6">
+    <div class="admin-toolbar">
+      <div class="left">
+        <input class="admin-search" id="co-search" type="search" placeholder="Rechercher une cohorte…" />
+      </div>
+      <Button variant="primary" id="co-new">+ Nouvelle cohorte</Button>
+    </div>
+
+    <Card class="gap-0 overflow-hidden p-0">
+      <p class="hint" style="padding:14px 18px 0">
+        Une cohorte pilote le compteur de places d'une page de vente (ex. la cohorte
+        « parcours-initiation » alimente <b>/parcours-initiation</b>). Les ventes du produit
+        Chariow renseigné sont décomptées automatiquement ; le champ « places prises à la main »
+        sert à tout ce qui n'est pas passé par Chariow (paiement direct, invités, places réservées).
+      </p>
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[720px]">
+          <thead><tr><th>Cohorte</th><th>Démarrage</th><th>Ventes Chariow</th><th>À la main</th><th>Places</th><th>État</th><th></th></tr></thead>
+          <tbody data-rows><tr class="a-loading-row"><td colspan="7">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </Card>
+  </div>
+
+  <!-- Tiroir éditeur -->
+  <div class="a-drawer-overlay" id="co-overlay"></div>
+  <aside class="a-drawer" id="co-drawer" aria-hidden="true">
+    <div class="a-drawer-head">
+      <h2 id="co-drawer-title">Nouvelle cohorte</h2>
+      <button class="icon-btn" id="co-close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="a-drawer-body">
+      <input type="hidden" id="f-id" />
+      <div class="a-field"><label for="f-title">Titre *</label><input class="a-input" id="f-title" placeholder="Ex. Parcours Initiation — cohorte de septembre 2026" /></div>
+      <div class="a-field"><label for="f-slug">Slug *</label><input class="a-input" id="f-slug" /><div class="hint">Identifiant lu par la page de vente. Le modifier décroche le compteur de la page.</div></div>
+      <div class="a-field"><label for="f-capacity">Capacité (places) *</label><input class="a-input" id="f-capacity" type="number" min="0" value="30" /><div class="hint">Affichée telle quelle sur la page («&nbsp;30 places. Pas une de plus.&nbsp;»).</div></div>
+      <div class="a-field"><label for="f-taken">Places prises à la main</label><input class="a-input" id="f-taken" type="number" min="0" value="0" /><div class="hint">Inscriptions hors Chariow. S'ajoutent aux ventes automatiques.</div></div>
+      <div class="a-field"><label for="f-product">Produit Chariow</label><input class="a-input" id="f-product" placeholder="prd_xxxxxxxx" /><div class="hint">Chaque vente de ce produit retire une place. Vide = décompte manuel uniquement.</div></div>
+      <div class="a-field"><label for="f-start">Démarrage</label><input class="a-input" id="f-start" type="datetime-local" /><div class="hint">Pilote le compte à rebours et le libellé «&nbsp;cohorte de …&nbsp;».</div></div>
+      <div class="a-field"><label class="co-toggle"><input type="checkbox" id="f-active" checked /> <span>Cohorte active</span></label><div class="hint">Inactive : la page de vente retombe sur ses valeurs de secours.</div></div>
+    </div>
+    <div class="a-drawer-foot">
+      <span class="grow"></span>
+      <button class="abtn" id="co-cancel">Annuler</button>
+      <button class="abtn primary" id="co-save">Enregistrer</button>
+    </div>
+  </aside>
+</AdminLayout>
+
+<script>
+  import { supabaseBrowser } from "../../lib/supabaseBrowser";
+  import { slugify, esc, toast, confirmModal, dtLocalValue, dshort } from "../../scripts/adminUtils";
+
+  const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+  const rows = document.querySelector("[data-rows]")!;
+  const drawer = document.getElementById("co-drawer")!;
+  const overlay = document.getElementById("co-overlay")!;
+  let all: any[] = [];
+  let ventes: Record<string, number> = {}; // id de cohorte -> ventes Chariow
+  let slugTouched = false;
+
+  const openDrawer = () => { drawer.classList.add("open"); overlay.classList.add("open"); document.body.style.overflow = "hidden"; };
+  const closeDrawer = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); document.body.style.overflow = ""; };
+
+  /* Mêmes règles que la fonction `cohorte_places` lue par la page de vente :
+     places prises = ventes Chariow + réglage manuel, plafonné à la capacité. */
+  const prises = (c: any) => Math.min(c.capacity || 0, (ventes[c.id] || 0) + (c.seats_taken || 0));
+  const restantes = (c: any) => Math.max(0, (c.capacity || 0) - ((ventes[c.id] || 0) + (c.seats_taken || 0)));
+
+  function render(list: any[]) {
+    if (!list.length) { rows.innerHTML = `<tr><td class="empty" colspan="7">Aucune cohorte. Cliquez sur « Nouvelle cohorte ».</td></tr>`; return; }
+    rows.innerHTML = list.map((c) => {
+      const reste = restantes(c);
+      return `
+      <tr>
+        <td><strong>${esc(c.title)}</strong><br><span style="color:var(--c-gray-500);font-size:.78rem">${esc(c.slug)}${c.chariow_product_id ? " · " + esc(c.chariow_product_id) : ""}</span></td>
+        <td>${c.starts_at ? dshort(c.starts_at) : '<span style="color:var(--c-gray-400)">—</span>'}</td>
+        <td style="font-variant-numeric:tabular-nums">${ventes[c.id] || 0}</td>
+        <td style="font-variant-numeric:tabular-nums">${c.seats_taken || 0}</td>
+        <td style="font-variant-numeric:tabular-nums">${prises(c)}/${c.capacity || 0} · <b>${reste} restantes</b></td>
+        <td>${c.active ? '<span class="tag-pill ok">Active</span>' : '<span class="tag-pill draft">Inactive</span>'}</td>
+        <td><div class="row-actions">
+          <button class="icon-btn" data-edit="${c.id}" title="Éditer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="icon-btn danger" data-del="${c.id}" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+        </div></td>
+      </tr>`;
+    }).join("");
+    rows.querySelectorAll<HTMLElement>("[data-edit]").forEach((b) => b.addEventListener("click", () => edit(b.dataset.edit!)));
+    rows.querySelectorAll<HTMLElement>("[data-del]").forEach((b) => b.addEventListener("click", () => del(b.dataset.del!)));
+  }
+
+  function applySearch() {
+    const q = ($("co-search").value || "").toLowerCase();
+    render(all.filter((c) => !q || (c.title + " " + c.slug).toLowerCase().includes(q)));
+  }
+
+  async function load() {
+    const { data, error } = await supabaseBrowser.from("cohortes").select("*").order("starts_at", { ascending: false, nullsFirst: false });
+    if (error) { rows.innerHTML = `<tr><td class="empty" colspan="7">Erreur de chargement (la table « cohortes » existe-t-elle ? Migration 0034 appliquée ?).</td></tr>`; return; }
+    all = data || [];
+
+    // Ventes Chariow, comptées produit par produit (une requête « head » par
+    // cohorte : il y en a une poignée, pas de quoi charger la timeline).
+    ventes = {};
+    await Promise.all(all.filter((c) => c.chariow_product_id).map(async (c) => {
+      const { count } = await supabaseBrowser
+        .from("contact_events")
+        .select("id", { count: "exact", head: true })
+        .eq("type", "achat")
+        .eq("source", "chariow")
+        .eq("meta->>product_id", c.chariow_product_id);
+      ventes[c.id] = count || 0;
+    }));
+    applySearch();
+  }
+
+  function fill(c: any) {
+    $("f-id").value = c?.id || "";
+    $("f-title").value = c?.title || "";
+    $("f-slug").value = c?.slug || "";
+    $("f-capacity").value = (c?.capacity ?? 30).toString();
+    $("f-taken").value = (c?.seats_taken ?? 0).toString();
+    $("f-product").value = c?.chariow_product_id || "";
+    $("f-start").value = c?.starts_at ? dtLocalValue(c.starts_at) : "";
+    $("f-active").checked = c ? !!c.active : true;
+    slugTouched = !!c?.slug;
+    document.getElementById("co-drawer-title")!.textContent = c ? "Modifier la cohorte" : "Nouvelle cohorte";
+  }
+
+  function openNew() { fill(null); openDrawer(); }
+  function edit(id: string) { fill(all.find((x) => x.id === id)); openDrawer(); }
+
+  async function del(id: string) {
+    const c = all.find((x) => x.id === id);
+    if (!(await confirmModal({
+      title: "Supprimer la cohorte",
+      message: `Supprimer « ${c?.title} » ?\n\nLa page de vente qui la lit repassera sur ses valeurs de secours (compteur figé).`,
+      danger: true, confirmLabel: "Supprimer",
+    }))) return;
+    const { error } = await supabaseBrowser.from("cohortes").delete().eq("id", id);
+    if (error) { toast("Suppression impossible.", "err"); return; }
+    toast("Cohorte supprimée.");
+    await load();
+  }
+
+  async function save() {
+    const title = $("f-title").value.trim();
+    const slug = $("f-slug").value.trim() || slugify(title);
+    const capacity = parseInt($("f-capacity").value || "0") || 0;
+    if (!title || !slug) { toast("Titre et slug obligatoires.", "err"); return; }
+    const startV = $("f-start").value;
+    const payload: any = {
+      title, slug, capacity,
+      seats_taken: parseInt($("f-taken").value || "0") || 0,
+      chariow_product_id: $("f-product").value.trim() || null,
+      starts_at: startV ? new Date(startV).toISOString() : null,
+      active: $("f-active").checked,
+    };
+    const id = $("f-id").value;
+    const btn = document.getElementById("co-save")!;
+    btn.setAttribute("disabled", "true"); btn.textContent = "Enregistrement…";
+    const q = id ? supabaseBrowser.from("cohortes").update(payload).eq("id", id) : supabaseBrowser.from("cohortes").insert(payload);
+    const { error } = await q;
+    btn.removeAttribute("disabled"); btn.textContent = "Enregistrer";
+    if (error) {
+      const dup = (error.message || "").includes("duplicate") || error.code === "23505";
+      toast(dup ? "Ce slug existe déjà." : "Enregistrement impossible.", "err");
+      return;
+    }
+    toast(id ? "Cohorte mise à jour." : "Cohorte créée.");
+    closeDrawer();
+    await load();
+  }
+
+  document.getElementById("co-new")!.addEventListener("click", openNew);
+  document.getElementById("co-close")!.addEventListener("click", closeDrawer);
+  document.getElementById("co-cancel")!.addEventListener("click", closeDrawer);
+  overlay.addEventListener("click", closeDrawer);
+  document.getElementById("co-save")!.addEventListener("click", save);
+  $("co-search").addEventListener("input", applySearch);
+  $("f-title").addEventListener("input", () => { if (!slugTouched) $("f-slug").value = slugify($("f-title").value); });
+  $("f-slug").addEventListener("input", () => { slugTouched = true; });
+
+  (async () => {
+    const { data: { session } } = await supabaseBrowser.auth.getSession();
+    if (!session) return;
+    await load();
+  })();
+</script>
+
+<style is:global>
+  .co-toggle { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+  .co-toggle input { width: 18px; height: 18px; accent-color: var(--c-green); }
+</style>
