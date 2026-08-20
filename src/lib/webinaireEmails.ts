@@ -19,13 +19,19 @@
    un doublon, non.
    ========================================================= */
 import { createAdminClient } from "./supabaseAdmin";
-import { sendEmail, webinaireConfirmationEmail } from "./email";
+import { sendEmail, expediteur, webinaireConfirmationEmail } from "./email";
 import { googleCalendarUrl, icsFromEvent, type CalEvent } from "./calendar";
 
 const SITE = "https://www.bwebagence.com";
 
 /** Le tunnel actuel. Aussi la `form_key` de ses soumissions. */
 export const WEBINAIRE_SLUG = "webinaire-initiation";
+
+/* Le webinaire est animé par une personne, et ses e-mails tutoient et signent
+   « Godwin ». L'expéditeur suit : c'est le nom lu dans la liste des messages,
+   avant même l'ouverture. La billetterie, elle, continue d'écrire au nom de
+   l'agence — son ton est celui d'une entreprise, son expéditeur aussi. */
+const EXPEDITEUR_WEBINAIRE = "Godwin Soola de Bweb Agence";
 
 /** Types d'e-mails du tunnel. Le journal en garde un par inscrit et par envoi. */
 export type KindWebinaire = "confirmation" | "reminder_1d" | "reminder_0d" | "reminder_1h" | "replay";
@@ -156,7 +162,14 @@ export async function envoyerEmailWebinaire(admin: any, input: EnvoiInput): Prom
   }
 
   const ok = await avecDelaiMax(
-    sendEmail({ to: adresse, subject: message.subject, html: message.html, text: message.text, attachments }),
+    sendEmail({
+      to: adresse,
+      from: expediteur(EXPEDITEUR_WEBINAIRE),
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
+      attachments,
+    }),
     8_000,
     false,
   );

@@ -13,7 +13,24 @@ const SITE = "https://www.bwebagence.com";
 // tolérance mais on sérialise toujours vers le contrat exact de Bird (sinon 422
 // « champ inconnu » → l'envoi échoue et le billet ne part jamais).
 type EmailAttachment = { filename: string; content: string; content_type?: string; type?: string; content_id?: string };
-type EmailOpts = { to: string; subject: string; html: string; text?: string; attachments?: EmailAttachment[] };
+type EmailOpts = {
+  to: string; subject: string; html: string; text?: string; attachments?: EmailAttachment[];
+  /** Expéditeur, quand il ne doit pas être celui de l'agence (cf. `expediteur`). */
+  from?: string;
+};
+
+/* L'ADRESSE d'expédition ne se choisit pas : elle doit rester sur le domaine
+   vérifié chez Bird, sous peine de refus pur et simple. Seul le NOM affiché
+   varie — celui que le destinataire lit dans sa liste avant d'ouvrir.
+   D'où cette fonction : on reprend l'adresse configurée et on ne remplace que
+   l'étiquette. Sert au tunnel webinaire, animé par une personne et non par une
+   entité ; la billetterie, elle, écrit au nom de l'agence. */
+export function expediteur(nom: string): string {
+  const configure = secret("BIRD_FROM") || "Bweb Agence <no-reply@mail.bwebagence.com>";
+  const entreChevrons = configure.match(/<([^>]+)>/);
+  const adresse = (entreChevrons ? entreChevrons[1] : configure).trim();
+  return `${nom} <${adresse}>`;
+}
 
 export async function sendEmail(opts: EmailOpts): Promise<boolean> {
   /* Lecture À L'EXÉCUTION (cf. src/lib/env.ts). En accès littéral,
@@ -24,11 +41,8 @@ export async function sendEmail(opts: EmailOpts): Promise<boolean> {
      webinaire était enregistrée, sa confirmation n'atteignait jamais Bird.
      C'est le même piège que celui documenté pour le tunnel (PR #92/#93). */
   const key = secret("BIRD_API_KEY", "BIRD_ACCESS_KEY");
-  /* Un expéditeur nommé, pas une marque : « Godwin Soola de Bweb Agence » est
-     ce que le destinataire voit dans sa liste de messages, et une personne
-     s'ouvre plus qu'une entreprise. L'adresse, elle, reste celle du domaine
-     vérifié. La variable BIRD_FROM garde la main si elle est renseignée. */
-  const from = secret("BIRD_FROM") || "Godwin Soola de Bweb Agence <no-reply@mail.bwebagence.com>";
+  // Par défaut, l'agence écrit en son nom ; un appelant peut passer le sien.
+  const from = opts.from || secret("BIRD_FROM") || "Bweb Agence <no-reply@mail.bwebagence.com>";
   const replyTo = secret("BIRD_REPLY_TO") || "info@bwebagence.com";
   if (!key) return false;
   const attachments = opts.attachments?.length
