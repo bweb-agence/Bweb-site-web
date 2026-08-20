@@ -71,8 +71,21 @@ export async function sendEmail(opts: EmailOpts): Promise<boolean> {
 }
 
 /* ---------- Gabarit de marque (compatible clients mail) ---------- */
-function shell(inner: string): string {
+/* Le PRÉ-EN-TÊTE est la ligne d'aperçu affichée dans la liste des messages,
+   juste après l'objet. Sans lui, Gmail y recopie le premier texte trouvé —
+   ici « Bonjour Prénom, » ou le lien du logo : deux lignes gâchées sur les
+   trois que le destinataire lit avant de décider d'ouvrir.
+   Le bloc est masqué dans le corps (hauteur nulle, couleur transparente) et
+   suivi d'un rembourrage de caractères invisibles, faute de quoi le client
+   enchaîne quand même sur le début du message. */
+function preheader(texte: string): string {
+  const rembourrage = "&#847;&zwnj;&nbsp;".repeat(60);
+  return `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;height:0;width:0;mso-hide:all">${texte}${rembourrage}</div>`;
+}
+
+function shell(inner: string, apercu?: string): string {
   return `<div style="background:#eef2fb;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">
+  ${apercu ? preheader(apercu) : ""}
   <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(2,11,80,.08)">
     <div style="background:#050a3a;padding:20px 22px;text-align:center">
       <img src="${SITE}/images/logo-email.png" alt="Bweb Agence" width="149" height="30" style="height:30px;width:149px;display:inline-block;border:0;outline:none;text-decoration:none" />
@@ -543,7 +556,7 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
         <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b style="color:#0a0e27">Une chose à faire tout de suite (2 minutes) :</b> note dans ton téléphone les <b>3 compétences</b> que tu utilises déjà pour aider les autres. On s'en servira pendant le live.</p>
         <p style="font-size:13.5px;color:#565d80;line-height:1.6;margin:0">Tu connais quelqu'un qui a une compétence et qui ne la vend pas ? Envoie-lui <a href="${d.landing}" style="color:#1f6ced;font-weight:700">le lien d'inscription</a>. Il te remerciera.</p>
         ${wbPied(d, "À dimanche,<br>Godwin Soola — Bweb Academy")}
-      </div>`),
+      </div>`, "Ta place est verrouillée. Bloque le créneau, et note tes 3 compétences — on s'en sert pendant le live."),
       text: [
         `Salut ${firstName(d.prenom)},`, "",
         "C'est fait : ta place au live de dimanche est verrouillée.", "",
@@ -570,7 +583,7 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
         ${wbBouton(lien, "📺 Mon lien pour le live")}
         <div style="text-align:center;font-size:12.5px;color:#8b91ae;margin-top:8px">${esc(d.date_label)} (Abidjan) · ${d.duration_min} minutes · viens 5 min en avance</div>
         ${wbPied(d, "À demain,<br>Godwin")}
-      </div>`),
+      </div>`, "La matrice compétence × problème × client : quoi vendre, à qui, et combien ça vaut. Ton lien est dedans."),
       text: [`Salut ${firstName(d.prenom)},`, "",
         `Demain ${d.heure_label}, c'est le live.`, "",
         "La matrice compétence x problème x client : en 15 minutes, elle te dit quoi vendre, à qui, et combien ça vaut. Je la facture 150 000 FCFA en coaching privé. Demain, tu la reçois gratuitement.", "",
@@ -593,7 +606,7 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
         <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Tu repars avec une méthode qui vaut <b>150 000 FCFA</b>, pour 0 FCFA. La seule condition : être présent.</p>
         <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0">Un carnet, tes 3 compétences, et toi. C'est tout ce qu'il faut.</p>
         ${wbPied(d, "On se voit ce soir.<br>Godwin")}
-      </div>`),
+      </div>`, "Ton lien est dans ce message. Un carnet, tes 3 compétences, et toi."),
       text: [`Salut ${firstName(d.prenom)},`, "", "C'est ce soir.", "",
         `Lien : ${lien}`, `${d.heure_label} précises (Abidjan) — viens 5 min en avance`, "",
         "Tu repars avec une méthode qui vaut 150 000 FCFA, pour 0 FCFA. La seule condition : être présent.",
@@ -612,7 +625,7 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
         ${wbBouton(lien, "📺 Ton lien pour le live")}
         <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:14px 0 0">Carnet, tes 3 compétences, et toi. On se voit à ${esc(d.heure_label)}.</p>
         ${wbPied(d)}
-      </div>`),
+      </div>`, "Ton lien est dedans. Connecte-toi 5 minutes en avance."),
       text: [`Salut ${firstName(d.prenom)},`, "",
         "Dans 1 heure, je donne en public la méthode que je facture 150 000 FCFA. Gratuite, ce soir seulement.", "",
         `Ton lien : ${lien}`, "", `Carnet, tes 3 compétences, et toi. On se voit à ${d.heure_label}.`, "", "Godwin"].join("\n"),
@@ -629,7 +642,7 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
         <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0">On commence.</p>
         ${wbBouton(lien, "📺 Rejoindre maintenant")}
         ${wbPied(d)}
-      </div>`),
+      </div>`, "C'est maintenant, ton lien est dedans."),
       text: [`Salut ${firstName(d.prenom)},`, "", "On commence.", "", lien, "", "Godwin"].join("\n"),
     };
   }
@@ -647,7 +660,7 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
         <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b style="color:#0a0e27">Et si tu étais au live :</b> la cohorte de septembre du Parcours Initiation démarre <b>aujourd'hui</b>. 30 places, 5 phases, 10 lives. Ton produit en ligne en 30 jours — sinon on continue avec toi gratuitement.</p>
         <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0">👉 Réponds <b>« PLACE »</b> sur <a href="${d.whatsapp}" style="color:#1f6ced;font-weight:700">WhatsApp</a> — les places partent dans l'ordre des inscriptions, et la prochaine cohorte, c'est dans un mois.</p>
         ${wbPied(d)}
-      </div>`),
+      </div>`, "72 h pour rattraper, puis il disparaît. Et la cohorte de septembre démarre aujourd'hui."),
       text: [`Salut ${firstName(d.prenom)},`, "",
         "Tu as raté le live d'hier ? Les gens qui étaient là sont repartis avec une méthode à 150 000 FCFA, gratuitement.", "",
         `Le replay est disponible 72 h : ${replay}`, "Il disparaît mercredi soir.", "",
