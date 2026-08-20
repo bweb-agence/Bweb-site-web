@@ -118,21 +118,49 @@
 .abtn.ghost:hover { background: var(--c-gray-100); border-color: transparent; color: var(--c-navy); }
 
 /* ---------- Page de connexion ---------- */
-.login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--g-navy); }
-.login-card { width: min(380px, 100%); background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); padding: 30px; }
-.login-card .brand { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 800; font-size: 1.15rem; color: var(--c-navy); margin-bottom: 4px; }
-.login-card .brand .m { width: 30px; height: 30px; border-radius: 8px; background: var(--g-blue); display: grid; place-items: center; color: #fff; }
-.login-card p.sub { color: var(--c-gray-600); font-size: 0.88rem; margin: 4px 0 22px; }
-.login-field { margin-bottom: 14px; }
-.login-field label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--c-gray-700); margin-bottom: 5px; }
-.login-input { width: 100%; border: 1px solid var(--c-border); border-radius: 10px; padding: 11px 13px; font-size: 0.95rem; font-family: inherit; color: var(--c-ink); }
+/* Le vrai défaut de cette page : la feuille de l'admin n'a pas de remise à zéro
+   pour les éléments de formulaire, qui restent donc en `content-box`. Avec
+   `width:100%`, un champ ajoutait ses 28 px de rembourrage PAR-DESSUS la
+   largeur disponible et débordait de la carte — 72 px pour le champ mot de
+   passe, qui réserve la place du bouton « Afficher ». D'où des champs collés
+   aux bords et un formulaire de travers. */
+.login-card, .login-card *, .login-card *::before, .login-card *::after { box-sizing: border-box; }
+
+/* `dvh` d'abord, `vh` en repli : sur iOS, 100vh compte la barre d'adresse et
+   pousse la carte sous le pli — on ne voit alors que la moitié du formulaire. */
+.login-wrap { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; align-content: center; gap: 16px; padding: 24px; background: var(--g-navy); }
+.login-card { width: min(420px, 100%); background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); padding: 34px 32px; }
+.login-card .brand { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 800; font-size: 1.22rem; color: var(--c-navy); margin: 0 0 4px; }
+.login-card .brand .m { width: 32px; height: 32px; border-radius: 9px; background: var(--g-blue); display: grid; place-items: center; color: #fff; flex: none; }
+.login-card p.sub { color: var(--c-gray-600); font-size: 0.9rem; margin: 4px 0 24px; }
+.login-field { margin-bottom: 18px; }
+.login-field label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--c-gray-700); margin-bottom: 7px; }
+/* 15px de haut ≈ 46px de cible : au-dessus des 44px sous lesquels une saisie au
+   pouce commence à rater. Le corps à 1rem évite aussi le zoom automatique d'iOS. */
+.login-input { width: 100%; border: 1px solid var(--c-border); border-radius: 12px; padding: 13px 14px; font-size: 1rem; font-family: inherit; color: var(--c-ink); background: #fff; transition: border-color .15s ease, box-shadow .15s ease; }
+.login-input::placeholder { color: var(--c-gray-400); }
+.login-input:hover { border-color: var(--c-gray-400); }
 .login-input:focus { outline: none; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31, 108, 237, 0.14); }
-.login-btn { width: 100%; border: 0; border-radius: 10px; background: var(--c-navy); color: #fff; font-weight: 700; font-size: 0.95rem; padding: 12px; cursor: pointer; margin-top: 4px; }
+/* Chrome peint les champs remplis automatiquement en jaune : on garde la carte. */
+.login-input:-webkit-autofill { -webkit-text-fill-color: var(--c-ink); box-shadow: 0 0 0 100px #fff inset; }
+/* Le bouton « Afficher » vit DANS le champ : une case à cocher en dessous
+   déplacerait le bouton de connexion à chaque bascule. */
+.login-pw { position: relative; }
+.login-pw .login-input { padding-right: 88px; }
+.login-pw-toggle { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); border: 0; background: none; color: var(--c-blue); font: inherit; font-size: 0.82rem; font-weight: 700; padding: 8px 10px; border-radius: 9px; cursor: pointer; }
+.login-pw-toggle:hover { background: var(--c-gray-100); }
+.login-btn { width: 100%; border: 0; border-radius: 12px; background: var(--c-navy); color: #fff; font-weight: 700; font-size: 1rem; padding: 14px; cursor: pointer; margin-top: 22px; }
 .login-btn:hover { background: var(--c-navy-soft); }
 .login-btn[disabled] { opacity: 0.6; cursor: default; }
-.login-alt { text-align: center; margin: 16px 0 0; font-size: 0.82rem; }
-.login-alt button { background: none; border: 0; color: var(--c-blue); font-weight: 700; cursor: pointer; font-size: 0.82rem; }
-.login-msg { font-size: 0.82rem; font-weight: 600; margin-top: 12px; padding: 10px 12px; border-radius: 9px; }
+.login-pw-toggle:focus-visible, .login-btn:focus-visible, .login-alt button:focus-visible, .login-retour:focus-visible { outline: 2px solid var(--c-blue); outline-offset: 2px; }
+.login-alt { text-align: center; margin: 16px 0 0; font-size: 0.86rem; }
+.login-alt button { background: none; border: 0; color: var(--c-blue); font-weight: 700; cursor: pointer; font-size: 0.86rem; padding: 4px 6px; border-radius: 8px; }
+.login-alt button:hover { text-decoration: underline; }
+.login-alt-hint { display: block; color: var(--c-gray-500); font-size: 0.78rem; margin-top: 4px; }
+.login-retour { color: rgba(255, 255, 255, 0.72); font-size: 0.82rem; font-weight: 600; text-decoration: none; padding: 6px 10px; border-radius: 8px; }
+.login-retour:hover { color: #fff; }
+/* Le message est au-dessus du formulaire : sa marge est donc EN DESSOUS de lui. */
+.login-msg { font-size: 0.86rem; font-weight: 600; margin: 0 0 18px; padding: 11px 13px; border-radius: 10px; }
 .login-msg.err { background: #fbe7e7; color: #b02525; }
 .login-msg.ok { background: #dcf5ec; color: #0a7d5f; }
 .login-sep { display: flex; align-items: center; gap: 10px; color: var(--c-gray-400); font-size: 0.75rem; margin: 16px 0; }
