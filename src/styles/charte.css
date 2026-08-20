@@ -1,0 +1,66 @@
+/* =========================================================
+   BWEB — Typographie de la charte graphique
+   ---------------------------------------------------------
+   Garnett Medium pour les titres, Akkurat Regular pour le corps. Les fichiers
+   sont auto-hébergés (public/fonts, convertis en woff2 : 150 Ko pour les
+   quatre coupes, contre 456 Ko en TTF).
+
+   PORTÉE : la classe `.charte` sur <body>, posée par BaseLayout quand la page
+   le demande. On n'écrase donc pas les tokens globaux — les tunnels de vente
+   gardent Sora/Jakarta tant qu'on n'a pas tranché page par page.
+
+   Deux coupes réelles par famille, et non une seule : sans le gras véritable,
+   le navigateur en fabrique un en épaississant les contours (« faux gras »).
+   Sur une police de charte, ça se voit tout de suite — et ça trahit le dessin.
+   ========================================================= */
+
+@font-face {
+  font-family: "Garnett";
+  src: url("/fonts/Garnett-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Garnett";
+  src: url("/fonts/Garnett-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Akkurat";
+  src: url("/fonts/Akkurat-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Akkurat";
+  src: url("/fonts/Akkurat-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.charte {
+  --f-display: "Garnett", "Sora Variable", system-ui, sans-serif;
+  --f-body: "Akkurat", "Plus Jakarta Sans Variable", system-ui, sans-serif;
+}
+
+/* La charte dit « Garnett Medium » : les titres descendent donc de 700 à 500.
+   Garnett a un dessin plus large et plus contrasté que Sora — au même poids,
+   il paraîtrait plus lourd que ce que la maquette prévoyait. */
+.charte :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+/* Akkurat porte moins haut que Jakarta à taille égale (hauteur d'x plus
+   courte) : un demi-cran de plus au corps rétablit la même densité de lecture
+   sans toucher à l'échelle typographique. */
+.charte body,
+.charte p,
+.charte li {
+  letter-spacing: 0.002em;
+}

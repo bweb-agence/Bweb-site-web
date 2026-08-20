@@ -27,6 +27,9 @@ interface Props {
   /* Mode « focus CRO » : header et footer réduits à la marque, sans aucun lien
      de navigation. Réservé aux landings de vente (parcours, offres). */
   bareChrome?: boolean;
+  /* Typographie de la charte (Garnett + Akkurat) au lieu de Sora + Jakarta.
+     Déployée page par page : l'accueil d'abord, le temps de juger sur pièce. */
+  charteTypo?: boolean;
   /* Masque la bannière de consentement. Sur une landing de vente ou une page
      d'inscription, elle s'ouvre au-dessus du CTA au moment précis où le
      visiteur décide — et le fait décider d'autre chose. Par défaut, les pages
@@ -39,7 +42,7 @@ interface Props {
 const {
   title, description = site.description, image = site.ogImage, noindex = false,
   ogType = "website", organization = false, breadcrumbs, schemas = [], hideWhatsApp = false,
-  bareChrome = false, hideCookieBanner = bareChrome,
+  bareChrome = false, hideCookieBanner = bareChrome, charteTypo = false,
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, site.url).href.replace(/\/$/, "") || site.url;
 const ogImageUrl = new URL(image, site.url).href;
@@ -103,6 +106,14 @@ const breadcrumbLd = breadcrumbs?.length
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+    {charteTypo && (
+      <>
+        {/* Les deux coupes du premier écran : sans préchargement, le texte
+            s'affiche d'abord dans la police de repli puis saute (`swap`). */}
+        <link rel="preload" href="/fonts/Garnett-Medium.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href="/fonts/Akkurat-Regular.woff2" as="font" type="font/woff2" crossorigin />
+      </>
+    )}
 
     <!-- Google tag (gtag.js) — Google Analytics. is:inline = rendu verbatim (script tiers). -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-6WX1PX6W3E" is:inline></script>
@@ -153,7 +164,7 @@ const breadcrumbLd = breadcrumbs?.length
       })();
     </script>
   </head>
-  <body data-sans-banniere-cookies={hideCookieBanner ? "" : undefined}>
+  <body class:list={[charteTypo && "charte"]} data-sans-banniere-cookies={hideCookieBanner ? "" : undefined}>
     <a href="#main" class="skip-link">Aller au contenu</a>
     <Header bare={bareChrome} />
     <main id="main">
