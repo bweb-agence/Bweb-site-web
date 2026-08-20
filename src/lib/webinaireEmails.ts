@@ -196,6 +196,12 @@ export async function envoyerEmailWebinaire(admin: any, input: EnvoiInput): Prom
     sendEmail({
       to: adresse,
       from: expediteur(EXPEDITEUR_WEBINAIRE),
+      /* Sans le suivi des clics, les liens partent intacts vers bwebagence.com au
+         lieu d'être réécrits vers le domaine de redirection : c'est l'un des
+         signaux qui poussent un message vers l'onglet Promotions, et ici le lien
+         du live doit inspirer confiance au premier coup d'œil. Les ouvertures,
+         elles, restent mesurées. */
+      trackClicks: false,
       subject: message.subject,
       html: message.html,
       text: message.text,
