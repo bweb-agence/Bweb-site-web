@@ -19,7 +19,8 @@
    un doublon, non.
    ========================================================= */
 import { createAdminClient } from "./supabaseAdmin";
-import { sendEmail, expediteur, webinaireConfirmationEmail } from "./email";
+import { sendEmail, expediteur, webinaireEmail, type WebinaireEmailData } from "./email";
+import { contact } from "../config/site";
 import { googleCalendarUrl, icsFromEvent, type CalEvent } from "./calendar";
 
 const SITE = "https://www.bwebagence.com";
@@ -34,7 +35,7 @@ export const WEBINAIRE_SLUG = "webinaire-initiation";
 const EXPEDITEUR_WEBINAIRE = "Godwin Soola de Bweb Agence";
 
 /** Types d'e-mails du tunnel. Le journal en garde un par inscrit et par envoi. */
-export type KindWebinaire = "confirmation" | "reminder_1d" | "reminder_0d" | "reminder_1h" | "replay";
+export type KindWebinaire = "confirmation" | "reminder_1d" | "reminder_0d" | "reminder_1h" | "live" | "replay";
 
 export interface Webinaire {
   id: string;
@@ -80,6 +81,14 @@ export function libelleDate(iso: string): string {
     .replace(":", " h ")
     .replace(/ h 00$/, " h");
   return `${jour} à ${heure}`;
+}
+
+/** « 19 h » — l'heure seule, pour les phrases courtes. */
+export function libelleHeure(iso: string): string {
+  return new Date(iso)
+    .toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: TZ })
+    .replace(":", " h ")
+    .replace(/ h 00$/, " h");
 }
 
 /** L'évènement calendrier correspondant (Google Agenda + .ics). */
@@ -205,6 +214,26 @@ export async function envoyerEmailWebinaire(admin: any, input: EnvoiInput): Prom
   return "envoye";
 }
 
+/** Les données de gabarit pour un inscrit donné. */
+function donneesGabarit(w: Webinaire, prenom: string, unsubToken?: string | null): WebinaireEmailData {
+  const evenement = evenementWebinaire(w);
+  return {
+    prenom,
+    title: w.title,
+    date_label: libelleDate(w.starts_at),
+    heure_label: libelleHeure(w.starts_at),
+    duration_min: w.duration_min,
+    join_url: w.join_url,
+    join_info: w.join_info,
+    replay_url: w.replay_url,
+    calendarGoogle: googleCalendarUrl(evenement),
+    calendarIcs: `${SITE}/api/calendrier?w=${w.slug}`,
+    landing: `${SITE}/webinaire-initiation`,
+    whatsapp: `https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("PLACE")}`,
+    unsubUrl: unsubToken ? `${SITE}/desabonnement?t=${unsubToken}` : null,
+  };
+}
+
 /**
  * Confirmation d'inscription, envoyée dans la foulée du formulaire.
  * Ne lève jamais : appelée depuis la route d'inscription.
@@ -220,17 +249,10 @@ export async function envoyerConfirmationWebinaire(opts: {
     const webinaire = await getWebinaire(admin, opts.slug || WEBINAIRE_SLUG);
     if (!webinaire) return "webinaire_inconnu";
 
-    const evenement = evenementWebinaire(webinaire);
-    const message = webinaireConfirmationEmail({
-      prenom: opts.prenom,
-      title: webinaire.title,
-      date_label: libelleDate(webinaire.starts_at),
-      duration_min: webinaire.duration_min,
-      join_url: webinaire.join_url,
-      join_info: webinaire.join_info,
-      calendarGoogle: googleCalendarUrl(evenement),
-      calendarIcs: `${SITE}/api/calendrier?w=${webinaire.slug}`,
-    });
+    /* Pas de lien de désabonnement sur la confirmation : elle répond à un acte
+       volontaire fait il y a dix secondes. Les rappels, eux, en portent un. */
+    const message = webinaireEmail("confirmation", donneesGabarit(webinaire, opts.prenom));
+    if (!message) return "echec";
 
     return await envoyerEmailWebinaire(admin, {
       webinaire,
@@ -245,4 +267,175 @@ export async function envoyerConfirmationWebinaire(opts: {
     console.error("[webinaire] confirmation non envoyée —", err instanceof Error ? err.message : err);
     return "echec";
   }
+}
+
+/* =========================================================
+   LA SÉQUENCE — quels e-mails sont dus, maintenant
+   ---------------------------------------------------------
+   Le calendrier se lit en HEURES avant le live, pas en jours : le rappel d'une
+   heure avant et celui du démarrage n'existent pas à l'échelle de la journée.
+   Chaque fenêtre est large (le passage du cron n'est jamais à la seconde) et
+   l'unicité du journal fait le reste — un cron qui repasse dans la même fenêtre
+   ne renvoie rien.
+
+   Une fenêtre PASSÉE ne rattrape rien : quelqu'un qui s'inscrit à 18 h 30 reçoit
+   sa confirmation puis le message d'ouverture, jamais « c'est demain ».
+   ========================================================= */
+const FENETRES: { kind: KindWebinaire; min: number; max: number }[] = [
+  // (heures avant le début ; négatif = après)
+  /* La bascule veille / jour J est à 18 h, pas à 24 h : un appel du cron le soir
+     de la veille (23 h avant) tomberait sinon dans « c'est ce soir », qui serait
+     faux d'une journée. À 18-24 h du live on répète donc « c'est demain » — et
+     comme il est déjà parti le matin, le journal en fait un non-événement. */
+  { kind: "reminder_1d", min: 18, max: 48 },   // le matin de la veille
+  { kind: "reminder_0d", min: 6, max: 18 },    // le matin du jour J
+  { kind: "reminder_1h", min: 0.25, max: 2 },  // une heure avant
+  { kind: "live", min: -0.5, max: 0.25 },      // à l'ouverture des portes
+  { kind: "replay", min: -72, max: -6 },       // le lendemain matin et les jours suivants
+];
+
+/** Les types d'e-mails dus pour ce webinaire à cet instant. */
+export function kindsDus(startsAt: string, maintenant = new Date()): KindWebinaire[] {
+  const heures = (new Date(startsAt).getTime() - maintenant.getTime()) / 3_600_000;
+  return FENETRES.filter((f) => heures > f.min && heures <= f.max).map((f) => f.kind);
+}
+
+/* Bird tient ~600 ms par message : 500 inscrits en file d'attente séquentielle
+   dépasseraient largement le plafond de 60 s de la fonction. On envoie par
+   vagues, et on s'arrête AVANT la coupure — le reste part au passage suivant
+   (le journal garantit qu'on ne renvoie rien de déjà envoyé). */
+const CONCURRENCE = 6;
+const BUDGET_MS = 45_000;
+
+interface Inscrit {
+  email: string;
+  prenom: string;
+  contactId: string | null;
+  unsubToken: string | null;
+}
+
+/** Les inscrits joignables : dédoublonnés par adresse, désabonnés exclus. */
+async function inscrits(admin: any, slug: string): Promise<Inscrit[]> {
+  const { data, error } = await admin
+    .from("form_submissions")
+    .select("email, full_name, contact_id, contacts(email_opt_in, unsubscribed_at, unsubscribe_token)")
+    .eq("form_key", slug)
+    .not("email", "is", null)
+    .order("submitted_at", { ascending: true });
+  if (error) {
+    console.error("[webinaire] liste des inscrits illisible —", error.message);
+    return [];
+  }
+
+  const parAdresse = new Map<string, Inscrit>();
+  for (const row of (data || []) as any[]) {
+    const adresse = String(row.email || "").trim().toLowerCase();
+    if (!adresse) continue;
+    const c = row.contacts;
+    /* L'opt-out est vérifié À L'ENVOI, pas à l'inscription : quelqu'un qui s'est
+       désabonné entre-temps ne doit plus rien recevoir, même s'il s'était
+       inscrit avant. Autorité serveur, comme pour les campagnes. */
+    if (c && (c.email_opt_in === false || c.unsubscribed_at)) continue;
+    // La première soumission gagne : c'est celle qui porte le prénom d'origine.
+    if (!parAdresse.has(adresse)) {
+      parAdresse.set(adresse, {
+        email: adresse,
+        prenom: String(row.full_name || "").trim() || "toi",
+        contactId: row.contact_id || null,
+        unsubToken: c?.unsubscribe_token || null,
+      });
+    }
+  }
+  return [...parAdresse.values()];
+}
+
+export interface RapportSequence {
+  webinaire?: string;
+  kinds: KindWebinaire[];
+  inscrits: number;
+  envoyes: number;
+  deja: number;
+  echecs: number;
+  ignores: number;
+  reste: number;
+  budget_atteint?: boolean;
+}
+
+/**
+ * Envoie tout ce qui est dû, pour tous les webinaires actifs.
+ * Appelée par le cron de 6 h (rappels du matin) et par le cron externe du VPS
+ * (une heure avant, puis à l'ouverture). Ne lève jamais.
+ */
+export async function envoyerSequenceWebinaire(admin: any, maintenant = new Date()): Promise<RapportSequence> {
+  const rapport: RapportSequence = { kinds: [], inscrits: 0, envoyes: 0, deja: 0, echecs: 0, ignores: 0, reste: 0 };
+  const debut = Date.now();
+
+  const { data: webinaires, error } = await admin
+    .from("webinaires")
+    .select(CHAMPS)
+    .eq("active", true);
+  if (error) {
+    console.error("[webinaire] webinaires illisibles —", error.message);
+    return rapport;
+  }
+
+  for (const w of (webinaires || []) as Webinaire[]) {
+    const kinds = kindsDus(w.starts_at, maintenant);
+    if (!kinds.length) continue;
+    rapport.webinaire = w.slug;
+    rapport.kinds.push(...kinds);
+
+    const liste = await inscrits(admin, w.slug);
+    rapport.inscrits += liste.length;
+
+    for (const kind of kinds) {
+      /* Filtre préalable : on lit le journal une fois plutôt que de tenter
+         500 insertions vouées à l'échec. L'insertion reste l'arbitre — c'est
+         elle qui protège des envois simultanés. */
+      const { data: dejaEnvoyes } = await admin
+        .from("webinaire_emails")
+        .select("email")
+        .eq("webinaire_id", w.id)
+        .eq("kind", kind);
+      const connus = new Set(((dejaEnvoyes || []) as any[]).map((r) => String(r.email).toLowerCase()));
+      const aFaire = liste.filter((i) => !connus.has(i.email));
+      rapport.deja += liste.length - aFaire.length;
+
+      let curseur = 0;
+      while (curseur < aFaire.length) {
+        if (Date.now() - debut > BUDGET_MS) {
+          rapport.budget_atteint = true;
+          rapport.reste += aFaire.length - curseur;
+          break;
+        }
+        const vague = aFaire.slice(curseur, curseur + CONCURRENCE);
+        await Promise.all(vague.map(async (inscrit) => {
+          const message = webinaireEmail(kind, donneesGabarit(w, inscrit.prenom, inscrit.unsubToken));
+          /* Message impossible à composer = lien du live absent. On ne journalise
+             rien : dès que le lien sera renseigné, le passage suivant enverra. */
+          if (!message) { rapport.ignores++; return; }
+          const r = await envoyerEmailWebinaire(admin, {
+            webinaire: w,
+            kind,
+            email: inscrit.email,
+            prenom: inscrit.prenom,
+            contactId: inscrit.contactId,
+            message,
+            agenda: kind === "confirmation" || kind === "reminder_1d",
+          });
+          if (r === "envoye") rapport.envoyes++;
+          else if (r === "deja_envoye") rapport.deja++;
+          else rapport.echecs++;
+        }));
+        curseur += vague.length;
+      }
+      if (rapport.budget_atteint) break;
+    }
+    if (rapport.budget_atteint) break;
+  }
+
+  if (rapport.ignores) {
+    console.error(`[webinaire] ${rapport.ignores} message(s) non composés — lien du live absent en base`);
+  }
+  return rapport;
 }
