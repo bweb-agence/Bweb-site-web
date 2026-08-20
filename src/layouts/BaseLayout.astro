@@ -6,6 +6,7 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import WhatsAppFloat from "../components/WhatsAppFloat.astro";
 import { site, contact } from "../config/site";
+import "../styles/charte.css";
 
 interface Props {
   title: string;
@@ -27,8 +28,10 @@ interface Props {
   /* Mode « focus CRO » : header et footer réduits à la marque, sans aucun lien
      de navigation. Réservé aux landings de vente (parcours, offres). */
   bareChrome?: boolean;
-  /* Typographie de la charte (Garnett + Akkurat) au lieu de Sora + Jakarta.
-     Déployée page par page : l'accueil d'abord, le temps de juger sur pièce. */
+  /* Typographie de la charte (Garnett + Akkurat). Active par défaut sur tout le
+     site ; les tunnels de vente (`bareChrome`) restent sur Sora + Jakarta, dont
+     les maquettes ont été dessinées et testées. Ce drapeau permet de forcer
+     l'un ou l'autre au cas par cas. */
   charteTypo?: boolean;
   /* Masque la bannière de consentement. Sur une landing de vente ou une page
      d'inscription, elle s'ouvre au-dessus du CTA au moment précis où le
@@ -42,7 +45,7 @@ interface Props {
 const {
   title, description = site.description, image = site.ogImage, noindex = false,
   ogType = "website", organization = false, breadcrumbs, schemas = [], hideWhatsApp = false,
-  bareChrome = false, hideCookieBanner = bareChrome, charteTypo = false,
+  bareChrome = false, hideCookieBanner = bareChrome, charteTypo = !bareChrome,
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, site.url).href.replace(/\/$/, "") || site.url;
 const ogImageUrl = new URL(image, site.url).href;

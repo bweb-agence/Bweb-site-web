@@ -4,13 +4,9 @@ import CosmicHero from "../components/CosmicHero.astro";
 import EcosystemViz from "../components/EcosystemViz.astro";
 import IllusDifference from "../components/illus/IllusDifference.astro";
 import IllusEngagement from "../components/illus/IllusEngagement.astro";
-/* Typographie de la charte : chargée UNIQUEMENT par les pages qui l'activent,
-   donc les 150 Ko de polices ne pèsent pas sur le reste du site tant que le
-   déploiement n'est pas généralisé. */
-import "../styles/charte.css";
 ---
 
-<BaseLayout title="Bweb Agence — Faites de l'IA un avantage concurrentiel" description="Bweb Agence accompagne les dirigeants à intégrer l'IA, automatiser leurs processus et vendre plus, avec des solutions concrètes adaptées aux réalités des entreprises africaines." organization charteTypo>
+<BaseLayout title="Bweb Agence — Faites de l'IA un avantage concurrentiel" description="Bweb Agence accompagne les dirigeants à intégrer l'IA, automatiser leurs processus et vendre plus, avec des solutions concrètes adaptées aux réalités des entreprises africaines." organization>
 <!-- ============ HERO ============ -->
 <section class="hero hero--cosmic" data-nav-section="Accueil">
   <CosmicHero />
