@@ -23,6 +23,13 @@
 }
 @font-face {
   font-family: "Garnett";
+  src: url("/fonts/Garnett-Semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Garnett";
   src: url("/fonts/Garnett-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
@@ -52,7 +59,7 @@
    Garnett a un dessin plus large et plus contrasté que Sora — au même poids,
    il paraîtrait plus lourd que ce que la maquette prévoyait. */
 .charte :is(h1, h2, h3, h4, h5, h6) {
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.015em;
 }
 
