@@ -1,5 +1,11 @@
 ---
+/* Rendu à la demande : la date, la durée et le nombre de places viennent de
+   l'édition en cours (table `webinaires`, écran /admin/webinaires). Le live est
+   mensuel — cette page ne doit pas être retouchée à chaque édition. */
+export const prerender = false;
+
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { supabase } from "../../lib/supabase";
 import PhoneField from "../../components/PhoneField.astro";
 import VideoLazy from "../../components/VideoLazy.astro";
 import { contact } from "../../config/site";
@@ -14,11 +20,43 @@ import "../../styles/tiles.css";
    Le funnel : cette page → /webinaire-initiation/merci
    ========================================================= */
 
-/* Le live est à 19 h heure d'Abidjan (UTC+0). Le « Z » est important :
-   sans lui, le navigateur interpréterait 19:00 dans SON fuseau, et un
-   inscrit à Paris verrait un décompte faux de 2 heures. */
-const LIVE_ISO = "2026-09-06T19:00:00Z";
-const PLACES = 500;
+/* L'édition en cours, lue par la fonction publique `webinaire_public` : elle ne
+   rend que le titre, l'horaire, la durée et les places — jamais le lien du
+   live, réservé aux inscrits.
+   Valeurs de secours si la base est injoignable : une landing qui annonce une
+   date dépassée reste préférable à une landing vide. */
+const TUNNEL = "webinaire-initiation";
+const SECOURS = { starts_at: "2026-09-06T19:00:00Z", duration_min: 90, places: 500 };
+const { data: editionRows } = await supabase.rpc("webinaire_public", { p_slug: TUNNEL });
+const edition = (Array.isArray(editionRows) ? editionRows[0] : editionRows) ?? null;
+
+/* Le « Z » de l'horaire est important : sans lui, le navigateur interpréterait
+   19:00 dans SON fuseau, et un inscrit à Paris verrait un décompte faux de
+   2 heures. La base stocke un timestamptz, donc l'ISO porte déjà son fuseau. */
+const LIVE_ISO = edition?.starts_at ?? SECOURS.starts_at;
+const PLACES = edition?.places ?? SECOURS.places;
+const DUREE = edition?.duration_min ?? SECOURS.duration_min;
+
+/* Le live est annoncé à l'heure d'Abidjan. On fixe le fuseau explicitement :
+   le rendu ne doit pas dépendre de la région où tourne la fonction. */
+const TZ = "Africa/Abidjan";
+const dateLive = new Date(LIVE_ISO);
+/* « Dimanche 6 septembre » */
+const JOUR = (() => {
+  const j = dateLive.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: TZ });
+  return j.charAt(0).toUpperCase() + j.slice(1);
+})();
+const jour = JOUR.toLowerCase();
+/* « 19 h » */
+const HEURE = dateLive
+  .toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: TZ })
+  .replace(":", " h ")
+  .replace(/ h 00$/, " h");
+
+/* Trafic publicitaire : on garde la page en cache au bord 5 minutes plutôt que
+   de la recalculer à chaque clic. Une date changée en admin met au plus ce
+   délai à se propager. */
+Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=300, stale-while-revalidate=600");
 
 /* Vidéo de présentation du live. Coller l'ID YouTube (ex. "z_h3zF0Xzjk").
    Tant qu'il est vide, le bloc vidéo n'est pas rendu du tout — pas de
@@ -32,7 +70,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
 
 <BaseLayout
   title="Webinaire gratuit — ta compétence en 325 000 FCFA/mois | Bweb Academy"
-  description="Live unique le dimanche 6 septembre à 19 h (Abidjan) : la méthode en 3 étapes pour transformer une compétence que tu as déjà en produit digital à 325 000 FCFA/mois. Gratuit, 500 places."
+  description={`Live unique le ${jour} à ${HEURE} (Abidjan) : la méthode en 3 étapes pour transformer une compétence que tu as déjà en produit digital à 325 000 FCFA/mois. Gratuit, ${PLACES} places.`}
   hideWhatsApp={true}
   bareChrome={true}
 >
@@ -59,7 +97,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
     <div class="container wb-hero-inner">
       <span class="wb-badge-live" data-hero-in>
         <span class="wb-dot" aria-hidden="true"></span>
-        Événement en direct · Dimanche 6 septembre · 19 h
+        Événement en direct · {JOUR} · {HEURE}
       </span>
 
       <h1 data-hero-in>
@@ -68,7 +106,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
       </h1>
 
       <p class="lead wb-hero-sub" data-hero-in>
-        Un live unique de 90 minutes où je te donne, gratuitement, la méthode que je facture <b>150&nbsp;000&nbsp;FCFA</b> en coaching privé — celle qui transforme un savoir-faire que tu as déjà en produit digital qui encaisse chaque mois.
+        Un live unique de {DUREE} minutes où je te donne, gratuitement, la méthode que je facture <b>150&nbsp;000&nbsp;FCFA</b> en coaching privé — celle qui transforme un savoir-faire que tu as déjà en produit digital qui encaisse chaque mois.
       </p>
 
       <div data-hero-in>
@@ -106,7 +144,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
     <div class="container">
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">Le contenu du live</div>
-        <h2>Ce que tu repars avec, gratuitement, en 90 minutes</h2>
+        <h2>Ce que tu repars avec, gratuitement, en {DUREE} minutes</h2>
       </div>
 
       <!-- Mêmes tuiles que la section « Nos valeurs » du site (.tb-tile) :
@@ -210,7 +248,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
       <div class="wb-form-card reveal">
         <span class="wb-form-tag">Gratuit · {PLACES} places</span>
         <h2>Réserve ta place maintenant</h2>
-        <p class="wb-form-intro">Dimanche 6 septembre, 19 h (heure d'Abidjan). Le lien arrive sur WhatsApp.</p>
+        <p class="wb-form-intro">{JOUR}, {HEURE} (heure d'Abidjan). Le lien arrive par e-mail et sur WhatsApp.</p>
 
         <form id="wbForm" novalidate>
           <div class="wb-field">
@@ -272,7 +310,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
         </div>
         <div class="wb-faq-item">
           <button class="wb-faq-q" type="button" aria-expanded="false">
-            <span>Je ne peux pas être là à 19 h&nbsp;?</span>
+            <span>Je ne peux pas être là à {HEURE}&nbsp;?</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
           <div class="wb-faq-a"><div class="wb-faq-a-in">Un replay est disponible 48 h pour les inscrits. Mais tu perds la possibilité de poser tes questions en direct — et les personnes présentes au live ont accès à des choses que les autres n'ont pas.</div></div>
@@ -286,7 +324,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
     <a href="#inscription" class="wb-cta wb-sticky-cta">Je réserve ma place — gratuit →</a>
   </div>
 
-  <script is:inline define:vars={{ SECOURS_BASE }}>
+  <script is:inline define:vars={{ SECOURS_BASE, jour }}>
     (function () {
       /* ---------- Compte à rebours vers le live ---------- */
       var root = document.querySelector("[data-countdown]");
@@ -367,7 +405,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
         errorBox.hidden = false;
         if (PANNES[code]) {
           rescue.href = SECOURS_BASE + encodeURIComponent(
-            "Bonjour Godwin, je veux réserver ma place pour le live du dimanche 6 septembre." +
+            `Bonjour Godwin, je veux réserver ma place pour le live du ${jour}.` +
             (prenom ? " Je m'appelle " + prenom + "." : "") +
             " (Le formulaire du site n'a pas fonctionné.)"
           );
