@@ -24,7 +24,11 @@ export async function sendEmail(opts: EmailOpts): Promise<boolean> {
      webinaire était enregistrée, sa confirmation n'atteignait jamais Bird.
      C'est le même piège que celui documenté pour le tunnel (PR #92/#93). */
   const key = secret("BIRD_API_KEY", "BIRD_ACCESS_KEY");
-  const from = secret("BIRD_FROM") || "Bweb Agence <no-reply@mail.bwebagence.com>";
+  /* Un expéditeur nommé, pas une marque : « Godwin Soola de Bweb Agence » est
+     ce que le destinataire voit dans sa liste de messages, et une personne
+     s'ouvre plus qu'une entreprise. L'adresse, elle, reste celle du domaine
+     vérifié. La variable BIRD_FROM garde la main si elle est renseignée. */
+  const from = secret("BIRD_FROM") || "Godwin Soola de Bweb Agence <no-reply@mail.bwebagence.com>";
   const replyTo = secret("BIRD_REPLY_TO") || "info@bwebagence.com";
   if (!key) return false;
   const attachments = opts.attachments?.length
