@@ -17,6 +17,8 @@ type EmailOpts = {
   to: string; subject: string; html: string; text?: string; attachments?: EmailAttachment[];
   /** Expéditeur, quand il ne doit pas être celui de l'agence (cf. `expediteur`). */
   from?: string;
+  /** Faux pour laisser les liens intacts (cf. l'appel dans le tunnel webinaire). */
+  trackClicks?: boolean;
 };
 
 /* L'ADRESSE d'expédition ne se choisit pas : elle doit rester sur le domaine
@@ -61,6 +63,7 @@ export async function sendEmail(opts: EmailOpts): Promise<boolean> {
       html: opts.html,
       ...(opts.text ? { text: opts.text } : {}),
       ...(attachments ? { attachments } : {}),
+      ...(opts.trackClicks === false ? { track_clicks: false } : {}),
       category: "transactional",
     } as any);
     return msg?.status === "accepted" || !!msg?.id;
@@ -83,22 +86,51 @@ function preheader(texte: string): string {
   return `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;height:0;width:0;mso-hide:all">${texte}${rembourrage}</div>`;
 }
 
+/* ---------------------------------------------------------
+   MODE SOMBRE + LISIBILITÉ
+   Deux choses qu'un e-mail ne peut pas ignorer sur téléphone :
+   - `color-scheme` : sans cette déclaration, iOS Mail et Gmail INVERSENT le
+     message eux-mêmes, au jugé. Le résultat est un texte gris sur fond gris,
+     et des blocs pastel devenus illisibles. En l'annonçant, on reprend la main
+     et on fournit nos propres couleurs sombres.
+   - `!important` : les couleurs sont en style en ligne (seule façon fiable de
+     traverser les clients de messagerie), donc les règles de la feuille ne
+     passeraient pas devant sans lui.
+   Les clients qui ignorent `<style>` (Outlook Windows) gardent la version
+   claire, parfaitement lisible : c'est une amélioration, pas une dépendance.
+   --------------------------------------------------------- */
+const STYLE_SOMBRE = `<style>
+  :root { color-scheme: light dark; supported-color-schemes: light dark; }
+  @media (prefers-color-scheme: dark) {
+    .wb-bg   { background:#0d1020 !important; }
+    .wb-card { background:#161a2e !important; box-shadow:none !important; }
+    .wb-h    { color:#ffffff !important; }
+    .wb-t    { color:#d7dcf4 !important; }
+    .wb-m    { color:#a3abd0 !important; }
+    .wb-box  { background:#1e2340 !important; border-color:#2c3157 !important; }
+    .wb-foot { background:#12162a !important; border-color:#2c3157 !important; color:#a3abd0 !important; }
+    .wb-sep  { border-color:#2c3157 !important; }
+    .wb-lien { color:#7fa6ff !important; }
+    .wb-btn-ghost { background:#1e2340 !important; border-color:#39406c !important; color:#7fa6ff !important; }
+  }
+</style>`;
+
 function shell(inner: string, apercu?: string): string {
-  return `<div style="background:#eef2fb;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">
+  return `${STYLE_SOMBRE}<div class="wb-bg" style="background:#eef2fb;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">
   ${apercu ? preheader(apercu) : ""}
-  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(2,11,80,.08)">
+  <div class="wb-card" style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(2,11,80,.08)">
     <div style="background:#050a3a;padding:20px 22px;text-align:center">
       <img src="${SITE}/images/logo-email.png" alt="Bweb Agence" width="149" height="30" style="height:30px;width:149px;display:inline-block;border:0;outline:none;text-decoration:none" />
     </div>
     ${inner}
-    <div style="background:#f8faff;padding:18px 22px;text-align:center;color:#8b91ae;font-size:12px;line-height:1.6;border-top:1px solid #eef2fb">
+    <div class="wb-foot" style="background:#f8faff;padding:18px 22px;text-align:center;color:#8b91ae;font-size:13px;line-height:1.6;border-top:1px solid #eef2fb">
       Bweb Agence · Cocody, Abidjan · +225 07 01 92 60 28<br>Une question ? Répondez simplement à cet e-mail.
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e8edf9">
-        <a href="${SITE}/conditions-generales" style="color:#1f6ced;text-decoration:none;font-weight:700">Conditions générales (CGV)</a>
+      <div class="wb-sep" style="margin-top:10px;padding-top:10px;border-top:1px solid #e8edf9">
+        <a class="wb-lien" href="${SITE}/conditions-generales" style="color:#1f6ced;text-decoration:none;font-weight:700">Conditions générales (CGV)</a>
         &nbsp;·&nbsp;
-        <a href="${SITE}/politique-confidentialite" style="color:#1f6ced;text-decoration:none;font-weight:700">Politique de confidentialité</a>
+        <a class="wb-lien" href="${SITE}/politique-confidentialite" style="color:#1f6ced;text-decoration:none;font-weight:700">Politique de confidentialité</a>
         &nbsp;·&nbsp;
-        <a href="${SITE}/mentions-legales" style="color:#1f6ced;text-decoration:none;font-weight:700">Mentions légales</a>
+        <a class="wb-lien" href="${SITE}/mentions-legales" style="color:#1f6ced;text-decoration:none;font-weight:700">Mentions légales</a>
       </div>
     </div>
   </div>
@@ -255,10 +287,10 @@ export function confirmationEmail(b: BookingEmail) {
 export function calendarButtonsHtml(googleUrl: string, icsUrl: string): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0 4px"><tr>
     <td align="center" style="padding:0 4px">
-      <a href="${googleUrl}" style="display:inline-block;background:#fff;border:1.5px solid #dbe2f4;color:#1f6ced;text-decoration:none;font-weight:700;font-size:13px;padding:10px 16px;border-radius:11px">📅 Google Agenda</a>
+      <a href="${googleUrl}" class="wb-btn-ghost" style="display:inline-block;background:#fff;border:1.5px solid #dbe2f4;color:#1f6ced;text-decoration:none;font-weight:700;font-size:14.5px;padding:12px 18px;border-radius:11px">📅 Google Agenda</a>
     </td>
     <td align="center" style="padding:0 4px">
-      <a href="${icsUrl}" style="display:inline-block;background:#fff;border:1.5px solid #dbe2f4;color:#1f6ced;text-decoration:none;font-weight:700;font-size:13px;padding:10px 16px;border-radius:11px">🍎 Apple / Outlook</a>
+      <a href="${icsUrl}" class="wb-btn-ghost" style="display:inline-block;background:#fff;border:1.5px solid #dbe2f4;color:#1f6ced;text-decoration:none;font-weight:700;font-size:14.5px;padding:12px 18px;border-radius:11px">🍎 Apple / Outlook</a>
     </td>
   </tr></table>`;
 }
@@ -503,25 +535,28 @@ export type WebinaireEmailData = {
 
 const wbBouton = (url: string, libelle: string) =>
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 6px"><tr><td align="center">
-    <a href="${url}" style="display:inline-block;background:#1f6ced;color:#fff;text-decoration:none;font-weight:800;font-size:15px;padding:14px 28px;border-radius:12px">${libelle}</a>
+    <a href="${url}" style="display:inline-block;background:#1f6ced;color:#fff;text-decoration:none;font-weight:800;font-size:17px;padding:15px 30px;border-radius:12px">${libelle}</a>
   </td></tr></table>`;
 
+/* La couleur du texte est déclarée ICI, et pas seulement héritée : un bloc sans
+   couleur explicite prend celle que le client de messagerie lui impose — gris
+   pâle sur fond pâle dans certaines boîtes en mode sombre forcé. */
 const wbEncadre = (lignes: string[]) =>
-  `<div style="font-size:13px;line-height:1.6;background:#f8faff;border:1px solid #eef2fb;border-radius:12px;padding:12px 14px;margin:14px 0">${lignes.join("")}</div>`;
+  `<div class="wb-box wb-t" style="font-size:14.5px;line-height:1.6;color:#3f4568;background:#f8faff;border:1px solid #eef2fb;border-radius:12px;padding:12px 14px;margin:14px 0">${lignes.join("")}</div>`;
 
 const wbEntete = (accent: string, tag: string, titre: string, sous: string) =>
   `<div style="padding:24px 22px 6px;text-align:center">
-    <div style="display:inline-block;font-family:'Courier New',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${accent};font-weight:800;border:1px solid ${accent};border-radius:999px;padding:4px 12px">${tag}</div>
-    <div style="font-size:19px;font-weight:800;color:#0a0e27;margin-top:12px">${titre}</div>
-    <div style="font-size:13.5px;color:#565d80;margin-top:4px">${sous}</div>
+    <div style="display:inline-block;font-family:'Courier New',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${accent};font-weight:800;border:1px solid ${accent};border-radius:999px;padding:4px 12px">${tag}</div>
+    <div class="wb-h" style="font-size:22px;font-weight:800;color:#0a0e27;margin-top:12px">${titre}</div>
+    <div class="wb-m" style="font-size:15px;color:#565d80;margin-top:4px">${sous}</div>
   </div>`;
 
 const wbPied = (d: WebinaireEmailData, signature = "Godwin") =>
-  `<p style="font-size:14px;color:#3f4568;margin:18px 0 0">${signature}</p>` +
+  `<p class="wb-t" style="font-size:16px;color:#3f4568;margin:18px 0 0">${signature}</p>` +
   (d.unsubUrl
-    ? `<p style="font-size:11px;color:#aab0c8;margin:20px 0 0;padding-top:12px;border-top:1px solid #eef2fb">
+    ? `<p class="wb-m" style="font-size:13px;color:#aab0c8;margin:20px 0 0;padding-top:12px;border-top:1px solid #eef2fb" >
         Tu reçois ces messages parce que tu t'es inscrit au live.
-        <a href="${d.unsubUrl}" style="color:#8b91ae;text-decoration:underline">Ne plus recevoir d'e-mails</a>.
+        <a href="${d.unsubUrl}" class="wb-m" style="color:#8b91ae;text-decoration:underline">Ne plus recevoir d'e-mails</a>.
       </p>`
     : "");
 
@@ -539,22 +574,22 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
       subject: `✅ Ta place au live du ${d.date_label.replace(/ à .*/, "")} est réservée`,
       html: shell(`${wbEntete("#00c89e", "Inscription confirmée", "Ta place est verrouillée", `Rendez-vous ${esc(d.date_label)}.`)}
       <div style="padding:8px 20px 24px">
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 4px">C'est fait : ta place au live de dimanche est verrouillée. 🎉</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 4px">C'est fait : ta place au live de dimanche est verrouillée. 🎉</p>
         ${wbEncadre([
-          `<div style="margin:4px 0"><b style="color:#0a0e27">📅 Le live :</b> ${esc(d.date_label)} (Abidjan) — ${esc(d.heure_label)} Dakar, ${esc(d.heure_label.replace(/^(\d+)/, (m) => String(Number(m) + 1)))} Douala</div>`,
-          `<div style="margin:4px 0"><b style="color:#0a0e27">⏱️ Durée :</b> ${d.duration_min} minutes &nbsp;·&nbsp; <b style="color:#0a0e27">💰 Coût :</b> 0 FCFA</div>`,
+          `<div style="margin:4px 0"><b class="wb-h" style="color:#0a0e27">📅 Le live :</b> ${esc(d.date_label)} (Abidjan) — ${esc(d.heure_label)} Dakar, ${esc(d.heure_label.replace(/^(\d+)/, (m) => String(Number(m) + 1)))} Douala</div>`,
+          `<div style="margin:4px 0"><b class="wb-h" style="color:#0a0e27">⏱️ Durée :</b> ${d.duration_min} minutes &nbsp;·&nbsp; <b class="wb-h" style="color:#0a0e27">💰 Coût :</b> 0 FCFA</div>`,
         ])}
-        <div style="text-align:center;font-size:12.5px;color:#565d80;margin-top:14px"><b style="color:#0a0e27">Bloque le créneau dans ton agenda.</b><br>Un clic, et le live est dans ton téléphone — l'action la plus rapide pour ne pas le rater.</div>
+        <div class="wb-m" style="text-align:center;font-size:14px;color:#565d80;margin-top:14px"><b class="wb-h" style="color:#0a0e27">Bloque le créneau dans ton agenda.</b><br>Un clic, et le live est dans ton téléphone — l'action la plus rapide pour ne pas le rater.</div>
         ${calendarButtonsHtml(d.calendarGoogle, d.calendarIcs)}
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:18px 0 6px"><b style="color:#0a0e27">Ce qui t'attend :</b></p>
-        <ul style="font-size:13.5px;color:#3f4568;line-height:1.6;margin:0 0 12px;padding-left:18px">
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:18px 0 6px"><b class="wb-h" style="color:#0a0e27">Ce qui t'attend :</b></p>
+        <ul class="wb-t" style="font-size:15px;color:#3f4568;line-height:1.6;margin:0 0 12px;padding-left:18px">
           <li>La méthode que je facture <b>150 000 FCFA</b> en coaching privé : la matrice compétence × problème × client, la règle des 10 conversations, « vends avant de perfectionner »</li>
           <li>Une méthode applicable tout de suite — pas de la théorie</li>
         </ul>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b style="color:#0a0e27">Ton lien de connexion arrive avant le live</b>, par e-mail et sur WhatsApp. Surveille tes messages.</p>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b style="color:#0a0e27">Une chose à faire tout de suite (2 minutes) :</b> note dans ton téléphone les <b>3 compétences</b> que tu utilises déjà pour aider les autres. On s'en servira pendant le live.</p>
-        <p style="font-size:13.5px;color:#565d80;line-height:1.6;margin:0">Tu connais quelqu'un qui a une compétence et qui ne la vend pas ? Envoie-lui <a href="${d.landing}" style="color:#1f6ced;font-weight:700">le lien d'inscription</a>. Il te remerciera.</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b class="wb-h" style="color:#0a0e27">Ton lien de connexion arrive avant le live</b>, par e-mail et sur WhatsApp. Surveille tes messages — et <b class="wb-h" style="color:#0a0e27">ajoute cette adresse à tes contacts</b>, pour que le lien n'atterrisse pas dans un onglet secondaire.</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b class="wb-h" style="color:#0a0e27">Une chose à faire tout de suite (2 minutes) :</b> note dans ton téléphone les <b>3 compétences</b> que tu utilises déjà pour aider les autres. On s'en servira pendant le live.</p>
+        <p class="wb-t" style="font-size:15px;color:#565d80;line-height:1.6;margin:0">Tu connais quelqu'un qui a une compétence et qui ne la vend pas ? Envoie-lui <a href="${d.landing}" class="wb-lien" style="color:#1f6ced;font-weight:700">le lien d'inscription</a>. Il te remerciera.</p>
         ${wbPied(d, "À dimanche,<br>Godwin Soola — Bweb Academy")}
       </div>`, "Ta place est verrouillée. Bloque le créneau, et note tes 3 compétences — on s'en sert pendant le live."),
       text: [
@@ -577,11 +612,11 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
       subject: `⚡ Demain ${d.heure_label} : la matrice que je facture 150 000 FCFA, gratuitement`,
       html: shell(`${wbEntete("#f0a500", "C'est demain", "Demain, je montre ce que je ne montre jamais", `${esc(d.date_label)} · ${d.duration_min} minutes`)}
       <div style="padding:8px 20px 24px">
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Demain ${esc(d.heure_label)}, c'est le live. Et je vais te montrer quelque chose que je ne montre jamais en public.</p>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">La <b>matrice compétence × problème × client</b>. En 15 minutes, elle te dit quoi vendre, à qui, et combien ça vaut. Moi, je la facture <b>150 000 FCFA</b> en coaching privé. Demain, tu la reçois gratuitement, détaillée sur des cas réels.</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">Demain ${esc(d.heure_label)}, c'est le live. Et je vais te montrer quelque chose que je ne montre jamais en public.</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">La <b>matrice compétence × problème × client</b>. En 15 minutes, elle te dit quoi vendre, à qui, et combien ça vaut. Moi, je la facture <b>150 000 FCFA</b> en coaching privé. Demain, tu la reçois gratuitement, détaillée sur des cas réels.</p>
         ${wbBouton(lien, "📺 Mon lien pour le live")}
-        <div style="text-align:center;font-size:12.5px;color:#8b91ae;margin-top:8px">${esc(d.date_label)} (Abidjan) · ${d.duration_min} minutes · viens 5 min en avance</div>
+        <div class="wb-m" style="text-align:center;font-size:14px;color:#8b91ae;margin-top:8px">${esc(d.date_label)} (Abidjan) · ${d.duration_min} minutes · viens 5 min en avance</div>
         ${wbPied(d, "À demain,<br>Godwin")}
       </div>`, "La matrice compétence × problème × client : quoi vendre, à qui, et combien ça vaut. Ton lien est dedans."),
       text: [`Salut ${firstName(d.prenom)},`, "",
@@ -599,12 +634,12 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
       subject: `🔴 C'est ce soir, ${d.heure_label}. Ton lien est ici.`,
       html: shell(`${wbEntete("#e0523c", "Aujourd'hui", "C'est ce soir 🌅", `${esc(d.heure_label)} précises, heure d'Abidjan`)}
       <div style="padding:8px 20px 24px">
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">C'est ce soir.</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">C'est ce soir.</p>
         ${wbBouton(lien, "📺 Rejoindre le live")}
-        <div style="text-align:center;font-size:12.5px;color:#8b91ae;margin:8px 0 16px">⏰ ${esc(d.heure_label)} précises (Abidjan) — viens 5 min en avance</div>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Tu repars avec une méthode qui vaut <b>150 000 FCFA</b>, pour 0 FCFA. La seule condition : être présent.</p>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0">Un carnet, tes 3 compétences, et toi. C'est tout ce qu'il faut.</p>
+        <div class="wb-m" style="text-align:center;font-size:14px;color:#8b91ae;margin:8px 0 16px">⏰ ${esc(d.heure_label)} précises (Abidjan) — viens 5 min en avance</div>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">Tu repars avec une méthode qui vaut <b>150 000 FCFA</b>, pour 0 FCFA. La seule condition : être présent.</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0">Un carnet, tes 3 compétences, et toi. C'est tout ce qu'il faut.</p>
         ${wbPied(d, "On se voit ce soir.<br>Godwin")}
       </div>`, "Ton lien est dans ce message. Un carnet, tes 3 compétences, et toi."),
       text: [`Salut ${firstName(d.prenom)},`, "", "C'est ce soir.", "",
@@ -620,10 +655,10 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
       subject: "🔴 On est en direct dans 1 heure",
       html: shell(`${wbEntete("#e0523c", "Dans 1 heure", "On est en direct dans 1 heure", `Rendez-vous à ${esc(d.heure_label)}`)}
       <div style="padding:8px 20px 24px">
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Dans 1 heure, je donne en public la méthode que je facture <b>150 000 FCFA</b>. Gratuite, ce soir seulement.</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">Dans 1 heure, je donne en public la méthode que je facture <b>150 000 FCFA</b>. Gratuite, ce soir seulement.</p>
         ${wbBouton(lien, "📺 Ton lien pour le live")}
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:14px 0 0">Carnet, tes 3 compétences, et toi. On se voit à ${esc(d.heure_label)}.</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:14px 0 0">Carnet, tes 3 compétences, et toi. On se voit à ${esc(d.heure_label)}.</p>
         ${wbPied(d)}
       </div>`, "Ton lien est dedans. Connecte-toi 5 minutes en avance."),
       text: [`Salut ${firstName(d.prenom)},`, "",
@@ -638,8 +673,8 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
       subject: "🚪 Les portes sont ouvertes — rejoins-nous maintenant",
       html: shell(`${wbEntete("#00c89e", "En direct", "Les portes sont ouvertes 🚪", "On commence maintenant.")}
       <div style="padding:8px 20px 24px">
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0">On commence.</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0">On commence.</p>
         ${wbBouton(lien, "📺 Rejoindre maintenant")}
         ${wbPied(d)}
       </div>`, "C'est maintenant, ton lien est dedans."),
@@ -653,12 +688,12 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
       subject: "⏳ Tu as raté le live ? 72 h pour le rattraper",
       html: shell(`${wbEntete("#1f6ced", "Replay 72 h", "72 h pour rattraper le live", "Ensuite, il disparaît.")}
       <div style="padding:8px 20px 24px">
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px">Tu as raté le live d'hier ? Les gens qui étaient là sont repartis avec une méthode à <b>150 000 FCFA</b>, gratuitement.</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">Salut ${p},</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">Tu as raté le live d'hier ? Les gens qui étaient là sont repartis avec une méthode à <b>150 000 FCFA</b>, gratuitement.</p>
         ${wbBouton(replay, "▶️ Voir le replay")}
-        <div style="text-align:center;font-size:12.5px;color:#e0523c;font-weight:700;margin:8px 0 18px">⚠️ Le replay disparaît mercredi soir.</div>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b style="color:#0a0e27">Et si tu étais au live :</b> la cohorte de septembre du Parcours Initiation démarre <b>aujourd'hui</b>. 30 places, 5 phases, 10 lives. Ton produit en ligne en 30 jours — sinon on continue avec toi gratuitement.</p>
-        <p style="font-size:14px;color:#3f4568;line-height:1.6;margin:0">👉 Réponds <b>« PLACE »</b> sur <a href="${d.whatsapp}" style="color:#1f6ced;font-weight:700">WhatsApp</a> — les places partent dans l'ordre des inscriptions, et la prochaine cohorte, c'est dans un mois.</p>
+        <div style="text-align:center;font-size:14px;color:#e0523c;font-weight:700;margin:8px 0 18px">⚠️ Le replay disparaît mercredi soir.</div>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b class="wb-h" style="color:#0a0e27">Et si tu étais au live :</b> la cohorte de septembre du Parcours Initiation démarre <b>aujourd'hui</b>. 30 places, 5 phases, 10 lives. Ton produit en ligne en 30 jours — sinon on continue avec toi gratuitement.</p>
+        <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0">👉 Réponds <b>« PLACE »</b> sur <a href="${d.whatsapp}" class="wb-lien" style="color:#1f6ced;font-weight:700">WhatsApp</a> — les places partent dans l'ordre des inscriptions, et la prochaine cohorte, c'est dans un mois.</p>
         ${wbPied(d)}
       </div>`, "72 h pour rattraper, puis il disparaît. Et la cohorte de septembre démarre aujourd'hui."),
       text: [`Salut ${firstName(d.prenom)},`, "",
