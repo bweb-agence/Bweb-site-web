@@ -218,21 +218,23 @@ const faqs = [
           <p class="pi-cta-note">Prochaine cohorte : {COHORTE_LABEL} · {CAPACITE} places · Paiement sécurisé</p>
         </div>
 
+        <!-- Vidéo, immédiatement sous l'action principale : on explique juste
+             après avoir demandé. La vignette est celle de YouTube et ne porte
+             aucun texte — le bouton de lecture suffit à dire ce que c'est. -->
+        <div class="pi-video pi-video--wide" id="heroVideo" data-hero-in>
+          <button class="pi-video-ph" id="heroPlay" type="button" aria-label="Lire la vidéo de présentation">
+            <img class="pi-video-cover" src={`https://i.ytimg.com/vi/${YOUTUBE_HERO}/maxresdefault.jpg`}
+              alt="" width="1280" height="720" fetchpriority="high" />
+            <span class="pi-video-shade" aria-hidden="true"></span>
+            <span class="pi-play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
+          </button>
+          <iframe id="heroFrame" title="Vidéo de présentation — Parcours Initiation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen hidden></iframe>
+        </div>
+
         <div class="pi-proof" data-hero-in>
           {proof.map((p) => (
             <div class="pi-proof-chip"><b>{p.n}</b> <span>{p.t}</span></div>
           ))}
-        </div>
-
-        <!-- Vidéo hero : preuve et explication, après l'action principale. -->
-        <div class="pi-video pi-video--wide" id="heroVideo" data-hero-in>
-          <button class="pi-video-ph" id="heroPlay" type="button" aria-label="Lire la vidéo de présentation">
-            <img class="pi-video-cover" src="/images/parcours-initiation/hero-cover.webp" alt="Entrepreneur en train de construire son produit digital sur son ordinateur" width="1400" height="788" fetchpriority="high" />
-            <span class="pi-video-shade" aria-hidden="true"></span>
-            <span class="pi-play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
-            <span class="pi-video-lbl">Regarde comment on construit ton produit, ensemble (2 min)</span>
-          </button>
-          <iframe id="heroFrame" title="Vidéo de présentation — Parcours Initiation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen hidden></iframe>
         </div>
       </div>
     </div>
@@ -722,6 +724,28 @@ const faqs = [
     (function () {
       // ---- Vidéo hero (lazy YouTube) ----
       var heroPlay = document.getElementById("heroPlay");
+
+      /* Miniature HD : YouTube ne renvoie PAS une 404 quand `maxresdefault.jpg`
+         n'existe pas (Shorts, vieux uploads) — il sert une image grise de
+         120x90 avec un statut 200. L'événement `error` ne part donc jamais et
+         `object-fit: cover` étire ce timbre-poste sur tout le hero. On la
+         reconnaît à sa taille et on repasse sur `hqdefault`, qui existe pour
+         TOUTES les vidéos. Même garde-fou que dans VideoLazy.astro. */
+      var heroCover = heroPlay && heroPlay.querySelector(".pi-video-cover");
+      if (heroCover && YOUTUBE_HERO) {
+        var versHqdefault = function () {
+          if (heroCover.src.indexOf("hqdefault") !== -1) return;
+          heroCover.src = "https://i.ytimg.com/vi/" + YOUTUBE_HERO + "/hqdefault.jpg";
+        };
+        var verifierCover = function () {
+          if (!heroCover.complete || heroCover.naturalWidth === 0) return;
+          if (heroCover.naturalWidth <= 120) versHqdefault();
+        };
+        heroCover.addEventListener("load", verifierCover);
+        heroCover.addEventListener("error", versHqdefault);
+        verifierCover();
+      }
+
       if (heroPlay) {
         heroPlay.addEventListener("click", function () {
           var frame = document.getElementById("heroFrame");
@@ -1047,7 +1071,10 @@ const faqs = [
     overflow: hidden; box-shadow: var(--shadow-lg); aspect-ratio: 16/9;
     background: var(--c-navy);
   }
-  .pi-video--wide { max-width: 560px; }
+  /* 760 px : la vidéo occupe presque toute la largeur du hero (880 px) sans
+     rivaliser avec le titre. Sur mobile c'est le conteneur qui borne, la
+     valeur n'a donc d'effet que sur grand écran. */
+  .pi-video--wide { max-width: 760px; }
   .pi-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .pi-video-ph {
     position: absolute; inset: 0; width: 100%; cursor: pointer; color: #fff;
@@ -1055,8 +1082,10 @@ const faqs = [
     background: #02114a; border: 0; padding: 20px; isolation: isolate;
   }
   .pi-video-cover { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: center; }
-  .pi-video-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(1,5,46,.16) 30%, rgba(1,5,46,.62)); transition: background var(--dur) var(--ease); }
-  .pi-video-ph:hover .pi-video-shade { background: linear-gradient(180deg, rgba(1,5,46,.08) 30%, rgba(1,5,46,.5)); }
+  /* Voile uniforme et léger : il ne sert plus à rendre un texte lisible (il n'y
+     en a plus), seulement à détacher le bouton de lecture de la vignette. */
+  .pi-video-shade { position: absolute; inset: 0; z-index: -1; background: rgba(1,5,46,.26); transition: background var(--dur) var(--ease); }
+  .pi-video-ph:hover .pi-video-shade { background: rgba(1,5,46,.14); }
   .pi-play {
     width: 76px; height: 76px; border-radius: 50%; background: var(--c-blue);
     display: flex; align-items: center; justify-content: center;
@@ -1064,7 +1093,6 @@ const faqs = [
   }
   .pi-play svg { width: 30px; height: 30px; margin-left: 3px; }
   .pi-video-ph:hover .pi-play { transform: scale(1.08); }
-  .pi-video-lbl { font-family: var(--f-display); font-weight: 600; font-size: .95rem; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
   @keyframes pi-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(31,108,237,.5)} 50%{box-shadow:0 0 0 16px rgba(31,108,237,0)} }
 
   .pi-hero-cta { margin-top: 32px; }
