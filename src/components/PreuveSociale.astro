@@ -1,29 +1,24 @@
 ---
 /* =========================================================
-   PREUVE SOCIALE — les achats récents, en trois lignes défilantes
+   PREUVE SOCIALE — les avis du programme, en trois lignes défilantes
    ---------------------------------------------------------
    POURQUOI PAS LE WIDGET CHARIOW. Il rend une IFRAME servie par
-   boutique.godwinsoola.com : son contenu appartient à un autre domaine, donc
-   ni la largeur réelle, ni la mise en lignes, ni le sens de défilement ne sont
+   boutique.godwinsoola.com : son contenu appartient à un autre domaine, donc ni
+   la largeur réelle, ni la mise en lignes, ni le sens de défilement ne sont
    pilotables depuis le site. Trois lignes alternées y étaient impossibles.
 
-   Or les données sont déjà chez nous : le Pulse inscrit chaque vente Chariow
-   dans la timeline. On les affiche donc nous-mêmes, via `preuve_sociale`, qui
-   ne rend que ce qui peut se montrer en vitrine — prénom, initiale du nom,
-   produit, date. Pas d'iframe, pas de script tiers, pas de requête vers un
-   autre domaine.
-
-   LE DÉFILEMENT. Chaque ligne contient ses éléments DEUX FOIS et se translate
-   de la moitié de sa largeur : au moment où la copie arrive à la position de
-   l'originale, l'animation repart — la boucle est invisible. Les lignes
-   paires vont à gauche, les impaires à droite, ce qui donne le mouvement
-   contraire d'une ligne à l'autre.
+   LE DÉFILEMENT. Chaque ligne contient ses cartes DEUX FOIS et se translate de
+   la moitié de sa largeur : au moment où la copie arrive à la position de
+   l'originale, l'animation repart — la boucle est invisible. Les lignes paires
+   vont à gauche, les impaires à droite. Trois durées voisines mais distinctes,
+   pour que les lignes ne se synchronisent pas : l'œil suivrait un bloc au lieu
+   de lire.
    ========================================================= */
-import { supabase } from "../lib/supabase";
-/* Avis du programme « Stabiliser 800 000 FCFA/mois », relevés sur Chariow le
-   21/08/2026 (110 avis, 100 % positifs) et figés ici : anonymisés à la
-   capture, ils ne dépendent d'aucun appel réseau au chargement de la page.
-   À rafraîchir depuis l'API Chariow quand une clé sera configurée. */
+/* Avis du programme « Stabiliser 800 000 FCFA/mois » (prd_o1tpb1), relevés sur
+   Chariow le 21/08/2026 — 110 avis, 100 % positifs — et figés ici, anonymisés
+   à la capture. La page n'attend donc aucun appel réseau, et le bandeau ne peut
+   pas se vider si la boutique répond mal. À rafraîchir depuis l'API Chariow
+   quand une clé sera configurée. */
 import avisChariow from "../data/avis-chariow.json";
 
 interface Props {
@@ -31,42 +26,15 @@ interface Props {
   lignes?: number;
   titre?: string;
 }
-const { lignes = 3, titre = "Ils achètent, et ils en parlent" } = Astro.props;
+const { lignes = 3, titre = "Ce qu'en disent les apprenants" } = Astro.props;
 
-const { data } = await supabase.rpc("preuve_sociale", { p_limite: 30 });
-const achats = (Array.isArray(data) ? data : []) as { prenom: string; produit: string; quand: string }[];
 const avis = avisChariow as { auteur: string; texte: string; quand: string }[];
 
-/* « il y a 2 h » : plus crédible qu'une date, et ça vieillit bien — la page
-   étant rendue à la demande, l'écart est recalculé à chaque visite. */
-const depuis = (iso: string): string => {
-  const minutes = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (minutes < 60) return `il y a ${minutes} min`;
-  const heures = Math.round(minutes / 60);
-  if (heures < 24) return `il y a ${heures} h`;
-  const jours = Math.round(heures / 24);
-  return jours <= 1 ? "hier" : `il y a ${jours} jours`;
-};
-
-/* Répartition en serpentin : la ligne 1 prend le 1er, le 4e, le 7e… Les achats
-   les plus récents se retrouvent ainsi en tête de chaque ligne, plutôt que
-   tous concentrés sur la première. */
-/* Deux natures de preuve, entrelacées : un achat dit « ça se vend », un avis dit
-   « et c'est bon ». Alternées une sur deux, elles se répondent au lieu de se
-   succéder par blocs. */
-type Jeton =
-  | { genre: "achat"; prenom: string; produit: string; quand: string }
-  | { genre: "avis"; auteur: string; texte: string };
-
-const melange: Jeton[] = [];
-const maxi = Math.max(achats.length, avis.length);
-for (let i = 0; i < maxi; i++) {
-  if (achats[i]) melange.push({ genre: "achat", ...achats[i] });
-  if (avis[i]) melange.push({ genre: "avis", auteur: avis[i].auteur, texte: avis[i].texte });
-}
-
-const pistes = Array.from({ length: lignes }, (_, i) => melange.filter((_, j) => j % lignes === i));
-const assez = melange.length >= lignes * 2;
+/* Répartition en serpentin : la ligne 1 prend le 1er, le 4e, le 7e… Les avis les
+   plus récents se retrouvent en tête de chaque ligne, plutôt que tous concentrés
+   sur la première. */
+const pistes = Array.from({ length: lignes }, (_, i) => avis.filter((_, j) => j % lignes === i));
+const assez = avis.length >= lignes * 2;
 ---
 
 {assez && (
@@ -80,21 +48,12 @@ const assez = melange.length >= lignes * 2;
           <div class="ps-ruban" style={`--duree:${96 + i * 18}s`}>
             {[0, 1].map((copie) => (
               <ul class="ps-lot" aria-hidden={copie === 1 ? "true" : undefined}>
-                {piste.map((jeton) => (
-                  jeton.genre === "achat" ? (
-                    <li class="ps-item">
-                      <span class="ps-pastille" aria-hidden="true">🛒</span>
-                      <b>{jeton.prenom}</b>
-                      <span class="ps-produit">{jeton.produit}</span>
-                      <span class="ps-quand">{depuis(jeton.quand)}</span>
-                    </li>
-                  ) : (
-                    <li class="ps-item ps-item--avis">
-                      <span class="ps-pastille" aria-hidden="true">★</span>
-                      <span class="ps-avis">«&nbsp;{jeton.texte}&nbsp;»</span>
-                      <b>{jeton.auteur}</b>
-                    </li>
-                  )
+                {piste.map((a) => (
+                  <li class="ps-item">
+                    <span class="ps-pastille" aria-hidden="true">★</span>
+                    <p class="ps-avis">«&nbsp;{a.texte}&nbsp;»</p>
+                    <b>{a.auteur}</b>
+                  </li>
                 ))}
               </ul>
             ))}
@@ -129,35 +88,24 @@ const assez = melange.length >= lignes * 2;
   .ps-ruban { display: flex; width: max-content; animation: ps-defile var(--duree, 30s) linear infinite; }
   .ps-piste[data-sens="droite"] .ps-ruban { animation-direction: reverse; }
   .ps-lot { display: flex; gap: 10px; margin: 0; padding: 0 5px 0 0; list-style: none; }
-  /* Rectangle, pas gélule : un texte de plusieurs lignes dans une forme arrondie
-     à l'extrême laisse des angles vides et casse l'alignement des lignes. */
+  /* Rectangle, pas gélule : un texte de plusieurs lignes dans une forme
+     arrondie à l'extrême laisse des angles vides et casse l'alignement.
+     Fond crème et étoile dorée — la carte de témoignage du site. */
   .ps-item {
-    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
-    background: var(--c-white); border: 1px solid var(--c-border);
-    border-radius: 14px; padding: 10px 16px;
-    font-size: 0.83rem; color: var(--c-gray-600); box-shadow: var(--shadow-sm);
+    display: grid; grid-template-columns: auto 1fr; gap: 5px 10px;
+    align-items: start; width: 340px;
+    background: #fffaf0; border: 1px solid #f4e3c1; border-radius: 14px;
+    padding: 14px 17px; box-shadow: var(--shadow-sm);
+    font-size: 0.83rem; color: var(--c-gray-600);
   }
-  .ps-item b { color: var(--c-ink); font-weight: 700; }
-  .ps-pastille { font-size: 0.9rem; flex: none; }
-  .ps-produit { max-width: 34ch; overflow: hidden; text-overflow: ellipsis; }
-  .ps-quand { color: var(--c-gray-400); font-size: 0.76rem; }
-
-  /* L'avis se distingue de l'achat sans crier : fond crème, étoile dorée.
-     Largeur fixe et texte qui passe à la ligne — c'est un témoignage, il se lit
-     en phrases, pas en bandeau d'une seule ligne qu'on ne finit jamais. */
-  .ps-item--avis {
-    display: grid; grid-template-columns: auto 1fr; gap: 4px 9px;
-    align-items: start; white-space: normal; width: 340px;
-    background: #fffaf0; border-color: #f4e3c1; padding: 13px 16px;
-  }
-  .ps-item--avis .ps-pastille { color: #f0a500; grid-row: 1 / span 2; line-height: 1.5; }
-  .ps-item--avis b { grid-column: 2; font-size: 0.78rem; color: var(--c-gray-600); }
+  .ps-pastille { color: #f0a500; font-size: 0.95rem; line-height: 1.5; grid-row: 1 / span 2; }
   .ps-avis {
-    grid-column: 2; font-style: italic; line-height: 1.5; color: var(--c-gray-700);
+    grid-column: 2; margin: 0; font-style: italic; line-height: 1.5; color: var(--c-gray-700);
     /* Quatre lignes au plus : au-delà, la carte devient un pavé que personne ne
        lit pendant qu'elle passe. */
     display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
   }
+  .ps-item b { grid-column: 2; font-size: 0.78rem; font-weight: 700; color: var(--c-ink); }
 
   /* Au survol, la ligne s'arrête : de quoi finir une phrase qui accroche. */
   .ps-piste:hover .ps-ruban { animation-play-state: paused; }
@@ -176,8 +124,6 @@ const assez = melange.length >= lignes * 2;
   }
 
   @media (max-width: 640px) {
-    .ps-item { font-size: 0.78rem; padding: 7px 13px 7px 9px; }
-    .ps-produit { max-width: 24ch; }
-    .ps-item--avis { width: 270px; }
+    .ps-item { width: 272px; font-size: 0.79rem; padding: 12px 14px; }
   }
 </style>
