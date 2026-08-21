@@ -7,6 +7,7 @@ import Footer from "../components/Footer.astro";
 import WhatsAppFloat from "../components/WhatsAppFloat.astro";
 import { site, contact } from "../config/site";
 import "../styles/charte.css";
+import MetaPixel from "../components/MetaPixel.astro";
 
 interface Props {
   title: string;
@@ -148,6 +149,10 @@ const breadcrumbLd = breadcrumbs?.length
     {schemas.map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} is:inline />)}
 
     <!-- Balises additionnelles propres à une page (ex. JSON-LD Event). -->
+    {/* Pixel Meta — tout le site. Les pages n'ont rien à déclarer ; celles qui
+        émettent un événement propre trouvent `fbq` déjà chargé. */}
+    <MetaPixel />
+
     <slot name="head" />
 
     <!-- Gating motion : masque les révélations AVANT le 1er paint uniquement

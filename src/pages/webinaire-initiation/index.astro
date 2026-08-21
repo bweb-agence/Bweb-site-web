@@ -13,7 +13,6 @@ import { contact } from "../../config/site";
    (formations) : une seule source de vérité, ~2 Ko au lieu des 88 Ko de
    formations.css qu'une landing n'a aucune raison de charger. */
 import "../../styles/tiles.css";
-import MetaPixel from "../../components/MetaPixel.astro";
 
 /* =========================================================
    WEBINAIRE « De ta compétence à tes premières ventes »
@@ -75,9 +74,6 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
   hideWhatsApp={true}
   bareChrome={true}
 >
-  <Fragment slot="head">
-    <MetaPixel id="150267587094280" />
-  </Fragment>
 
   <!-- ═══════════ 1 · HERO ═══════════ -->
   <header class="wb-hero">

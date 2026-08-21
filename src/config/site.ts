@@ -17,6 +17,14 @@ export const site = {
   ogImage: "/images/og-cover.jpg",
 };
 
+/* Mesure d'audience publicitaire. Le pixel couvre TOUT le site depuis le
+   21/08/2026 (l'ancien, 150267587094280, ne servait que les tunnels de vente).
+   Le même identifiant doit être renseigné dans META_PIXEL_ID côté serveur pour
+   que l'API Conversions alimente le même pixel. */
+export const tracking = {
+  metaPixelId: "4342601752668466",
+};
+
 export const contact = {
   email: "info@bwebagence.com",
   // Numéros WhatsApp au format international SANS le "+".
