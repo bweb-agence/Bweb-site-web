@@ -13,7 +13,8 @@ export const prerender = false;
 
    1. LA SIGNATURE PORTE SUR LE CORPS BRUT. `x-chariow-signature` vaut
       `sha256=<hmac hex>` calculé sur les octets reçus, avec le secret propre au
-      Pulse (`whsec_…`, distinct de la clé d'API). Re-sérialiser le JSON analysé
+      Pulse (`whsec_…`, distinct de la clé d'API) — et il y a désormais UN
+      secret PAR BOUTIQUE, toutes deux pointant sur cette URL. Re-sérialiser le JSON analysé
       ne reproduit PAS ces octets — Chariow échappe les barres obliques
       (`https:\/\/…`) et les caractères non-ASCII (`\uXXXX`). D'où `request.text()`
       d'abord, `JSON.parse` ensuite, jamais `request.json()`.
@@ -77,23 +78,40 @@ interface PulseVente {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  const signingSecret = secret("CHARIOW_PULSE_SECRET");
-  if (!signingSecret) {
+  /* PLUSIEURS BOUTIQUES, PLUSIEURS SECRETS. Chaque Pulse a le sien, et les deux
+     boutiques (celle de Godwin et celle de l'agence) écrivent sur CETTE URL.
+     Avec un seul secret accepté, les livraisons de l'autre boutique tombent en
+     401 — et Chariow désactive le Pulse tout seul au bout de 5 échecs, sans que
+     personne le remarque avant de voir le chiffre d'affaires figé.
+     On essaie donc chaque secret connu et il suffit qu'UN corresponde.
+
+     Le jour où la boutique de Godwin cesse d'alimenter le site, il n'y a qu'à
+     supprimer sa variable dans Vercel : rien à changer ici. */
+  const secretsConnus = [
+    secret("CHARIOW_PULSE_SECRET"),          // boutique.godwinsoola.com (historique)
+    secret("CHARIOW_PULSE_SECRET_AGENCE"),   // boutique.bwebagence.com
+  ].filter(Boolean);
+
+  if (secretsConnus.length === 0) {
     /* Sans secret, impossible de prouver l'origine : on ne traite rien. Le 503
        finira par désactiver le Pulse côté Chariow (avec e-mail au propriétaire),
        ce qui est le bon signal — mieux vaut un Pulse éteint qu'un point d'entrée
        public qui gobe n'importe quel corps de requête. */
-    console.error("[chariow] CHARIOW_PULSE_SECRET absente — livraison refusée");
+    console.error("[chariow] aucun secret de Pulse configuré — livraison refusée");
     return json({ ok: false, error: "not_configured" }, 503);
   }
 
   // Corps BRUT, avant toute analyse : c'est lui, et lui seul, qui est signé.
   const brut = await request.text();
   const recue = request.headers.get("x-chariow-signature") || "";
-  const attendue = "sha256=" + createHmac("sha256", signingSecret).update(brut).digest("hex");
+  const reconnue =
+    recue.startsWith("sha256=") &&
+    secretsConnus.some((cle) =>
+      signatureValide(recue, "sha256=" + createHmac("sha256", cle).update(brut).digest("hex")),
+    );
 
-  if (!recue.startsWith("sha256=") || !signatureValide(recue, attendue)) {
-    console.error("[chariow] signature invalide — livraison rejetée");
+  if (!reconnue) {
+    console.error(`[chariow] signature invalide — livraison rejetée (${secretsConnus.length} secret(s) essayé(s))`);
     return json({ ok: false, error: "invalid_signature" }, 401);
   }
 

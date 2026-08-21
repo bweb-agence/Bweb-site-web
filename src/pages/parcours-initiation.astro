@@ -22,7 +22,13 @@ const imgSrc = (base: string): string => IMG_BASE + base + ".webp";
    À CONFIGURER (Godwin) :
    - Places et date de démarrage : écran /admin/cohortes (cohorte
      « parcours-initiation ») — plus rien à toucher dans ce fichier
-   - Paiement Chariow : product_id / store-domain ci-dessous
+   - Paiement Chariow : product_id / store-domain ci-dessous. Depuis le
+     21/08/2026 la vente passe par la boutique de l'agence
+     (boutique.bwebagence.com), et non plus par celle de Godwin. Trois choses
+     vont ENSEMBLE et se cassent séparément : ces attributs, l'autorisation du
+     domaine dans la CSP de vercel.json (sinon l'iframe est bloquée sans
+     message), et le Pulse de la nouvelle boutique — sans lui le compteur de
+     places et le CA du tableau de bord ne bougent plus.
    - YOUTUBE_HERO / témoignages : IDs vidéo
    ========================================================= */
 
@@ -57,13 +63,8 @@ const COHORTE_LABEL = moisAnnee.charAt(0).toUpperCase() + moisAnnee.slice(1);
    laisse en cache 60 s au bord plutôt que de la recalculer à chaque clic. */
 Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=300");
 
-const YOUTUBE_HERO = ""; // ex: "dQw4w9WgXcQ"
+const YOUTUBE_HERO = "DHUzqN9fFY0";
 
-const proof = [
-  { n: "17 116", t: "personnes formées" },
-  { n: "95 %", t: "d'avis positifs" },
-  { n: "+63 453", t: "ventes cumulées par nos apprenants" },
-];
 
 const getYouTubeId = (url: string): string | null => {
   try {
@@ -186,7 +187,10 @@ const faqs = [
 ---
 
 <BaseLayout
-  title="Parcours Initiation aux Produits Digitaux | Bweb Academy"
+  {/* Le titre reprend l'angle du H1 (se faire payer pour son savoir) sans
+      lâcher « produit digital », qui reste le terme réellement cherché.
+      61 caractères : Google tronque autour de 600 px, on tient dedans. */}
+  title="Vends ton savoir en produit digital en 30 jours | Bweb Academy"
   description={`En 30 jours, transforme une compétence que tu possèdes déjà en un produit digital prêt à vendre, mets-le en ligne et décroche tes premières ventes. Cohorte ${COHORTE_LABEL} — ${CAPACITE} places.`}
   hideWhatsApp={true}
   bareChrome={true}
@@ -204,13 +208,13 @@ const faqs = [
         <span class="pi-badge-urgence" data-hero-in>🚀 Cohorte {COHORTE_LABEL} — {CAPACITE} places uniquement</span>
 
         <h1 data-hero-in>
-          Tu possèdes déjà une compétence qui peut te rapporter <span class="pi-hl-gold">325 000 FCFA</span> par mois.
-          <span class="pi-h1-hook">Et si tu la transformais en produit digital en 30 jours&nbsp;?</span>
+          Des gens moins compétents que toi se font déjà payer pour leur savoir.
+          <span class="pi-h1-hook">Dans 30 jours, ce sera ton tour de faire <span class="pi-hl-gold">325 000 FCFA</span> par mois.</span>
         </h1>
 
         <p class="lead pi-hero-sub" data-hero-in>
-          Un parcours de 5 semaines pour créer, lancer et vendre ton premier produit digital
-          — même si tu n'as jamais rien vendu en ligne.
+          Un parcours de 5 semaines pour créer, lancer et vendre ton premier produit digital,
+          même si tu n'as jamais rien vendu en ligne.
         </p>
 
         <div class="pi-hero-cta" data-hero-in>
@@ -218,22 +222,19 @@ const faqs = [
           <p class="pi-cta-note">Prochaine cohorte : {COHORTE_LABEL} · {CAPACITE} places · Paiement sécurisé</p>
         </div>
 
-        <div class="pi-proof" data-hero-in>
-          {proof.map((p) => (
-            <div class="pi-proof-chip"><b>{p.n}</b> <span>{p.t}</span></div>
-          ))}
-        </div>
-
-        <!-- Vidéo hero : preuve et explication, après l'action principale. -->
+        <!-- Vidéo, immédiatement sous l'action principale : on explique juste
+             après avoir demandé. La vignette est celle de YouTube et ne porte
+             aucun texte — le bouton de lecture suffit à dire ce que c'est. -->
         <div class="pi-video pi-video--wide" id="heroVideo" data-hero-in>
           <button class="pi-video-ph" id="heroPlay" type="button" aria-label="Lire la vidéo de présentation">
-            <img class="pi-video-cover" src="/images/parcours-initiation/hero-cover.webp" alt="Entrepreneur en train de construire son produit digital sur son ordinateur" width="1400" height="788" fetchpriority="high" />
+            <img class="pi-video-cover" src={`https://i.ytimg.com/vi/${YOUTUBE_HERO}/maxresdefault.jpg`}
+              alt="" width="1280" height="720" fetchpriority="high" />
             <span class="pi-video-shade" aria-hidden="true"></span>
             <span class="pi-play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
-            <span class="pi-video-lbl">Regarde comment on construit ton produit, ensemble (2 min)</span>
           </button>
           <iframe id="heroFrame" title="Vidéo de présentation — Parcours Initiation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen hidden></iframe>
         </div>
+
       </div>
     </div>
   </header>
@@ -707,8 +708,8 @@ const faqs = [
       <h2 id="paymentModalTitle">Réserve ta place</h2>
       <p class="pi-payment-intro">Finalise ton inscription au parcours en quelques instants.</p>
       <div id="chariow-widget"
-        data-product-id="prd_cuwtrrgc"
-        data-store-domain="boutique.godwinsoola.com"
+        data-product-id="prd_6mhi13tf"
+        data-store-domain="boutique.bwebagence.com"
         data-style="frame"
         data-border-style="rounded"
         data-cta-width="xs"
@@ -722,6 +723,28 @@ const faqs = [
     (function () {
       // ---- Vidéo hero (lazy YouTube) ----
       var heroPlay = document.getElementById("heroPlay");
+
+      /* Miniature HD : YouTube ne renvoie PAS une 404 quand `maxresdefault.jpg`
+         n'existe pas (Shorts, vieux uploads) — il sert une image grise de
+         120x90 avec un statut 200. L'événement `error` ne part donc jamais et
+         `object-fit: cover` étire ce timbre-poste sur tout le hero. On la
+         reconnaît à sa taille et on repasse sur `hqdefault`, qui existe pour
+         TOUTES les vidéos. Même garde-fou que dans VideoLazy.astro. */
+      var heroCover = heroPlay && heroPlay.querySelector(".pi-video-cover");
+      if (heroCover && YOUTUBE_HERO) {
+        var versHqdefault = function () {
+          if (heroCover.src.indexOf("hqdefault") !== -1) return;
+          heroCover.src = "https://i.ytimg.com/vi/" + YOUTUBE_HERO + "/hqdefault.jpg";
+        };
+        var verifierCover = function () {
+          if (!heroCover.complete || heroCover.naturalWidth === 0) return;
+          if (heroCover.naturalWidth <= 120) versHqdefault();
+        };
+        heroCover.addEventListener("load", verifierCover);
+        heroCover.addEventListener("error", versHqdefault);
+        verifierCover();
+      }
+
       if (heroPlay) {
         heroPlay.addEventListener("click", function () {
           var frame = document.getElementById("heroFrame");
@@ -1047,7 +1070,10 @@ const faqs = [
     overflow: hidden; box-shadow: var(--shadow-lg); aspect-ratio: 16/9;
     background: var(--c-navy);
   }
-  .pi-video--wide { max-width: 560px; }
+  /* 760 px : la vidéo occupe presque toute la largeur du hero (880 px) sans
+     rivaliser avec le titre. Sur mobile c'est le conteneur qui borne, la
+     valeur n'a donc d'effet que sur grand écran. */
+  .pi-video--wide { max-width: 760px; }
   .pi-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .pi-video-ph {
     position: absolute; inset: 0; width: 100%; cursor: pointer; color: #fff;
@@ -1055,8 +1081,10 @@ const faqs = [
     background: #02114a; border: 0; padding: 20px; isolation: isolate;
   }
   .pi-video-cover { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: center; }
-  .pi-video-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(1,5,46,.16) 30%, rgba(1,5,46,.62)); transition: background var(--dur) var(--ease); }
-  .pi-video-ph:hover .pi-video-shade { background: linear-gradient(180deg, rgba(1,5,46,.08) 30%, rgba(1,5,46,.5)); }
+  /* Voile uniforme et léger : il ne sert plus à rendre un texte lisible (il n'y
+     en a plus), seulement à détacher le bouton de lecture de la vignette. */
+  .pi-video-shade { position: absolute; inset: 0; z-index: -1; background: rgba(1,5,46,.26); transition: background var(--dur) var(--ease); }
+  .pi-video-ph:hover .pi-video-shade { background: rgba(1,5,46,.14); }
   .pi-play {
     width: 76px; height: 76px; border-radius: 50%; background: var(--c-blue);
     display: flex; align-items: center; justify-content: center;
@@ -1064,20 +1092,11 @@ const faqs = [
   }
   .pi-play svg { width: 30px; height: 30px; margin-left: 3px; }
   .pi-video-ph:hover .pi-play { transform: scale(1.08); }
-  .pi-video-lbl { font-family: var(--f-display); font-weight: 600; font-size: .95rem; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
   @keyframes pi-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(31,108,237,.5)} 50%{box-shadow:0 0 0 16px rgba(31,108,237,0)} }
 
   .pi-hero-cta { margin-top: 32px; }
   .pi-cta-note { margin-top: 14px; font-size: .88rem; color: var(--c-gray-600); }
 
-  .pi-proof { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 32px; }
-  .pi-proof-chip {
-    background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius-pill);
-    padding: 10px 20px; font-size: .9rem; box-shadow: var(--shadow-sm);
-    display: inline-flex; align-items: baseline; gap: 7px;
-  }
-  .pi-proof-chip b { color: var(--c-blue); font-weight: 800; }
-  .pi-proof-chip span { color: var(--c-gray-700); }
 
   /* ---------- Countdown ---------- */
   .pi-countdown { background: var(--g-navy); color: #fff; padding: 20px 0; }
@@ -1569,8 +1588,6 @@ const faqs = [
     .pi-badge-urgence { margin-bottom: 18px; }
     .pi-hero-sub { margin-top: 18px; }
     .pi-hero-cta { margin-top: 24px; }
-    .pi-proof { gap: 8px; margin-top: 22px; }
-    .pi-proof-chip { padding: 8px 13px; font-size: .82rem; }
     .pi-video { margin-top: 26px; }
     .pi-countdown { padding: 16px 0; }
     .pi-countdown-inner { gap: 12px; }
