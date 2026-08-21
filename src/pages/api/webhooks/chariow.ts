@@ -209,8 +209,12 @@ export const POST: APIRoute = async ({ request }) => {
          jamais charger le pixel. Envoyé UNE SEULE FOIS, dans la branche qui
          écarte déjà les rejeux : l'identifiant d'événement porte celui de la
          vente, ce qui laisse à Meta de quoi fusionner si le pixel remonte la
-         même. Silencieux tant que le jeton n'est pas configuré. */
-      void envoyerEvenementMeta({
+         même. Silencieux tant que le jeton n'est pas configuré.
+
+         ATTENDU, pas lancé en tâche de fond : Vercel gèle l'instance dès la
+         réponse émise, et un envoi non attendu mourait en vol sans laisser de
+         trace. L'appel est borné à 3 s côté `metaCapi`. */
+      await envoyerEvenementMeta({
         nom: "Purchase",
         eventId: `chariow:sale:${vente.id}`,
         quand: vente.completed_at || vente.created_at ? new Date(vente.completed_at || vente.created_at!) : undefined,

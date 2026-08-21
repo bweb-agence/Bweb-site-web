@@ -193,8 +193,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
      consentement refusé). L'identifiant d'événement est dérivé de l'adresse et
      du tunnel, donc stable : si le pixel envoie un jour le même Lead, Meta
      fusionnera les deux au lieu de compter deux fois.
-     Silencieux tant que le jeton n'est pas configuré. */
-  void envoyerEvenementMeta({
+     Silencieux tant que le jeton n'est pas configuré.
+
+     L'envoi est LANCÉ ici mais ATTENDU juste avant la réponse (`repondre`) :
+     lancé sans être attendu, il ne partait jamais — Vercel gèle l'instance dès
+     que la réponse HTTP est émise et la requête vers Meta mourait en vol. Le
+     lancer tôt le laisse s'exécuter en parallèle du relais ACQ Hub, donc sans
+     rallonger le temps de réponse. */
+  const metaEnCours = envoyerEvenementMeta({
     nom: "Lead",
     eventId: `webinaire-initiation:lead:${email}`,
     url: `${new URL(request.url).origin}/webinaire-initiation`,
@@ -203,6 +209,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     ip: ip !== "0.0.0.0" ? ip : null,
     userAgent: request.headers.get("user-agent"),
   });
+
+  /** Répond au client une fois l'événement Meta effectivement parti. */
+  const repondre = async (corps: unknown) => {
+    await metaEnCours;
+    return json(corps);
+  };
 
   const ingestKey = secret("TUNNEL_KEY_WEBINAIRE_INITIATION", "TUNNEL_INGEST_KEY");
   const ingestUrl = secret("INGEST_URL");
@@ -222,7 +234,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       status: "skipped",
       error: "relais non configuré",
     });
-    return json({ ok: false, error: "not_configured" });
+    return repondre({ ok: false, error: "not_configured" });
   }
 
   /* Idempotence : une même personne qui soumet deux fois (double-clic, retour
@@ -257,10 +269,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         status: "failed",
         error: `HTTP ${res.status} ${detail.slice(0, 200)}`,
       });
-      return json({ ok: false, error: "ingest_failed" });
+      return repondre({ ok: false, error: "ingest_failed" });
     }
     await markRelay(submission?.submissionId, { target: "acq_hub", status: "sent" });
-    return json({ ok: true });
+    return repondre({ ok: true });
   } catch (err) {
     console.error("[webinaire] ingest injoignable", err);
     await markRelay(submission?.submissionId, {
@@ -268,6 +280,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       status: "failed",
       error: err instanceof Error ? err.message : "ingest injoignable",
     });
-    return json({ ok: false, error: "ingest_unreachable" });
+    return repondre({ ok: false, error: "ingest_unreachable" });
   }
 };
