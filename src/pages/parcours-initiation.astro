@@ -6,6 +6,7 @@ export const prerender = false;
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { supabase } from "../lib/supabase";
 import MetaPixel from "../components/MetaPixel.astro";
+import PreuveSociale from "../components/PreuveSociale.astro";
 
 /* Les visuels WebP optimisés font partie du dépôt et sont servis directement
    depuis /public : cela évite toute dépendance au système de fichiers du build. */
@@ -256,6 +257,11 @@ const faqs = [
       </div>
     </div>
   </div>
+
+  <!-- Preuve sociale : les achats récents, rendus par le site à partir des
+       ventes Chariow déjà reçues par le Pulse. Trois lignes superposées, à
+       contresens l'une de l'autre, sur toute la largeur. -->
+  <PreuveSociale />
 
   <!-- ============================================================
        2 · PROBLÈME -->

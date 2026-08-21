@@ -1,0 +1,132 @@
+---
+/* =========================================================
+   PREUVE SOCIALE — les achats récents, en trois lignes défilantes
+   ---------------------------------------------------------
+   POURQUOI PAS LE WIDGET CHARIOW. Il rend une IFRAME servie par
+   boutique.godwinsoola.com : son contenu appartient à un autre domaine, donc
+   ni la largeur réelle, ni la mise en lignes, ni le sens de défilement ne sont
+   pilotables depuis le site. Trois lignes alternées y étaient impossibles.
+
+   Or les données sont déjà chez nous : le Pulse inscrit chaque vente Chariow
+   dans la timeline. On les affiche donc nous-mêmes, via `preuve_sociale`, qui
+   ne rend que ce qui peut se montrer en vitrine — prénom, initiale du nom,
+   produit, date. Pas d'iframe, pas de script tiers, pas de requête vers un
+   autre domaine.
+
+   LE DÉFILEMENT. Chaque ligne contient ses éléments DEUX FOIS et se translate
+   de la moitié de sa largeur : au moment où la copie arrive à la position de
+   l'originale, l'animation repart — la boucle est invisible. Les lignes
+   paires vont à gauche, les impaires à droite, ce qui donne le mouvement
+   contraire d'une ligne à l'autre.
+   ========================================================= */
+import { supabase } from "../lib/supabase";
+
+interface Props {
+  /** Nombre de lignes superposées. */
+  lignes?: number;
+  titre?: string;
+}
+const { lignes = 3, titre = "Ils viennent d'acheter" } = Astro.props;
+
+const { data } = await supabase.rpc("preuve_sociale", { p_limite: 30 });
+const achats = (Array.isArray(data) ? data : []) as { prenom: string; produit: string; quand: string }[];
+
+/* « il y a 2 h » : plus crédible qu'une date, et ça vieillit bien — la page
+   étant rendue à la demande, l'écart est recalculé à chaque visite. */
+const depuis = (iso: string): string => {
+  const minutes = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const heures = Math.round(minutes / 60);
+  if (heures < 24) return `il y a ${heures} h`;
+  const jours = Math.round(heures / 24);
+  return jours <= 1 ? "hier" : `il y a ${jours} jours`;
+};
+
+/* Répartition en serpentin : la ligne 1 prend le 1er, le 4e, le 7e… Les achats
+   les plus récents se retrouvent ainsi en tête de chaque ligne, plutôt que
+   tous concentrés sur la première. */
+const pistes = Array.from({ length: lignes }, (_, i) => achats.filter((_, j) => j % lignes === i));
+const assez = achats.length >= lignes;
+---
+
+{assez && (
+  <section class="ps" aria-label={titre}>
+    <p class="ps-titre">{titre}</p>
+    <div class="ps-pistes">
+      {pistes.map((piste, i) => (
+        <div class="ps-piste" data-sens={i % 2 === 0 ? "gauche" : "droite"}>
+          {/* La liste est doublée pour que la boucle ne se voie pas ; la copie
+              est masquée aux lecteurs d'écran, qui liraient tout en double. */}
+          <div class="ps-ruban" style={`--duree:${28 + i * 6}s`}>
+            {[0, 1].map((copie) => (
+              <ul class="ps-lot" aria-hidden={copie === 1 ? "true" : undefined}>
+                {piste.map((a) => (
+                  <li class="ps-item">
+                    <span class="ps-pastille" aria-hidden="true">🛒</span>
+                    <b>{a.prenom}</b>
+                    <span class="ps-produit">{a.produit}</span>
+                    <span class="ps-quand">{depuis(a.quand)}</span>
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+
+<style>
+  /* Pleine largeur, quel que soit le conteneur qui l'accueille : la section
+     sort de la grille sans provoquer de défilement horizontal (100vw inclut la
+     barre de défilement, d'où le calcul sur la largeur réelle du document). */
+  .ps {
+    width: 100%;
+    margin-inline: 0;
+    padding: 22px 0 6px;
+    overflow: hidden;
+  }
+  .ps-titre {
+    margin: 0 0 12px;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c-gray-500);
+  }
+  .ps-pistes { display: flex; flex-direction: column; gap: 10px; }
+  .ps-piste { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+  .ps-ruban { display: flex; width: max-content; animation: ps-defile var(--duree, 30s) linear infinite; }
+  .ps-piste[data-sens="droite"] .ps-ruban { animation-direction: reverse; }
+  .ps-lot { display: flex; gap: 10px; margin: 0; padding: 0 5px 0 0; list-style: none; }
+  .ps-item {
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    background: var(--c-white); border: 1px solid var(--c-border);
+    border-radius: var(--radius-pill); padding: 8px 15px 8px 10px;
+    font-size: 0.83rem; color: var(--c-gray-600); box-shadow: var(--shadow-sm);
+  }
+  .ps-item b { color: var(--c-ink); font-weight: 700; }
+  .ps-pastille { font-size: 0.9rem; }
+  .ps-produit { max-width: 34ch; overflow: hidden; text-overflow: ellipsis; }
+  .ps-quand { color: var(--c-gray-400); font-size: 0.76rem; }
+
+  /* -50% : la moitié du ruban, c'est-à-dire exactement la première copie. */
+  @keyframes ps-defile {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Le mouvement est décoratif : qui demande moins d'animation garde le
+     bandeau, immobile et lisible. */
+  @media (prefers-reduced-motion: reduce) {
+    .ps-ruban { animation: none; }
+    .ps-piste { overflow-x: auto; }
+  }
+
+  @media (max-width: 640px) {
+    .ps-item { font-size: 0.78rem; padding: 7px 13px 7px 9px; }
+    .ps-produit { max-width: 24ch; }
+  }
+</style>
