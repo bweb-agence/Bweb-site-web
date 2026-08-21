@@ -22,7 +22,13 @@ const imgSrc = (base: string): string => IMG_BASE + base + ".webp";
    À CONFIGURER (Godwin) :
    - Places et date de démarrage : écran /admin/cohortes (cohorte
      « parcours-initiation ») — plus rien à toucher dans ce fichier
-   - Paiement Chariow : product_id / store-domain ci-dessous
+   - Paiement Chariow : product_id / store-domain ci-dessous. Depuis le
+     21/08/2026 la vente passe par la boutique de l'agence
+     (boutique.bwebagence.com), et non plus par celle de Godwin. Trois choses
+     vont ENSEMBLE et se cassent séparément : ces attributs, l'autorisation du
+     domaine dans la CSP de vercel.json (sinon l'iframe est bloquée sans
+     message), et le Pulse de la nouvelle boutique — sans lui le compteur de
+     places et le CA du tableau de bord ne bougent plus.
    - YOUTUBE_HERO / témoignages : IDs vidéo
    ========================================================= */
 
@@ -702,8 +708,8 @@ const faqs = [
       <h2 id="paymentModalTitle">Réserve ta place</h2>
       <p class="pi-payment-intro">Finalise ton inscription au parcours en quelques instants.</p>
       <div id="chariow-widget"
-        data-product-id="prd_cuwtrrgc"
-        data-store-domain="boutique.godwinsoola.com"
+        data-product-id="prd_6mhi13tf"
+        data-store-domain="boutique.bwebagence.com"
         data-style="frame"
         data-border-style="rounded"
         data-cta-width="xs"
