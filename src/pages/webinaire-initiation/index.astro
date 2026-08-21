@@ -434,7 +434,18 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
           .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
           .then(function (res) {
             if (res && res.ok) {
-              if (window.fbq) window.fbq("track", "Lead");
+              /* Le même Lead part aussi du serveur (src/lib/metaCapi.ts). Meta ne
+                 fusionne les deux QUE si `event_name` ET `eventID` coïncident :
+                 sans cet identifiant, une seule inscription était comptée DEUX
+                 fois, ce qui divise par deux le coût par lead affiché dans le
+                 gestionnaire de publicités — et fausse l'arbitrage des campagnes.
+                 La clé doit être calquée sur celle du serveur, qui normalise
+                 l'adresse en minuscules avant de la composer. */
+              if (window.fbq) {
+                window.fbq("track", "Lead", {}, {
+                  eventID: "webinaire-initiation:lead:" + email.toLowerCase().slice(0, 160),
+                });
+              }
               window.location.href = "/webinaire-initiation/merci";
               return;
             }
