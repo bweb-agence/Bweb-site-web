@@ -28,7 +28,7 @@ interface Props {
 }
 const { lignes = 3, titre = "Ce qu'en disent les apprenants" } = Astro.props;
 
-const avis = avisChariow as { auteur: string; texte: string; quand: string }[];
+const avis = avisChariow as { auteur: string; texte: string; quand: string; fort?: boolean }[];
 
 /* Répartition en serpentin : la ligne 1 prend le 1er, le 4e, le 7e… Les avis les
    plus récents se retrouvent en tête de chaque ligne, plutôt que tous concentrés
@@ -49,7 +49,7 @@ const assez = avis.length >= lignes * 2;
             {[0, 1].map((copie) => (
               <ul class="ps-lot" aria-hidden={copie === 1 ? "true" : undefined}>
                 {piste.map((a) => (
-                  <li class="ps-item">
+                  <li class:list={["ps-item", a.fort && "ps-item--fort"]}>
                     <span class="ps-pastille" aria-hidden="true">★</span>
                     <p class="ps-avis">«&nbsp;{a.texte}&nbsp;»</p>
                     <b>{a.auteur}</b>
@@ -90,15 +90,20 @@ const assez = avis.length >= lignes * 2;
   .ps-lot { display: flex; gap: 10px; margin: 0; padding: 0 5px 0 0; list-style: none; }
   /* Rectangle, pas gélule : un texte de plusieurs lignes dans une forme
      arrondie à l'extrême laisse des angles vides et casse l'alignement.
-     Fond crème et étoile dorée — la carte de témoignage du site. */
+     Carte blanche par défaut ; le crème est RÉSERVÉ aux avis qui portent un
+     résultat ou une recommandation entière. Tout mettre en avant, c'est ne
+     rien mettre en avant : sur fond crème uniforme, l'œil ne s'arrête nulle
+     part. Un tiers de cartes dorées suffit à créer les points d'appui. */
   .ps-item {
     display: grid; grid-template-columns: auto 1fr; gap: 5px 10px;
     align-items: start; width: 340px;
-    background: #fffaf0; border: 1px solid #f4e3c1; border-radius: 14px;
+    background: var(--c-white); border: 1px solid var(--c-border); border-radius: 14px;
     padding: 14px 17px; box-shadow: var(--shadow-sm);
     font-size: 0.83rem; color: var(--c-gray-600);
   }
-  .ps-pastille { color: #f0a500; font-size: 0.95rem; line-height: 1.5; grid-row: 1 / span 2; }
+  .ps-item--fort { background: #fffaf0; border-color: #f4e3c1; }
+  .ps-pastille { color: var(--c-gray-300); font-size: 0.95rem; line-height: 1.5; grid-row: 1 / span 2; }
+  .ps-item--fort .ps-pastille { color: #f0a500; }
   .ps-avis {
     grid-column: 2; margin: 0; font-style: italic; line-height: 1.5; color: var(--c-gray-700);
     /* Quatre lignes au plus : au-delà, la carte devient un pavé que personne ne
