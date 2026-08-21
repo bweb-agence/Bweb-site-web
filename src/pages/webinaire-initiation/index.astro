@@ -61,7 +61,7 @@ Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=300, st
 /* Vidéo de présentation du live. Coller l'ID YouTube (ex. "z_h3zF0Xzjk").
    Tant qu'il est vide, le bloc vidéo n'est pas rendu du tout — pas de
    lecteur mort sur la page. */
-const VIDEO_ID = "";
+const VIDEO_ID = "qn9lPOfFMWo";
 
 /* Base du lien de secours : le prénom saisi y est ajouté côté client, pour
    que Godwin reçoive un message exploitable et pas un simple « bonjour ». */
@@ -98,6 +98,19 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
         <p class="wb-cta-note">{PLACES} places · une seule date · replay 48 h réservé aux inscrits</p>
       </div>
 
+      <!-- Vidéo de présentation : elle précède le compte à rebours. La vidéo
+           explique ce qu'on vient chercher, le décompte dit qu'il faut se
+           décider — l'urgence n'a de prise qu'une fois la promesse comprise. -->
+      <div class="wb-video-slot" data-hero-in>
+        <VideoLazy
+          id={VIDEO_ID}
+          autoplay
+          label="Découvre en 1 minute ce qu'on va construire ensemble"
+          title="Présentation du webinaire — Godwin Soola"
+          hint="VIDEO_ID · src/pages/webinaire-initiation/index.astro"
+        />
+      </div>
+
       <div class="wb-countdown" data-hero-in>
         <span class="wb-cd-label">⏳ Le live démarre dans</span>
         <div class="wb-cd" data-countdown={LIVE_ISO}>
@@ -109,16 +122,6 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
           <span class="wb-cd-sep">:</span>
           <span class="wb-cd-box"><b data-cd="s">00</b><span>Sec</span></span>
         </div>
-      </div>
-
-      <!-- Vidéo de présentation, juste sous le compte à rebours. -->
-      <div class="wb-video-slot" data-hero-in>
-        <VideoLazy
-          id={VIDEO_ID}
-          label="Découvre en 1 minute ce qu'on va construire ensemble"
-          title="Présentation du webinaire — Godwin Soola"
-          hint="VIDEO_ID · src/pages/webinaire-initiation/index.astro"
-        />
       </div>
     </div>
   </header>
@@ -482,7 +485,7 @@ const SECOURS_BASE = `https://wa.me/${contact.whatsapp.primary}?text=`;
   .wb-cta--glow:disabled { animation: none; }
   .wb-cta--glow:disabled::after { display: none; }
 
-  /* ===== Vidéo de présentation (sous le compte à rebours) ===== */
+  /* ===== Vidéo de présentation (entre le CTA et le compte à rebours) ===== */
   /* L'habillage vit dans VideoLazy.astro ; la page ne fixe que sa place. */
   .wb-video-slot { max-width: 620px; margin: 40px auto 0; }
 
