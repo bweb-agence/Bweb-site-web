@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { contact, whatsappLink } from "../../config/site";
 import "../../styles/funnel-confirm.css";
+import MetaPixel from "../../components/MetaPixel.astro";
 
 /* =========================================================
    PARCOURS INITIATION — Page de remerciement après achat
@@ -41,22 +42,13 @@ const aideUrl = whatsappLink(
   bareChrome={true}
 >
   <Fragment slot="head">
+    <MetaPixel id="150267587094280" />
     <script is:inline define:vars={{ PRIX }}>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '150267587094280');
-      fbq('track', 'PageView');
-
-      /* Purchase : un rafraîchissement ou un retour arrière ne doit pas
-         gonfler le chiffre d'affaires remonté à Meta — d'où le garde-fou
-         localStorage. Si le stockage est bloqué (navigation privée stricte),
-         on préfère compter la vente plutôt que la perdre. */
+      /* Purchase : un rafraîchissement ou un retour arrière ne doit pas gonfler
+         le chiffre d'affaires remonté à Meta — d'où le garde-fou localStorage.
+         Si le stockage est bloqué (navigation privée stricte), on préfère
+         compter la vente plutôt que la perdre.
+         L'événement part immédiatement, comme le reste du pixel. */
       (function () {
         var payload = { value: PRIX, currency: 'XOF', content_name: 'Parcours Initiation aux Produits Digitaux' };
         try {
@@ -67,8 +59,6 @@ const aideUrl = whatsappLink(
         fbq('track', 'Purchase', payload);
       })();
     </script>
-    <noscript><img height="1" width="1" style="display:none" alt=""
-      src="https://www.facebook.com/tr?id=150267587094280&ev=PageView&noscript=1"/></noscript>
   </Fragment>
 
   <!-- ═══════════ 1 · CONFIRMATION ═══════════ -->

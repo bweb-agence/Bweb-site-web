@@ -1,0 +1,39 @@
+---
+/* =========================================================
+   Pixel Meta
+   ---------------------------------------------------------
+   Le pixel suit dès la première seconde, que le visiteur ait répondu ou non à
+   la bannière de consentement. C'est une décision prise par Godwin le
+   21/08/2026, en connaissance de l'implication : le RGPD et la directive
+   ePrivacy demandent le consentement AVANT le dépôt de cookies de mesure
+   publicitaire, et le pixel dépose `_fbp` dès son initialisation.
+
+   La bannière reste affichée (différée de 30 s sur les landings) et continue de
+   piloter les autres intégrations tierces — la carte, les lecteurs vidéo. Elle
+   ne commande simplement plus le pixel.
+
+   Pour revenir à un pixel sous consentement, il suffit de rétablir l'appel
+   `fbq('consent', ...)` avant `init` : c'est la seule ligne qui change.
+   ========================================================= */
+interface Props {
+  /** Identifiant du pixel. */
+  id: string;
+}
+const { id } = Astro.props;
+---
+
+<script is:inline define:vars={{ PIXEL_ID: id }}>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+
+  fbq('init', PIXEL_ID);
+  fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" alt=""
+  src={`https://www.facebook.com/tr?id=${id}&ev=PageView&noscript=1`} /></noscript>

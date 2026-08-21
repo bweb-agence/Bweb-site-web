@@ -40,9 +40,14 @@ import type { APIRoute } from "astro";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "../../../lib/supabaseAdmin";
 import { secret } from "../../../lib/env";
+import { envoyerEvenementMeta } from "../../../lib/metaCapi";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
+
+/** Retire les champs vides d'un objet de données produit. */
+const sansVideMeta = (o: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== ""));
 
 /** Comparaison à temps constant, tolérante aux longueurs différentes. */
 function signatureValide(recue: string, attendue: string): boolean {
@@ -198,6 +203,21 @@ export const POST: APIRoute = async ({ request }) => {
        inconditionnelle : elle est idempotente et coûte une ligne. */
     if (!dejaConnue) {
       await admin.from("contacts").update({ status: "client" }).eq("id", contactId).neq("status", "client");
+
+      /* Meta, côté serveur : l'encaissement est confirmé par Chariow, donc la
+         conversion est certaine — le navigateur de l'acheteur, lui, a pu ne
+         jamais charger le pixel. Envoyé UNE SEULE FOIS, dans la branche qui
+         écarte déjà les rejeux : l'identifiant d'événement porte celui de la
+         vente, ce qui laisse à Meta de quoi fusionner si le pixel remonte la
+         même. Silencieux tant que le jeton n'est pas configuré. */
+      void envoyerEvenementMeta({
+        nom: "Purchase",
+        eventId: `chariow:sale:${vente.id}`,
+        quand: vente.completed_at || vente.created_at ? new Date(vente.completed_at || vente.created_at!) : undefined,
+        url: produit.url || undefined,
+        contact: { email, phone, prenom: client.first_name || nom, pays: client.country },
+        donnees: sansVideMeta({ value: montant, currency: devise, content_name: produit.name, content_ids: produit.id ? [produit.id] : undefined }),
+      });
     }
 
     return json({ ok: true, vente: vente.id, contact: contactId, deja_connue: dejaConnue });

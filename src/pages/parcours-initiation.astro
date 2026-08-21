@@ -5,6 +5,8 @@ export const prerender = false;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { supabase } from "../lib/supabase";
+import MetaPixel from "../components/MetaPixel.astro";
+import PreuveSociale from "../components/PreuveSociale.astro";
 
 /* Les visuels WebP optimisés font partie du dépôt et sont servis directement
    depuis /public : cela évite toute dépendance au système de fichiers du build. */
@@ -32,7 +34,7 @@ const imgSrc = (base: string): string => IMG_BASE + base + ".webp";
    Si la base est injoignable, on retombe sur les valeurs de secours : mieux
    vaut une landing vendable avec un chiffre daté qu'un compteur vide. */
 const COHORTE_SLUG = "parcours-initiation";
-const SECOURS = { capacity: 30, remaining: 25, starts_at: "2026-09-01T09:00:00" };
+const SECOURS = { capacity: 30, remaining: 25, starts_at: "2026-09-01T09:00:00", deadline_at: "2026-09-07T00:00:00Z" };
 
 const { data: cohorteRows } = await supabase.rpc("cohorte_places", { p_slug: COHORTE_SLUG });
 const cohorte = (Array.isArray(cohorteRows) ? cohorteRows[0] : cohorteRows) ?? null;
@@ -41,6 +43,11 @@ const CAPACITE = cohorte?.capacity ?? SECOURS.capacity;
 const PLACES_RESTANTES = cohorte?.remaining ?? SECOURS.remaining;
 const COMPLET = PLACES_RESTANTES <= 0;
 const COHORTE_ISO = cohorte?.starts_at ?? SECOURS.starts_at;
+
+/* Le compte à rebours vise la CLÔTURE DES INSCRIPTIONS, pas le démarrage : c'est
+   l'échéance qui fait décider. Réglée dans le tableau de bord (`deadline_at`),
+   elle retombe sur la date de démarrage quand elle n'est pas renseignée. */
+const ECHEANCE_ISO = cohorte?.deadline_at ?? SECOURS.deadline_at;
 
 /* « Septembre 2026 » : écrit une fois, réutilisé dans tous les rappels de la
    page (badge, CTA, rareté, section finale). */
@@ -187,20 +194,7 @@ const faqs = [
 >
   <!-- Meta Pixel (verbatim, dans le <head>) -->
   <Fragment slot="head">
-    <script is:inline>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '150267587094280');
-      fbq('track', 'PageView');
-    </script>
-    <noscript><img height="1" width="1" style="display:none" alt=""
-      src="https://www.facebook.com/tr?id=150267587094280&ev=PageView&noscript=1"/></noscript>
+    <MetaPixel id="150267587094280" />
   </Fragment>
 
   <!-- ============================================================
@@ -251,8 +245,8 @@ const faqs = [
   <!-- Countdown -->
   <div class="pi-countdown">
     <div class="container pi-countdown-inner">
-      <span class="pi-countdown-label">⏳ La cohorte démarre dans</span>
-      <div class="pi-fcd pi-countdown-clock" id="countdown" data-target={COHORTE_ISO}>
+      <span class="pi-countdown-label">⏳ Fin des inscriptions dans</span>
+      <div class="pi-fcd pi-countdown-clock" id="countdown" data-target={ECHEANCE_ISO}>
         <span class="pi-fcd-box"><span class="n" data-cd="d">00</span><span class="u">Jours</span></span>
         <span class="pi-fcd-sep" aria-hidden="true">:</span>
         <span class="pi-fcd-box"><span class="n" data-cd="h">00</span><span class="u">Heures</span></span>
@@ -263,6 +257,11 @@ const faqs = [
       </div>
     </div>
   </div>
+
+  <!-- Preuve sociale : les achats récents, rendus par le site à partir des
+       ventes Chariow déjà reçues par le Pulse. Trois lignes superposées, à
+       contresens l'une de l'autre, sur toute la largeur. -->
+  <PreuveSociale />
 
   <!-- ============================================================
        2 · PROBLÈME -->
@@ -668,8 +667,8 @@ const faqs = [
             <li>8 bonus offerts (180 000+ FCFA)</li>
           </ul>
           <div class="pi-final-urgency">
-            <span class="pi-final-urgency-label">⏳ La cohorte démarre dans</span>
-            <div class="pi-fcd" data-target={COHORTE_ISO}>
+            <span class="pi-final-urgency-label">⏳ Fin des inscriptions dans</span>
+            <div class="pi-fcd" data-target={ECHEANCE_ISO}>
               <span class="pi-fcd-box"><span class="n" data-cd="d">00</span><span class="u">Jours</span></span>
               <span class="pi-fcd-sep">:</span>
               <span class="pi-fcd-box"><span class="n" data-cd="h">00</span><span class="u">Heures</span></span>

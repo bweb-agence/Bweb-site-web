@@ -27,6 +27,7 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { markRelay, recordSubmission } from "../../../lib/leads";
 import { envoyerConfirmationWebinaire } from "../../../lib/webinaireEmails";
+import { envoyerEvenementMeta } from "../../../lib/metaCapi";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
@@ -186,6 +187,22 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     // visiteur n'a rien à faire de cette information.
     console.error(`[webinaire] confirmation non envoyée à ${email} (${confirmation})`);
   }
+
+  /* Meta, côté serveur. L'inscription vient d'être enregistrée : c'est un fait
+     certain, là où le pixel du navigateur est un pari (bloqueurs, Safari,
+     consentement refusé). L'identifiant d'événement est dérivé de l'adresse et
+     du tunnel, donc stable : si le pixel envoie un jour le même Lead, Meta
+     fusionnera les deux au lieu de compter deux fois.
+     Silencieux tant que le jeton n'est pas configuré. */
+  void envoyerEvenementMeta({
+    nom: "Lead",
+    eventId: `webinaire-initiation:lead:${email}`,
+    url: `${new URL(request.url).origin}/webinaire-initiation`,
+    contact: { email, phone: whatsapp, prenom },
+    donnees: { content_name: "Inscription webinaire — Initiation", currency: "XOF", value: 0 },
+    ip: ip !== "0.0.0.0" ? ip : null,
+    userAgent: request.headers.get("user-agent"),
+  });
 
   const ingestKey = secret("TUNNEL_KEY_WEBINAIRE_INITIATION", "TUNNEL_INGEST_KEY");
   const ingestUrl = secret("INGEST_URL");

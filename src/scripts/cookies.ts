@@ -25,22 +25,28 @@ function applyConsent(): void {
 }
 
 /**
- * @param autoShow  Faux sur les landings de vente et les pages d'inscription :
- *   la bannière s'y ouvrait au-dessus du CTA, au moment précis où le visiteur
- *   décide. On charge quand même la librairie — le choix déjà exprimé ailleurs
- *   continue de s'appliquer, le bouton « Gérer les cookies » du pied de page
- *   ouvre toujours le panneau, et rien ne se règle en douce derrière le dos du
- *   visiteur : la bannière est seulement silencieuse, pas absente.
+ * @param autoShow  Vrai partout, sauf sur les landings de vente : la bannière
+ *   s'y ouvrait au-dessus du CTA, au moment précis où le visiteur décide.
+ * @param delaiMs   Sur ces mêmes landings, la bannière n'est pas supprimée mais
+ *   RETARDÉE : elle s'affiche une fois le visiteur installé dans la page, assez
+ *   tard pour ne plus rien couvrir au moment du choix, assez tôt pour qu'il
+ *   puisse encore accepter — et donc pour que le pixel, jusque-là muet, envoie
+ *   enfin la file d'événements qu'il a gardée depuis la première seconde.
  */
-export function initCookies(autoShow = true): void {
+export function initCookies(autoShow = true, delaiMs = 0): void {
   // Exposé pour les boutons hors de ce bundle (ex. « Afficher la carte »).
   window.bwebCookies = {
     show: () => CookieConsent.showPreferences(),
     acceptExternes: () => CookieConsent.acceptCategory(["necessary", "externes"]),
   };
 
+  /* Le retard se pilote ici, pas dans la librairie : `autoShow` est coupé, et
+     on rouvre nous-mêmes après le délai — mais seulement si le visiteur n'a
+     pas déjà répondu entre-temps (il a pu ouvrir le panneau depuis le pied de
+     page, ou avoir choisi lors d'une visite précédente). */
+  const differe = autoShow && delaiMs > 0;
   CookieConsent.run({
-    autoShow,
+    autoShow: autoShow && !differe,
     guiOptions: {
       consentModal: { layout: "box wide", position: "bottom left", flipButtons: false, equalWeightButtons: true },
       preferencesModal: { layout: "box", position: "right", flipButtons: false, equalWeightButtons: true },
@@ -95,4 +101,11 @@ export function initCookies(autoShow = true): void {
     onConsent: applyConsent,
     onChange: applyConsent,
   });
+
+  if (differe) {
+    window.setTimeout(() => {
+      // `validConsent()` est vrai dès que le visiteur a tranché, ici ou ailleurs.
+      if (!CookieConsent.validConsent()) CookieConsent.show();
+    }, delaiMs);
+  }
 }

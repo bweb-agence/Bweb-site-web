@@ -45,12 +45,14 @@ function hideDecorativeSvg(): void {
 }
 
 function boot(): void {
-  /* Bannière de consentement : silencieuse sur les landings de vente et les
-     pages d'inscription (attribut posé par BaseLayout). Elle s'y ouvrait
-     au-dessus du CTA, au moment précis où le visiteur décide. La librairie est
-     tout de même chargée : le choix exprimé ailleurs s'applique, et le bouton
-     « Gérer les cookies » du pied de page ouvre le panneau partout. */
-  initCookies(!document.body.hasAttribute("data-sans-banniere-cookies"));
+  /* Bannière de consentement : sur les landings de vente et les pages
+     d'inscription (attribut posé par BaseLayout), elle n'est plus supprimée
+     mais RETARDÉE de 30 secondes. Le visiteur a le temps de lire le hero et
+     d'atteindre le CTA sans rien sur l'écran ; passé ce délai, la question lui
+     est posée — et son accord libère la file d'événements que le pixel Meta
+     retient depuis la première seconde. */
+  const differee = document.body.hasAttribute("data-sans-banniere-cookies");
+  initCookies(true, differee ? 30_000 : 0);
   setYear();
   hideDecorativeSvg();
   initContactLinks();
