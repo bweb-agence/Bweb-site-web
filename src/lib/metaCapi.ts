@@ -23,6 +23,14 @@
 
    SILENCIEUX SI NON CONFIGURÉ. Sans jeton, la fonction renvoie `false` sans
    rien tenter : le site tourne exactement comme avant.
+
+   IL FAUT ATTENDRE CETTE PROMESSE. Les appelants ont d'abord lancé la fonction
+   sans l'attendre (`void ...`), en la traitant comme une tâche de fond. Sur
+   Vercel, c'est un envoi perdu : l'instance serverless est GELÉE dès que la
+   réponse HTTP part, et la requête vers Meta, encore en vol, meurt avec elle —
+   sans erreur, sans trace. C'est ce qui expliquait des conversions serveur
+   vides alors que le jeton était bien en place. Le `signal` ci-dessous borne
+   l'attente pour que ce soit sans risque pour le temps de réponse.
    ========================================================= */
 import { createHash } from "node:crypto";
 import { secret } from "./env";
@@ -111,7 +119,15 @@ export async function envoyerEvenementMeta(evenement: EvenementMeta): Promise<bo
   try {
     const reponse = await fetch(
       `https://graph.facebook.com/${VERSION_API}/${pixel}/events?access_token=${encodeURIComponent(jeton)}`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corps) },
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(corps),
+        /* Borne dure : l'appelant ATTEND désormais cette promesse, donc une lenteur de Meta se paierait en temps de réponse pour
+           le visiteur. Trois secondes suffisent très largement — l'appel tient
+           d'ordinaire en moins d'une demi-seconde. */
+        signal: AbortSignal.timeout(3_000),
+      },
     );
     if (!reponse.ok) {
       const detail = await reponse.text().catch(() => "");

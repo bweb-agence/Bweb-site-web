@@ -22,9 +22,18 @@ interface Props {
   id?: string;
 }
 const { id = tracking.metaPixelId } = Astro.props;
+const hotesAutorises = tracking.metaPixelHosts;
 ---
 
-<script is:inline define:vars={{ PIXEL_ID: id }}>
+<script is:inline define:vars={{ PIXEL_ID: id, HOTES: hotesAutorises }}>
+  /* Cloisonnement : hors du domaine de production, on ne charge même pas
+     `fbevents.js`. `fbq` reste défini et absorbe les appels des pages
+     (`fbq('track', 'Purchase')`) sans rien émettre — un développement local ne
+     peut donc plus polluer les conversions, et le code des pages n'a pas à
+     savoir où il tourne. */
+  if (HOTES.indexOf(location.hostname) === -1) {
+    window.fbq = window.fbq || function () {};
+  } else {
   !function(f,b,e,v,n,t,s)
   {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
   n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -36,6 +45,11 @@ const { id = tracking.metaPixelId } = Astro.props;
 
   fbq('init', PIXEL_ID);
   fbq('track', 'PageView');
+  }
 </script>
-<noscript><img height="1" width="1" style="display:none" alt=""
-  src={`https://www.facebook.com/tr?id=${id}&ev=PageView&noscript=1`} /></noscript>
+{/* Sans JavaScript, aucun garde-fou d'hôte n'est possible : on ne rend le
+    pixel-image que dans une construction de production. */}
+{import.meta.env.PROD && (
+  <noscript><img height="1" width="1" style="display:none" alt=""
+    src={`https://www.facebook.com/tr?id=${id}&ev=PageView&noscript=1`} /></noscript>
+)}

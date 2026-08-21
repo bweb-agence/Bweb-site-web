@@ -23,6 +23,13 @@ export const site = {
    que l'API Conversions alimente le même pixel. */
 export const tracking = {
   metaPixelId: "4342601752668466",
+  /* Hôtes autorisés à déclencher le pixel. Sans ce garde-fou, ouvrir une page
+     depuis `localhost` pendant un développement envoie de VRAIS événements au
+     pixel de production : c'est ainsi qu'un `Purchase` fantôme s'est retrouvé
+     dans les conversions le 20/08/2026, en ouvrant simplement la page de
+     bienvenue du parcours. Les préproductions Vercel (*.vercel.app) sont
+     exclues pour la même raison. */
+  metaPixelHosts: ["bwebagence.com", "www.bwebagence.com"],
 };
 
 export const contact = {
