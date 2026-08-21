@@ -15,11 +15,13 @@
    Pour revenir à un pixel sous consentement, il suffit de rétablir l'appel
    `fbq('consent', ...)` avant `init` : c'est la seule ligne qui change.
    ========================================================= */
+import { tracking } from "../config/site";
+
 interface Props {
-  /** Identifiant du pixel. */
-  id: string;
+  /** Identifiant du pixel. Par défaut, celui du site. */
+  id?: string;
 }
-const { id } = Astro.props;
+const { id = tracking.metaPixelId } = Astro.props;
 ---
 
 <script is:inline define:vars={{ PIXEL_ID: id }}>

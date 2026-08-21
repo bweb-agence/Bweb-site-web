@@ -5,7 +5,6 @@ export const prerender = false;
 
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { supabase } from "../lib/supabase";
-import MetaPixel from "../components/MetaPixel.astro";
 import PreuveSociale from "../components/PreuveSociale.astro";
 
 /* Les visuels WebP optimisés font partie du dépôt et sont servis directement
@@ -193,9 +192,6 @@ const faqs = [
   bareChrome={true}
 >
   <!-- Meta Pixel (verbatim, dans le <head>) -->
-  <Fragment slot="head">
-    <MetaPixel id="150267587094280" />
-  </Fragment>
 
   <!-- ============================================================
        1 · HERO (clair) -->

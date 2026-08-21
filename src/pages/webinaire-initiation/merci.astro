@@ -8,7 +8,6 @@ import VideoLazy from "../../components/VideoLazy.astro";
 import { site } from "../../config/site";
 import { supabase } from "../../lib/supabase";
 import "../../styles/funnel-confirm.css";
-import MetaPixel from "../../components/MetaPixel.astro";
 
 /* =========================================================
    WEBINAIRE — Page post-inscription
@@ -90,9 +89,6 @@ const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
   hideWhatsApp={true}
   bareChrome={true}
 >
-  <Fragment slot="head">
-    <MetaPixel id="150267587094280" />
-  </Fragment>
 
   <!-- ═══════════ 1 · CONFIRMATION ═══════════ -->
   <header class="fc-hero">
