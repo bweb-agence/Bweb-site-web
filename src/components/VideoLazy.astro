@@ -9,6 +9,17 @@
    `id` vide = vidéo pas encore tournée. En développement on rend un
    cadre repère (on voit la place que prendra la vidéo), en production
    on ne rend rien du tout — jamais de lecteur mort en ligne.
+
+   LECTURE AUTOMATIQUE (`autoplay`). Tous les navigateurs refusent de démarrer
+   une vidéo AVEC LE SON sans geste de l'utilisateur : demander l'autoplay
+   sonore ne donne pas une vidéo bruyante, ça donne une vidéo qui ne démarre
+   pas du tout. La lecture part donc EN SOURDINE — le seul autoplay qui marche
+   réellement — et un bouton « Activer le son » bien visible rend la main au
+   visiteur en un clic, sans reprendre au début.
+
+   Le lecteur n'est chargé qu'après l'événement `load` de la page : l'iframe
+   YouTube pèse ~1 Mo et, posée d'emblée, elle décale le LCP de la landing.
+   Le visiteur voit la miniature immédiatement, la lecture s'enchaîne.
    ========================================================= */
 interface Props {
   /** ID YouTube (ex. "z_h3zF0Xzjk"). Vide tant que la vidéo n'existe pas. */
@@ -19,15 +30,17 @@ interface Props {
   title?: string;
   /** Où coller l'ID : affiché uniquement dans le cadre repère de dev. */
   hint?: string;
+  /** Démarre seule, en sourdine, dès que la page a fini de charger. */
+  autoplay?: boolean;
   class?: string;
 }
 
-const { id = "", label, title = "Vidéo", hint, class: className = "" } = Astro.props;
+const { id = "", label, title = "Vidéo", hint, autoplay = false, class: className = "" } = Astro.props;
 const showPlaceholder = !id && import.meta.env.DEV;
 ---
 
 {id && (
-  <div class={`vl ${className}`} data-video={id}>
+  <div class={`vl ${className}`} data-video={id} data-autoplay={autoplay ? "" : undefined}>
     <button class="vl-ph" type="button" aria-label={`Lire la vidéo : ${title}`}>
       {/* hqdefault existe pour TOUTES les vidéos ; maxresdefault non (Shorts,
           uploads anciens). On tente la haute définition et on retombe sur
@@ -41,6 +54,12 @@ const showPlaceholder = !id && import.meta.env.DEV;
       {label && <span class="vl-lbl">{label}</span>}
     </button>
     <iframe data-frame title={title} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen hidden></iframe>
+    {autoplay && (
+      <button class="vl-son" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 2.2v2.1a7.5 7.5 0 0 1 0 15.4v2.1a9.5 9.5 0 0 0 0-19.6z"/></svg>
+        Activer le son
+      </button>
+    )}
   </div>
 )}
 
@@ -85,11 +104,46 @@ const showPlaceholder = !id && import.meta.env.DEV;
       verifier(); // image déjà en cache : `load` ne se déclenchera pas
     }
 
-    btn.addEventListener("click", () => {
-      frame.src = `https://www.youtube-nocookie.com/embed/${box.dataset.video}?autoplay=1&rel=0`;
+    const boutonSon = box.querySelector<HTMLButtonElement>(".vl-son");
+
+    /** Affiche le lecteur. `muet` : imposé par l'autoplay, jamais au clic. */
+    const ouvrir = (muet: boolean) => {
+      const options = ["autoplay=1", "rel=0", "playsinline=1", "enablejsapi=1"];
+      if (muet) options.push("mute=1");
+      frame.src = `https://www.youtube-nocookie.com/embed/${box.dataset.video}?${options.join("&")}`;
       frame.hidden = false;
       btn.style.display = "none";
+      if (muet && boutonSon) boutonSon.hidden = false;
+    };
+
+    btn.addEventListener("click", () => ouvrir(false));
+
+    /* Rendre le son au visiteur SANS repartir de zéro : l'API iframe de YouTube
+       accepte des commandes par postMessage dès lors que `enablejsapi=1` est
+       dans l'URL. Recharger l'iframe sans `mute` marcherait aussi, mais
+       relancerait la vidéo au début — pénible quand on a déjà regardé 30 s. */
+    boutonSon?.addEventListener("click", () => {
+      const commande = (func: string) =>
+        frame.contentWindow?.postMessage(
+          JSON.stringify({ event: "command", func, args: [] }),
+          "https://www.youtube-nocookie.com",
+        );
+      commande("unMute");
+      commande("playVideo");
+      boutonSon.hidden = true;
     });
+
+    if (box.dataset.autoplay !== undefined) {
+      /* `prefers-reduced-motion` couvre aussi les médias qui démarrent seuls :
+         on laisse alors la miniature et son bouton de lecture. */
+      const sobre = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!sobre) {
+        /* Après `load` : l'iframe ne concurrence plus le rendu du hero. */
+        const demarrer = () => ouvrir(true);
+        if (document.readyState === "complete") demarrer();
+        else addEventListener("load", demarrer, { once: true });
+      }
+    }
   });
 </script>
 
@@ -116,6 +170,20 @@ const showPlaceholder = !id && import.meta.env.DEV;
   @keyframes vl-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(31,108,237,.5); } 50% { box-shadow: 0 0 0 16px rgba(31,108,237,0); } }
   .vl-lbl { position: relative; font-family: var(--f-display); font-weight: 600; font-size: .95rem; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.55); }
   .vl iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+  /* Bouton « Activer le son » : posé en haut à gauche pour ne recouvrir ni la
+     barre de progression ni les commandes natives de YouTube, en bas. */
+  .vl-son {
+    position: absolute; top: 12px; left: 12px; z-index: 2;
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--f-display); font-weight: 700; font-size: .82rem; color: var(--c-navy);
+    background: rgba(255,255,255,.94); border: 0; border-radius: var(--radius-pill);
+    padding: 9px 15px; cursor: pointer; box-shadow: 0 6px 18px -6px rgba(1,5,46,.5);
+    transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .vl-son:hover { transform: scale(1.04); background: #fff; }
+  .vl-son svg { width: 17px; height: 17px; }
+  .vl-son[hidden] { display: none; }
 
   /* Cadre repère (développement uniquement) */
   .vl--empty {
