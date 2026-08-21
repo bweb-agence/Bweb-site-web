@@ -48,8 +48,7 @@ const aideUrl = whatsappLink(
          le chiffre d'affaires remonté à Meta — d'où le garde-fou localStorage.
          Si le stockage est bloqué (navigation privée stricte), on préfère
          compter la vente plutôt que la perdre.
-         L'événement est émis même sans réponse au consentement : le pixel étant
-         en `revoke`, Meta le garde en file et ne l'envoie qu'en cas d'accord. */
+         L'événement part immédiatement, comme le reste du pixel. */
       (function () {
         var payload = { value: PRIX, currency: 'XOF', content_name: 'Parcours Initiation aux Produits Digitaux' };
         try {

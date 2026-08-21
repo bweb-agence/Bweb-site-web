@@ -20,16 +20,22 @@
    contraire d'une ligne à l'autre.
    ========================================================= */
 import { supabase } from "../lib/supabase";
+/* Avis du programme « Stabiliser 800 000 FCFA/mois », relevés sur Chariow le
+   21/08/2026 (110 avis, 100 % positifs) et figés ici : anonymisés à la
+   capture, ils ne dépendent d'aucun appel réseau au chargement de la page.
+   À rafraîchir depuis l'API Chariow quand une clé sera configurée. */
+import avisChariow from "../data/avis-chariow.json";
 
 interface Props {
   /** Nombre de lignes superposées. */
   lignes?: number;
   titre?: string;
 }
-const { lignes = 3, titre = "Ils viennent d'acheter" } = Astro.props;
+const { lignes = 3, titre = "Ils achètent, et ils en parlent" } = Astro.props;
 
 const { data } = await supabase.rpc("preuve_sociale", { p_limite: 30 });
 const achats = (Array.isArray(data) ? data : []) as { prenom: string; produit: string; quand: string }[];
+const avis = avisChariow as { auteur: string; texte: string; quand: string }[];
 
 /* « il y a 2 h » : plus crédible qu'une date, et ça vieillit bien — la page
    étant rendue à la demande, l'écart est recalculé à chaque visite. */
@@ -45,8 +51,22 @@ const depuis = (iso: string): string => {
 /* Répartition en serpentin : la ligne 1 prend le 1er, le 4e, le 7e… Les achats
    les plus récents se retrouvent ainsi en tête de chaque ligne, plutôt que
    tous concentrés sur la première. */
-const pistes = Array.from({ length: lignes }, (_, i) => achats.filter((_, j) => j % lignes === i));
-const assez = achats.length >= lignes;
+/* Deux natures de preuve, entrelacées : un achat dit « ça se vend », un avis dit
+   « et c'est bon ». Alternées une sur deux, elles se répondent au lieu de se
+   succéder par blocs. */
+type Jeton =
+  | { genre: "achat"; prenom: string; produit: string; quand: string }
+  | { genre: "avis"; auteur: string; texte: string };
+
+const melange: Jeton[] = [];
+const maxi = Math.max(achats.length, avis.length);
+for (let i = 0; i < maxi; i++) {
+  if (achats[i]) melange.push({ genre: "achat", ...achats[i] });
+  if (avis[i]) melange.push({ genre: "avis", auteur: avis[i].auteur, texte: avis[i].texte });
+}
+
+const pistes = Array.from({ length: lignes }, (_, i) => melange.filter((_, j) => j % lignes === i));
+const assez = melange.length >= lignes * 2;
 ---
 
 {assez && (
@@ -60,13 +80,21 @@ const assez = achats.length >= lignes;
           <div class="ps-ruban" style={`--duree:${28 + i * 6}s`}>
             {[0, 1].map((copie) => (
               <ul class="ps-lot" aria-hidden={copie === 1 ? "true" : undefined}>
-                {piste.map((a) => (
-                  <li class="ps-item">
-                    <span class="ps-pastille" aria-hidden="true">🛒</span>
-                    <b>{a.prenom}</b>
-                    <span class="ps-produit">{a.produit}</span>
-                    <span class="ps-quand">{depuis(a.quand)}</span>
-                  </li>
+                {piste.map((jeton) => (
+                  jeton.genre === "achat" ? (
+                    <li class="ps-item">
+                      <span class="ps-pastille" aria-hidden="true">🛒</span>
+                      <b>{jeton.prenom}</b>
+                      <span class="ps-produit">{jeton.produit}</span>
+                      <span class="ps-quand">{depuis(jeton.quand)}</span>
+                    </li>
+                  ) : (
+                    <li class="ps-item ps-item--avis">
+                      <span class="ps-pastille" aria-hidden="true">★</span>
+                      <span class="ps-avis">«&nbsp;{jeton.texte}&nbsp;»</span>
+                      <b>{jeton.auteur}</b>
+                    </li>
+                  )
                 ))}
               </ul>
             ))}
@@ -111,6 +139,10 @@ const assez = achats.length >= lignes;
   .ps-pastille { font-size: 0.9rem; }
   .ps-produit { max-width: 34ch; overflow: hidden; text-overflow: ellipsis; }
   .ps-quand { color: var(--c-gray-400); font-size: 0.76rem; }
+  /* L'avis se distingue de l'achat sans crier : fond crème, étoile dorée. */
+  .ps-item--avis { background: #fffaf0; border-color: #f4e3c1; }
+  .ps-item--avis .ps-pastille { color: #f0a500; }
+  .ps-avis { max-width: 52ch; overflow: hidden; text-overflow: ellipsis; font-style: italic; }
 
   /* -50% : la moitié du ruban, c'est-à-dire exactement la première copie. */
   @keyframes ps-defile {
@@ -128,5 +160,6 @@ const assez = achats.length >= lignes;
   @media (max-width: 640px) {
     .ps-item { font-size: 0.78rem; padding: 7px 13px 7px 9px; }
     .ps-produit { max-width: 24ch; }
+    .ps-avis { max-width: 30ch; }
   }
 </style>
