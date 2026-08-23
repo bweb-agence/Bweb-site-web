@@ -47,6 +47,8 @@ import Button from "../../components/starwind/button/Button.astro";
         <div class="a-field"><label for="f-places">Places annoncées</label><input class="a-input" id="f-places" type="number" min="0" value="500" /></div>
       </div>
       <div class="a-field"><label for="f-info">Consigne aux inscrits</label><input class="a-input" id="f-info" placeholder="Connecte-toi 5 minutes en avance, avec un carnet." /></div>
+      <div class="a-field"><label for="f-whatsapp">Groupe WhatsApp</label><input class="a-input" id="f-whatsapp" placeholder="https://chat.whatsapp.com/…" /><div class="hint">Repris par la page de remerciement et par les deux premiers e-mails. Vide = le bloc disparaît partout.</div></div>
+      <div class="a-field"><label for="f-telegram">Canal Telegram</label><input class="a-input" id="f-telegram" placeholder="https://t.me/…" /></div>
       <div class="a-field"><label for="f-replay">Lien du replay</label><input class="a-input" id="f-replay" placeholder="À renseigner après le live" /><div class="hint">Utilisé par l'e-mail du lendemain. À défaut, le lien du live est repris.</div></div>
       <div class="a-field"><label for="f-tunnel">Entonnoir *</label><input class="a-input" id="f-tunnel" value="webinaire-initiation" /><div class="hint">Identité stable, partagée par toutes les éditions. C'est la clé du formulaire d'inscription — ne pas la changer sans changer la page.</div></div>
       <div class="a-field"><label for="f-slug">Slug de l'édition *</label><input class="a-input" id="f-slug" /><div class="hint">Unique. Généré à partir de l'entonnoir et du mois.</div></div>
@@ -140,6 +142,8 @@ import Button from "../../components/starwind/button/Button.astro";
     $("f-places").value = (w?.places ?? 500).toString();
     $("f-info").value = w?.join_info || "";
     $("f-replay").value = w?.replay_url || "";
+    $("f-whatsapp").value = w?.whatsapp_url || "";
+    $("f-telegram").value = w?.telegram_url || "";
     $("f-tunnel").value = w?.tunnel || "webinaire-initiation";
     $("f-slug").value = w?.slug || "";
     $("f-depuis").value = w?.inscrits_depuis ? dtLocalValue(w.inscrits_depuis) : "";
@@ -170,6 +174,10 @@ import Button from "../../components/starwind/button/Button.astro";
       tunnel: w.tunnel, slug, title: w.title,
       starts_at: suivant.toISOString(), duration_min: w.duration_min, places: w.places,
       join_url: null, join_info: w.join_info, replay_url: null,
+      /* Les canaux se transmettent, eux : un groupe de discussion se garde d'un
+         mois sur l'autre, contrairement au lien du live qui est propre à la
+         séance. Ils restent modifiables sur la nouvelle édition. */
+      whatsapp_url: w.whatsapp_url, telegram_url: w.telegram_url,
       inscrits_depuis: w.starts_at, active: true,
     });
     if (error) { toast((error.message || "").includes("duplicate") ? "Cette édition existe déjà." : "Duplication impossible.", "err"); return; }
@@ -206,6 +214,8 @@ import Button from "../../components/starwind/button/Button.astro";
       join_url: $("f-join").value.trim() || null,
       join_info: $("f-info").value.trim() || null,
       replay_url: $("f-replay").value.trim() || null,
+      whatsapp_url: $("f-whatsapp").value.trim() || null,
+      telegram_url: $("f-telegram").value.trim() || null,
       inscrits_depuis: depuisV ? new Date(depuisV).toISOString() : null,
       active: $("f-active").checked,
     };

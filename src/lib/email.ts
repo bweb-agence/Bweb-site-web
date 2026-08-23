@@ -529,6 +529,10 @@ export type WebinaireEmailData = {
   landing: string;
   /** Lien wa.me pour répondre « PLACE ». */
   whatsapp: string;
+  /** Invitation au groupe WhatsApp de l'édition (distincte du wa.me ci-dessus). */
+  canal_whatsapp?: string | null;
+  /** Invitation au canal Telegram de l'édition. */
+  canal_telegram?: string | null;
   /** Désabonnement (absent sur la confirmation, qui suit un acte volontaire). */
   unsubUrl?: string | null;
 };
@@ -550,6 +554,33 @@ const wbEntete = (accent: string, tag: string, titre: string, sous: string) =>
     <div class="wb-h" style="font-size:22px;font-weight:800;color:#0a0e27;margin-top:12px">${titre}</div>
     <div class="wb-m" style="font-size:15px;color:#565d80;margin-top:4px">${sous}</div>
   </div>`;
+
+/* Canaux de discussion de l'édition. Rendu seulement s'il y a au moins un lien :
+   une édition sans canal ne doit pas laisser un encadré vide dans l'e-mail.
+   Placé dans la confirmation et le rappel J-1, les deux moments où l'inscrit
+   est le plus disposé à rejoindre — après, il attend surtout son lien. */
+function wbCanaux(d: WebinaireEmailData): string {
+  const liens: string[] = [];
+  if (d.canal_whatsapp)
+    liens.push(`<a href="${d.canal_whatsapp}" class="wb-lien" style="display:inline-block;background:#25d366;color:#fff;font-size:15px;font-weight:700;text-decoration:none;padding:11px 20px;border-radius:999px;margin:4px 6px">💬 Rejoindre le groupe WhatsApp</a>`);
+  if (d.canal_telegram)
+    liens.push(`<a href="${d.canal_telegram}" class="wb-lien" style="display:inline-block;background:#2aabee;color:#fff;font-size:15px;font-weight:700;text-decoration:none;padding:11px 20px;border-radius:999px;margin:4px 6px">✈️ Rejoindre le canal Telegram</a>`);
+  if (!liens.length) return "";
+  return `<div style="text-align:center;margin:18px 0 4px">
+      <div class="wb-h" style="font-size:15px;font-weight:800;color:#0a0e27;margin-bottom:8px">C'est là que j'envoie le lien du live</div>
+      <div class="wb-m" style="font-size:14px;color:#565d80;margin-bottom:10px">Rejoins maintenant : si l'e-mail se perd, tu auras le lien quand même.</div>
+      ${liens.join("")}
+    </div>`;
+}
+
+/** Version texte du bloc ci-dessus, pour les clients qui n'affichent pas le HTML. */
+function wbCanauxTexte(d: WebinaireEmailData): string[] {
+  const lignes: string[] = [];
+  if (d.canal_whatsapp) lignes.push(`Groupe WhatsApp : ${d.canal_whatsapp}`);
+  if (d.canal_telegram) lignes.push(`Canal Telegram : ${d.canal_telegram}`);
+  if (!lignes.length) return [];
+  return ["C'est là que j'envoie le lien du live — rejoins maintenant, si l'e-mail se perd tu l'auras quand même.", ...lignes, ""];
+}
 
 const wbPied = (d: WebinaireEmailData, signature = "Godwin") =>
   `<p class="wb-t" style="font-size:16px;color:#3f4568;margin:18px 0 0">${signature}</p>` +
@@ -587,6 +618,7 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
           <li>La méthode que je facture <b>150 000 FCFA</b> en coaching privé : la matrice compétence × problème × client, la règle des 10 conversations, « vends avant de perfectionner »</li>
           <li>Une méthode applicable tout de suite — pas de la théorie</li>
         </ul>
+        ${wbCanaux(d)}
         <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b class="wb-h" style="color:#0a0e27">Ton lien de connexion arrive avant le live</b>, par e-mail et sur WhatsApp. Surveille tes messages — et <b class="wb-h" style="color:#0a0e27">ajoute cette adresse à tes contacts</b>, pour que le lien n'atterrisse pas dans un onglet secondaire.</p>
         <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px"><b class="wb-h" style="color:#0a0e27">Une chose à faire tout de suite (2 minutes) :</b> note dans ton téléphone les <b>3 compétences</b> que tu utilises déjà pour aider les autres. On s'en servira pendant le live.</p>
         <p class="wb-t" style="font-size:15px;color:#565d80;line-height:1.6;margin:0">Tu connais quelqu'un qui a une compétence et qui ne la vend pas ? Envoie-lui <a href="${d.landing}" class="wb-lien" style="color:#1f6ced;font-weight:700">le lien d'inscription</a>. Il te remerciera.</p>
@@ -598,6 +630,7 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
         `Le live : ${d.date_label} (Abidjan). Durée : ${d.duration_min} minutes. Coût : 0 FCFA.`,
         `Bloque le créneau : ${d.calendarGoogle}`, "",
         "Ce qui t'attend : la méthode que je facture 150 000 FCFA en coaching privé — la matrice compétence x problème x client, la règle des 10 conversations, « vends avant de perfectionner ».", "",
+        ...wbCanauxTexte(d),
         "Ton lien de connexion arrive avant le live, par e-mail et sur WhatsApp.", "",
         "Une chose à faire tout de suite (2 minutes) : note les 3 compétences que tu utilises déjà pour aider les autres.", "",
         `Tu connais quelqu'un qui ne vend pas sa compétence ? Envoie-lui : ${d.landing}`, "",
@@ -617,6 +650,7 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
         <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 12px">La <b>matrice compétence × problème × client</b>. En 15 minutes, elle te dit quoi vendre, à qui, et combien ça vaut. Moi, je la facture <b>150 000 FCFA</b> en coaching privé. Demain, tu la reçois gratuitement, détaillée sur des cas réels.</p>
         ${wbBouton(lien, "📺 Mon lien pour le live")}
         <div class="wb-m" style="text-align:center;font-size:14px;color:#8b91ae;margin-top:8px">${esc(d.date_label)} (Abidjan) · ${d.duration_min} minutes · viens 5 min en avance</div>
+        ${wbCanaux(d)}
         ${wbPied(d, "À demain,<br>Godwin")}
       </div>`, "La matrice compétence × problème × client : quoi vendre, à qui, et combien ça vaut. Ton lien est dedans."),
       text: [`Salut ${firstName(d.prenom)},`, "",
@@ -624,6 +658,7 @@ export function webinaireEmail(kind: string, d: WebinaireEmailData): { subject: 
         "La matrice compétence x problème x client : en 15 minutes, elle te dit quoi vendre, à qui, et combien ça vaut. Je la facture 150 000 FCFA en coaching privé. Demain, tu la reçois gratuitement.", "",
         `Ton lien : ${lien}`,
         `${d.date_label} (Abidjan) · ${d.duration_min} minutes · viens 5 min en avance`, "",
+        ...wbCanauxTexte(d),
         "À demain,", "Godwin"].join("\n"),
     };
   }

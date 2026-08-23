@@ -21,28 +21,35 @@ import "../../styles/funnel-confirm.css";
 
 const LANDING = `${site.url}/webinaire-initiation`;
 
-/* À RENSEIGNER (Godwin) — liens d'invitation aux canaux où le lien du live
-   sera envoyé. Renseigner l'un, l'autre, ou les deux : la page s'adapte.
-   Tant que les deux sont vides, le bloc n'apparaît qu'en développement,
-   pour ne pas exposer un bouton mort à un inscrit. */
-const CANAUX = {
-  whatsapp: "https://chat.whatsapp.com/CNLf2TbhNQCBgUhT9zLdVc",
-  telegram: "https://t.me/+eBmH_0ccOxkxNWRk",
-};
-
 /* Vidéo d'accueil : Godwin invite à rejoindre les canaux et annonce ce qui
    s'y passe. Coller l'ID YouTube (ex. "z_h3zF0Xzjk"). */
 const VIDEO_ACCUEIL = "";
 
-const aUnCanal = Boolean(CANAUX.whatsapp || CANAUX.telegram);
-const montrerCanaux = aUnCanal || import.meta.env.DEV;
-
-/* L'édition en cours (mêmes valeurs que la landing, même source). */
-const SECOURS = { starts_at: "2026-09-06T19:00:00Z", duration_min: 90 };
+/* L'édition en cours (mêmes valeurs que la landing, même source).
+   Les canaux ont leurs valeurs de secours ici pour la même raison que la date :
+   si la base est injoignable, mieux vaut la page avec ses boutons que sans. */
+const SECOURS = {
+  starts_at: "2026-09-06T19:00:00Z",
+  duration_min: 90,
+  whatsapp_url: "https://chat.whatsapp.com/CNLf2TbhNQCBgUhT9zLdVc",
+  telegram_url: "https://t.me/+eBmH_0ccOxkxNWRk",
+};
 const { data: editionRows } = await supabase.rpc("webinaire_public", { p_slug: "webinaire-initiation" });
 const edition = (Array.isArray(editionRows) ? editionRows[0] : editionRows) ?? null;
 const LIVE_ISO = edition?.starts_at ?? SECOURS.starts_at;
 const DUREE = edition?.duration_min ?? SECOURS.duration_min;
+
+/* Canaux où le lien du live est envoyé. Ils vivent sur l'édition et se règlent
+   dans /admin/webinaires : le live est mensuel, son groupe change, et un lien
+   écrit en dur signifiait un déploiement à chaque fois — avec, entre-temps, un
+   bouton mort sur la page qu'un inscrit voit juste après s'être inscrit.
+   Renseigner l'un, l'autre, ou les deux : la page s'adapte. */
+const CANAUX = {
+  whatsapp: edition?.whatsapp_url ?? SECOURS.whatsapp_url,
+  telegram: edition?.telegram_url ?? SECOURS.telegram_url,
+};
+const aUnCanal = Boolean(CANAUX.whatsapp || CANAUX.telegram);
+const montrerCanaux = aUnCanal || import.meta.env.DEV;
 
 const TZ = "Africa/Abidjan";
 const dateLive = new Date(LIVE_ISO);
@@ -143,7 +150,7 @@ const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
                 Rejoindre le canal Telegram
               </a>
             )}
-            {!aUnCanal && <span class="mc-arenseigner">Lien d'invitation à renseigner — <code>CANAUX</code> dans <code>merci.astro</code></span>}
+            {!aUnCanal && <span class="mc-arenseigner">Lien d'invitation à renseigner dans <code>/admin/webinaires</code></span>}
           </div>
         </div>
       )}

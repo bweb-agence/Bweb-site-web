@@ -52,9 +52,12 @@ export interface Webinaire {
   join_url: string | null;
   join_info: string | null;
   replay_url: string | null;
+  /** Canaux de discussion de l'édition, modifiables dans /admin/webinaires. */
+  whatsapp_url: string | null;
+  telegram_url: string | null;
 }
 
-const CHAMPS = "id, tunnel, slug, title, starts_at, duration_min, places, inscrits_depuis, join_url, join_info, replay_url";
+const CHAMPS = "id, tunnel, slug, title, starts_at, duration_min, places, inscrits_depuis, join_url, join_info, replay_url, whatsapp_url, telegram_url";
 
 /* Le live est mensuel : plusieurs éditions coexistent en base. « L'édition en
    cours » est la prochaine à venir — et, dans les trois jours qui suivent un
@@ -258,6 +261,8 @@ function donneesGabarit(w: Webinaire, prenom: string, unsubToken?: string | null
     calendarIcs: `${SITE}/api/calendrier?w=${w.slug}`,
     landing: `${SITE}/webinaire-initiation`,
     whatsapp: `https://wa.me/${contact.whatsapp.primary}?text=${encodeURIComponent("PLACE")}`,
+    canal_whatsapp: w.whatsapp_url,
+    canal_telegram: w.telegram_url,
     unsubUrl: unsubToken ? `${SITE}/desabonnement?t=${unsubToken}` : null,
   };
 }
