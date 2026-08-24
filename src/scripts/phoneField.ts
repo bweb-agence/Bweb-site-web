@@ -47,7 +47,24 @@ export function initPhoneField(): void {
 
     combo.appendChild(trigger);
     select.after(combo);
-    document.body.appendChild(pop); // ancré au body : position fixed = référentiel viewport
+
+    /* Où poser la liste déroulante.
+       Par défaut le <body> : sortie de la hiérarchie du formulaire, elle ne
+       peut être ni rognée par un `overflow` ni coincée sous un voisin par un
+       contexte d'empilement.
+
+       SAUF si le champ vit dans une <dialog> ouverte en modale. `showModal()`
+       place la boîte dans la « top layer » et rend INERTE tout ce qui reste en
+       dehors : la liste s'affichait correctement, au-dessus visuellement, mais
+       aucun clic ne l'atteignait — le pointeur traversait jusqu'au formulaire
+       en dessous, quel que soit le z-index. Constaté sur le formulaire du
+       webinaire après son passage en fenêtre. On l'ancre donc dans la boîte,
+       qui est elle-même dans la top layer.
+
+       `position: fixed` garde le viewport pour référentiel dans les deux cas :
+       le calcul de placement n'a pas à changer. */
+    const hote = field.closest("dialog") || document.body;
+    hote.appendChild(pop);
     select.classList.add("pf-native");
     select.setAttribute("tabindex", "-1");
     select.setAttribute("aria-hidden", "true");
