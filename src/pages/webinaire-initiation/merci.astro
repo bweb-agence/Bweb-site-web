@@ -21,28 +21,35 @@ import "../../styles/funnel-confirm.css";
 
 const LANDING = `${site.url}/webinaire-initiation`;
 
-/* À RENSEIGNER (Godwin) — liens d'invitation aux canaux où le lien du live
-   sera envoyé. Renseigner l'un, l'autre, ou les deux : la page s'adapte.
-   Tant que les deux sont vides, le bloc n'apparaît qu'en développement,
-   pour ne pas exposer un bouton mort à un inscrit. */
-const CANAUX = {
-  whatsapp: "https://chat.whatsapp.com/CNLf2TbhNQCBgUhT9zLdVc",
-  telegram: "https://t.me/+eBmH_0ccOxkxNWRk",
-};
-
 /* Vidéo d'accueil : Godwin invite à rejoindre les canaux et annonce ce qui
    s'y passe. Coller l'ID YouTube (ex. "z_h3zF0Xzjk"). */
 const VIDEO_ACCUEIL = "";
 
-const aUnCanal = Boolean(CANAUX.whatsapp || CANAUX.telegram);
-const montrerCanaux = aUnCanal || import.meta.env.DEV;
-
-/* L'édition en cours (mêmes valeurs que la landing, même source). */
-const SECOURS = { starts_at: "2026-09-06T19:00:00Z", duration_min: 90 };
+/* L'édition en cours (mêmes valeurs que la landing, même source).
+   Les canaux ont leurs valeurs de secours ici pour la même raison que la date :
+   si la base est injoignable, mieux vaut la page avec ses boutons que sans. */
+const SECOURS = {
+  starts_at: "2026-09-06T19:00:00Z",
+  duration_min: 90,
+  whatsapp_url: "https://chat.whatsapp.com/CNLf2TbhNQCBgUhT9zLdVc",
+  telegram_url: "https://t.me/+eBmH_0ccOxkxNWRk",
+};
 const { data: editionRows } = await supabase.rpc("webinaire_public", { p_slug: "webinaire-initiation" });
 const edition = (Array.isArray(editionRows) ? editionRows[0] : editionRows) ?? null;
 const LIVE_ISO = edition?.starts_at ?? SECOURS.starts_at;
 const DUREE = edition?.duration_min ?? SECOURS.duration_min;
+
+/* Canaux où le lien du live est envoyé. Ils vivent sur l'édition et se règlent
+   dans /admin/webinaires : le live est mensuel, son groupe change, et un lien
+   écrit en dur signifiait un déploiement à chaque fois — avec, entre-temps, un
+   bouton mort sur la page qu'un inscrit voit juste après s'être inscrit.
+   Renseigner l'un, l'autre, ou les deux : la page s'adapte. */
+const CANAUX = {
+  whatsapp: edition?.whatsapp_url ?? SECOURS.whatsapp_url,
+  telegram: edition?.telegram_url ?? SECOURS.telegram_url,
+};
+const aUnCanal = Boolean(CANAUX.whatsapp || CANAUX.telegram);
+const montrerCanaux = aUnCanal || import.meta.env.DEV;
 
 const TZ = "Africa/Abidjan";
 const dateLive = new Date(LIVE_ISO);
@@ -104,6 +111,34 @@ const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
         Je t'envoie le lien par e-mail avant le live, et sur WhatsApp.
       </p>
 
+      <!-- Les canaux passent AVANT le récapitulatif, et non après. Le
+           visiteur vient de s'inscrire : la seule chose qu'on attend encore de
+           lui, c'est de rejoindre le groupe — c'est par là qu'arrive le lien du
+           live, et c'est ce qui décide de sa présence le jour J. Le rappel de
+           la date, lui, ne demande aucune action : il peut attendre le
+           deuxième écran. Auparavant les boutons commençaient à 808 px sur un
+           téléphone, soit juste sous la ligne de flottaison. -->
+      {montrerCanaux && (
+        <div class="mc-canaux" data-hero-in>
+          <p class="mc-canaux-lbl">C'est ici que j'envoie le lien du live</p>
+          <div class="fc-actions">
+            {CANAUX.whatsapp && (
+              <a href={CANAUX.whatsapp} class="btn btn-whatsapp" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2m0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23a8.2 8.2 0 0 1 8.24 8.24c0 4.54-3.7 8.23-8.24 8.23m4.52-6.16c-.25-.13-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.13-.56-1.35-.77-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.22.25-.87.85-.87 2.07s.9 2.4 1.02 2.56c.12.17 1.75 2.67 4.25 3.75.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29"/></svg>
+                Rejoindre le groupe WhatsApp
+              </a>
+            )}
+            {CANAUX.telegram && (
+              <a href={CANAUX.telegram} class="btn btn-telegram" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.6 4.3 2.9 11.5c-.9.3-.9 1.6.1 1.9l4.7 1.5 1.8 5.5c.2.7 1.1.9 1.6.4l2.6-2.5 4.6 3.4c.6.4 1.4.1 1.6-.6l3.2-15c.2-.8-.6-1.5-1.5-1.2M8.6 14.1l9.1-5.6c.2-.1.4.2.2.3l-7.5 6.8c-.3.2-.4.6-.5.9l-.3 2c0 .1-.2.2-.2 0l-1-3.2c-.1-.4 0-.9.2-1.2"/></svg>
+                Rejoindre le canal Telegram
+              </a>
+            )}
+            {!aUnCanal && <span class="mc-arenseigner">Lien d'invitation à renseigner dans <code>/admin/webinaires</code></span>}
+          </div>
+        </div>
+      )}
+
       <div class="fc-recap" data-hero-in>
         <div class="fc-recap-row">
           <span class="fc-recap-ic">
@@ -124,29 +159,6 @@ const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
           <span class="fc-recap-txt"><span>Où</span><b>En ligne — lien envoyé sur WhatsApp</b></span>
         </div>
       </div>
-
-      <!-- Ordre voulu : rejoindre le canal (c'est par là qu'arrive le lien du
-           live), la vidéo qui explique ce qu'on y trouve, puis l'agenda. -->
-      {montrerCanaux && (
-        <div class="mc-canaux" data-hero-in>
-          <p class="mc-canaux-lbl">C'est ici que j'envoie le lien du live</p>
-          <div class="fc-actions">
-            {CANAUX.whatsapp && (
-              <a href={CANAUX.whatsapp} class="btn btn-whatsapp" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2m0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23a8.2 8.2 0 0 1 8.24 8.24c0 4.54-3.7 8.23-8.24 8.23m4.52-6.16c-.25-.13-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.13-.56-1.35-.77-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.22.25-.87.85-.87 2.07s.9 2.4 1.02 2.56c.12.17 1.75 2.67 4.25 3.75.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29"/></svg>
-                Rejoindre le groupe WhatsApp
-              </a>
-            )}
-            {CANAUX.telegram && (
-              <a href={CANAUX.telegram} class="btn btn-telegram" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.6 4.3 2.9 11.5c-.9.3-.9 1.6.1 1.9l4.7 1.5 1.8 5.5c.2.7 1.1.9 1.6.4l2.6-2.5 4.6 3.4c.6.4 1.4.1 1.6-.6l3.2-15c.2-.8-.6-1.5-1.5-1.2M8.6 14.1l9.1-5.6c.2-.1.4.2.2.3l-7.5 6.8c-.3.2-.4.6-.5.9l-.3 2c0 .1-.2.2-.2 0l-1-3.2c-.1-.4 0-.9.2-1.2"/></svg>
-                Rejoindre le canal Telegram
-              </a>
-            )}
-            {!aUnCanal && <span class="mc-arenseigner">Lien d'invitation à renseigner — <code>CANAUX</code> dans <code>merci.astro</code></span>}
-          </div>
-        </div>
-      )}
 
       <div class="mc-video" data-hero-in>
         <VideoLazy
@@ -249,4 +261,22 @@ const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
   /* L'agenda passe en action secondaire : le canal prime. */
   .mc-video + .fc-actions { margin-top: 22px; }
+
+  /* ===== Mobile : les boutons de canal dans le premier écran =====
+     La page est vue juste après une inscription venue de la publicité, sur
+     téléphone. Le haut de page — sceau, titre, sous-titre — est resserré pour
+     que les deux boutons soient visibles sans défiler. Les règles sont scopées
+     à cette page : funnel-confirm.css sert aussi /parcours-initiation/bienvenue,
+     qui n'a pas le même impératif. */
+  @media (max-width: 640px) {
+    .fc-hero { padding-top: clamp(94px, 20vw, 126px); padding-bottom: 32px; }
+    .fc-seal { width: 62px; height: 62px; margin-bottom: 16px; }
+    .fc-seal svg { width: 32px; height: 32px; }
+    .fc-hero h1 { font-size: clamp(1.45rem, 5.4vw, 1.8rem); max-width: 16ch; }
+    .fc-hero-sub { font-size: .94rem; line-height: 1.5; margin-top: 12px; }
+    .mc-canaux { margin-top: 22px; }
+    .mc-canaux .fc-actions { margin-top: 10px; }
+    .fc-recap { margin-top: 24px; }
+    .mc-video { margin-top: 22px; }
+  }
 </style>
