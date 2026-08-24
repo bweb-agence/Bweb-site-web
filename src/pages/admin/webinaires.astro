@@ -61,6 +61,16 @@ import Button from "../../components/starwind/button/Button.astro";
       <button class="abtn primary" id="wb-save">Enregistrer</button>
     </div>
   </aside>
+
+  <aside class="a-drawer" id="wb-stats" aria-hidden="true">
+    <div class="a-drawer-head">
+      <h2 id="wb-stats-title">Analyse</h2>
+      <button class="icon-btn" id="wb-stats-close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="a-drawer-body" id="wb-stats-body">
+      <p class="hint">Chargement…</p>
+    </div>
+  </aside>
 </AdminLayout>
 
 <script>
@@ -75,8 +85,76 @@ import Button from "../../components/starwind/button/Button.astro";
   let inscrits: Record<string, number> = {};
   let envois: Record<string, number> = {};
 
+  const statsDrawer = document.getElementById("wb-stats")!;
+
   const openDrawer = () => { drawer.classList.add("open"); overlay.classList.add("open"); document.body.style.overflow = "hidden"; };
   const closeDrawer = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); document.body.style.overflow = ""; };
+  const closeStats = () => { statsDrawer.classList.remove("open"); overlay.classList.remove("open"); document.body.style.overflow = ""; };
+
+  /* ---------- Analyse d'une édition ----------
+     Tout vient de `webinaire_analytics` : un seul aller-retour, contre une
+     dizaine si chaque étape était comptée depuis le navigateur. */
+  const pct = (n: number, base: number) => (base > 0 ? Math.round((n / base) * 1000) / 10 : 0);
+  const fcfa = (n: number) => new Intl.NumberFormat("fr-FR").format(n) + " FCFA";
+
+  async function analyser(id: string) {
+    const w = all.find((x) => x.id === id);
+    document.getElementById("wb-stats-title")!.textContent = `Analyse — ${w?.title || ""}`;
+    const body = document.getElementById("wb-stats-body")!;
+    body.innerHTML = `<p class="hint">Chargement…</p>`;
+    statsDrawer.classList.add("open"); overlay.classList.add("open"); document.body.style.overflow = "hidden";
+
+    const { data, error } = await supabaseBrowser.rpc("webinaire_analytics", { p_webinaire_id: id });
+    const a = Array.isArray(data) ? data[0] : data;
+    if (error || !a) {
+      body.innerHTML = `<p class="hint">Analyse indisponible (migration 0040 appliquée ?).</p>`;
+      return;
+    }
+
+    /* L'entonnoir se lit par rapport aux INSCRITS, pas à l'étape précédente :
+       les rappels partent tous à la même liste, un taux « par rapport à
+       l'étape d'avant » afficherait 100 % partout et ne dirait rien. */
+    const etapes = [
+      { l: "Inscriptions", n: a.inscrits, base: true, aide: "Formulaire validé et enregistré." },
+      { l: "Confirmation reçue", n: a.confirmations, aide: "E-mail de confirmation effectivement parti." },
+      { l: "Rappel la veille", n: a.rappel_1d },
+      { l: "Rappel le jour J", n: a.rappel_0d },
+      { l: "Rappel une heure avant", n: a.rappel_1h },
+      { l: "Lien du live envoyé", n: a.lien_live },
+      { l: "Replay envoyé", n: a.replay },
+      { l: "Ont acheté ensuite", n: a.acheteurs, fort: true, aide: "Inscrits ayant acheté APRÈS leur inscription." },
+    ];
+
+    const lignes = etapes.map((e) => {
+      const p = e.base ? 100 : pct(e.n, a.inscrits);
+      return `<div class="wba-row${e.fort ? " fort" : ""}">
+        <div class="wba-head"><span>${esc(e.l)}</span><b>${e.n}</b></div>
+        <div class="wba-bar"><i style="width:${Math.min(p, 100)}%"></i></div>
+        <div class="wba-foot">${e.base ? "référence" : p + " % des inscrits"}${e.aide ? " · " + esc(e.aide) : ""}</div>
+      </div>`;
+    }).join("");
+
+    body.innerHTML = `
+      <div class="wba-kpis">
+        <div class="wba-kpi"><span>Inscrits</span><b>${a.inscrits}</b></div>
+        <div class="wba-kpi"><span>Acheteurs</span><b>${a.acheteurs}</b></div>
+        <div class="wba-kpi"><span>Taux d'achat</span><b>${pct(a.acheteurs, a.inscrits)} %</b></div>
+        <div class="wba-kpi"><span>Chiffre d'affaires</span><b>${fcfa(a.chiffre_affaires)}</b></div>
+      </div>
+      <h3 class="wba-titre">L'entonnoir</h3>
+      ${lignes}
+      <h3 class="wba-titre">Santé de la collecte</h3>
+      <div class="wba-sante">
+        <div><span>Leads transmis à ACQ Hub</span><b>${a.relais_ok}</b></div>
+        <div${a.relais_ko > 0 ? ' class="ko"' : ""}><span>Relais en échec</span><b>${a.relais_ko}</b></div>
+        <div><span>Désabonnés depuis</span><b>${a.desabonnes}</b></div>
+      </div>
+      <p class="hint" style="margin-top:16px">
+        Les <b>visites</b> de la page d'inscription ne figurent pas ici : elles vivent dans
+        Google Analytics, qui demande des identifiants dont le site ne dispose pas côté
+        serveur. Le taux « visite → inscription » se lit donc encore dans GA4.
+      </p>`;
+  }
 
   /** « webinaire-initiation-2026-10 » : l'entonnoir, puis le mois du live. */
   const slugEdition = (tunnel: string, iso: string) => {
@@ -97,11 +175,13 @@ import Button from "../../components/starwind/button/Button.astro";
         <td style="font-variant-numeric:tabular-nums">${envois[w.id] || 0}</td>
         <td>${w.active ? '<span class="tag-pill pub">Active</span>' : '<span class="tag-pill draft">Inactive</span>'}</td>
         <td><div class="row-actions">
+          <button class="icon-btn" data-stats="${w.id}" title="Analyser cette édition"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><rect x="5" y="11" width="3.4" height="6" rx="1"/><rect x="10.3" y="7" width="3.4" height="10" rx="1"/><rect x="15.6" y="13" width="3.4" height="4" rx="1"/></svg></button>
           <button class="icon-btn" data-edit="${w.id}" title="Éditer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
           <button class="icon-btn" data-dup="${w.id}" title="Dupliquer pour le mois suivant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
           <button class="icon-btn danger" data-del="${w.id}" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
         </div></td>
       </tr>`).join("");
+    rows.querySelectorAll<HTMLElement>("[data-stats]").forEach((b) => b.addEventListener("click", () => analyser(b.dataset.stats!)));
     rows.querySelectorAll<HTMLElement>("[data-edit]").forEach((b) => b.addEventListener("click", () => edit(b.dataset.edit!)));
     rows.querySelectorAll<HTMLElement>("[data-dup]").forEach((b) => b.addEventListener("click", () => dupliquer(b.dataset.dup!)));
     rows.querySelectorAll<HTMLElement>("[data-del]").forEach((b) => b.addEventListener("click", () => del(b.dataset.del!)));
@@ -235,10 +315,11 @@ import Button from "../../components/starwind/button/Button.astro";
     await load();
   }
 
+  document.getElementById("wb-stats-close")!.addEventListener("click", closeStats);
   document.getElementById("wb-new")!.addEventListener("click", openNew);
   document.getElementById("wb-close")!.addEventListener("click", closeDrawer);
   document.getElementById("wb-cancel")!.addEventListener("click", closeDrawer);
-  overlay.addEventListener("click", closeDrawer);
+  overlay.addEventListener("click", () => { closeDrawer(); closeStats(); });
   document.getElementById("wb-save")!.addEventListener("click", save);
   $("wb-search").addEventListener("input", applySearch);
   // Le slug suit l'entonnoir et le mois tant qu'on ne l'a pas écrit à la main.
@@ -257,6 +338,32 @@ import Button from "../../components/starwind/button/Button.astro";
     await load();
   })();
 </script>
+
+<style>
+  /* ===== Panneau d'analyse ===== */
+  .wba-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 22px; }
+  .wba-kpi {
+    background: var(--c-gray-50, #f6f8fc); border: 1px solid var(--c-border, #e6eaf4);
+    border-radius: 12px; padding: 12px 14px;
+  }
+  .wba-kpi span { display: block; font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--c-gray-500, #7c839c); }
+  .wba-kpi b { display: block; margin-top: 4px; font-size: 1.35rem; font-variant-numeric: tabular-nums; color: var(--c-ink, #0a0e27); }
+
+  .wba-titre { font-size: .82rem; text-transform: uppercase; letter-spacing: .08em; color: var(--c-gray-500, #7c839c); margin: 22px 0 10px; }
+
+  .wba-row { margin-bottom: 14px; }
+  .wba-head { display: flex; justify-content: space-between; align-items: baseline; font-size: .9rem; }
+  .wba-head b { font-variant-numeric: tabular-nums; font-size: 1rem; }
+  .wba-bar { height: 7px; margin: 6px 0 4px; border-radius: 999px; background: var(--c-gray-100, #eef1f8); overflow: hidden; }
+  .wba-bar i { display: block; height: 100%; border-radius: 999px; background: var(--c-blue, #1f6ced); transition: width .4s ease; }
+  .wba-row.fort .wba-bar i { background: var(--c-success, #087c5f); }
+  .wba-foot { font-size: .76rem; color: var(--c-gray-500, #7c839c); }
+
+  .wba-sante > div { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--c-border, #e6eaf4); font-size: .88rem; }
+  .wba-sante > div:last-child { border-bottom: 0; }
+  .wba-sante b { font-variant-numeric: tabular-nums; }
+  .wba-sante > div.ko b { color: var(--c-danger, #cb2b2b); }
+</style>
 
 <style is:global>
   .wb-toggle { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
