@@ -111,29 +111,13 @@ const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
         Je t'envoie le lien par e-mail avant le live, et sur WhatsApp.
       </p>
 
-      <div class="fc-recap" data-hero-in>
-        <div class="fc-recap-row">
-          <span class="fc-recap-ic">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
-          </span>
-          <span class="fc-recap-txt"><span>Quand</span><b>{JOUR} · {HEURE} (Abidjan)</b></span>
-        </div>
-        <div class="fc-recap-row">
-          <span class="fc-recap-ic">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
-          </span>
-          <span class="fc-recap-txt"><span>Durée</span><b>{DUREE} minutes, en direct</b></span>
-        </div>
-        <div class="fc-recap-row">
-          <span class="fc-recap-ic">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.8-.9L3 20.5l1.6-4.9A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
-          </span>
-          <span class="fc-recap-txt"><span>Où</span><b>En ligne — lien envoyé sur WhatsApp</b></span>
-        </div>
-      </div>
-
-      <!-- Ordre voulu : rejoindre le canal (c'est par là qu'arrive le lien du
-           live), la vidéo qui explique ce qu'on y trouve, puis l'agenda. -->
+      <!-- Les canaux passent AVANT le récapitulatif, et non après. Le
+           visiteur vient de s'inscrire : la seule chose qu'on attend encore de
+           lui, c'est de rejoindre le groupe — c'est par là qu'arrive le lien du
+           live, et c'est ce qui décide de sa présence le jour J. Le rappel de
+           la date, lui, ne demande aucune action : il peut attendre le
+           deuxième écran. Auparavant les boutons commençaient à 808 px sur un
+           téléphone, soit juste sous la ligne de flottaison. -->
       {montrerCanaux && (
         <div class="mc-canaux" data-hero-in>
           <p class="mc-canaux-lbl">C'est ici que j'envoie le lien du live</p>
@@ -154,6 +138,27 @@ const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
           </div>
         </div>
       )}
+
+      <div class="fc-recap" data-hero-in>
+        <div class="fc-recap-row">
+          <span class="fc-recap-ic">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+          </span>
+          <span class="fc-recap-txt"><span>Quand</span><b>{JOUR} · {HEURE} (Abidjan)</b></span>
+        </div>
+        <div class="fc-recap-row">
+          <span class="fc-recap-ic">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+          </span>
+          <span class="fc-recap-txt"><span>Durée</span><b>{DUREE} minutes, en direct</b></span>
+        </div>
+        <div class="fc-recap-row">
+          <span class="fc-recap-ic">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.8-.9L3 20.5l1.6-4.9A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
+          </span>
+          <span class="fc-recap-txt"><span>Où</span><b>En ligne — lien envoyé sur WhatsApp</b></span>
+        </div>
+      </div>
 
       <div class="mc-video" data-hero-in>
         <VideoLazy
@@ -256,4 +261,22 @@ const shareUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
   /* L'agenda passe en action secondaire : le canal prime. */
   .mc-video + .fc-actions { margin-top: 22px; }
+
+  /* ===== Mobile : les boutons de canal dans le premier écran =====
+     La page est vue juste après une inscription venue de la publicité, sur
+     téléphone. Le haut de page — sceau, titre, sous-titre — est resserré pour
+     que les deux boutons soient visibles sans défiler. Les règles sont scopées
+     à cette page : funnel-confirm.css sert aussi /parcours-initiation/bienvenue,
+     qui n'a pas le même impératif. */
+  @media (max-width: 640px) {
+    .fc-hero { padding-top: clamp(94px, 20vw, 126px); padding-bottom: 32px; }
+    .fc-seal { width: 62px; height: 62px; margin-bottom: 16px; }
+    .fc-seal svg { width: 32px; height: 32px; }
+    .fc-hero h1 { font-size: clamp(1.45rem, 5.4vw, 1.8rem); max-width: 16ch; }
+    .fc-hero-sub { font-size: .94rem; line-height: 1.5; margin-top: 12px; }
+    .mc-canaux { margin-top: 22px; }
+    .mc-canaux .fc-actions { margin-top: 10px; }
+    .fc-recap { margin-top: 24px; }
+    .mc-video { margin-top: 22px; }
+  }
 </style>
