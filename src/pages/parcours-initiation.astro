@@ -109,6 +109,7 @@ const phases = [
       "Tu contactes 10 vrais prospects pour valider que ton idée va se vendre",
     ],
     livrable: "Idée validée + client cible + rapport de validation",
+    accompagnement: "Ton responsable de cohorte relit ta matrice et ton client cible avant que tu contactes tes 10 prospects.",
   },
   {
     week: "Semaine 2",
@@ -121,6 +122,7 @@ const phases = [
       "Mise en page pro avec Canva, Claude Design ou Codex",
     ],
     livrable: "Produit créé, accessible, prêt à vendre",
+    accompagnement: "Tu présentes ton produit en live : Godwin te dit ce qu'il faut couper, garder ou renforcer.",
   },
   {
     week: "Semaine 3",
@@ -129,11 +131,12 @@ const phases = [
     sub: "Structure, copywriting, prix, page de vente",
     items: [
       "Tu appliques la méthode OFFRE™ (Observer → Formuler → Fabriquer → Renforcer → Emballer)",
-      "Tu écris un texte de vente qui convertit — sans sonner comme une pub",
+      "Tu écris un texte de vente qui convertit sans sonner comme une pub",
       "Tu fixes ton prix avec la stack de valeur (5 techniques)",
       "Tu crées ta page de vente complète (template fourni)",
     ],
     livrable: "Offre structurée + page de vente publiée",
+    accompagnement: "Ton mentor reprend ta promesse, ton prix et ton texte de vente avant que tu publies quoi que ce soit.",
   },
   {
     week: "Semaine 4",
@@ -147,6 +150,7 @@ const phases = [
       "Tu testes ton parcours client complet",
     ],
     livrable: "Boutique en ligne + paiement testé + livraison fonctionnelle",
+    accompagnement: "On teste ton parcours d'achat avec toi. Tu n'ouvres pas une boutique que personne n'a essayée.",
   },
   {
     week: "Semaine 5",
@@ -160,6 +164,7 @@ const phases = [
       "Tu mets en place ton tableau de bord de suivi",
     ],
     livrable: "Campagne active + contenu diffusé + tableau de bord",
+    accompagnement: "On regarde tes premiers chiffres ensemble et on ajuste ta campagne avec toi.",
   },
 ];
 
@@ -175,27 +180,28 @@ const bonuses = [
 ];
 
 const faqs = [
-  { q: "Je n'ai jamais vendu quoi que ce soit en ligne. Ce parcours est vraiment pour moi ?", a: "Oui. C'est exactement pour toi. Le parcours est conçu pour les débutants complets — la première phase t'apprend à valider ton idée avant même de créer ton produit. Tu n'as pas besoin d'audience, de site web ou d'expérience." },
-  { q: "J'ai un emploi à temps plein. Est-ce que je peux suivre le rythme ?", a: "Oui. Le parcours demande environ 1 h par jour + 2 lives de 90 minutes par semaine. Les lives sont enregistrés si tu ne peux pas être présent. Des centaines de salariés ont suivi mes programmes avant toi." },
+  { q: "C'est une formation en ligne ou un accompagnement ?", a: "Un accompagnement. La nuance est réelle : une formation te vend un accès à du contenu et te laisse te débrouiller avec. Ici, tu es dans une cohorte de 30 personnes, un responsable de cohorte te contacte sous 24 h et vérifie tes livrables chaque semaine, un mentor corrige ton offre et ta page de vente, et Godwin est en direct deux fois par semaine pour répondre sur ton cas à toi. Le contenu n'est qu'un support. Ce que tu paies, c'est le fait que quelqu'un regarde ce que tu produis et te dise quoi corriger." },
+  { q: "Je n'ai jamais vendu quoi que ce soit en ligne. Ce parcours est vraiment pour moi ?", a: "Oui. C'est exactement pour toi. Le parcours est conçu pour les débutants complets : la première phase t'apprend à valider ton idée avant même de créer ton produit. Tu n'as pas besoin d'audience, de site web ou d'expérience." },
+  { q: "J'ai un emploi à temps plein. Est-ce que je peux suivre le rythme ?", a: "Oui. Le parcours demande environ 1 h par jour + 2 lives de 90 minutes par semaine. Les lives sont enregistrés si tu ne peux pas être présent. Et si tu décroches une semaine, ton responsable de cohorte te relance, c'est précisément son rôle. Des centaines de salariés ont suivi mes programmes avant toi." },
   { q: "Est-ce que je dois être un expert en tech ou en IA ?", a: "Non. Si tu sais envoyer un message WhatsApp et utiliser Google, tu as le niveau. On utilise l'IA pour accélérer la création (prompts fournis, tutoriels pas à pas), mais tu n'as besoin d'aucune compétence technique." },
-  { q: "Et si je n'ai pas de compétence à monétiser ?", a: "Tout le monde a une compétence. Tu sais peut-être cuisiner, organiser, écrire, parler anglais, gérer des réseaux sociaux, utiliser Excel, coiffer, maquiller, conseiller… La Phase 1 est spécifiquement conçue pour t'aider à identifier ta compétence monétisable — même si tu penses n'en avoir aucune." },
-  { q: "65 000 FCFA, c'est un investissement. Comment être sûr que ça va marcher ?", a: "C'est pour ça qu'on a une garantie. Si tu exécutes le programme et qu'à J+30 tu n'as pas de produit en ligne, on continue de t'accompagner gratuitement. Le risque est de notre côté." },
+  { q: "Et si je n'ai pas de compétence à monétiser ?", a: "Tout le monde a une compétence. Tu sais peut-être cuisiner, organiser, écrire, parler anglais, gérer des réseaux sociaux, utiliser Excel, coiffer, maquiller, conseiller… La Phase 1 est spécifiquement conçue pour t'aider à identifier ta compétence monétisable, même si tu penses n'en avoir aucune." },
+  { q: "65 000 FCFA, c'est un investissement. Comment être sûr que ça va marcher ?", a: "C'est pour ça qu'on a une garantie. Si tu exécutes le programme, que tu rends tes livrables chaque semaine et qu'à J+30 tu n'as pas décroché ta première vente, on continue de t'accompagner gratuitement jusqu'à ce que tu l'aies. Le risque est de notre côté." },
   { q: "Est-ce que je reçois un certificat ?", a: "Oui. Mais la vraie certification, c'est ton produit en ligne et tes premières ventes. Un PDF ne paie pas tes factures." },
-  { q: "Quelle est la différence entre ce parcours et les formations gratuites sur YouTube ?", a: "YouTube te donne des morceaux. Bweb Academy te fait construire un système complet, dans le bon ordre, avec des livrables obligatoires à chaque étape. Tu repars avec un produit fini, pas avec une liste de vidéos regardées." },
+  { q: "Quelle est la différence entre ce parcours et les formations gratuites sur YouTube ?", a: "Sur YouTube, personne ne regarde ce que tu fais. C'est toute la différence. Ici tu construis dans le bon ordre, tu rends un livrable à chaque étape, et quelqu'un te dit s'il est bon avant que tu passes à la suite. Tu repars avec un produit fini et corrigé, pas avec une liste de vidéos regardées." },
   { q: "Je suis au Cameroun / Sénégal / Bénin / Burkina… je peux participer ?", a: "Oui. La formation est 100 % accessible en ligne (Zoom). Les paiements fonctionnent avec Mobile Money (Wave, Orange Money). Les exemples et templates sont adaptés à l'Afrique francophone." },
 ];
 ---
 
 <BaseLayout
-  {/* Le titre reprend l'angle du H1 (se faire payer pour son savoir) sans
-      lâcher « produit digital », qui reste le terme réellement cherché.
-      61 caractères : Google tronque autour de 600 px, on tient dedans. */}
-  title="Vends ton savoir en produit digital en 30 jours | Bweb Academy"
+  {/* Le titre garde « produit digital », le terme réellement cherché, et dit
+      dès la page de résultats ce qui est vendu : un accompagnement, pas un
+      accès à des vidéos. 57 caractères : Google tronque autour de 600 px. */}
+  title="Ton produit digital en 30 jours, accompagné | Bweb Academy"
   {/* Aperçu de partage : la miniature de la vidéo du hero, pour que le lien
       partagé sur WhatsApp ou Facebook montre exactement ce que le visiteur
       verra en arrivant. Sans ça, c'est l'image générique du site. */}
   image="/images/parcours-initiation/og-parcours.jpg"
-  description={`En 30 jours, transforme une compétence que tu possèdes déjà en un produit digital prêt à vendre, mets-le en ligne et décroche tes premières ventes. Cohorte ${COHORTE_LABEL} — ${CAPACITE} places.`}
+  description={`30 jours d'accompagnement pour transformer une compétence que tu possèdes déjà en produit digital en ligne et en vente : un responsable de cohorte qui suit tes livrables, un mentor qui corrige ton offre, 10 lives avec Godwin. Cohorte ${COHORTE_LABEL}, ${CAPACITE} places.`}
   hideWhatsApp={true}
   bareChrome={true}
 >
@@ -209,7 +215,7 @@ const faqs = [
     <img class="pi-hero-glass pi-hero-glass--left" src="/images/parcours-initiation/glass-shapes.webp" alt="" aria-hidden="true" width="1200" height="675" loading="lazy" decoding="async" />
     <div class="container">
       <div class="pi-hero-inner">
-        <span class="pi-badge-urgence" data-hero-in>🚀 Cohorte {COHORTE_LABEL} — {CAPACITE} places uniquement</span>
+        <span class="pi-badge-urgence" data-hero-in>🤝 Cohorte {COHORTE_LABEL} - {CAPACITE} personnes à accompagner</span>
 
         <h1 data-hero-in>
           Des gens moins compétents que toi se font déjà payer pour leur savoir.
@@ -217,13 +223,14 @@ const faqs = [
         </h1>
 
         <p class="lead pi-hero-sub" data-hero-in>
-          Un parcours de 5 semaines pour créer, lancer et vendre ton premier produit digital,
-          même si tu n'as jamais rien vendu en ligne.
+          <b>30 jours d'accompagnement</b> où un responsable de cohorte vérifie chacun de tes
+          travaux, un mentor corrige ton offre, Godwin est en direct 2 fois par semaine
+          jusqu'à ce que ton produit digital soit en ligne et en vente.
         </p>
 
         <div class="pi-hero-cta" data-hero-in>
-          <a href="#reserver" class="pi-btn-buy pi-cta">Je réserve ma place — 65 000 FCFA <span class="pi-arrow">→</span></a>
-          <p class="pi-cta-note">Prochaine cohorte : {COHORTE_LABEL} · {CAPACITE} places · Paiement sécurisé</p>
+          <a href="#reserver" class="pi-btn-buy pi-cta">Je réserve ma place à 65 000 FCFA <span class="pi-arrow">→</span></a>
+          <p class="pi-cta-note">Cohorte {COHORTE_LABEL} · {CAPACITE} places accompagnées · Tu es suivi sous 24 h</p>
         </div>
 
         <!-- Vidéo, immédiatement sous l'action principale : on explique juste
@@ -236,7 +243,7 @@ const faqs = [
             <span class="pi-video-shade" aria-hidden="true"></span>
             <span class="pi-play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
           </button>
-          <iframe id="heroFrame" title="Vidéo de présentation — Parcours Initiation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen hidden></iframe>
+          <iframe id="heroFrame" title="Vidéo de présentation du Parcours Initiation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen hidden></iframe>
         </div>
 
       </div>
@@ -277,6 +284,7 @@ const faqs = [
         <p>Tu regardes des vidéos TikTok. Des tutos YouTube. Tu suis des créateurs sur Instagram. Tu enregistres des publications. Tu achètes parfois des petites formations à 5 000 ou 10 000 FCFA.</p>
         <p>Mais chaque personne te donne une méthode différente. L'un te dit de créer un ebook. L'autre te dit de construire une audience d'abord. Un autre te dit que tu peux vendre sans audience.</p>
         <p class="pi-prose-punch">Résultat : tu apprends beaucoup. Mais tu ne lances rien.</p>
+        <p>Et ce qui te manque, ce n'est pas une information de plus. Tu en as déjà trop. Ce qui te manque, c'est quelqu'un qui regarde ce que tu produis, qui te dit « ça, ça ne marchera pas, refais-le comme ça », et qui revient vérifier la semaine suivante.</p>
       </div>
 
       <figure class="pi-quote reveal">
@@ -308,7 +316,7 @@ const faqs = [
         <div class="pi-proj-item"><span class="pi-proj-h">Dans 3 ans</span><span class="pi-proj-n">− 3 600 000 FCFA</span><span class="pi-proj-s">de revenu supplémentaire perdu</span></div>
       </div>
 
-      <p class="pi-reframe reveal">Les 65 000 FCFA de ce parcours, c'est environ <b>5 jours de ton salaire actuel</b> — pour apprendre une compétence qui peut te rapporter tous les mois.</p>
+      <p class="pi-reframe reveal">Les 65 000 FCFA de ce parcours, c'est environ <b>5 jours de ton salaire actuel</b>, pour apprendre une compétence qui peut te rapporter tous les mois.</p>
     </div>
   </section>
 
@@ -318,14 +326,14 @@ const faqs = [
     <div class="container">
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">La solution</div>
-        <h2>Le Parcours Initiation Bweb Academy&nbsp;: 30 jours pour transformer ta compétence en produit digital qui se vend.</h2>
-        <span class="pi-tag-atelier">📦 Un atelier de production, pas une bibliothèque de cours.</span>
+        <h2>Le Parcours Initiation aux produits digitaux&nbsp;: 30 jours d'accompagnement pour transformer ta compétence en produit digital qui se vend.</h2>
+        <span class="pi-tag-atelier">🤝 Un accompagnement encadré, pas une bibliothèque de cours.</span>
       </div>
 
       <div class="pi-solution-grid">
         <div class="pi-solution-text reveal">
-          <p class="lead">YouTube t'apprend des choses. Bweb Academy te fait <b>sortir avec quelque chose de construit, testé et mis sur le marché.</b></p>
-          <p>Tu ne viens pas pour « apprendre les produits digitaux ». Tu viens avec ta compétence, et tu repars avec&nbsp;:</p>
+          <p class="lead">YouTube t'apprend des choses, puis te laisse seul devant ton écran. Ici, <b>quelqu'un travaille avec toi jusqu'à ce que ton produit soit en ligne et mis sur le marché.</b></p>
+          <p>Tu ne viens pas pour « apprendre les produits digitaux ». Tu viens avec ta compétence, tu es accompagné pendant 30 jours, et tu repars avec&nbsp;:</p>
           <ul class="tick-list card pi-outcomes">
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Ton produit créé et accessible en ligne</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Ton offre structurée (promesse, prix, cible)</li>
@@ -340,7 +348,7 @@ const faqs = [
             <img src="/images/parcours-initiation/glass-orbit.webp" alt="Formes 3D abstraites représentant la progression du parcours" width="1200" height="800" loading="lazy" decoding="async" />
           </figure>
           <div class="pi-promise">
-            En 30 jours, transforme une compétence que tu possèdes déjà en un produit digital prêt à vendre, mets-le en ligne et lance-toi pour décrocher tes premières ventes.
+            30 jours d'accompagnement pour transformer une compétence que tu possèdes déjà en un produit digital prêt à vendre, le mettre en ligne et décrocher tes premières ventes, avec quelqu'un qui valide chaque étape avant que tu passes à la suivante.
           </div>
         </div>
       </div>
@@ -353,8 +361,8 @@ const faqs = [
     <div class="container">
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">Le programme</div>
-        <h2><span class="pi-h2-accent">5 phases. 10 lives. 30 jours.</span> Voici exactement ce que tu vas construire.</h2>
-        <p class="lead">Clique sur chaque phase pour voir ce que tu produis — et ce que tu repars avec.</p>
+        <h2><span class="pi-h2-accent">5 phases. 10 lives. 30 jours.</span> Voici ce que tu construis et ce qu'on valide avec toi.</h2>
+        <p class="lead">Chaque phase se termine par un livrable. Tu ne passes pas à la suivante tant que quelqu'un ne l'a pas relu. Clique sur une phase pour voir le détail.</p>
       </div>
 
       <div class="pi-stepper reveal">
@@ -381,6 +389,7 @@ const faqs = [
                   {p.items.map((it) => <li>{it}</li>)}
                 </ul>
                 <div class="pi-livrable"><span class="pi-livrable-ico">🎯</span><span><b>Livrable&nbsp;:</b> {p.livrable}</span></div>
+                <div class="pi-suivi"><span class="pi-livrable-ico">🤝</span><span><b>Ce qu'on fait avec toi&nbsp;:</b> {p.accompagnement}</span></div>
                 <div class="pi-panel-nav">
                   <span class="pi-counter">Phase {i + 1} / {phases.length}</span>
                   <div class="pi-panel-nav-btns">
@@ -407,6 +416,39 @@ const faqs = [
   </section>
 
   <!-- ============================================================
+       5 bis · L'ACCOMPAGNEMENT
+       Le contenu des 5 phases se trouve partout ailleurs ; c'est ici que la
+       page dit ce qui est réellement vendu. Placée juste après le programme,
+       pour que « voilà ce que tu construis » soit immédiatement suivi de
+       « et voilà qui te suit pendant que tu le construis ». -->
+  <section class="section" data-nav-section="L'accompagnement">
+    <div class="container pi-narrow">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Ce que tu achètes vraiment</div>
+        <h2>Le contenu, tu peux le trouver ailleurs. L'accompagnement, non.</h2>
+        <p class="lead">Pendant 30 jours, tu n'es pas seul devant un écran. Trois personnes et un outil regardent ce que tu produis, et te disent quoi corriger.</p>
+      </div>
+
+      <ul class="pi-cost reveal" data-stagger>
+        <li><span class="pi-cost-ico">📞</span><p><b>Ton responsable de cohorte te contacte sous 24 h.</b> Il te suit semaine après semaine, vérifie chacun de tes livrables et te relance quand tu décroches. Tu ne peux pas disparaître en silence.</p></li>
+        <li><span class="pi-cost-ico">🎥</span><p><b>Godwin en direct, 2 fois par semaine.</b> 10 lives de 90 minutes. Tu poses ta question sur ton produit à toi et tu repars avec la réponse, pas avec une vidéo générique.</p></li>
+        <li><span class="pi-cost-ico">✍️</span><p><b>Un mentor corrige tes livrables.</b> Ton offre, ton prix, ta page de vente sont relus avant que tu les publies. Tu ne lances pas quelque chose que personne n'a regardé.</p></li>
+        <li><span class="pi-cost-ico">💬</span><p><b>Le groupe WhatsApp de ta cohorte, et Coach Godwin IA 24 h/24.</b> Entre les lives, tu n'attends jamais des jours pour débloquer une situation.</p></li>
+      </ul>
+
+      {/* Avis relevé sur Chariow, cité mot pour mot — fautes comprises : c'est
+          un client qui formule la thèse de la page mieux qu'une accroche
+          écrite pour l'occasion. Il vient du même jeu d'avis que le bandeau. */}
+      <figure class="pi-quote reveal">
+        <blockquote>« Franchement moi j'appelle pas cela une formation c'est un accompagnement du début a la fin c'est des pépites que le coach nous donne on gagne double avec lui même les lives »</blockquote>
+        <figcaption>Mamadou D., avis vérifié sur la boutique Chariow</figcaption>
+      </figure>
+
+      <p class="pi-reframe reveal">Une formation te laisse seul avec ce que tu as compris. <b>Un accompagnement te suit jusqu'à ce que ce soit fait.</b></p>
+    </div>
+  </section>
+
+  <!-- ============================================================
        6 · POURQUOI GODWIN -->
   <section class="section pi-author" data-nav-section="Pourquoi Godwin">
     <div class="pi-author-blobs" aria-hidden="true"></div>
@@ -414,9 +456,9 @@ const faqs = [
       <div class="pi-author-grid">
         <div class="reveal">
           <div class="eyebrow">Pourquoi moi</div>
-          <h2>J'ai formé 17 116 personnes. Aujourd'hui, je structure tout dans un parcours.</h2>
+          <h2>J'ai formé 17 116 personnes. Aujourd'hui, je n'en accompagne que {CAPACITE} à la fois.</h2>
           <p class="lead" style="margin:20px 0 14px">Je m'appelle Godwin Soola. J'ai fondé Bweb Agence, un cabinet de conseil et formation à l'IA en Côte d'Ivoire.</p>
-          <p style="color:var(--c-gray-700)">Pendant longtemps, j'ai vendu des formations. Aujourd'hui, je construis une <b>machine à résultats.</b> Ce parcours, c'est la synthèse de tout ce que j'ai appris — structuré pour que tu ne passes pas 2 ans à chercher comme je l'ai fait.</p>
+          <p style="color:var(--c-gray-700)">Pendant longtemps, j'ai vendu des formations. J'ai vu le même scénario se répéter&nbsp;: des gens qui achètent, qui regardent, et qui ne lancent jamais. Alors j'ai arrêté. Aujourd'hui <b>j'accompagne des cohortes de {CAPACITE} personnes</b>, parce que c'est la seule façon que j'ai trouvée pour que les gens finissent vraiment ce qu'ils commencent.</p>
         </div>
         <figure class:list={["pi-portrait", "reveal", { "no-img": !imgSrc("godwin-portrait") }]} data-delay=".1">
           {imgSrc("godwin-portrait") && <img src={imgSrc("godwin-portrait")} alt="Godwin Soola, fondateur de Bweb Agence" width="640" height="760" loading="lazy" decoding="async" />}
@@ -499,9 +541,9 @@ const faqs = [
         <div class="pi-guar-content reveal">
           <span class="pi-guar-eyebrow">● Garantie béton</span>
           <h2>Garantie <span class="pi-gold">« Première vente ou on continue avec toi »</span></h2>
-          <p class="pi-guar-lede">Je suis tellement sûr que ce parcours va te faire passer à l'action que je prends le risque à ta place.</p>
-          <p class="pi-guar-lede">Si tu suis le programme, que tu soumets tes livrables chaque semaine et qu'à J+30 tu n'as pas de produit en ligne, <b>on continue de t'accompagner gratuitement jusqu'à ce que ce soit fait.</b></p>
-          <a href="#reserver" class="pi-btn-buy pi-cta pi-guar-cta">Je réserve ma place — sans risque <span class="pi-arrow">→</span></a>
+          <p class="pi-guar-lede">Un accompagnement qui s'arrête à J+30 quel que soit le résultat, ce n'est pas un accompagnement. C'est un calendrier.</p>
+          <p class="pi-guar-lede">Si tu suis le programme, que tu soumets tes livrables chaque semaine et qu'à J+30 tu n'as pas décroché ta première vente, <b>on continue de t'accompagner gratuitement jusqu'à ce que tu l'aies.</b></p>
+          <a href="#reserver" class="pi-btn-buy pi-cta pi-guar-cta">Oui, je veux être accompagné <span class="pi-arrow">→</span></a>
           <div class="pi-guar-sign">Mon engagement personnel&nbsp;: <span class="nm">Godwin Soola</span></div>
         </div>
 
@@ -525,7 +567,7 @@ const faqs = [
     <div class="container pi-narrow">
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">Rareté réelle</div>
-        <h2>{CAPACITE} places. Pas une de plus.</h2>
+        <h2>{CAPACITE} personnes accompagnées. Pas une de plus.</h2>
       </div>
       <div class="pi-scarcity reveal">
         <div class="pi-scarcity-count">
@@ -533,9 +575,9 @@ const faqs = [
           <span class="pi-scarcity-l">{COMPLET ? `cohorte de ${COHORTE_LABEL} complète` : `places restantes pour la cohorte de ${COHORTE_LABEL}`}</span>
         </div>
         <div class="pi-scarcity-text">
-          <p>Chaque cohorte est limitée à {CAPACITE} personnes. Pour une raison simple&nbsp;: <b>chaque apprenant reçoit un suivi personnalisé.</b></p>
+          <p>Chaque cohorte est limitée à {CAPACITE} personnes. Pour une raison simple&nbsp;: <b>au-delà, on ne peut plus accompagner sérieusement.</b></p>
           <p>Ton responsable de cohorte vérifie chacun de tes livrables. Ton mentor valide ton offre, ton produit, ta page de vente. Godwin est en direct 2 fois par semaine.</p>
-          <p>Avec 100 personnes, ce serait impossible. Avec {CAPACITE}, c'est intensif, exigeant — et ça produit des résultats.</p>
+          <p>Avec 100 personnes, plus personne ne relit rien : on te vend un accès et on te souhaite bonne chance. Avec {CAPACITE}, c'est intensif, exigeant, et quelqu'un sait où tu en es.</p>
         </div>
       </div>
       <div class="pi-scarcity-bar reveal" aria-hidden="true"><span id="placesBar"></span></div>
@@ -548,7 +590,7 @@ const faqs = [
     <div class="container">
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">Les bonus</div>
-        <h2>En t'inscrivant aujourd'hui, tu reçois aussi&nbsp;:</h2>
+        <h2>En plus de ton accompagnement, tu reçois&nbsp;:</h2>
       </div>
       <div class="pi-bonus-grid" data-stagger>
         {bonuses.map((b, i) => (
@@ -565,7 +607,7 @@ const faqs = [
           </div>
         ))}
       </div>
-      <p class="pi-bonus-total reveal">Total valeur des bonus&nbsp;: <b>180 000+ FCFA</b> — offerts avec le parcours.</p>
+      <p class="pi-bonus-total reveal">Total valeur des bonus&nbsp;: <b>180 000+ FCFA</b>, offerts avec ton accompagnement.</p>
     </div>
   </section>
 
@@ -575,32 +617,32 @@ const faqs = [
     <div class="container">
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">Ton investissement</div>
-        <h2>Récapitulatif de ce que tu reçois</h2>
+        <h2>Récapitulatif de ton accompagnement</h2>
       </div>
       <div class="pi-pricing reveal">
         <span class="pi-price-tag">🔥 Offre de lancement</span>
         <ul class="pi-stack">
-          <li><span>Parcours Initiation — 5 phases, 10 lives, 30 jours</span><b>150 000 FCFA</b></li>
-          <li><span>Suivi personnalisé par ton responsable de cohorte</span><b>50 000 FCFA</b></li>
-          <li><span>Feedback mentor sur chaque livrable</span><b>50 000 FCFA</b></li>
+          <li><span>Parcours Initiation : 5 phases, 10 lives en direct, 30 jours accompagné</span><b>150 000 FCFA</b></li>
+          <li><span>Ton responsable de cohorte, qui vérifie tes livrables chaque semaine</span><b>50 000 FCFA</b></li>
+          <li><span>Ton mentor, qui corrige ton offre et ta page de vente</span><b>50 000 FCFA</b></li>
           <li><span>Bonus (8 ressources exclusives)</span><b>180 000+ FCFA</b></li>
           <li class="pi-stack-total"><span>Valeur totale</span><b>430 000+ FCFA</b></li>
         </ul>
 
         <div class="pi-price-block">
-          <p class="pi-price-real">Coût réel du parcours&nbsp;: <s>150 000 FCFA</s></p>
+          <p class="pi-price-real">Coût réel de l'accompagnement&nbsp;: <s>150 000 FCFA</s></p>
           <div class="pi-price">65 000 <small>FCFA</small></div>
           <span class="pi-deal">✨ <b>− 57 %</b> pour ton inscription dans les 48 h</span>
 
           <p class="pi-deal-timer" id="dealTimer">
             ⏳ L'offre expire dans
             <span class="pi-dt-clock"><span data-t="h">48</span><i>h</i><span data-t="m">00</span><i>m</i><span data-t="s">00</span><i>s</i></span>
-            — ensuite, retour à <b>150 000 FCFA</b>
+            puis retour à <b>150 000 FCFA</b>
           </p>
         </div>
 
-        <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">Je réserve ma place — 65 000 FCFA <span class="pi-arrow">→</span></a>
-        <p class="pi-price-note">{CAPACITE} places maximum par cohorte. 1 cohorte chaque mois.</p>
+        <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">Oui, je veux être accompagné <span class="pi-arrow">→</span></a>
+        <p class="pi-price-note">Tu réserves une place accompagnée, pas un accès à des vidéos. {CAPACITE} personnes maximum par cohorte, 1 cohorte par mois.</p>
 
         <div class="pi-assurances">
           <div class="pi-assurance">
@@ -610,8 +652,8 @@ const faqs = [
           </div>
           <div class="pi-assurance">
             <span class="pi-assurance-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
-            <b>Accès immédiat</b>
-            <span>Ton espace client s'ouvre dès le paiement</span>
+            <b>Suivi dès le jour 1</b>
+            <span>Ton responsable de cohorte te contacte sous 24 h</span>
           </div>
           <div class="pi-assurance">
             <span class="pi-assurance-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 2.5V11c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V5.5L12 3z"/><polyline points="8.5 12 11 14.5 15.5 9.5"/></svg></span>
@@ -652,9 +694,9 @@ const faqs = [
     <img class="pi-final-glass pi-final-glass--left" src="/images/parcours-initiation/glass-shapes.webp" alt="" aria-hidden="true" width="1200" height="675" loading="lazy" decoding="async" />
     <div class="container">
       <div class="pi-final-inner">
-        <div class="eyebrow on-dark reveal" style="justify-content:center">Cohorte {COHORTE_LABEL} · {CAPACITE} places</div>
+        <div class="eyebrow on-dark reveal" style="justify-content:center">Cohorte {COHORTE_LABEL} · {CAPACITE} personnes accompagnées</div>
         <h2 class="reveal">C'est le moment d'arrêter d'apprendre.<br />Et de commencer à construire.</h2>
-        <p class="pi-final-sub reveal">Chaque place est un produit qui va naître. Une personne qui va lancer. Une compétence qui va enfin générer des revenus.</p>
+        <p class="pi-final-sub reveal">Chaque place, c'est une personne qu'on suit pendant 30 jours. Un produit qui va naître. Une compétence qui va enfin générer des revenus.</p>
 
         <div class="pi-final-card reveal-scale">
           <div class="pi-final-price">
@@ -663,7 +705,8 @@ const faqs = [
             <span class="pi-save pi-save--dark">💥 Tu économises 85 000 FCFA</span>
           </div>
           <ul class="pi-final-ticks">
-            <li>Ton produit en ligne en 30 jours</li>
+            <li>30 jours accompagné : responsable de cohorte, mentor, 10 lives</li>
+            <li>Ton produit en ligne et en vente à J+30</li>
             <li>Garantie « Première vente ou on continue »</li>
             <li>8 bonus offerts (180 000+ FCFA)</li>
           </ul>
@@ -680,17 +723,17 @@ const faqs = [
             </div>
             <span class="pi-final-places">{COMPLET ? `Cohorte de ${COHORTE_LABEL} complète` : (<>Il reste <b>{PLACES_RESTANTES}</b> places sur {CAPACITE}</>)}</span>
           </div>
-          <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">Je réserve ma place — 65 000 FCFA →</a>
+          <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">Oui, je veux être accompagné →</a>
           <div class="pi-final-trust">
             <span>🔒 Paiement sécurisé</span>
             <span>📱 Accès mobile</span>
-            <span>🛡️ Garantie satisfait ou accompagné</span>
+            <span>🛡️ Première vente ou on continue</span>
           </div>
         </div>
 
         <!-- 14 · PS -->
         <p class="pi-ps reveal">
-          <b>PS&nbsp;:</b> Si t'as lu jusqu'ici, c'est que tu es sérieux. Tu sais que ta compétence a de la valeur. Tu sais que tu pourrais en faire quelque chose. La seule différence entre toi et ceux qui encaissent des paiements tous les jours, c'est qu'ils ont lancé. Rejoins la cohorte. Dans 30 jours, tu auras un produit. Pas juste des notes dans ton téléphone.
+          <b>PS&nbsp;:</b> Si t'as lu jusqu'ici, c'est que tu es sérieux. Tu sais que ta compétence a de la valeur. Et tu sais aussi que ce n'est pas une formation de plus qui va changer quelque chose, tu en as déjà acheté. Ce que tu prends ici, c'est 30 jours pendant lesquels quelqu'un regarde ce que tu fais et ne te laisse pas abandonner. Rejoins la cohorte. Dans 30 jours, tu auras un produit. Pas juste des notes dans ton téléphone.
         </p>
       </div>
     </div>
@@ -699,7 +742,7 @@ const faqs = [
   <!-- Sticky CTA mobile -->
   <div class="pi-sticky">
     <a href="#paiement" class="pi-btn-buy pi-cta pi-sticky-buy" data-payment-trigger aria-haspopup="dialog">
-      <span>Je réserve ma place →</span>
+      <span>Je rejoins la cohorte →</span>
       <span class="pi-sticky-prices"><b>65 000 FCFA</b><s>150 000 FCFA</s></span>
     </a>
   </div>
@@ -709,8 +752,8 @@ const faqs = [
     <div class="pi-payment-shell" id="paiement">
       <button class="pi-payment-close" type="button" aria-label="Fermer le paiement" data-payment-close>×</button>
       <p class="pi-payment-eyebrow">Paiement sécurisé</p>
-      <h2 id="paymentModalTitle">Réserve ta place</h2>
-      <p class="pi-payment-intro">Finalise ton inscription au parcours en quelques instants.</p>
+      <h2 id="paymentModalTitle">Réserve ton accompagnement</h2>
+      <p class="pi-payment-intro">Finalise ton inscription à la cohorte. Ton responsable de cohorte te contacte sous 24 h.</p>
       <div id="chariow-widget"
         data-product-id="prd_6mhi13tf"
         data-store-domain="boutique.bwebagence.com"
@@ -1179,6 +1222,11 @@ const faqs = [
   .pi-panel-list li::before { content: "✓"; position: absolute; left: 0; color: var(--c-green); font-weight: 700; }
   .pi-livrable { margin-top: 20px; display: flex; gap: 10px; align-items: flex-start; font-weight: 600; font-size: .96rem; color: #fff; line-height: 1.45; padding: 14px 18px; background: rgba(0,200,158,.1); border: 1px solid rgba(0,200,158,.3); border-radius: var(--radius-md); }
   .pi-livrable-ico { flex: none; }
+  /* Le pendant accompagnement du livrable. Contrairement à .pi-livrable il
+     RESTE visible sur mobile : c'est l'argument de vente de la page, et le
+     trafic publicitaire arrive sur téléphone. */
+  .pi-suivi { margin-top: 10px; display: flex; gap: 10px; align-items: flex-start; font-size: .92rem; color: rgba(255,255,255,.88); line-height: 1.45; padding: 13px 18px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); border-radius: var(--radius-md); }
+  .pi-suivi b { color: #fff; font-weight: 700; }
   .pi-panel-nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 24px; }
   .pi-counter { font-size: .85rem; color: var(--c-gray-400); white-space: nowrap; }
   .pi-panel-nav-btns { display: flex; gap: 10px; }
@@ -1507,7 +1555,11 @@ const faqs = [
   .pi-final-now small { font-size: 1.4rem; color: var(--c-gray-300); font-weight: 500; }
   .pi-save { display: inline-block; font-family: var(--f-display); font-weight: 700; font-size: .9rem; color: var(--c-success); background: var(--c-success-bg); border: 1px solid rgba(10,156,119,.25); padding: 8px 18px; border-radius: var(--radius-pill); }
   .pi-save--dark { margin-top: 10px; color: #7dffdc; background: rgba(0,200,158,.12); border-color: rgba(0,200,158,.35); }
-  .pi-final-ticks { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px; margin: 22px 0 24px; }
+  /* Une ligne par élément, et les ✓ sur une seule colonne. Le bloc est centré
+     dans la carte (largeur au contenu + marge auto) mais son contenu reste
+     calé à gauche : en flux libre, les quatre lignes se répartissaient de
+     façon inégale et les coches ne s'alignaient sur rien. */
+  .pi-final-ticks { list-style: none; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; width: max-content; max-width: 100%; margin: 22px auto 24px; text-align: left; }
   .pi-final-ticks li { position: relative; padding-left: 24px; color: #eef1f8; font-size: .95rem; font-weight: 600; }
   .pi-final-ticks li::before { content: "✓"; position: absolute; left: 0; color: var(--c-green); font-weight: 700; }
   /* Urgence finale : compteur à blocs chauds sur le navy */
@@ -1583,6 +1635,7 @@ const faqs = [
     .pi-panel-main { position: relative; z-index: 1; }
     .pi-panel-main h3, .pi-panel-sub { padding-right: 96px; }
     .pi-livrable { display: none; }
+    .pi-suivi { margin-top: 18px; padding: 12px 14px; font-size: .88rem; }
     .pi-final-glass { display: none; }
   }
   @media (max-width: 760px) {
@@ -1599,6 +1652,7 @@ const faqs = [
     section.section { padding-top: 56px; padding-bottom: 56px; }
     section[data-nav-section="La solution"],
     section[data-nav-section="Le programme"],
+    section[data-nav-section="L'accompagnement"],
     section[data-nav-section="Ils l'ont fait"],
     section[data-nav-section="Garantie"],
     section[data-nav-section="Ton investissement"] { padding-top: 64px; padding-bottom: 64px; }
