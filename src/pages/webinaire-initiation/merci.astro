@@ -21,6 +21,14 @@ import "../../styles/funnel-confirm.css";
 
 const LANDING = `${site.url}/webinaire-initiation`;
 
+/* La page est identique pour tous les inscrits : rien n'y dépend de la
+   personne, seulement de l'édition en cours. Sans en-tête de cache, chaque
+   arrivée recalculait la page côté serveur, requête Supabase comprise —
+   mesuré en production : « x-vercel-cache: MISS » à chaque visite. Soixante
+   secondes suffisent : c'est la première page qu'un inscrit voit après avoir
+   cliqué, et c'est le moment où l'attente se remarque le plus. */
+Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=300");
+
 /* Vidéo d'accueil : Godwin invite à rejoindre les canaux et annonce ce qui
    s'y passe. Coller l'ID YouTube (ex. "z_h3zF0Xzjk"). */
 const VIDEO_ACCUEIL = "";
