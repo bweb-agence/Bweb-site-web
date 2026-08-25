@@ -53,11 +53,18 @@ const kpis = [
       <select class="admin-filter" id="s-form"><option value="">Tous les formulaires</option></select>
       <select class="admin-filter" id="s-canal"><option value="">Tous les canaux</option></select>
       <select class="admin-filter" id="s-periode">
-        <option value="30">30 derniers jours</option>
-        <option value="1">Aujourd'hui</option>
+        <option value="today">Aujourd'hui</option>
+        <option value="yesterday">Hier</option>
         <option value="7">7 derniers jours</option>
-        <option value="">Tout l'historique</option>
+        <option value="30" selected>30 derniers jours</option>
+        <option value="all">Tout l'historique</option>
+        <option value="custom">Dates personnalisées…</option>
       </select>
+      <div class="s-plage" id="s-plage" hidden>
+        <input class="admin-filter" id="s-du" type="date" aria-label="À partir du" />
+        <span class="s-plage-fleche" aria-hidden="true">→</span>
+        <input class="admin-filter" id="s-au" type="date" aria-label="Jusqu'au" />
+      </div>
       <select class="admin-filter" id="s-statut">
         <option value="">Tous les statuts</option>
         <option value="nouveau">Nouveau</option>
@@ -107,7 +114,7 @@ const kpis = [
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { esc, toast } from "../../scripts/adminUtils";
+  import { esc, toast, dshort } from "../../scripts/adminUtils";
   import {
     canalOf, downloadCsv, dwhen, firstName, formColor, formLabel,
     renderCanaux, renderPager, utmSummary, digitsOnly, PAR_PAGE, type CanalInfo,
@@ -311,22 +318,59 @@ const kpis = [
       + canaux.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
   }
 
+  const JOUR = 86_400_000;
+  /** Minuit local du jour d'une date — la journée de Godwin, pas celle d'UTC. */
+  const minuit = (d: Date | string) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x.getTime(); };
+
+  /**
+   * Bornes de la période choisie, en millisecondes. Fin EXCLUE.
+   *
+   * Les périodes sont comptées en JOURS CALENDAIRES, pas en tranches de 24 h
+   * glissantes. « Aujourd'hui » à 10 h doit montrer ce qui est arrivé depuis
+   * minuit, pas depuis 10 h la veille — sinon une soumission d'hier soir
+   * s'affiche comme étant d'aujourd'hui. Même raison pour « 7 jours » : sept
+   * journées, celle en cours comprise.
+   */
+  function bornes(): { debut: number; fin: number; libelle: string } {
+    const v = $("s-periode").value;
+    const auj = minuit(new Date());
+    if (v === "today") return { debut: auj, fin: Infinity, libelle: "aujourd'hui" };
+    if (v === "yesterday") return { debut: auj - JOUR, fin: auj, libelle: "hier" };
+    if (v === "all") return { debut: 0, fin: Infinity, libelle: "" };
+    if (v === "custom") {
+      const du = $("s-du").value, au = $("s-au").value;
+      /* « T00:00 » force une lecture LOCALE : sans lui, « 2026-08-01 » est
+         interprété en UTC et la journée se décale. */
+      return {
+        debut: du ? minuit(du + "T00:00") : 0,
+        fin: au ? minuit(au + "T00:00") + JOUR : Infinity, // le jour « au » est inclus
+        libelle: du && au ? `du ${dshort(du)} au ${dshort(au)}` : du ? `depuis le ${dshort(du)}` : au ? `jusqu'au ${dshort(au)}` : "",
+      };
+    }
+    const n = Number(v) || 30;
+    return { debut: auj - (n - 1) * JOUR, fin: Infinity, libelle: `sur ${n} jours` };
+  }
+
   function appliquer() {
     const q = ($("s-search").value || "").toLowerCase().trim();
     const form = $("s-form").value, cnl = $("s-canal").value, statut = $("s-statut").value;
-    const jours = $("s-periode").value ? Number($("s-periode").value) : 0;
-    const limite = jours ? Date.now() - jours * 86_400_000 : 0;
+    const { debut, fin, libelle } = bornes();
 
-    visibles = toutes.filter((s) =>
-      (!form || s.form_key === form) &&
-      (!cnl || canal(s).label === cnl) &&
-      (!statut || s.status === statut) &&
-      (!limite || +new Date(s.submitted_at) >= limite) &&
-      (!q || `${s.full_name || ""} ${s.email || ""} ${s.phone || ""} ${s.message || ""}`.toLowerCase().includes(q)));
+    visibles = toutes.filter((s) => {
+      const t = +new Date(s.submitted_at);
+      return (!form || s.form_key === form) &&
+        (!cnl || canal(s).label === cnl) &&
+        (!statut || s.status === statut) &&
+        t >= debut && t < fin &&
+        (!q || `${s.full_name || ""} ${s.email || ""} ${s.phone || ""} ${s.message || ""}`.toLowerCase().includes(q));
+    });
 
     page = 1;
     const portee = document.querySelector("[data-canaux-portee]");
-    if (portee) portee.textContent = jours ? `${visibles.length} soumission${visibles.length > 1 ? "s" : ""} sur la période` : `${visibles.length} soumission${visibles.length > 1 ? "s" : ""}`;
+    if (portee) {
+      const n = `${visibles.length} soumission${visibles.length > 1 ? "s" : ""}`;
+      portee.textContent = libelle ? `${n} ${libelle}` : n;
+    }
     render(visibles);
   }
 
@@ -346,7 +390,21 @@ const kpis = [
   }
 
   ["s-search"].forEach((id) => $(id).addEventListener("input", appliquer));
-  ["s-form", "s-canal", "s-periode", "s-statut"].forEach((id) => $(id).addEventListener("change", appliquer));
+  ["s-form", "s-canal", "s-statut"].forEach((id) => $(id).addEventListener("change", appliquer));
+  ["s-du", "s-au"].forEach((id) => $(id).addEventListener("change", appliquer));
+  $("s-periode").addEventListener("change", () => {
+    const perso = $("s-periode").value === "custom";
+    document.getElementById("s-plage")!.hidden = !perso;
+    /* Première ouverture des dates personnalisées : on pré-remplit sur les
+       trente derniers jours plutôt que sur deux champs vides, qui afficheraient
+       tout l'historique et donneraient l'impression que le filtre ne marche pas. */
+    if (perso && !$("s-du").value && !$("s-au").value) {
+      const iso = (t: number) => new Date(t - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+      $("s-du").value = iso(minuit(new Date()) - 29 * JOUR);
+      $("s-au").value = iso(minuit(new Date()));
+    }
+    appliquer();
+  });
   document.getElementById("s-export")!.addEventListener("click", exporter);
 
   /* ---------- Chargement ---------- */
