@@ -46,6 +46,21 @@ export default defineConfig({
   build: {
     // Génère /services/index.html -> URL propre /services
     format: "directory",
+
+    /* Le style part AVEC le document, au lieu d'être réclamé après coup.
+       Mesuré sur la landing du webinaire : le document arrivait à 543 ms, et
+       les quatre feuilles ne finissaient qu'entre 979 et 1 022 ms — soit
+       ~440 ms d'attente supplémentaire avant que la page puisse peindre.
+       Elles étaient déjà téléchargées en parallèle (HTTP/2), donc les FUSIONNER
+       n'aurait gagné que la quarantaine de millisecondes d'écart entre la
+       première et la dernière : c'est l'aller-retour lui-même qu'il fallait
+       supprimer, pas le nombre de fichiers.
+
+       Le prix : ~30 Ko compressés de style dans CHAQUE document, et plus de
+       mise en cache du style d'une page à l'autre. C'est le bon échange ici —
+       la page qui compte reçoit du trafic publicitaire, où presque chaque
+       visite est une première visite. */
+    inlineStylesheets: "always",
   },
   // Tailwind v4 + Starwind chargés UNIQUEMENT dans les layouts admin (voir
   // src/styles/starwind.css importé par AdminLayout/EditorLayout).
