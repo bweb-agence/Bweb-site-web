@@ -111,208 +111,76 @@ import Button from "../../components/starwind/button/Button.astro";
       return;
     }
 
-    /* L'entonnoir se lit par rapport aux INSCRITS, pas à l'étape précédente :
-       les rappels partent tous à la même liste, un taux « par rapport à
-       l'étape d'avant » afficherait 100 % partout et ne dirait rien. */
-    const etapes = [
-      { l: "Inscriptions", n: a.inscrits, base: true, aide: "Formulaire validé et enregistré." },
-      { l: "Confirmation reçue", n: a.confirmations, aide: "E-mail de confirmation effectivement parti." },
-      { l: "Rappel la veille", n: a.rappel_1d },
-      { l: "Rappel le jour J", n: a.rappel_0d },
-      { l: "Rappel une heure avant", n: a.rappel_1h },
-      { l: "Lien du live envoyé", n: a.lien_live },
-      { l: "Replay envoyé", n: a.replay },
-      { l: "Ont acheté ensuite", n: a.acheteurs, fort: true, aide: "Inscrits ayant acheté APRÈS leur inscription." },
-    ];
+    /* Les visites viennent de Google Analytics, donc du serveur : la clé de
+       service ne descend jamais dans le navigateur. La fenêtre GA est calée
+       sur `premiere_inscription`, sinon le taux comparerait deux périodes. */
+    let ga: any = null;
+    if (a.premiere_inscription) {
+      try {
+        const { data: sess } = await supabaseBrowser.auth.getSession();
+        const jeton = sess?.session?.access_token;
+        if (jeton) {
+          const r = await fetch(`/api/admin/ga-webinaire?tunnel=${encodeURIComponent(w.tunnel)}&depuis=${a.premiere_inscription}`,
+            { headers: { Authorization: `Bearer ${jeton}` } });
+          ga = await r.json();
+        }
+      } catch { /* l'analyse s'affiche sans les visites */ }
+    }
+    const visites = ga?.joignable ? ga.visites : null;
 
-    const lignes = etapes.map((e) => {
-      const p = e.base ? 100 : pct(e.n, a.inscrits);
-      return `<div class="wba-row${e.fort ? " fort" : ""}">
-        <div class="wba-head"><span>${esc(e.l)}</span><b>${e.n}</b></div>
+    const etapes: any[] = [];
+    if (visites !== null) {
+      etapes.push({ l: "Visites de la page", n: visites, src: "Google Analytics", base: true });
+    }
+    etapes.push(
+      { l: "Inscriptions", n: a.inscrits, src: "Base du site", base: visites === null },
+      { l: "Confirmation reçue", n: a.confirmations, src: "Journal d'envoi" },
+      { l: "Rappel la veille", n: a.rappel_1d, src: "Journal d'envoi" },
+      { l: "Rappel le jour J", n: a.rappel_0d, src: "Journal d'envoi" },
+      { l: "Rappel une heure avant", n: a.rappel_1h, src: "Journal d'envoi" },
+      { l: "Lien du live envoyé", n: a.lien_live, src: "Journal d'envoi" },
+      { l: "Replay envoyé", n: a.replay, src: "Journal d'envoi" },
+      { l: "Ont acheté ensuite", n: a.acheteurs, src: "Timeline contacts", fort: true },
+    );
+
+    /* Chaque étape se lit par rapport à la RÉFÉRENCE (les visites si on les a,
+       sinon les inscrits) ; entre deux étapes on nomme la PERTE en valeur
+       absolue. Un taux se contemple, un nombre de personnes se corrige. */
+    const ref = etapes[0].n || 1;
+    const corps = etapes.map((e, i) => {
+      const p = pct(e.n, ref);
+      const prec = i > 0 ? etapes[i - 1] : null;
+      const perdu = prec ? prec.n - e.n : 0;
+      const lien = !prec ? "" : perdu > 0
+        ? `<div class="wba-link perte"><i></i><span><b>−${perdu}</b> entre « ${esc(prec.l)} » et « ${esc(e.l)} » (${pct(perdu, prec.n || 1)} %)</span></div>`
+        : `<div class="wba-link"><i></i><span>${prec.n === 0 ? "étape pas encore atteinte" : "aucune perte"}</span></div>`;
+      return lien + `<div class="wba-row${e.fort ? " fort" : ""}">
+        <div class="wba-head"><span>${esc(e.l)}<em>${esc(e.src)}</em></span><b>${e.n}</b></div>
         <div class="wba-bar"><i style="width:${Math.min(p, 100)}%"></i></div>
-        <div class="wba-foot">${e.base ? "référence" : p + " % des inscrits"}${e.aide ? " · " + esc(e.aide) : ""}</div>
+        <div class="wba-foot">${e.base ? "référence" : p + " % de la référence"}</div>
       </div>`;
     }).join("");
 
+    const tauxAcq = visites !== null
+      ? `<div class="wba-kpi"><span>Visite → inscription</span><b>${pct(a.inscrits, visites || 1)} %</b></div>`
+      : `<div class="wba-kpi attente"><span>Visite → inscription</span><b>— %</b><em>Google Analytics non connecté</em></div>`;
+
     body.innerHTML = `
       <div class="wba-kpis">
+        ${tauxAcq}
+        <div class="wba-kpi"><span>Inscription → achat</span><b>${pct(a.acheteurs, a.inscrits || 1)} %</b></div>
         <div class="wba-kpi"><span>Inscrits</span><b>${a.inscrits}</b></div>
-        <div class="wba-kpi"><span>Acheteurs</span><b>${a.acheteurs}</b></div>
-        <div class="wba-kpi"><span>Taux d'achat</span><b>${pct(a.acheteurs, a.inscrits)} %</b></div>
         <div class="wba-kpi"><span>Chiffre d'affaires</span><b>${fcfa(a.chiffre_affaires)}</b></div>
       </div>
-      <h3 class="wba-titre">L'entonnoir</h3>
-      ${lignes}
+      <h3 class="wba-titre">Chaque étape, et ce qu'on perd entre deux</h3>
+      ${corps}
       <h3 class="wba-titre">Santé de la collecte</h3>
       <div class="wba-sante">
         <div><span>Leads transmis à ACQ Hub</span><b>${a.relais_ok}</b></div>
         <div${a.relais_ko > 0 ? ' class="ko"' : ""}><span>Relais en échec</span><b>${a.relais_ko}</b></div>
         <div><span>Désabonnés depuis</span><b>${a.desabonnes}</b></div>
       </div>
-      <p class="hint" style="margin-top:16px">
-        Les <b>visites</b> de la page d'inscription ne figurent pas ici : elles vivent dans
-        Google Analytics, qui demande des identifiants dont le site ne dispose pas côté
-        serveur. Le taux « visite → inscription » se lit donc encore dans GA4.
-      </p>`;
-  }
-
-  /** « webinaire-initiation-2026-10 » : l'entonnoir, puis le mois du live. */
-  const slugEdition = (tunnel: string, iso: string) => {
-    const d = new Date(iso);
-    return `${tunnel}-${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-  };
-
-  function render(list: any[]) {
-    if (!list.length) { rows.innerHTML = `<tr><td class="empty" colspan="7">Aucune édition. Cliquez sur « Nouvelle édition ».</td></tr>`; return; }
-    rows.innerHTML = list.map((w) => `
-      <tr>
-        <td><strong>${esc(w.title)}</strong><br><span style="color:var(--c-gray-500);font-size:.78rem">${esc(w.slug)}</span></td>
-        <td>${dshort(w.starts_at)}<br><span style="color:var(--c-gray-500);font-size:.78rem">${w.duration_min} min · ${w.places} places</span></td>
-        <td>${w.join_url
-          ? `<span class="tag-pill ok">Renseigné</span>`
-          : `<span class="tag-pill full" title="Les rappels ne partiront pas tant qu'il manque">Manquant</span>`}</td>
-        <td style="font-variant-numeric:tabular-nums">${inscrits[w.id] ?? "—"}</td>
-        <td style="font-variant-numeric:tabular-nums">${envois[w.id] || 0}</td>
-        <td>${w.active ? '<span class="tag-pill pub">Active</span>' : '<span class="tag-pill draft">Inactive</span>'}</td>
-        <td><div class="row-actions">
-          <button class="icon-btn" data-stats="${w.id}" title="Analyser cette édition"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><rect x="5" y="11" width="3.4" height="6" rx="1"/><rect x="10.3" y="7" width="3.4" height="10" rx="1"/><rect x="15.6" y="13" width="3.4" height="4" rx="1"/></svg></button>
-          <button class="icon-btn" data-edit="${w.id}" title="Éditer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-          <button class="icon-btn" data-dup="${w.id}" title="Dupliquer pour le mois suivant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
-          <button class="icon-btn danger" data-del="${w.id}" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
-        </div></td>
-      </tr>`).join("");
-    rows.querySelectorAll<HTMLElement>("[data-stats]").forEach((b) => b.addEventListener("click", () => analyser(b.dataset.stats!)));
-    rows.querySelectorAll<HTMLElement>("[data-edit]").forEach((b) => b.addEventListener("click", () => edit(b.dataset.edit!)));
-    rows.querySelectorAll<HTMLElement>("[data-dup]").forEach((b) => b.addEventListener("click", () => dupliquer(b.dataset.dup!)));
-    rows.querySelectorAll<HTMLElement>("[data-del]").forEach((b) => b.addEventListener("click", () => del(b.dataset.del!)));
-  }
-
-  function applySearch() {
-    const q = ($("wb-search").value || "").toLowerCase();
-    render(all.filter((w) => !q || (w.title + " " + w.slug + " " + w.tunnel).toLowerCase().includes(q)));
-  }
-
-  async function load() {
-    const { data, error } = await supabaseBrowser.from("webinaires").select("*").order("starts_at", { ascending: false });
-    if (error) { rows.innerHTML = `<tr><td class="empty" colspan="7">Erreur de chargement (migrations 0035/0036 appliquées ?).</td></tr>`; return; }
-    all = data || [];
-
-    // Compteurs par édition : inscrits de la période, e-mails déjà partis.
-    inscrits = {}; envois = {};
-    await Promise.all(all.map(async (w: any) => {
-      let q = supabaseBrowser.from("form_submissions").select("id", { count: "exact", head: true })
-        .eq("form_key", w.tunnel).not("email", "is", null);
-      if (w.inscrits_depuis) q = q.gte("submitted_at", w.inscrits_depuis);
-      const [{ count: nbInscrits }, { count: nbEnvois }] = await Promise.all([
-        q,
-        supabaseBrowser.from("webinaire_emails").select("id", { count: "exact", head: true }).eq("webinaire_id", w.id),
-      ]);
-      inscrits[w.id] = nbInscrits || 0;
-      envois[w.id] = nbEnvois || 0;
-    }));
-    applySearch();
-  }
-
-  function fill(w: any) {
-    $("f-id").value = w?.id || "";
-    $("f-title").value = w?.title || "";
-    $("f-join").value = w?.join_url || "";
-    $("f-start").value = w?.starts_at ? dtLocalValue(w.starts_at) : "";
-    $("f-duree").value = (w?.duration_min ?? 90).toString();
-    $("f-places").value = (w?.places ?? 500).toString();
-    $("f-info").value = w?.join_info || "";
-    $("f-replay").value = w?.replay_url || "";
-    $("f-whatsapp").value = w?.whatsapp_url || "";
-    $("f-telegram").value = w?.telegram_url || "";
-    $("f-tunnel").value = w?.tunnel || "webinaire-initiation";
-    $("f-slug").value = w?.slug || "";
-    $("f-depuis").value = w?.inscrits_depuis ? dtLocalValue(w.inscrits_depuis) : "";
-    $("f-active").checked = w ? !!w.active : true;
-    document.getElementById("wb-drawer-title")!.textContent = w ? "Modifier l'édition" : "Nouvelle édition";
-  }
-
-  function openNew() { fill(null); openDrawer(); }
-  function edit(id: string) { fill(all.find((x) => x.id === id)); openDrawer(); }
-
-  /* Duplication : le geste du mois suivant. On décale d'un mois, on efface les
-     liens (ceux du live précédent seraient pires que vides) et on cale la borne
-     des inscrits sur le live précédent — tout ce qui arrive après lui appartient
-     à la nouvelle édition. */
-  async function dupliquer(id: string) {
-    const w = all.find((x) => x.id === id);
-    if (!w) return;
-    const suivant = new Date(w.starts_at);
-    suivant.setUTCMonth(suivant.getUTCMonth() + 1);
-    const slug = slugEdition(w.tunnel, suivant.toISOString());
-    if (!(await confirmModal({
-      title: "Dupliquer pour le mois suivant",
-      message: `Créer « ${slug} » le ${suivant.toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "short" })} ?\n\nLes liens du live et du replay repartent vides, et seuls les inscrits postérieurs au live du ${new Date(w.starts_at).toLocaleDateString("fr-FR")} recevront ses e-mails.`,
-      confirmLabel: "Dupliquer",
-    }))) return;
-
-    const { error } = await supabaseBrowser.from("webinaires").insert({
-      tunnel: w.tunnel, slug, title: w.title,
-      starts_at: suivant.toISOString(), duration_min: w.duration_min, places: w.places,
-      join_url: null, join_info: w.join_info, replay_url: null,
-      /* Les canaux se transmettent, eux : un groupe de discussion se garde d'un
-         mois sur l'autre, contrairement au lien du live qui est propre à la
-         séance. Ils restent modifiables sur la nouvelle édition. */
-      whatsapp_url: w.whatsapp_url, telegram_url: w.telegram_url,
-      inscrits_depuis: w.starts_at, active: true,
-    });
-    if (error) { toast((error.message || "").includes("duplicate") ? "Cette édition existe déjà." : "Duplication impossible.", "err"); return; }
-    toast("Édition créée. Pense à coller le lien du live.");
-    await load();
-  }
-
-  async function del(id: string) {
-    const w = all.find((x) => x.id === id);
-    if (!(await confirmModal({
-      title: "Supprimer l'édition",
-      message: `Supprimer « ${w?.title} » du ${dshort(w?.starts_at)} ?\n\nSon journal d'envois part avec elle : si elle était recréée, les inscrits recevraient une seconde fois les mêmes e-mails.`,
-      danger: true, confirmLabel: "Supprimer",
-    }))) return;
-    const { error } = await supabaseBrowser.from("webinaires").delete().eq("id", id);
-    if (error) { toast("Suppression impossible.", "err"); return; }
-    toast("Édition supprimée.");
-    await load();
-  }
-
-  async function save() {
-    const title = $("f-title").value.trim();
-    const tunnel = $("f-tunnel").value.trim();
-    const startV = $("f-start").value;
-    if (!title || !tunnel || !startV) { toast("Titre, entonnoir et date sont obligatoires.", "err"); return; }
-    const startsAt = new Date(startV).toISOString();
-    const depuisV = $("f-depuis").value;
-    const payload: any = {
-      title, tunnel,
-      slug: $("f-slug").value.trim() || slugEdition(tunnel, startsAt),
-      starts_at: startsAt,
-      duration_min: parseInt($("f-duree").value || "90") || 90,
-      places: parseInt($("f-places").value || "0") || 0,
-      join_url: $("f-join").value.trim() || null,
-      join_info: $("f-info").value.trim() || null,
-      replay_url: $("f-replay").value.trim() || null,
-      whatsapp_url: $("f-whatsapp").value.trim() || null,
-      telegram_url: $("f-telegram").value.trim() || null,
-      inscrits_depuis: depuisV ? new Date(depuisV).toISOString() : null,
-      active: $("f-active").checked,
-    };
-    const id = $("f-id").value;
-    const btn = document.getElementById("wb-save")!;
-    btn.setAttribute("disabled", "true"); btn.textContent = "Enregistrement…";
-    const { error } = id
-      ? await supabaseBrowser.from("webinaires").update(payload).eq("id", id)
-      : await supabaseBrowser.from("webinaires").insert(payload);
-    btn.removeAttribute("disabled"); btn.textContent = "Enregistrer";
-    if (error) {
-      toast((error.message || "").includes("duplicate") ? "Ce slug existe déjà." : "Enregistrement impossible.", "err");
-      return;
-    }
-    toast(id ? "Édition mise à jour." : "Édition créée.");
-    closeDrawer();
-    await load();
+      <p class="hint" style="margin-top:16px">Période : depuis le ${a.premiere_inscription || "—"}, première inscription de l'édition. Les visites Google Analytics couvrent exactement la même fenêtre.</p>`;
   }
 
   document.getElementById("wb-stats-close")!.addEventListener("click", closeStats);
@@ -358,6 +226,16 @@ import Button from "../../components/starwind/button/Button.astro";
   .wba-bar i { display: block; height: 100%; border-radius: 999px; background: var(--c-blue, #1f6ced); transition: width .4s ease; }
   .wba-row.fort .wba-bar i { background: var(--c-success, #087c5f); }
   .wba-foot { font-size: .76rem; color: var(--c-gray-500, #7c839c); }
+  .wba-head em { font-style: normal; font-size: .7rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--c-gray-500, #7c839c); margin-left: 8px; }
+  .wba-kpi.attente b { color: var(--c-gray-500, #7c839c); }
+  .wba-kpi em { display: block; font-style: normal; font-size: .72rem; color: var(--c-gray-500, #7c839c); margin-top: 2px; }
+
+  /* Le lien entre deux étapes porte l'information qui se corrige. */
+  .wba-link { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+  .wba-link i { width: 2px; align-self: stretch; min-height: 18px; background: var(--c-border, #e6eaf4); border-radius: 2px; flex: none; }
+  .wba-link span { font-size: .8rem; color: var(--c-gray-500, #7c839c); }
+  .wba-link.perte i { background: var(--c-danger, #cb2b2b); }
+  .wba-link.perte span b { color: var(--c-danger, #cb2b2b); }
 
   .wba-sante > div { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--c-border, #e6eaf4); font-size: .88rem; }
   .wba-sante > div:last-child { border-bottom: 0; }
