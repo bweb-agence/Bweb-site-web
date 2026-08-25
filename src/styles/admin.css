@@ -310,6 +310,13 @@
 
 /* Barre d'outils Clients : recherche + filtres + export sur UNE SEULE ligne */
 .crm-toolbar { justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
+
+/* Plage de dates personnalisée : les deux champs restent solidaires quand la
+   barre de filtres passe à la ligne, sinon la flèche se retrouve seule. */
+.s-plage { display: inline-flex; align-items: center; gap: 8px; }
+.s-plage[hidden] { display: none; }
+.s-plage .admin-filter { padding: 8px 12px; }
+.s-plage-fleche { color: var(--c-gray-500); font-size: 0.9rem; }
 .crm-toolbar .admin-search { flex: 0 1 240px; min-width: 150px; }
 /* Les selects se dimensionnent sur leur option la plus longue (ex. le titre de
    session) ; on plafonne pour tout garder sur une ligne — l'option complète reste
