@@ -1,6 +1,15 @@
 ---
 import "@fontsource-variable/sora";
 import "@fontsource-variable/plus-jakarta-sans";
+/* Les deux fichiers de police sont importés en tant qu'URL pour pouvoir les
+   PRÉCHARGER. Sans ça le navigateur ne les découvre qu'après avoir téléchargé
+   et analysé la feuille de styles qui les déclare : mesuré en production, les
+   polices ne démarraient qu'à 1 174 ms alors que le document était là depuis
+   540 ms. Le texte reste donc invisible ou en police de repli pendant tout ce
+   temps. `?url` rend le chemin haché produit par la construction — jamais
+   écrire ce chemin à la main, il change à chaque déploiement. */
+import soraWoff2 from "@fontsource-variable/sora/files/sora-latin-wght-normal.woff2?url";
+import jakartaWoff2 from "@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2?url";
 import "../styles/global.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -104,6 +113,13 @@ const breadcrumbLd = breadcrumbs?.length
 <html lang={site.lang}>
   <head>
     <meta charset="UTF-8" />
+
+    {/* Avant tout le reste : ces deux fichiers dessinent le titre et le corps
+        de texte de chaque page. `crossorigin` est OBLIGATOIRE même en
+        same-origin — une police se charge en mode anonyme, et sans cet
+        attribut le navigateur télécharge le fichier DEUX fois. */}
+    <link rel="preload" href={soraWoff2} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={jakartaWoff2} as="font" type="font/woff2" crossorigin />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
