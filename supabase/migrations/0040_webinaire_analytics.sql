@@ -19,6 +19,8 @@
 -- laisser un rôle anonyme s'en approcher.
 -- =========================================================
 
+drop function if exists public.webinaire_analytics(uuid);
+
 create or replace function public.webinaire_analytics(p_webinaire_id uuid)
 returns table (
   inscrits          int,   -- soumissions du formulaire rattachées à l'édition
@@ -32,7 +34,8 @@ returns table (
   relais_ko         int,   -- relais en échec ou non configuré
   desabonnes        int,   -- inscrits qui se sont depuis désabonnés
   acheteurs         int,   -- inscrits ayant acheté APRÈS leur inscription
-  chiffre_affaires  bigint
+  chiffre_affaires  bigint,
+  premiere_inscription date  -- borne basse de la fenêtre, pour aligner GA4 dessus
 )
 language plpgsql stable security definer set search_path = public as $$
 declare
@@ -100,7 +103,11 @@ begin
       where c.unsubscribed_at is not null
         and lower(c.email) in (select email from inscrits_edition)),
     (select count(*)::int from achats),
-    (select coalesce(sum(montant), 0)::bigint from achats);
+    (select coalesce(sum(montant), 0)::bigint from achats),
+    /* Borne basse de la fenêtre : les visites GA4 doivent couvrir EXACTEMENT
+       la période des inscriptions comptées ici, sinon le taux
+       « visite -> inscription » compare deux périodes différentes. */
+    (select min(i.submitted_at)::date from inscrits_edition i);
 end;
 $$;
 
