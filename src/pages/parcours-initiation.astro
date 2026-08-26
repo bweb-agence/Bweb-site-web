@@ -228,14 +228,11 @@ const faqs = [
           jusqu'à ce que ton produit digital soit en ligne et en vente.
         </p>
 
-        <div class="pi-hero-cta" data-hero-in>
-          <a href="#reserver" class="pi-btn-buy pi-cta">Je réserve ma place à 65 000 FCFA <span class="pi-arrow">→</span></a>
-          <p class="pi-cta-note">Cohorte {COHORTE_LABEL} · {CAPACITE} places accompagnées · Tu es suivi sous 24 h</p>
-        </div>
-
-        <!-- Vidéo, immédiatement sous l'action principale : on explique juste
-             après avoir demandé. La vignette est celle de YouTube et ne porte
-             aucun texte — le bouton de lecture suffit à dire ce que c'est. -->
+        <!-- Ordre du hero, calqué sur la landing du webinaire : promesse,
+             preuve, action. La vidéo passe AVANT le bouton, elle explique ce
+             qu'on vient chercher, et on ne demande de réserver qu'ensuite. La
+             vignette est celle de YouTube et ne porte aucun texte : le bouton
+             de lecture suffit à dire ce que c'est. -->
         <div class="pi-video pi-video--wide" id="heroVideo" data-hero-in>
           <button class="pi-video-ph" id="heroPlay" type="button" aria-label="Lire la vidéo de présentation">
             <img class="pi-video-cover" src={`https://i.ytimg.com/vi/${YOUTUBE_HERO}/maxresdefault.jpg`}
@@ -244,6 +241,11 @@ const faqs = [
             <span class="pi-play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
           </button>
           <iframe id="heroFrame" title="Vidéo de présentation du Parcours Initiation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen hidden></iframe>
+        </div>
+
+        <div class="pi-hero-cta" data-hero-in>
+          <a href="#reserver" class="pi-btn-buy pi-cta">Je réserve ma place à 65 000 FCFA <span class="pi-arrow">→</span></a>
+          <p class="pi-cta-note">Cohorte {COHORTE_LABEL} · {CAPACITE} places accompagnées · Tu es suivi sous 24 h</p>
         </div>
 
       </div>
@@ -1641,11 +1643,19 @@ const faqs = [
   @media (max-width: 760px) {
     /* Une échelle mobile volontaire : 48 / 56 / 64 / 72 px.
        La hiérarchie se lit dans l'espace, pas seulement dans la couleur. */
-    .pi-hero { padding-top: 104px; padding-bottom: 48px; }
-    .pi-badge-urgence { margin-bottom: 18px; }
-    .pi-hero-sub { margin-top: 18px; }
-    .pi-hero-cta { margin-top: 24px; }
-    .pi-video { margin-top: 26px; }
+
+    /* ===== Hero mobile : mêmes valeurs que /webinaire-initiation, où la
+       vidéo et le bouton doivent tenir dans le premier écran. Les deux pages
+       reçoivent le même trafic publicitaire, sur téléphone : ce qu'on ne voit
+       pas sans défiler n'existe pas. Le titre passe de 32 à 24 px et la
+       description à .94rem pour libérer cette place. ===== */
+    .pi-hero { padding-top: clamp(96px, 22vw, 130px); padding-bottom: 36px; }
+    .pi-hero h1 { font-size: clamp(1.5rem, 5.6vw, 1.95rem); line-height: 1.16; max-width: 18ch; }
+    .pi-hero-sub { font-size: .94rem; line-height: 1.5; margin: 14px auto 0; max-width: 34ch; }
+    .pi-badge-urgence { font-size: .74rem; padding: 8px 14px; margin-bottom: 14px; }
+    .pi-video { margin-top: 18px; }
+    .pi-hero-cta { margin-top: 18px; }
+    .pi-cta-note { margin-top: 10px; font-size: .8rem; }
     .pi-countdown { padding: 16px 0; }
     .pi-countdown-inner { gap: 12px; }
 
