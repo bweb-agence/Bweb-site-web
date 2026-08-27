@@ -82,7 +82,7 @@ const kpis = [
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { esc, fmtFCFA, dshort, reconciledRelanceIds } from "../../scripts/adminUtils";
+  import { esc, fmtFCFA, dshort, reconciledRelanceIds, chargerTout } from "../../scripts/adminUtils";
 
   const $ = (sel: string) => document.querySelector(sel) as HTMLElement;
   const now = Date.now();
@@ -123,10 +123,14 @@ const kpis = [
          GRATUITS (guides, formations d'appel) : ils arrivent par le même
          événement, avec un montant nul. Les mélanger gonflerait le nombre de
          ventes d'un facteur trente sans ajouter un franc — on les sépare. */
-      supabaseBrowser.from("contact_events")
+      /* 619 ventes au 25/08 et en croissance rapide : sans pagination, le
+         plafond de 1 000 lignes de l'API amputerait le chiffre d'affaires
+         sans le moindre signe. */
+      chargerTout(() => supabaseBrowser.from("contact_events")
         .select("amount,occurred_at,title,contact_id,contacts(email)")
         .eq("type", "achat").eq("source", "chariow")
-        .order("occurred_at", { ascending: false }),
+        .order("occurred_at", { ascending: false })
+        .order("id", { ascending: false })),
     ]);
     const chariow = (chRes.data || []) as any[];
     const chPayantes = chariow.filter((e) => (e.amount || 0) > 0);

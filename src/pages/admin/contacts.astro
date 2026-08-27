@@ -114,7 +114,7 @@ const kpis = [
 
 <script>
   import { supabaseBrowser } from "../../lib/supabaseBrowser";
-  import { esc, toast } from "../../scripts/adminUtils";
+  import { esc, toast, chargerTout } from "../../scripts/adminUtils";
   import {
     avatarBg, downloadCsv, dwhen, firstName, formLabel, initials,
     renderPager, utmSummary, digitsOnly, PAR_PAGE,
@@ -458,11 +458,11 @@ const kpis = [
     const { data: { session } } = await supabaseBrowser.auth.getSession();
     if (!session) return; // AdminLayout gère la redirection
 
-    const { data, error } = await supabaseBrowser
+    const { data, error } = await chargerTout(() => supabaseBrowser
       .from("contacts")
       .select("id,email,phone,full_name,company,status,tags,notes,first_source,first_utm,email_opt_in,whatsapp_opt_in,unsubscribed_at,merge_candidate_id,first_seen_at,last_activity_at")
       .order("last_activity_at", { ascending: false })
-      .limit(5000);
+      .order("id", { ascending: false }));
 
     if (error) {
       rows.innerHTML = `<div class="acq-vide">Lecture impossible : ${esc(error.message)}</div>`;

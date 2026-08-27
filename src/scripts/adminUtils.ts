@@ -141,3 +141,38 @@ export function confirmModal(opts: {
     (overlay.querySelector(".cm-ok") as HTMLElement).focus();
   });
 }
+
+/* =========================================================
+   Charger TOUTES les lignes, malgré le plafond de l'API
+   ---------------------------------------------------------
+   PostgREST refuse de rendre plus de 1 000 lignes en une fois, quel que soit
+   le `.limit()` demandé — un `.limit(5000)` en rend 1 000, sans erreur ni
+   avertissement. Les écrans qui comptaient `data.length` affichaient donc
+   « 1 000 » dès que la table dépassait ce seuil, et leurs filtres ne voyaient
+   qu'une partie des données. Constaté le 25/08/2026 : 1 715 contacts et
+   1 291 soumissions en base, 1 000 affichés.
+
+   On pagine donc jusqu'à épuisement. Le paramètre est une FABRIQUE de requête
+   et non une requête : un constructeur PostgREST ne peut être exécuté qu'une
+   fois, il faut le reconstruire à chaque tranche.
+
+   L'ordre de tri doit être TOTAL — ajoutez un critère unique (`id`) après le
+   tri principal. Sans lui, deux lignes de même horodatage peuvent changer de
+   place d'une tranche à l'autre : l'une revient deux fois, l'autre disparaît.
+   ========================================================= */
+export async function chargerTout<T = any>(
+  fabrique: () => any,
+  taille = 1000,
+): Promise<{ data: T[]; error: any }> {
+  const tout: T[] = [];
+  for (let debut = 0; ; debut += taille) {
+    const { data, error } = await fabrique().range(debut, debut + taille - 1);
+    if (error) return { data: tout, error };
+    const tranche = (data || []) as T[];
+    tout.push(...tranche);
+    // Tranche incomplète = dernière tranche.
+    if (tranche.length < taille) return { data: tout, error: null };
+    // Garde-fou : au-delà, ces écrans ne sont de toute façon plus le bon outil.
+    if (tout.length >= 50_000) return { data: tout, error: null };
+  }
+}
