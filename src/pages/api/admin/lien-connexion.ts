@@ -79,6 +79,21 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return json({ ok: false, error: "server" }, 500);
   }
 
+  /* GARDE-FOU. Quand l'URL demandée n'est pas dans la liste blanche du projet
+     Supabase (Authentication -> URL Configuration), Supabase ne proteste pas :
+     il REMPLACE silencieusement la redirection par la « Site URL » du projet.
+     Le lien part, la personne clique, et atterrit ailleurs — le 28/08/2026,
+     sur `http://localhost:3000`, avec un jeton valide perdu dans l'adresse.
+     Plutôt que d'expédier un lien mort, on refuse et on nomme le réglage. */
+  const destination = new URL(lien.properties.action_link).searchParams.get("redirect_to") || "";
+  if (!destination.startsWith(SITE)) {
+    console.error(
+      `[connexion] redirection refusée par Supabase : « ${destination || "aucune"} » au lieu de « ${SITE}${suite} ». ` +
+      `Ajouter ${SITE}/** dans Authentication > URL Configuration > Redirect URLs, et mettre Site URL sur ${SITE}.`,
+    );
+    return json({ ok: false, error: "redirection" }, 500);
+  }
+
   const m = lienConnexionEmail({ lien: lien.properties.action_link, email });
   const envoye = await sendEmail({ to: email, subject: m.subject, html: m.html, text: m.text });
   if (!envoye) {
