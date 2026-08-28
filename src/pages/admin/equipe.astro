@@ -12,7 +12,7 @@ import Card from "../../components/starwind/card/Card.astro";
       <form class="eq-add" id="eq-add">
         <div class="eq-add-f"><label for="eq-email">Ajouter un membre</label><input class="admin-search" id="eq-email" type="email" placeholder="prenom@exemple.com" /></div>
         <div class="eq-add-f eq-role"><label for="eq-role">Rôle</label>
-          <select class="admin-filter" id="eq-role"><option value="commercial">Commercial</option><option value="admin">Admin</option></select>
+          <select class="admin-filter" id="eq-role"><option value="contenu">Contenu</option><option value="commercial">Commercial</option><option value="admin">Admin</option></select>
         </div>
         <button class="abtn primary" id="eq-addbtn" type="submit">Ajouter</button>
       </form>
@@ -44,8 +44,9 @@ import Card from "../../components/starwind/card/Card.astro";
         ? "Ce membre existe déjà."
         : "Action impossible.";
 
-  const rolePill = (r: string) => r === "admin"
-    ? '<span class="tag-pill ok">Admin</span>'
+  const rolePill = (r: string) =>
+    r === "admin" ? '<span class="tag-pill ok">Admin</span>'
+    : r === "contenu" ? '<span class="tag-pill pub">Contenu</span>'
     : '<span class="tag-pill eq-com">Commercial</span>';
 
   async function load() {
@@ -65,6 +66,7 @@ import Card from "../../components/starwind/card/Card.astro";
         <td><strong>${esc(m.email)}</strong>${isMe ? ' <span class="eq-you">vous</span>' : ""}</td>
         <td>
           <select class="eq-roles" data-role="${esc(m.email)}" aria-label="Rôle de ${esc(m.email)}">
+            <option value="contenu" ${m.role === "contenu" ? "selected" : ""}>Contenu</option>
             <option value="commercial" ${m.role === "commercial" ? "selected" : ""}>Commercial</option>
             <option value="admin" ${m.role === "admin" ? "selected" : ""}>Admin</option>
           </select>

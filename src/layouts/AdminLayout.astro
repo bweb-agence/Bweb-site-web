@@ -140,15 +140,25 @@ const navGroups = [
             location.replace("/admin/connexion?err=forbidden");
             return;
           }
-          // Rôle : admin (tout) ou commercial (vente + lecture, périmètre restreint).
-          const { data: isAdmin } = await supabaseBrowser.rpc("is_admin");
-          const role = isAdmin ? "admin" : "commercial";
+          /* Rôle : admin (tout), contenu (le site public), ou commercial
+             (vente + lecture). On lit le rôle réel plutôt que de le déduire :
+             avec trois rôles, « pas admin » ne veut plus dire « commercial ».
+             Ce filtrage du menu ne PROTÈGE rien à lui seul — c'est la RLS qui
+             tient la frontière (voir migration 0042) ; il évite simplement
+             d'afficher des écrans qui répondraient « accès refusé ». */
+          const { data: monRole } = await supabaseBrowser.rpc("mon_role");
+          const role = (monRole as string) || "commercial";
           document.body.dataset.role = role;
 
-          if (role === "commercial") {
-            // Le commercial ne voit que : tableau de bord, acquisition (soumissions +
-            // contacts), réservations, clients, packs vendus.
-            const allowed = new Set(["dashboard", "soumissions", "contacts", "reservations", "clients", "packs-vendus"]);
+          const PERIMETRES: Record<string, string[]> = {
+            // Le site public : ce qu'on écrit, et le catalogue qu'il présente.
+            contenu: ["dashboard", "articles", "avis", "formations", "themes", "sessions"],
+            // La vente : qui arrive, qui réserve, qui a payé.
+            commercial: ["dashboard", "soumissions", "contacts", "reservations", "clients", "packs-vendus"],
+          };
+
+          if (PERIMETRES[role]) {
+            const allowed = new Set(PERIMETRES[role]);
             document.querySelectorAll("[data-nav]").forEach((a) => {
               if (!allowed.has((a as HTMLElement).dataset.nav || "")) (a as HTMLElement).style.display = "none";
             });
