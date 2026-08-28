@@ -113,12 +113,35 @@ import "../../styles/admin.css";
       document.getElementById("magic-btn")?.addEventListener("click", async () => {
         const email = emailEl.value.trim();
         if (!email) { show("err", "Saisissez d'abord votre e-mail."); return; }
-        const { error } = await supabaseBrowser.auth.signInWithOtp({
-          email,
-          options: { emailRedirectTo: location.origin + next },
-        });
-        if (error) { show("err", "Impossible d'envoyer le lien : " + error.message); return; }
-        show("ok", "Lien de connexion envoyé à " + email + ". Vérifiez votre boîte mail.");
+        /* On passe par notre propre route plutôt que par `signInWithOtp` :
+           Supabase expédierait le message par son SMTP de démonstration, qui
+           ne délivre pas. Le lien est fabriqué côté serveur et envoyé par
+           Bird, comme le reste du courrier du site. */
+        const btn = document.getElementById("magic-btn") as HTMLButtonElement;
+        const libelle = btn.textContent;
+        btn.disabled = true; btn.textContent = "Envoi en cours…";
+        let reponse: any = null;
+        try {
+          const r = await fetch("/api/admin/lien-connexion", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, next }),
+          });
+          reponse = await r.json();
+        } catch { /* réseau : traité comme un échec ci-dessous */ }
+        btn.disabled = false; btn.textContent = libelle;
+        if (!reponse?.ok) {
+          const messages: Record<string, string> = {
+            email_invalide: "Cette adresse ne semble pas valide.",
+            rate_limited: "Trop de demandes. Patientez quelques minutes.",
+            email: "L'envoi a échoué. Réessayez dans un instant.",
+          };
+          show("err", messages[reponse?.error] || "Impossible d'envoyer le lien. Réessayez dans un instant.");
+          return;
+        }
+        /* Message identique que l'adresse ait droit ou non : la page de
+           connexion ne doit pas révéler qui administre le site. */
+        show("ok", "Si cette adresse a un accès, le lien vient d'être envoyé à " + email + ". Vérifiez votre boîte mail.");
       });
     </script>
   </body>
