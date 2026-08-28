@@ -50,7 +50,10 @@ const { title } = Astro.props;
         try {
           const { data: { session } } = await supabaseBrowser.auth.getSession();
           if (!session) { location.replace("/admin/connexion?next=" + encodeURIComponent(location.pathname)); return; }
-          const { data: isAdmin, error } = await supabaseBrowser.rpc("is_admin");
+          /* `is_editeur` et non `is_admin` : l'éditeur plein écran EST l'outil
+             du rôle contenu. Le garder sur `is_admin` déconnectait la personne
+             au moment précis où elle vient travailler. */
+          const { data: isAdmin, error } = await supabaseBrowser.rpc("is_editeur");
           if (error) throw error;
           if (!isAdmin) { await supabaseBrowser.auth.signOut(); location.replace("/admin/connexion?err=forbidden"); return; }
           clearTimeout(failsafe);
