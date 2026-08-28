@@ -135,6 +135,7 @@ import "../../styles/admin.css";
             email_invalide: "Cette adresse ne semble pas valide.",
             rate_limited: "Trop de demandes. Patientez quelques minutes.",
             email: "L'envoi a échoué. Réessayez dans un instant.",
+            redirection: "Configuration incomplète côté Supabase : la redirection du site n'est pas autorisée. Prévenez un administrateur.",
           };
           show("err", messages[reponse?.error] || "Impossible d'envoyer le lien. Réessayez dans un instant.");
           return;
