@@ -356,6 +356,47 @@ export function reminderEmail(kind: string, b: EventEmail) {
 }
 
 /* Demande d'avis (le lendemain de la session). */
+/* =========================================================
+   Lien de connexion à l'espace admin
+   ---------------------------------------------------------
+   Supabase sait envoyer ce lien lui-même, mais par son SMTP de démonstration :
+   quelques envois par heure, depuis un domaine que personne n'a authentifié.
+   Résultat constaté le 28/08/2026 sur un nouvel accès — le message part chez
+   Supabase, n'arrive jamais, et la personne ne peut pas se connecter.
+   Le lien est donc fabriqué côté serveur puis expédié par Bird, comme tout le
+   reste du courrier du site : même domaine, même DKIM, même réputation.
+   ========================================================= */
+export function lienConnexionEmail(b: { lien: string; email: string }) {
+  const corps = `${wbEntete("#1f6ced", "Espace admin", "Votre lien de connexion", "Il ouvre votre session, sans mot de passe.")}
+    <div style="padding:8px 20px 24px">
+      <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 16px">Bonjour,</p>
+      <p class="wb-t" style="font-size:16px;color:#3f4568;line-height:1.6;margin:0 0 16px">
+        Voici votre lien de connexion à l'espace d'administration de Bweb Agence.
+        Il est valable <b>une heure</b> et ne fonctionne qu'une fois.
+      </p>
+      ${wbBouton(b.lien, "Ouvrir ma session")}
+      <p class="wb-m" style="font-size:13.5px;color:#8b91ae;line-height:1.6;margin:18px 0 0">
+        Si le bouton ne fonctionne pas, copiez cette adresse dans votre navigateur :<br>
+        <span style="word-break:break-all;color:#565d80">${esc(b.lien)}</span>
+      </p>
+      <p class="wb-m" style="font-size:13.5px;color:#8b91ae;line-height:1.6;margin:16px 0 0;padding-top:12px;border-top:1px solid #eef2fb">
+        Vous n'avez pas demandé ce lien ? Ignorez ce message : il ne se passe rien
+        tant que personne ne l'ouvre.
+      </p>
+    </div>`;
+  return {
+    subject: "Votre lien de connexion — Espace admin Bweb",
+    html: shell(corps, "Ce lien ouvre votre session. Valable une heure, une seule fois."),
+    text: [
+      "Bonjour,", "",
+      "Voici votre lien de connexion à l'espace d'administration de Bweb Agence.",
+      "Il est valable une heure et ne fonctionne qu'une fois.", "",
+      b.lien, "",
+      "Vous n'avez pas demandé ce lien ? Ignorez ce message.",
+    ].join("\n"),
+  };
+}
+
 export function reviewRequestEmail(b: { full_name: string; session_title: string; review_url: string }) {
   return {
     subject: `Comment s'est passée « ${b.session_title} » ? ⭐`,
