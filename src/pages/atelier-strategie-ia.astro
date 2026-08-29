@@ -99,8 +99,11 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
       <span>Atelier Stratégie IA</span>
     </nav>
 
+    {/* Trois blocs frères, et non un bloc texte + un visuel : c'est ce qui
+        permet d'intercaler l'illustration ENTRE les boutons et les chiffres
+        sur mobile, sans dupliquer le balisage (cf. .at-hero-grid). */}
     <div class="at-hero-grid">
-      <div data-hero-in>
+      <div class="at-hero-text" data-hero-in>
         <p class="at-pill">
           <span class="at-pill__dot" aria-hidden="true"></span>
           Atelier dirigeants · {PLACES} places · Abidjan · {SESSION}
@@ -118,16 +121,17 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
           <a href="#programme" class="btn btn-outline at-cta">Voir le programme</a>
         </div>
 
-        <ul class="at-proof">
-          <li><b>+15 000</b><span>personnes formées</span></li>
-          <li><b>+100 M FCFA</b><span>générés pour nos clients</span></li>
-        </ul>
       </div>
 
       <div class="at-hero-visual" data-hero-in>
         {/* Visuel V1 du scope §5bis — composant SVG animé (cf. IllusAtelier.astro). */}
         <IllusAtelier />
       </div>
+
+      <ul class="at-proof" data-hero-in>
+        <li><b>+15 000</b><span>personnes formées</span></li>
+        <li><b>+100 M FCFA</b><span>générés pour nos clients</span></li>
+      </ul>
     </div>
   </div>
 </section>
@@ -685,9 +689,19 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   .at-breadcrumb a:hover { color: var(--c-blue); }
   .at-breadcrumb svg { width: 12px; height: 12px; flex: none; }
 
-  .at-hero-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: clamp(28px, 4vw, 56px); align-items: center; }
+  /* Zones nommées plutôt que colonnes : sur mobile, l'illustration doit se
+     glisser ENTRE les boutons et les chiffres. Un simple passage à une colonne
+     ne le permet pas — elle suivrait l'ordre du balisage, où les chiffres la
+     précèdent en version desktop. */
+  .at-hero-grid {
+    display: grid; grid-template-columns: 1.08fr .92fr;
+    gap: clamp(22px, 2.6vw, 34px) clamp(28px, 4vw, 56px);
+    grid-template-areas: "texte visuel" "preuves visuel"; align-items: center;
+  }
+  .at-hero-text { grid-area: texte; }
+  .at-hero-visual { grid-area: visuel; }
 
-  .at-pill { display: inline-flex; align-items: center; gap: 9px; padding: 8px 16px; border-radius: var(--radius-pill); background: var(--c-skyblue); color: var(--c-blue-darker); font-size: .8rem; font-weight: 700; margin-bottom: 20px; }
+  .at-pill { display: inline-flex; align-items: center; gap: 9px; padding: 8px 16px; border-radius: var(--radius-pill); background: var(--c-skyblue); color: var(--c-blue-darker); font-size: .8rem; font-weight: 700; line-height: 1.45; margin-bottom: 20px; }
   .at-pill__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-orange); flex: none; }
 
   .at-h1 { font-size: clamp(2rem, 1.4rem + 2.5vw, 3.35rem); line-height: 1.08; max-width: 16ch; margin-bottom: 20px; }
@@ -701,7 +715,7 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   /* Règle Godwin : le texte d'un bouton tient sur UNE ligne. */
   .at-cta { white-space: nowrap; }
 
-  .at-proof { display: flex; flex-wrap: wrap; gap: 14px 36px; list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--c-border-soft); padding-top: 22px; }
+  .at-proof { grid-area: preuves; align-self: end; display: flex; flex-wrap: wrap; gap: 14px 36px; list-style: none; margin: 0; padding: 22px 0 0; border-top: 1px solid var(--c-border-soft); }
   .at-proof li { display: flex; flex-direction: column; }
   .at-proof b { font-family: var(--f-display); font-size: 1.4rem; font-weight: 800; color: var(--c-navy); line-height: 1.1; }
   .at-proof span { font-size: .84rem; color: var(--c-gray-500); }
@@ -816,10 +830,20 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   .wiz-lock .at-sticky { display: none; }
 
   /* ---------- Adaptations ---------- */
-  @media (max-width: 980px) {
-    .at-hero-grid { grid-template-columns: 1fr; }
-    .at-hero-visual { order: -1; max-width: 420px; margin-inline: auto; }
+  /* Le hero bascule en une colonne au MÊME seuil que l'en-tête (1080 px, cf.
+     components.css). En dessous, la colonne de texte n'a plus la place : le
+     titre se brise en trois lignes et les deux boutons s'empilent alors qu'on
+     est encore sur un écran d'ordinateur. */
+  @media (max-width: 1080px) {
+    /* L'ordre décidé le 29/08/2026 : promesse, boutons, PUIS illustration.
+       Elle passait avant le titre — un visiteur venu d'une publicité voyait
+       300 px de blanc avant de lire ce qu'on lui vend. */
+    .at-hero-grid { grid-template-columns: 1fr; grid-template-areas: "texte" "visuel" "preuves"; align-items: start; }
+    .at-hero-visual { max-width: 420px; margin-inline: auto; }
     .at-h1 { max-width: none; }
+  }
+
+  @media (max-width: 980px) {
     .at-deliverables { grid-template-columns: repeat(2, 1fr); }
     .at-timeline { grid-template-columns: 1fr; gap: 28px; }
     .at-timeline::before { display: none; }
@@ -831,6 +855,13 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
     .at-guarantee { flex-direction: column; text-align: center; }
   }
   @media (max-width: 720px) {
+    /* Godwin déteste le vide : sous l'en-tête, on resserre au lieu de laisser
+       respirer un écran qu'on n'a pas les moyens de remplir. */
+    .at-hero { padding-top: clamp(100px, 24vw, 124px); padding-bottom: 34px; }
+    .at-breadcrumb { margin-bottom: 18px; }
+    .at-hero-sub { margin-bottom: 24px; }
+    .at-hero-actions { margin-bottom: 0; }
+    .at-hero-visual { max-width: 340px; }
     .at-pains, .at-fit-grid { grid-template-columns: 1fr; }
     .at-deliverables { grid-template-columns: 1fr; }
     .at-videos { grid-template-columns: 1fr; max-width: 300px; }
