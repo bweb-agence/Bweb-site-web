@@ -154,47 +154,90 @@ mark { background: none; color: var(--c-blue); position: relative; }
   background: #fff; border: 1px solid var(--c-border-soft); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
 }
 
-/* Mega menu — items enrichis (icône + titre + description), header desktop et mobile */
-.mega-panel { display: flex; align-items: stretch; gap: 4px; }
-/* `grid-auto-rows: auto` (et non `1fr`) : une cellule qui porte ses offres est
-   plus haute que les autres, et des rangées toutes égales étireraient tout le
-   panneau à cette hauteur — quatre catégories flottant au milieu de leur vide. */
-.mega-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: auto; align-content: start; gap: 2px; flex: 1 1 auto; min-width: 0; }
-.mega-extra { flex: 0 0 176px; display: flex; padding-left: 14px; margin-left: 10px; border-left: 1px solid var(--c-border-soft); }
-.mega-extra__item { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 14px; background: var(--c-skyblue); transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease); width: 100%; overflow: hidden; }
-.mega-extra__item .mega-item__icon { background: #fff; }
-.mega-extra__img { width: 100%; flex: 1 1 auto; min-height: 0; margin-top: 2px; border-radius: 10px; object-fit: cover; }
-.mega-extra__item:hover, .mega-extra__item.is-active { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-.mega-item { display: flex; align-items: flex-start; gap: 14px; padding: 12px; border-radius: 8px; transition: background-color var(--dur-fast); }
-.nav-dropdown .mega-item, .nav-dropdown .mega-extra__item { border-radius: 8px; } /* bat la spécificité de .main-nav a (border-radius: pill) */
-.mega-item:hover, .mega-item.is-active { background: var(--c-gray-100); }
-.mega-item__icon { flex: none; width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--c-skyblue); color: var(--c-blue); display: flex; align-items: center; justify-content: center; }
-.mega-item__icon svg { width: 19px; height: 19px; }
-.mega-item__body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.mega-item__title { font-weight: 700; font-size: .92rem; color: var(--c-navy); transition: color var(--dur-fast); }
-.mega-item.is-active .mega-item__title { color: var(--c-blue); }
-.mega-item__desc {
-  font-size: .8rem; color: var(--c-gray-500); line-height: 1.35;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
-  overflow: hidden;
+/* =========================================================
+   MÉGA-MENU (Services, Formations)
+   ---------------------------------------------------------
+   Quatre colonnes de liens + une carte d'action. Les colonnes rangent les
+   offres par intention du visiteur ; leur contenu est déclaré dans
+   src/config/site.ts, jamais écrit ici.
+   ========================================================= */
+
+/* Le panneau doit couvrir toute la largeur de l'en-tête, pas celle du libellé
+   qui l'ouvre. On rend donc l'item `static` et on ancre le panneau sur le
+   conteneur — un panneau de 1100 px centré sur un mot de 90 px déborderait de
+   l'écran sur les portables. */
+.site-header .container { position: relative; }
+.nav-item.has-mega { position: static; }
+.nav-item.has-mega .nav-dropdown { left: 0; right: 0; width: auto; transform: translateY(6px); }
+.nav-item.has-mega:hover .nav-dropdown,
+.nav-item.has-mega:focus-within .nav-dropdown { transform: translateY(0); }
+
+.mega { padding: 34px 34px 28px; }
+/* Le nombre de colonnes est posé par le composant (`mega-cols--3`, `--4`) et
+   non déduit en CSS : un sélecteur qui compte les enfants compte AUSSI la
+   carte, et la renvoie à la ligne dès qu'il se trompe d'une unité. */
+.mega-cols { display: grid; gap: 30px; align-items: start; }
+.mega-cols--4 { grid-template-columns: 1fr 1.15fr 1fr 1fr 240px; }
+.mega-cols--3 { grid-template-columns: 1fr 1.15fr 1fr 240px; }
+
+.mega-kicker {
+  font-size: .69rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--c-gray-400); margin-bottom: 18px; line-height: 1.4;
+}
+.mega-links { list-style: none; display: grid; gap: 15px; margin: 0; padding: 0; }
+
+/* Le lien porte le nom ; le badge est un MOT de ce nom (inline), sinon il
+   tombe seul sur la ligne suivante dès que la colonne se resserre. */
+.main-nav .mega-link { display: block; padding: 0; border-radius: 0; font-size: .95rem; font-weight: 700; color: var(--c-navy); line-height: 1.35; }
+.main-nav .mega-link:hover { background: transparent; color: var(--c-blue); }
+.mega-link.is-active { color: var(--c-blue); }
+/* Offre annoncée, pas encore ouverte : visible mais visiblement inerte.
+   Préfixé `.main-nav` pour passer devant `.main-nav .mega-link`, sinon la
+   couleur navy des liens l'emporte et « Bientôt » n'a plus l'air inactif. */
+.main-nav .mega-link--soon { color: var(--c-gray-400); cursor: default; }
+.mega-desc { display: block; font-size: .78rem; font-weight: 400; color: var(--c-gray-500); line-height: 1.45; margin-top: 3px; }
+
+.mega-badge {
+  display: inline-block; margin-left: 7px; padding: 2px 7px; border-radius: 6px;
+  font-family: var(--f-body); font-size: .61rem; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; line-height: 1.6; vertical-align: 2px;
+}
+.mega-badge--nouveau { background: #d6f7ef; color: #0b6b56; }
+.mega-badge--bientot { background: var(--c-gray-100); color: var(--c-gray-500); }
+.mega-badge--boutique { background: #ece8ff; color: #4b34b8; }
+
+/* Colonne éditoriale : les portes d'entrée larges, en gros caractères. */
+.mega-col--editorial .mega-links { gap: 14px; }
+.main-nav .mega-col--editorial .mega-link { font-family: var(--f-display); font-size: 1.2rem; font-weight: 600; letter-spacing: -.01em; line-height: 1.25; }
+
+/* L'unique action du panneau. */
+.main-nav a.mega-card {
+  display: flex; flex-direction: column; align-self: stretch; padding: 20px 18px; border-radius: var(--radius-md);
+  background: linear-gradient(160deg, #eaf7f2 0%, #e3f0fe 100%);
+  border: 1px solid rgba(31, 108, 237, .16);
+}
+.main-nav a.mega-card:hover { background: linear-gradient(160deg, #e2f4ed 0%, #d9eaff 100%); }
+.mega-card__title { font-family: var(--f-display); font-size: 1rem; font-weight: 700; color: var(--c-navy); line-height: 1.3; }
+.mega-card__text { font-size: .8rem; color: var(--c-gray-600); line-height: 1.55; margin-top: 8px; }
+.mega-card__go { margin-top: auto; padding-top: 16px; display: flex; align-items: center; gap: 9px; font-size: .82rem; font-weight: 700; color: var(--c-blue); }
+.mega-card__circle { width: 32px; height: 32px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; flex: none; box-shadow: 0 6px 16px -6px rgba(2, 11, 80, .28); }
+.mega-card__circle svg { width: 15px; height: 15px; }
+
+/* Entre 1080 px (apparition de la nav) et 1240 px, cinq colonnes tiennent mais
+   à l'étroit : les badges retombent sous leur libellé et les descriptions
+   passent sur trois lignes. On resserre les gouttières plutôt que d'empiler. */
+@media (max-width: 1240px) {
+  .mega { padding: 28px 24px 22px; }
+  .mega-cols { gap: 20px; }
+  .mega-cols--4 { grid-template-columns: .82fr 1.2fr 1fr 1fr 205px; }
+  .mega-cols--3 { grid-template-columns: .9fr 1.2fr 1fr 205px; }
+  .main-nav .mega-col--editorial .mega-link { font-size: 1.06rem; }
+  .mega-desc { font-size: .75rem; }
 }
 
-/* Sous-niveau d'une catégorie (ses offres nommées : « Atelier Stratégie IA »…).
-   Volontairement DÉPLIÉ, pas en flyout au survol : un second niveau qui ne
-   s'ouvre qu'au survol est invisible pour qui ne le cherche pas, injouable au
-   doigt, et disparaît entièrement sans JavaScript. Ici les offres sont là dès
-   que le menu Services s'ouvre — le clavier les atteint dans l'ordre, et une
-   page sans JS affiche exactement la même chose. */
-.mega-cell { display: flex; flex-direction: column; }
-.mega-sub { list-style: none; margin: 2px 0 6px; padding: 0 0 0 32px; display: grid; gap: 2px; }
-.main-nav .mega-sub__link {
-  display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border-radius: 8px;
-  border-left: 2px solid var(--c-border); font-weight: 600;
-}
-.main-nav .mega-sub__link:hover { border-left-color: var(--c-blue); background: var(--c-gray-100); }
-.mega-sub__title { font-size: .85rem; color: var(--c-navy); font-weight: 700; }
-.mega-sub__link.is-active .mega-sub__title { color: var(--c-blue); }
-.mega-sub__desc { font-size: .74rem; color: var(--c-gray-500); }
+.mega-foot { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--c-border-soft); display: flex; flex-wrap: wrap; gap: 22px; align-items: center; font-size: .84rem; color: var(--c-gray-600); }
+.main-nav .mega-foot a { padding: 0; border-radius: 0; font-size: .84rem; font-weight: 700; color: var(--c-gray-700); }
+.main-nav .mega-foot a:hover { background: transparent; color: var(--c-blue); }
 
 .nav-cta { display: flex; align-items: center; gap: 10px; flex: none; margin-left: auto; }
 .nav-cta .btn { padding: 12px 22px; font-size: .86rem; }
@@ -207,48 +250,63 @@ mark { background: none; color: var(--c-blue); position: relative; }
 .nav-toggle.is-open span::before { transform: translateY(6px) rotate(45deg); }
 .nav-toggle.is-open span::after { transform: translateY(-6px) rotate(-45deg); }
 
+/* =========================================================
+   MENU MOBILE — panneau BLANC
+   ---------------------------------------------------------
+   Il était navy. Il passe en blanc (décision Godwin du 29/08/2026) : le menu
+   reprend ainsi les couleurs du panneau desktop, et le contenu se lit dans le
+   même contraste que le reste du site, au lieu de s'inverser à chaque
+   ouverture.
+   ========================================================= */
 .mobile-nav {
-  position: fixed; inset: 0; background: var(--g-navy); z-index: var(--z-mobile-nav);
-  display: flex; flex-direction: column; justify-content: center; padding: 100px 32px 40px;
+  position: fixed; inset: 0; background: #fff; z-index: var(--z-mobile-nav);
+  display: flex; flex-direction: column; padding: 92px 24px 32px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
   transform: translateY(-100%); transition: transform var(--dur-slow) var(--ease); visibility: hidden;
 }
 .mobile-nav.is-open { transform: translateY(0); visibility: visible; }
-.mobile-nav nav a { display: block; font-family: var(--f-display); font-size: 2rem; color: #fff; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.1); }
+.mobile-nav nav a { display: block; font-family: var(--f-display); font-size: 1.6rem; color: var(--c-navy); padding: 14px 0; border-bottom: 1px solid var(--c-border-soft); }
+.mobile-nav nav a[aria-current="page"] { color: var(--c-blue); }
+.mobile-nav__close { color: var(--c-navy); }
 
-.mobile-nav-item__row { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.mobile-nav-item__row { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--c-border-soft); }
 .mobile-nav .mobile-nav-item__row a { flex: 1; min-width: 0; border-bottom: none; }
-.mobile-nav-item__toggle { flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: #fff; cursor: pointer; }
-.mobile-nav-item__chevron { flex: none; width: 13px; height: 13px; color: #fff; transition: transform var(--dur-fast) var(--ease); }
+.mobile-nav-item__toggle { flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--c-gray-500); cursor: pointer; }
+.mobile-nav-item__chevron { flex: none; width: 13px; height: 13px; transition: transform var(--dur-fast) var(--ease); }
 .mobile-nav-item.is-open .mobile-nav-item__chevron { transform: rotate(180deg); }
 
 .mobile-nav-submenu { max-height: 0; overflow: hidden; transition: max-height var(--dur-slow) var(--ease); }
-.mobile-nav-submenu__inner { padding: 6px 0 10px; display: flex; flex-direction: column; }
-.mobile-nav .mobile-nav-submenu .mega-item { display: flex; align-items: center; gap: 14px; padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,.08); border-radius: 0; }
-.mobile-nav .mobile-nav-submenu .mega-item:last-child { border-bottom: none; }
-.mobile-nav .mobile-nav-submenu .mega-item:hover, .mobile-nav .mobile-nav-submenu .mega-item:active { background: transparent; }
-.mobile-nav .mobile-nav-submenu .mega-item__icon { background: rgba(255,255,255,.08); color: var(--c-yellow); }
-.mobile-nav .mobile-nav-submenu .mega-item__title { font-family: var(--f-body); font-size: 1.05rem; font-weight: 700; color: #fff; }
-.mobile-nav .mobile-nav-submenu .mega-item__desc {
-  font-family: var(--f-body); font-size: .82rem; color: rgba(255,255,255,.55);
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
-  overflow: hidden;
-}
-.mobile-nav .mobile-nav-submenu .mega-item:hover .mega-item__title,
-.mobile-nav .mobile-nav-submenu .mega-item:active .mega-item__title,
-.mobile-nav .mobile-nav-submenu .mega-item[aria-current="page"] .mega-item__title { color: var(--c-yellow); }
+.mobile-nav-submenu__inner { padding: 14px 0 18px; }
 
-/* Offres d'une catégorie, en retrait sous elle (pendant mobile de .mega-sub). */
-.mobile-nav-sub { list-style: none; margin: 0 0 8px; padding: 6px 0 6px 54px; display: grid; gap: 2px; }
-.mobile-nav .mobile-nav-sub__link {
-  display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border-radius: 10px;
-  border-left: 2px solid rgba(255,255,255,.18);
-  font-size: .95rem; font-weight: 700; color: #fff;
-}
-.mobile-nav .mobile-nav-sub__link span { font-size: .78rem; font-weight: 500; color: rgba(255,255,255,.6); }
-.mobile-nav .mobile-nav-sub__link:hover,
-.mobile-nav .mobile-nav-sub__link[aria-current="page"] { color: var(--c-yellow); border-left-color: var(--c-yellow); }
+/* Intertitre de groupe : le pendant mobile de .mega-kicker. */
+.mobile-nav-group { font-size: .66rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--c-gray-400); margin: 18px 0 10px; }
+.mobile-nav-submenu__inner > .mobile-nav-group:first-child { margin-top: 0; }
+.mobile-nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 
-.mobile-nav .mobile-nav-cta { margin-top: 32px; display: flex; flex-direction: column; gap: 12px; }
+.mobile-nav .mobile-nav-link {
+  display: block; padding: 10px 14px; border-bottom: none; border-radius: 0 10px 10px 0;
+  border-left: 2px solid var(--c-border); font-family: var(--f-body); font-size: .98rem; font-weight: 700;
+  color: var(--c-navy); line-height: 1.35;
+}
+.mobile-nav .mobile-nav-link[aria-current="page"] { color: var(--c-blue); border-left-color: var(--c-blue); background: var(--surface-2); }
+/* Le survol n'est proposé qu'aux pointeurs. Sur écran tactile, un `:hover`
+   reste COLLÉ après le tap : le lien touché garde l'aspect de la page courante
+   et désigne la mauvaise page tant que le menu est ouvert. */
+@media (hover: hover) {
+  .mobile-nav .mobile-nav-link:hover { color: var(--c-blue); border-left-color: var(--c-blue); background: var(--surface-2); }
+}
+.mobile-nav .mobile-nav-link--soon { color: var(--c-gray-400); }
+.mobile-nav .mobile-nav-link .mega-desc { font-size: .76rem; color: var(--c-gray-500); margin-top: 2px; }
+
+/* Rappel de la carte d'action du desktop, réduit à son bouton. */
+.mobile-nav .mobile-nav-card {
+  display: flex; align-items: center; justify-content: center; gap: 9px; margin-top: 22px; padding: 14px 20px;
+  border-bottom: none; border-radius: var(--radius-pill); background: var(--c-skyblue);
+  font-family: var(--f-body); font-size: .92rem; font-weight: 700; color: var(--c-blue-darker);
+}
+.mobile-nav .mobile-nav-card svg { width: 16px; height: 16px; }
+
+.mobile-nav .mobile-nav-cta { margin-top: 28px; display: flex; flex-direction: column; gap: 12px; }
 .mobile-nav .mobile-nav-cta .btn { white-space: normal; text-align: center; }
 
 /* ---------- Cartes & composants ---------- */

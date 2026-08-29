@@ -1,10 +1,17 @@
 ---
-import { mainNav, navCta } from "../config/site";
+import { mainNav, navCta, type MenuLien } from "../config/site";
 const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
 const isActive = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(href + "/"));
 /* Mode « focus CRO » : aucune sortie de page. Le logo n'est pas cliquable,
    ni navigation, ni CTA, ni menu mobile — utilisé sur les landings de vente. */
 const { bare = false } = Astro.props;
+
+/* Un lien de menu sans `href` est une offre ANNONCÉE mais pas encore ouverte
+   (badge « Bientôt »). On le rend en <span> : ni cliquable, ni atteignable au
+   clavier — un lien mort qui prend le focus est pire qu'une absence. */
+const BADGES: Record<string, string> = { nouveau: "Nouveau", bientot: "Bientôt", boutique: "Boutique" };
+const estOuvert = (l: MenuLien) => Boolean(l.href);
+const cible = (l: MenuLien) => (l.externe ? { target: "_blank", rel: "noopener" } : {});
 ---
 
 {bare ? (
@@ -20,71 +27,58 @@ const { bare = false } = Astro.props;
     <a href="/" class="brand" aria-label="Bweb Agence — accueil"><img src="/images/logo.svg" alt="Bweb Agence" width="171" height="40" /></a>
     <nav class="main-nav" aria-label="Navigation principale">
       {mainNav.map((item) => (
-        item.children ? (
-          <div class="nav-item has-dropdown">
+        item.mega ? (
+          /* `has-mega` passe le conteneur en `position: static` : le panneau
+             s'aligne alors sur toute la largeur de l'en-tête et non sous le
+             seul libellé, qui ne fait que 90 pixels (cf. components.css). */
+          <div class="nav-item has-dropdown has-mega">
             <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined} aria-haspopup="true" class={isActive(item.href) ? "is-active" : undefined}>
               {item.label}
               <svg class="nav-item__chevron" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </a>
             <div class="nav-dropdown">
-              <div class="nav-dropdown__inner mega-panel" role="menu">
-                <div class="mega-grid">
-                  {item.children.slice(0, 6).map((child) => (
-                    /* Une catégorie qui a des offres nommées (sousPages) devient
-                       une CELLULE : le lien de la catégorie, puis ses offres en
-                       dessous. Le lien ne peut pas les contenir — une ancre dans
-                       une ancre n'est pas du HTML valide, et le clavier n'y
-                       arriverait jamais. Les catégories sans offre restent une
-                       simple ancre, exactement comme avant. */
-                    child.sousPages?.length ? (
-                      <div class="mega-cell">
-                        <a href={child.href} role="menuitem" class:list={["mega-item", { "is-active": isActive(child.href) }]}>
-                          <span class="mega-item__icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
-                          </span>
-                          <span class="mega-item__body">
-                            <span class="mega-item__title">{child.label}</span>
-                            <span class="mega-item__desc">{child.description}</span>
-                          </span>
-                        </a>
-                        <ul class="mega-sub" aria-label={`Offres — ${child.label}`}>
-                          {child.sousPages.map((sous) => (
-                            <li>
-                              <a href={sous.href} role="menuitem" class:list={["mega-sub__link", { "is-active": isActive(sous.href) }]}>
-                                <span class="mega-sub__title">{sous.label}</span>
-                                {sous.description && <span class="mega-sub__desc">{sous.description}</span>}
+              <div class="nav-dropdown__inner mega">
+                <div class:list={["mega-cols", `mega-cols--${item.mega.colonnes.length}`]}>
+                  {item.mega.colonnes.map((col) => (
+                    <div class:list={["mega-col", { "mega-col--editorial": col.style === "editorial" }]}>
+                      <p class="mega-kicker">{col.titre}</p>
+                      <ul class="mega-links">
+                        {col.liens.map((lien) => (
+                          <li>
+                            {estOuvert(lien) ? (
+                              <a href={lien.href} class:list={["mega-link", { "is-active": isActive(lien.href!) }]} {...cible(lien)}>
+                                {lien.label}
+                                {lien.badge && <span class={`mega-badge mega-badge--${lien.badge}`}>{BADGES[lien.badge]}</span>}
                               </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : (
-                      <a href={child.href} role="menuitem" class:list={["mega-item", { "is-active": isActive(child.href) }]}>
-                        <span class="mega-item__icon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
-                        </span>
-                        <span class="mega-item__body">
-                          <span class="mega-item__title">{child.label}</span>
-                          <span class="mega-item__desc">{child.description}</span>
-                        </span>
-                      </a>
-                    )
+                            ) : (
+                              <span class="mega-link mega-link--soon">
+                                {lien.label}
+                                {lien.badge && <span class={`mega-badge mega-badge--${lien.badge}`}>{BADGES[lien.badge]}</span>}
+                              </span>
+                            )}
+                            {lien.description && <span class="mega-desc">{lien.description}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ))}
+
+                  <a class="mega-card" href={item.mega.carte.href}>
+                    <span class="mega-card__title">{item.mega.carte.titre}</span>
+                    <span class="mega-card__text">{item.mega.carte.texte}</span>
+                    <span class="mega-card__go">
+                      <span class="mega-card__circle" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
+                      </span>
+                      {item.mega.carte.cta}
+                    </span>
+                  </a>
                 </div>
-                {item.children.length > 6 && (
-                  <div class="mega-extra">
-                    {item.children.slice(6).map((child) => (
-                      <a href={child.href} role="menuitem" class:list={["mega-extra__item", { "is-active": isActive(child.href) }]}>
-                        <span class="mega-item__icon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
-                        </span>
-                        <span class="mega-item__title">{child.label}</span>
-                        <span class="mega-item__desc">{child.description}</span>
-                        {"image" in child && child.image && (
-                          <img class="mega-extra__img" src={child.image} alt="" loading="lazy" />
-                        )}
-                      </a>
-                    ))}
+
+                {item.mega.pied && (
+                  <div class="mega-foot">
+                    <span>{item.mega.pied.intro}</span>
+                    {item.mega.pied.liens.map((lien) => <a href={lien.href}>{lien.label}</a>)}
                   </div>
                 )}
               </div>
@@ -110,7 +104,7 @@ const { bare = false } = Astro.props;
   </button>
   <nav aria-label="Navigation mobile">
     {mainNav.map((item) => (
-      item.children ? (
+      item.mega ? (
         <div class="mobile-nav-item">
           <div class="mobile-nav-item__row">
             <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>{item.label}</a>
@@ -118,36 +112,43 @@ const { bare = false } = Astro.props;
               <svg class="mobile-nav-item__chevron" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
           </div>
+          {/* Le mobile reprend les MÊMES colonnes, empilées : l'intitulé de
+              groupe devient un intertitre. On ne réordonne rien — un menu qui
+              ne dit pas la même chose selon l'écran désoriente au retour. */}
           <div class="mobile-nav-submenu">
             <div class="mobile-nav-submenu__inner">
-              {item.children.map((child) => (
+              {item.mega.colonnes.map((col) => (
                 <Fragment>
-                  <a href={child.href} tabindex="-1" class="mega-item" aria-current={isActive(child.href) ? "page" : undefined}>
-                    <span class="mega-item__icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
-                    </span>
-                    <span class="mega-item__body">
-                      <span class="mega-item__title">{child.label}</span>
-                      <span class="mega-item__desc">{child.description}</span>
-                    </span>
-                  </a>
-                  {/* Offres de la catégorie, en retrait sous elle. Elles vivent
-                      DANS le sous-menu dépliable existant : initMobileNav pose
-                      déjà le tabindex de tous ses liens, celles-ci comprises. */}
-                  {child.sousPages?.length && (
-                    <ul class="mobile-nav-sub" aria-label={`Offres — ${child.label}`}>
-                      {child.sousPages.map((sous) => (
-                        <li>
-                          <a href={sous.href} tabindex="-1" class="mobile-nav-sub__link" aria-current={isActive(sous.href) ? "page" : undefined}>
-                            {sous.label}
-                            {sous.description && <span>{sous.description}</span>}
+                  <p class="mobile-nav-group">{col.titre}</p>
+                  <ul class="mobile-nav-list">
+                    {col.liens.map((lien) => (
+                      <li>
+                        {estOuvert(lien) ? (
+                          <a href={lien.href} tabindex="-1" class="mobile-nav-link" aria-current={isActive(lien.href!) ? "page" : undefined} {...cible(lien)}>
+                            <span class="mobile-nav-link__label">
+                              {lien.label}
+                              {lien.badge && <span class={`mega-badge mega-badge--${lien.badge}`}>{BADGES[lien.badge]}</span>}
+                            </span>
+                            {lien.description && <span class="mega-desc">{lien.description}</span>}
                           </a>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                        ) : (
+                          <span class="mobile-nav-link mobile-nav-link--soon">
+                            <span class="mobile-nav-link__label">
+                              {lien.label}
+                              {lien.badge && <span class={`mega-badge mega-badge--${lien.badge}`}>{BADGES[lien.badge]}</span>}
+                            </span>
+                            {lien.description && <span class="mega-desc">{lien.description}</span>}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </Fragment>
               ))}
+              <a href={item.mega.carte.href} tabindex="-1" class="mobile-nav-card">
+                {item.mega.carte.cta}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
+              </a>
             </div>
           </div>
         </div>
@@ -158,7 +159,7 @@ const { bare = false } = Astro.props;
   </nav>
   <div class="mobile-nav-cta">
     {navCta.map((cta) => (
-      <a href={cta.href} class={`btn ${cta.variant === "btn-primary" ? "btn-primary" : "btn-outline-light"} btn-block`}>{cta.label}</a>
+      <a href={cta.href} class={`btn ${cta.variant} btn-block`}>{cta.label}</a>
     ))}
   </div>
 </div>

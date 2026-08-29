@@ -31,7 +31,7 @@ export type NiveauQualification = "A" | "B" | "C";
 export interface Qualification {
   score: number;
   niveau: NiveauQualification;
-  /** Délai de rappel associé, repris tel quel dans l'e-mail et sur Telegram. */
+  /** Délai de rappel associé, repris tel quel dans l'e-mail de notification. */
   delai: string;
 }
 

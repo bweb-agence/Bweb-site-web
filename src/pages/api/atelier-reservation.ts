@@ -9,21 +9,23 @@ export const prerender = false;
    WhatsApp au lieu de perdre la demande.
 
    L'ordre est celui de /api/contact, et pour la même raison : on ENREGISTRE
-   avant de notifier. Bird en panne ou Telegram muet ne doit pas faire
-   disparaître un dirigeant qui vient de remplir cinq étapes.
+   avant de notifier. Bird en panne ne doit pas faire disparaître un dirigeant
+   qui vient de remplir cinq étapes.
 
      1. honeypot          → 200 { ok:true } silencieux (le bot croit avoir réussi)
      2. score SERVEUR     → A/B/C, jamais celui du client (cf. `calculerScore`)
      3. form_submissions  → payload + score, via la clé service
         + contacts / contact_events (type `reservation`) — dans recordSubmission
-     4. e-mail Bird       → notification interne, score en objet
-     5. Telegram          → alerte temps réel, score en tête + WhatsApp cliquable
-     6. accusé de réception au demandeur
+     4. e-mail Bird       → notification interne : niveau en objet, rappel en un clic
+     5. accusé de réception au demandeur
+
+   L'e-mail est le SEUL canal d'alerte (décision Godwin du 29/08/2026) : la
+   boîte info@bwebagence.com est déjà relevée, un second canal à maintenir ne
+   rapportait rien.
    ========================================================= */
 import type { APIRoute } from "astro";
 import { sendEmail } from "../../lib/email";
 import { markRelay, payloadFromFormData, recordSubmission, utmFromFormData } from "../../lib/leads";
-import { escapeMd, notifyTelegram } from "../../lib/telegram";
 import { MAX_DOULEURS, calculerScore } from "../../lib/qualification";
 
 const json = (obj: unknown, status = 200) =>
@@ -172,6 +174,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     // 2) Notification interne par e-mail — le niveau est dans l'OBJET, pour se
     // repérer dans la liste des messages sans avoir à les ouvrir.
     const inbox = import.meta.env.BWEB_INBOX || "info@bwebagence.com";
+    /* Rappeler en un clic depuis la notification : l'e-mail est le seul endroit
+       où l'équipe voit ce lead, recopier un numéro à la main y coûterait une
+       erreur de chiffre tôt ou tard. */
+    const wa = waNumber(phone);
     const notif = shell(`<div style="padding:22px">
       <div style="font-size:11px;letter-spacing:.1em;color:#1f6ced;font-weight:700;text-transform:uppercase;margin-bottom:6px">Réservation d'appel · Atelier Stratégie IA</div>
       <div style="font-size:17px;font-weight:800;color:#0a0e27;margin-bottom:14px">Niveau ${qualification.niveau} — ${qualification.score}/10 · ${esc(qualification.delai)}</div>
@@ -183,6 +189,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         <div><b>Créneau souhaité</b> : ${esc(callSlot.join(", ")) || "—"}</div>
         <div><b>Canal</b> : ${esc(champs.call_channel) || "—"}</div>
       </div>
+      ${wa ? `<div style="margin-top:16px"><a href="https://wa.me/${wa}" style="display:inline-block;background:#25d366;color:#fff;font-size:14px;font-weight:700;text-decoration:none;padding:11px 20px;border-radius:999px">Rappeler sur WhatsApp</a></div>` : ""}
       <div style="font-size:13px;color:#3f4568;line-height:1.7;margin-top:14px">${esc(summary).replace(/\n/g, "<br>")}</div>
     </div>`);
     const notifOk = await sendEmail({
@@ -196,33 +203,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       status: notifOk ? "sent" : "failed",
       error: notifOk ? undefined : "notification Bird non envoyée",
     });
-
-    /* 3) Alerte Telegram : le NIVEAU en premier, parce que c'est la seule chose
-       qui change ce qu'on fait dans la minute qui suit. Le lien WhatsApp est
-       cliquable pour rappeler sans recopier le numéro. */
-    const wa = waNumber(phone);
-    const ligne = (libelle: string, valeur: string) =>
-      valeur ? `*${escapeMd(libelle)}* : ${escapeMd(valeur)}` : "";
-    await notifyTelegram(
-      [
-        `🔔 *\\[${qualification.niveau}\\] Réservation Atelier Stratégie IA* — ${escapeMd(String(qualification.score))}/10`,
-        "",
-        ligne("Nom", name),
-        ligne("Entreprise", company),
-        ligne("Taille", champs.company_size),
-        ligne("Rôle", champs.role),
-        ligne("Douleur", pain.join(", ")),
-        ligne("Budget", champs.budget),
-        ligne("Créneau", callSlot.join(", ")),
-        ligne("Canal", champs.call_channel),
-        ligne("Question à préparer", champs.call_question),
-        "",
-        `_${escapeMd(qualification.delai)}_`,
-        wa ? `[Ouvrir WhatsApp](https://wa.me/${wa})` : escapeMd(phone || email),
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    );
 
     /* Bird non configuré ou en échec → le client bascule sur WhatsApp (contrat
        partagé avec /api/contact). La demande, elle, est déjà en base. */
