@@ -1,0 +1,905 @@
+---
+/* =========================================================
+   ATELIER STRATÉGIE IA — page d'offre (produit d'entrée Conseil & stratégie)
+   -----------------------------------------------------------
+   Une journée pour dirigeants de PME (10-100 employés) à 200 000 FCFA.
+   Entonnoir : Atelier (200K) → Diagnostic (1M) → Accompagnement (2M/mois).
+
+   Ce que cette page vend n'est PAS la place : c'est l'appel découverte. Le
+   formulaire (§9) qualifie le visiteur — taille, rôle, expérience, budget —
+   et la place se vend au téléphone. D'où un formulaire long assumé : chaque
+   réponse sert le script de vente, et le score A/B/C décide du délai de rappel.
+
+   Registre : VOUVOIEMENT partout (B2B). Le tutoiement reste aux pages
+   Academy / parcours, adressées à des particuliers.
+
+   Chrome complet (header + footer + fil d'Ariane) : contrairement aux landings
+   publicitaires (`bareChrome`), cette page appartient au site et doit rester
+   navigable — elle vit dans le sous-menu « Conseil & stratégie ».
+   ========================================================= */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PhoneField from "../components/PhoneField.astro";
+import IllusAtelier from "../components/illus/IllusAtelier.astro";
+import { contact, whatsappLink } from "../config/site";
+
+/* Chiffres de l'offre — un seul endroit à modifier. Ils apparaissent dans le
+   hero, la section prix, la FAQ et le CTA final : les écrire à la main dans
+   chaque section, c'est garantir qu'un jour l'un d'eux dira autre chose. */
+const PRIX = "200 000 FCFA";
+const PRIX_ANCIEN = "350 000 FCFA";
+const ECONOMIE = "150 000 FCFA";
+const TRANCHE = "100 000 FCFA";
+const PLACES = 5;
+/* Date exacte non arrêtée (décision Godwin du 28/08/2026 : « on verra après »).
+   On annonce donc le mois, jamais un jour inventé. */
+const SESSION = "début novembre 2026";
+
+/* La FAQ alimente à la fois les accordéons et le JSON-LD : une seule source,
+   donc impossible que le balisage promette une réponse absente de la page. */
+const faq = [
+  {
+    q: "Pourquoi un appel avant de réserver ma place ?",
+    r: "Parce que l'atelier n'accueille que 5 dirigeants. Cet appel de 15 minutes nous permet de vérifier que la journée répondra vraiment à votre situation — et de préparer vos cas concrets à l'avance. Si ce n'est pas pour vous, nous vous le dirons franchement.",
+  },
+  {
+    q: "Mon entreprise n'a pas 10 employés. C'est quand même pour moi ?",
+    r: "L'atelier est conçu pour des PME établies de 10 à 100 employés, avec des process et une équipe déjà en place. En dessous, certains exercices perdent de leur intérêt. Dites-le nous pendant l'appel : nous vous orienterons vers le format adapté plutôt que de vous vendre une place.",
+  },
+  {
+    q: "Je ne connais rien à l'IA. Je vais suivre ?",
+    r: "Oui. La journée ne demande aucune connaissance technique : nous partons de votre activité, pas des outils. Vous verrez des démonstrations en direct sur des cas réels, et vous repartirez avec des outils déjà configurés — pas avec du vocabulaire.",
+  },
+  {
+    q: `${PRIX} pour une journée, c'est cher ?`,
+    r: `C'est moins qu'une demi-journée de consultant, et vous ne repartez pas avec des notes : vous repartez avec la fiche d'audit de votre entreprise, un plan 90 jours et un kit d'outils. Si vous quittez la journée sans plan d'action, nous vous remboursons. Et les ${PRIX} sont déductibles du Diagnostic si vous décidez d'aller plus loin.`,
+  },
+  {
+    q: "Où et quand se déroule la journée ?",
+    r: `Dans notre salle de formation à Abidjan (Cocody, Riviera Abatta), de 9h à 17h, déjeuner compris. La première session est prévue ${SESSION} — la date exacte vous est confirmée pendant l'appel.`,
+  },
+  {
+    q: "Et si je ne peux finalement pas venir ?",
+    r: "Prévenez-nous et nous reportons votre place sur la session suivante, sans frais. Le replay de la journée reste accessible dans tous les cas.",
+  },
+];
+
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faq.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.r },
+  })),
+};
+
+const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>';
+---
+
+<BaseLayout
+  title="Atelier Stratégie IA — Atelier IA pour dirigeants de PME | Bweb"
+  description={`Une journée pour repartir avec un plan IA concret pour votre PME. ${PLACES} places · Abidjan · ${PRIX}.`}
+  breadcrumbs={[
+    { name: "Accueil", path: "/" },
+    { name: "Services", path: "/services" },
+    { name: "Conseil & stratégie", path: "/services-conseil-strategie" },
+    { name: "Atelier Stratégie IA", path: "/atelier-strategie-ia" },
+  ]}
+  schemas={[faqLd]}
+>
+
+<!-- ═══════════════ 1 · HERO (fond blanc) ═══════════════ -->
+<section class="at-hero" data-nav-section="L'atelier">
+  <div class="container">
+    <nav class="at-breadcrumb" aria-label="Fil d'Ariane">
+      <a href="/">Accueil</a>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      <a href="/services-conseil-strategie">Conseil &amp; stratégie</a>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      <span>Atelier Stratégie IA</span>
+    </nav>
+
+    <div class="at-hero-grid">
+      <div data-hero-in>
+        <p class="at-pill">
+          <span class="at-pill__dot" aria-hidden="true"></span>
+          Atelier dirigeants · {PLACES} places · Abidjan · {SESSION}
+        </p>
+        <h1 class="at-h1">En une journée, votre PME a un <span class="at-underline">plan IA clair</span>.</h1>
+        <p class="lead at-hero-sub">
+          <b>Atelier Stratégie IA</b> : la journée des dirigeants qui veulent savoir
+          exactement par quoi commencer.
+        </p>
+
+        <div class="at-hero-actions">
+          <a href="#reservation" class="btn btn-primary at-cta">Réserver mon appel découverte
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
+          </a>
+          <a href="#programme" class="btn btn-outline at-cta">Voir le programme</a>
+        </div>
+
+        <ul class="at-proof">
+          <li><b>+15 000</b><span>personnes formées</span></li>
+          <li><b>+100 M FCFA</b><span>générés pour nos clients</span></li>
+        </ul>
+      </div>
+
+      <div class="at-hero-visual" data-hero-in>
+        {/* Visuel V1 du scope §5bis — composant SVG animé (cf. IllusAtelier.astro). */}
+        <IllusAtelier />
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 2 · LE PROBLÈME (fond blanc) ═══════════════ -->
+<section class="section at-problem" data-nav-section="Le problème">
+  <div class="container">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center">Ce qu'on entend tous les jours</div>
+      <h2>Vous n'avez pas un problème de moyens.</h2>
+    </div>
+
+    <div class="grid grid-3 at-pains" data-stagger>
+      {/* Visuel V2 du scope §5bis — icônes SVG inline, fond bleu-100 (#D1E9FE). */}
+      <article class="card at-pain">
+        <span class="at-pain__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9.2a3 3 0 0 0-2.8-1.7c-1.6 0-2.6.8-2.6 2s1 1.7 2.6 2.1 2.8.9 2.8 2.2-1.1 2.1-2.8 2.1a3.1 3.1 0 0 1-2.9-1.8"/><line x1="12" y1="6" x2="12" y2="18"/></svg>
+        </span>
+        <h3>Vous avez déjà payé pour du digital sans résultat.</h3>
+        <p>Un site, une page, une agence — et toujours pas de clients en plus.</p>
+      </article>
+
+      <article class="card at-pain">
+        <span class="at-pain__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 6.6 12 12 15.8 14.2"/></svg>
+        </span>
+        <h3>Vous perdez du temps et des ventes dans des process manuels.</h3>
+        <p>Devis recopiés, relances oubliées, factures à la main : votre équipe rame.</p>
+      </article>
+
+      <article class="card at-pain">
+        <span class="at-pain__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 9a2.9 2.9 0 0 1 5.6 1c0 2-2.8 2.4-2.8 4"/><line x1="12" y1="17.6" x2="12" y2="17.7"/><circle cx="12" cy="12" r="9"/></svg>
+        </span>
+        <h3>Vous ne savez pas par où commencer avec l'IA.</h3>
+        <p>Tout le monde en parle, personne ne vous dit quoi faire lundi matin.</p>
+      </article>
+    </div>
+
+    <p class="at-bascule reveal">
+      Ce n'est pas un problème de moyens. <b>C'est un problème de clarté.</b>
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════ 3 · LA SOLUTION (rupture navy) ═══════════════ -->
+<section class="section section-dark at-solution" data-nav-section="La solution">
+  <div class="mesh-bg"></div>
+  <div class="grid-lines"></div>
+  <div class="container" style="position:relative;z-index:2">
+    <div class="section-head center reveal">
+      <div class="eyebrow on-dark" style="justify-content:center">L'Atelier Stratégie IA</div>
+      <h2 class="text-white">Une journée. Un plan.</h2>
+      <p class="lead text-white" style="margin-top:16px">
+        Vous n'assistez pas à une conférence : vous travaillez sur VOTRE entreprise,
+        avec quatre livrables entre les mains en repartant.
+      </p>
+    </div>
+
+    {/* Visuel V3 du scope §5bis — cartes bénéfices, titre en or sur fond sombre. */}
+    <div class="grid grid-4 at-deliverables" data-stagger>
+      <article class="at-deliv">
+        <span class="at-deliv__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7z"/><polyline points="14 3 14 7 18 7"/><line x1="10" y1="12" x2="15" y2="12"/><line x1="10" y1="16" x2="15" y2="16"/></svg>
+        </span>
+        <h3>La fiche d'audit de votre entreprise</h3>
+        <p>Complétée pendant la journée, avec nous — pas un questionnaire à remplir chez vous.</p>
+      </article>
+
+      <article class="at-deliv">
+        <span class="at-deliv__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17.5 9 11l4 4 8-8.5"/><polyline points="15 6.5 21 6.5 21 12.5"/></svg>
+        </span>
+        <h3>Un plan d'action IA priorisé sur 90 jours</h3>
+        <p>Votre feuille de route : quoi faire, dans quel ordre, avec quel budget.</p>
+      </article>
+
+      <article class="at-deliv">
+        <span class="at-deliv__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7.5 10 9.5 12 7.5 14"/><line x1="12.5" y1="14" x2="16.5" y2="14"/></svg>
+        </span>
+        <h3>Le kit IA PME</h3>
+        <p>La liste des outils gratuits qui marchent, et des prompts prêts à l'emploi.</p>
+      </article>
+
+      <article class="at-deliv">
+        <span class="at-deliv__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="14" height="14" rx="2.5"/><polygon points="21.5 7.5 21.5 16.5 16.5 14 16.5 10"/></svg>
+        </span>
+        <h3>Le replay de la journée</h3>
+        <p>Pour le repasser à votre équipe de direction, et ne rien perdre en route.</p>
+      </article>
+    </div>
+
+    <p class="at-bonus reveal">
+      <b>Et un cinquième livrable, moins visible :</b> les {PRIX} de l'atelier sont
+      déductibles du Diagnostic si vous décidez d'aller plus loin avec nous.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════ 4 · LE PROGRAMME (fond blanc) ═══════════════ -->
+<section class="section at-program" id="programme" data-nav-section="Le programme">
+  <div class="container">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center">Le déroulé</div>
+      <h2>De 9h à 17h, une journée qui avance.</h2>
+    </div>
+
+    {/* Visuel V4 du scope §5bis — ligne de temps + 3 icônes. */}
+    <ol class="at-timeline" data-stagger>
+      <li class="at-step">
+        <span class="at-step__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="3" x2="12" y2="5.5"/><line x1="12" y1="18.5" x2="12" y2="21"/><line x1="3" y1="12" x2="5.5" y2="12"/><line x1="18.5" y1="12" x2="21" y2="12"/><line x1="5.6" y1="5.6" x2="7.4" y2="7.4"/><line x1="16.6" y1="16.6" x2="18.4" y2="18.4"/></svg>
+        </span>
+        <span class="at-step__time">9h — 12h30</span>
+        <h3>Matin — Les 5 opportunités IA de votre secteur</h3>
+        <p>
+          Ce qui marche vraiment dans le commerce, les services et la distribution en
+          Côte d'Ivoire — avec des <b>démonstrations en direct sur des cas réels</b>,
+          pas des captures d'écran.
+        </p>
+      </li>
+
+      <li class="at-step">
+        <span class="at-step__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V9.5A1.5 1.5 0 0 1 5.5 8h13A1.5 1.5 0 0 1 20 9.5V20z"/><line x1="3" y1="20" x2="21" y2="20"/><path d="M8 8V5.5"/><path d="M12 8V4"/><path d="M16 8V5.5"/></svg>
+        </span>
+        <span class="at-step__time">12h30 — 14h30</span>
+        <h3>Midi — L'audit express de VOTRE entreprise</h3>
+        <p>
+          Déjeuner de travail : vous remplissez votre fiche d'audit, guidé pas à pas.
+          On regarde vos chiffres, vos process, vos points de fuite.
+        </p>
+      </li>
+
+      <li class="at-step">
+        <span class="at-step__ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V4.8A.8.8 0 0 1 5.8 4h9.4a.8.8 0 0 1 .8.8V20"/><line x1="3" y1="20" x2="21" y2="20"/><polyline points="8.5 12 10.5 14 15 9.5"/></svg>
+        </span>
+        <span class="at-step__time">14h30 — 17h</span>
+        <h3>Après-midi — Votre plan 90 jours</h3>
+        <p>
+          On priorise, on chiffre, on planifie. Puis échanges entre dirigeants et
+          prochaines étapes : vous repartez avec la feuille de route en main.
+        </p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ═══════════════ 5 · POUR QUI / PAS POUR QUI ═══════════════ -->
+<section class="section section-gray at-fit" data-nav-section="Pour qui">
+  <div class="container">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center">Soyons honnêtes</div>
+      <h2>Cet atelier n'est pas pour tout le monde.</h2>
+    </div>
+
+    <div class="grid grid-2 at-fit-grid" data-stagger>
+      <article class="card at-fit-card at-fit-card--yes">
+        <h3><span class="at-fit-badge at-fit-badge--yes" aria-hidden="true">✓</span> C'est pour vous si…</h3>
+        <ul class="at-list">
+          <li>Vous êtes dirigeant·e ou associé·e — vous pouvez décider seul·e.</li>
+          <li>Votre entreprise compte entre 10 et 100 employés.</li>
+          <li>Vous travaillez dans le commerce, les services, la distribution ou l'industrie.</li>
+          <li>Vous voulez des résultats concrets, pas une conférence de plus.</li>
+          <li>Vous êtes prêt·e à travailler sur vos vrais chiffres pendant une journée.</li>
+        </ul>
+      </article>
+
+      <article class="card at-fit-card at-fit-card--no">
+        <h3><span class="at-fit-badge at-fit-badge--no" aria-hidden="true">✕</span> Ce n'est pas pour vous si…</h3>
+        <ul class="at-list at-list--no">
+          <li>Vous cherchez un cours théorique sur l'intelligence artificielle.</li>
+          <li>Vous n'êtes pas décisionnaire dans votre entreprise.</li>
+          <li>Vous attendez une solution clé en main sans rien changer chez vous.</li>
+          <li>Vous voulez uniquement apprendre à utiliser un outil précis.</li>
+        </ul>
+        <p class="at-fit-note">
+          Dans ces cas-là, nos <a href="/services-formation">formations professionnelles</a>{" "}
+          répondront mieux à votre besoin — et nous vous le dirons pendant l'appel.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 6 · LA PREUVE (rupture navy) ═══════════════ -->
+<section class="section section-dark at-proof-section" data-nav-section="La preuve">
+  <div class="mesh-bg"></div>
+  <div class="grid-lines"></div>
+  <div class="container" style="position:relative;z-index:2">
+    <div class="section-head center reveal">
+      <div class="eyebrow on-dark" style="justify-content:center">Ce que nous avons déjà fait</div>
+      <h2 class="text-white">Nous ne débutons pas avec vous.</h2>
+    </div>
+
+    <div class="at-stats reveal">
+      <div class="at-stat"><b>+15 000</b><span>personnes formées</span></div>
+      <div class="at-stat"><b>+100 M FCFA</b><span>générés pour nos clients</span></div>
+      <div class="at-stat"><b>97 %</b><span>de satisfaction</span></div>
+    </div>
+
+    {/* Visuel V6 du scope §5bis — 3 vidéos clients VERTICALES (9:16).
+        Placeholders assumés : aucun faux témoignage, aucune photo d'illustration
+        faisant passer un inconnu pour un client. Les vidéos sont fournies par
+        Godwin ; tant qu'elles manquent, l'emplacement l'annonce lui-même. */}
+    <div class="at-videos" data-stagger>
+      <figure class="at-video">
+        <div class="at-video__slot"><span class="badge badge-placeholder">Témoignage à insérer</span></div>
+        <figcaption>Dirigeant de PME — commerce</figcaption>
+      </figure>
+      <figure class="at-video">
+        <div class="at-video__slot"><span class="badge badge-placeholder">Témoignage à insérer</span></div>
+        <figcaption>Dirigeante de PME — services</figcaption>
+      </figure>
+      <figure class="at-video">
+        <div class="at-video__slot"><span class="badge badge-placeholder">Témoignage à insérer</span></div>
+        <figcaption>Dirigeant de PME — distribution</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 7 · LA GARANTIE ═══════════════ -->
+<section class="section section-sm at-guarantee-section" data-nav-section="Garantie">
+  <div class="container">
+    <div class="at-guarantee reveal">
+      {/* Visuel V5 du scope §5bis — badge garantie 64×64, bouclier or/teal. */}
+      <span class="at-guarantee__badge" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none">
+          <path d="M32 6 54 15v18c0 13-9.4 21.8-22 25-12.6-3.2-22-12-22-25V15z" fill="#FFC72A" fill-opacity=".16" stroke="#FFC72A" stroke-width="2.6" stroke-linejoin="round"/>
+          <polyline points="22 32 29 39 43 24" fill="none" stroke="#00C89E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <div>
+        <h2>100 % satisfait, ou remboursé.</h2>
+        <p class="lead">
+          Si vous quittez la journée sans plan d'action pour votre entreprise, nous vous
+          remboursons intégralement. Sans discussion, sans formulaire à remplir.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 8 · LE PRIX ═══════════════ -->
+<section class="section at-pricing-section" data-nav-section="Le prix">
+  <div class="container">
+    <div class="at-pricing reveal">
+      <p class="at-pricing__flag">🔥 Offre de lancement</p>
+
+      <p class="at-pricing__old"><s>{PRIX_ANCIEN}</s></p>
+      <p class="at-pricing__now">{PRIX}</p>
+      <p class="at-pricing__save">💥 Vous économisez {ECONOMIE}</p>
+
+      <ul class="at-pricing__facts">
+        <li><b>{PLACES} places</b> par session — pas une de plus.</li>
+        <li>1<sup>re</sup> session&nbsp;: <b>{SESSION}</b>, à Abidjan (Cocody, Riviera Abatta).</li>
+        <li>Journée complète 9h — 17h, déjeuner de travail compris.</li>
+      </ul>
+
+      <div class="at-pricing__pay">
+        <h3>Paiement en 2 tranches</h3>
+        <p>
+          <b>{TRANCHE} à la réservation</b>, puis <b>{TRANCHE} le jour J</b>.
+          Par Mobile Money (Wave, Orange Money) ou par chèque.
+        </p>
+      </div>
+
+      <a href="#reservation" class="btn btn-primary btn-block at-cta">Réserver mon appel découverte
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
+      </a>
+
+      <p class="at-pricing__trust">
+        <span class="badge badge-green">Garantie remboursement</span>
+        <span class="badge">Replay inclus</span>
+        <span class="badge badge-yellow">{PRIX} déductibles du Diagnostic</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 9 · LE FORMULAIRE DE RÉSERVATION ═══════════════ -->
+<section class="section section-gray at-form-section" id="reservation" data-nav-section="Réserver">
+  <div class="container">
+    <div class="container-narrow" style="padding:0">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Avant de réserver votre place</div>
+        <h2>Réservez votre appel découverte (15 min)</h2>
+        <p class="lead" style="margin-top:16px">
+          On vous rappelle, on répond à vos questions, et on vous réserve votre place.
+          Cinq questions rapides d'abord — elles nous permettent de préparer l'appel
+          au lieu de vous faire tout répéter.
+        </p>
+      </div>
+
+      <div class="form-card reveal">
+        <!-- Assistant multi-étapes (src/scripts/wizard.ts) : une modale plein
+             écran, une question à la fois. Sans JS, les 5 étapes restent
+             visibles et la soumission fonctionne normalement (forms.ts). -->
+        <form
+          data-form
+          data-form-key="atelier-strategie-ia"
+          data-wizard
+          data-wizard-cta="Réserver mon appel découverte"
+          data-form-title="Réservation appel découverte — Atelier Stratégie IA"
+          data-endpoint="/api/atelier-reservation"
+        >
+          <!-- Honeypot anti-spam : masqué aux humains, laissé vide ; la route API rejette silencieusement s'il est rempli. -->
+          <div class="hp-field" aria-hidden="true"><label>Ne pas remplir<input type="text" name="company_site" tabindex="-1" autocomplete="off" /></label></div>
+
+          <!-- ÉTAPE 1 — Votre plus gros problème -->
+          <div class="wizard-step" data-wizard-step data-step-title="Votre problème">
+            <p class="wizard-q">Qu'est-ce qui vous coûte le plus cher aujourd'hui&nbsp;?</p>
+            <p class="wizard-help">Choisissez ce qui pèse le plus — 2 réponses au maximum.</p>
+            <fieldset class="field full wizard-fieldset" data-max="2">
+              <legend class="sr-only">Ce qui vous coûte le plus cher</legend>
+              <div class="field-radio-group">
+                <label><input type="checkbox" name="pain" value="Je perds des clients ou des ventes" required><span>Je perds des clients ou des ventes</span></label>
+                <label><input type="checkbox" name="pain" value="Je perds du temps dans des tâches manuelles"><span>Je perds du temps dans des tâches manuelles</span></label>
+                <label><input type="checkbox" name="pain" value="J'ai investi dans le digital sans résultats"><span>J'ai investi dans le digital sans résultats</span></label>
+                <label><input type="checkbox" name="pain" value="Mon équipe n'est pas formée aux outils"><span>Mon équipe n'est pas formée aux outils</span></label>
+                <label><input type="checkbox" name="pain" value="Je ne sais pas par où commencer"><span>Je ne sais pas par où commencer</span></label>
+              </div>
+            </fieldset>
+            <fieldset class="field full wizard-fieldset" style="margin-top:22px">
+              <legend class="field-legend">Depuis combien de temps&nbsp;? *</legend>
+              <div class="field-radio-group">
+                <label><input type="radio" name="pain_since" value="Moins de 3 mois" required><span>Moins de 3 mois</span></label>
+                <label><input type="radio" name="pain_since" value="3 à 12 mois"><span>3 à 12 mois</span></label>
+                <label><input type="radio" name="pain_since" value="Plus d'un an"><span>Plus d'un an</span></label>
+              </div>
+            </fieldset>
+          </div>
+
+          <!-- ÉTAPE 2 — Votre entreprise -->
+          <div class="wizard-step" data-wizard-step data-step-title="Votre entreprise">
+            <p class="wizard-q">Parlez-nous de votre entreprise.</p>
+            <p class="wizard-help">C'est ce qui nous permet de préparer des exemples de votre secteur.</p>
+            <div class="field full">
+              <label for="at-sector">Votre secteur d'activité *</label>
+              <select id="at-sector" name="sector" required>
+                <option value="">Choisissez votre secteur…</option>
+                <option value="Commerce">Commerce</option>
+                <option value="Distribution">Distribution</option>
+                <option value="Services">Services</option>
+                <option value="Santé">Santé</option>
+                <option value="Éducation">Éducation</option>
+                <option value="Industrie">Industrie</option>
+                <option value="Autre">Autre</option>
+              </select>
+            </div>
+            <fieldset class="field full wizard-fieldset" style="margin-top:22px">
+              <legend class="field-legend">Combien d'employés&nbsp;? *</legend>
+              <div class="field-radio-group">
+                <label><input type="radio" name="company_size" value="1 à 9 employés" required><span>1 à 9 employés</span></label>
+                <label><input type="radio" name="company_size" value="10 à 49 employés"><span>10 à 49 employés</span></label>
+                <label><input type="radio" name="company_size" value="50 à 100 employés"><span>50 à 100 employés</span></label>
+                <label><input type="radio" name="company_size" value="Plus de 100 employés"><span>Plus de 100 employés</span></label>
+              </div>
+            </fieldset>
+            <fieldset class="field full wizard-fieldset" style="margin-top:22px">
+              <legend class="field-legend">Votre rôle dans l'entreprise&nbsp;? *</legend>
+              <div class="field-radio-group">
+                <label><input type="radio" name="role" value="Dirigeant·e" required><span>Dirigeant·e</span></label>
+                <label><input type="radio" name="role" value="Associé·e"><span>Associé·e</span></label>
+                <label><input type="radio" name="role" value="Responsable marketing ou ventes"><span>Responsable marketing ou ventes</span></label>
+                <label><input type="radio" name="role" value="Autre"><span>Autre</span></label>
+              </div>
+            </fieldset>
+          </div>
+
+          <!-- ÉTAPE 3 — Votre expérience & votre budget -->
+          <div class="wizard-step" data-wizard-step data-step-title="Expérience &amp; budget">
+            <p class="wizard-q">Où en êtes-vous avec le digital&nbsp;?</p>
+            <p class="wizard-help">Aucune mauvaise réponse — beaucoup de dirigeants viennent après une déception.</p>
+            <fieldset class="field full wizard-fieldset">
+              <legend class="field-legend">Avez-vous déjà investi dans le digital ou l'IA&nbsp;? *</legend>
+              <div class="field-radio-group">
+                <label><input type="radio" name="past_invest" value="Oui, sans résultats convaincants" required><span>Oui, sans résultats convaincants</span></label>
+                <label><input type="radio" name="past_invest" value="Oui, avec des résultats"><span>Oui, avec des résultats</span></label>
+                <label><input type="radio" name="past_invest" value="Pas encore"><span>Pas encore</span></label>
+              </div>
+            </fieldset>
+            <fieldset class="field full wizard-fieldset" style="margin-top:22px">
+              <legend class="field-legend">Budget envisagé cette année pour le digital et l'IA&nbsp;? *</legend>
+              <div class="field-radio-group">
+                <label><input type="radio" name="budget" value="Moins de 500 000 FCFA" required><span>Moins de 500 000 FCFA</span></label>
+                <label><input type="radio" name="budget" value="500 000 à 1 000 000 FCFA"><span>500 000 à 1 000 000 FCFA</span></label>
+                <label><input type="radio" name="budget" value="1 à 5 millions FCFA"><span>1 à 5 millions FCFA</span></label>
+                <label><input type="radio" name="budget" value="Plus de 5 millions FCFA"><span>Plus de 5 millions FCFA</span></label>
+                <label><input type="radio" name="budget" value="À définir ensemble"><span>À définir ensemble</span></label>
+              </div>
+            </fieldset>
+          </div>
+
+          <!-- ÉTAPE 4 — Votre rendez-vous -->
+          <div class="wizard-step" data-wizard-step data-step-title="Votre rendez-vous">
+            <p class="wizard-q">Préparons votre appel.</p>
+            <p class="wizard-help">Quinze minutes, pas plus — et on s'y tient.</p>
+            <fieldset class="field full wizard-fieldset" data-max="2">
+              <legend class="field-legend">Qu'aimeriez-vous repartir avec&nbsp;? <span class="opt">(2 maximum)</span></legend>
+              <div class="field-radio-group">
+                <label><input type="checkbox" name="call_goal" value="Une feuille de route claire"><span>Une feuille de route claire</span></label>
+                <label><input type="checkbox" name="call_goal" value="Des outils concrets prêts à l'emploi"><span>Des outils concrets prêts à l'emploi</span></label>
+                <label><input type="checkbox" name="call_goal" value="Former mon équipe"><span>Former mon équipe</span></label>
+                <label><input type="checkbox" name="call_goal" value="Des exemples dans mon secteur"><span>Des exemples dans mon secteur</span></label>
+              </div>
+            </fieldset>
+            <div class="field full" style="margin-top:22px">
+              <label for="at-question">Une question brûlante à préparer avant l'appel&nbsp;? <span class="opt">(optionnel)</span></label>
+              <textarea id="at-question" name="call_question" placeholder="Ex : comment automatiser le suivi de mes devis&nbsp;?"></textarea>
+            </div>
+            <fieldset class="field full wizard-fieldset" style="margin-top:22px">
+              <legend class="field-legend">Par quel canal préférez-vous être appelé·e&nbsp;? *</legend>
+              <div class="field-radio-group">
+                <label><input type="radio" name="call_channel" value="WhatsApp" required checked><span>WhatsApp</span></label>
+                <label><input type="radio" name="call_channel" value="Téléphone"><span>Téléphone</span></label>
+                <label><input type="radio" name="call_channel" value="Visio"><span>Visio</span></label>
+              </div>
+            </fieldset>
+            <fieldset class="field full wizard-fieldset" style="margin-top:22px">
+              <legend class="field-legend">Quel créneau vous arrange&nbsp;? *</legend>
+              <div class="field-radio-group">
+                <label><input type="checkbox" name="call_slot" value="Matin (9h-12h)" required><span>Matin (9h — 12h)</span></label>
+                <label><input type="checkbox" name="call_slot" value="Midi (12h-15h)"><span>Midi (12h — 15h)</span></label>
+                <label><input type="checkbox" name="call_slot" value="Fin de journée (15h-18h)"><span>Fin de journée (15h — 18h)</span></label>
+              </div>
+            </fieldset>
+          </div>
+
+          <!-- ÉTAPE 5 — Vos coordonnées -->
+          <div class="wizard-step" data-wizard-step data-step-title="Vos coordonnées">
+            <p class="wizard-q">Où peut-on vous joindre&nbsp;?</p>
+            <p class="wizard-help">Vos coordonnées servent uniquement à vous rappeler pour cet atelier.</p>
+            <div class="form-grid">
+              <div class="field"><label for="at-name">Votre nom *</label><input id="at-name" type="text" name="full_name" autocomplete="name" required></div>
+              <div class="field"><label for="at-company">Votre entreprise *</label><input id="at-company" type="text" name="company" autocomplete="organization" required></div>
+              <div class="field"><label for="at-phone">Téléphone / WhatsApp *</label><PhoneField id="at-phone" /></div>
+              <div class="field"><label for="at-email">Adresse e-mail *</label><input id="at-email" type="email" name="email" autocomplete="email" inputmode="email" required></div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block wizard-submit" style="margin-top:16px">Réserver mon appel découverte
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
+          </button>
+          <p class="form-status" role="status" aria-live="polite"></p>
+          <p class="form-note">
+            Votre demande nous est envoyée par e-mail. Vos informations servent uniquement
+            à préparer votre appel — voir notre <a href="/politique-confidentialite" style="color:var(--c-blue)">politique de confidentialité</a>.
+          </p>
+        </form>
+
+        <div class="form-success" role="status">
+          <div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <h3 data-success-title>Votre demande est reçue&nbsp;!</h3>
+          <p data-success-msg>
+            Nous vous rappelons sur le créneau que vous avez choisi, au{" "}
+            <b data-phone-display>{contact.phoneDisplay}</b>. Gardez votre téléphone à portée de main.
+          </p>
+          <p class="success-optional" data-success-optional>Une précision à nous transmettre tout de suite&nbsp;? <span class="opt">(optionnel)</span></p>
+          <a class="btn btn-whatsapp" href="#" data-wa-fallback target="_blank" rel="noopener">Nous écrire sur WhatsApp
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:18px;height:18px" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 10 · FAQ ═══════════════ -->
+<section class="section at-faq-section" data-nav-section="FAQ">
+  <div class="container" style="max-width:var(--container-narrow)">
+    <div class="section-head center reveal">
+      <div class="eyebrow" style="justify-content:center">Questions fréquentes</div>
+      <h2>Vous vous demandez peut-être…</h2>
+    </div>
+    <div class="at-faq reveal">
+      {faq.map((item) => (
+        <div class="accordion-item">
+          <button type="button" aria-expanded="false">
+            {item.q}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" set:html={PLUS} />
+          </button>
+          <div class="accordion-panel"><div class="inner">{item.r}</div></div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CTA FINAL (navy) ═══════════════ -->
+<section class="section at-final" data-nav-section="Réserver ma place">
+  <div class="container">
+    <div class="cta-band reveal-scale">
+      <div class="mesh-bg"></div>
+      <div class="grid-lines"></div>
+      <div style="position:relative;z-index:2">
+        <h2 class="text-white">La prochaine session démarre bientôt — réservez votre appel.</h2>
+        <p class="lead text-white">
+          {PLACES} places, {SESSION}, à Abidjan. L'appel dure 15 minutes et ne vous engage à rien.
+        </p>
+        <div class="hero-actions">
+          <a href="#reservation" class="btn btn-warm">Réserver mon appel découverte</a>
+          <a href={whatsappLink("Bonjour Bweb Agence, je souhaite des informations sur l'Atelier Stratégie IA.")} class="btn btn-outline-light" target="_blank" rel="noopener">Poser une question sur WhatsApp</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Identité légale complète (règle dure du runbook §2.3). -->
+    <p class="at-legal">
+      <b>BWEB AGENCE SARLU</b> — société de droit ivoirien au capital de 5 000 000 FCFA,
+      RCCM CI-ABJ-03-2026-B13-11577, siège social à Abidjan Cocody Riviera Abatta, Côte d'Ivoire.
+      <br>
+      <a href="/politique-confidentialite">Politique de confidentialité</a>
+      <span aria-hidden="true"> · </span>
+      <a href="/conditions-generales">Conditions générales</a>
+      <span aria-hidden="true"> · </span>
+      <a href="/mentions-legales">Mentions légales</a>
+    </p>
+  </div>
+</section>
+
+<!-- CTA collant mobile : sous 720px, le bouton du hero est loin dès la 2e section. -->
+<div class="at-sticky" data-at-sticky hidden>
+  <a href="#reservation" class="btn btn-primary btn-block">Réserver mon appel — {PRIX}</a>
+</div>
+
+<style is:global>
+  /* =====================================================================
+     ATELIER STRATÉGIE IA — styles de page
+     Préfixe `at-` : rien ici ne doit pouvoir déborder sur une autre page.
+     Tout ce qui existait déjà (btn, card, badge, accordion, form-card,
+     section-dark, cta-band) est réutilisé tel quel.
+     ===================================================================== */
+
+  /* ---------- 1. Hero clair ----------
+     Le site pose un hero NAVY (.page-hero). Ici il est blanc : décision de
+     l'offre (scope §10) — une page de vente doit respirer et laisser le navy
+     aux deux sections de rupture. On reprend donc le décalage sous l'en-tête
+     fixe à la main, sans hériter du fond. */
+  .at-hero { position: relative; background: #fff; padding-top: clamp(120px, 12vw, 158px); padding-bottom: clamp(48px, 5vw, 72px); overflow: hidden; }
+  .at-hero::before {
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(46% 42% at 84% 12%, rgba(31, 108, 237, .1) 0%, transparent 70%),
+      radial-gradient(38% 38% at 6% 82%, rgba(0, 200, 158, .09) 0%, transparent 72%);
+  }
+  .at-hero .container { position: relative; z-index: 1; }
+
+  .at-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: .82rem; font-weight: 600; color: var(--c-gray-500); margin-bottom: 26px; }
+  .at-breadcrumb a { color: var(--c-gray-500); }
+  .at-breadcrumb a:hover { color: var(--c-blue); }
+  .at-breadcrumb svg { width: 12px; height: 12px; flex: none; }
+
+  .at-hero-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: clamp(28px, 4vw, 56px); align-items: center; }
+
+  .at-pill { display: inline-flex; align-items: center; gap: 9px; padding: 8px 16px; border-radius: var(--radius-pill); background: var(--c-skyblue); color: var(--c-blue-darker); font-size: .8rem; font-weight: 700; margin-bottom: 20px; }
+  .at-pill__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-orange); flex: none; }
+
+  .at-h1 { font-size: clamp(2rem, 1.4rem + 2.5vw, 3.35rem); line-height: 1.08; max-width: 16ch; margin-bottom: 20px; }
+  /* Surlignage du bénéfice : un trait épais posé DERRIÈRE le texte, pas un
+     fond plein — le mot reste en navy et garde son contraste. */
+  .at-underline { position: relative; white-space: nowrap; }
+  .at-underline::after { content: ""; position: absolute; left: -2px; right: -2px; bottom: .06em; height: .3em; background: var(--c-yellow); opacity: .5; border-radius: 4px; z-index: -1; }
+
+  .at-hero-sub { max-width: 46ch; margin-bottom: 30px; }
+  .at-hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 34px; }
+  /* Règle Godwin : le texte d'un bouton tient sur UNE ligne. */
+  .at-cta { white-space: nowrap; }
+
+  .at-proof { display: flex; flex-wrap: wrap; gap: 14px 36px; list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--c-border-soft); padding-top: 22px; }
+  .at-proof li { display: flex; flex-direction: column; }
+  .at-proof b { font-family: var(--f-display); font-size: 1.4rem; font-weight: 800; color: var(--c-navy); line-height: 1.1; }
+  .at-proof span { font-size: .84rem; color: var(--c-gray-500); }
+
+  /* ---------- 2. Le problème ---------- */
+  .at-problem .section-head h2 { max-width: 20ch; margin-inline: auto; }
+  .at-pain { text-align: left; }
+  .at-pain__ico { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 15px; background: #d1e9fe; color: var(--c-blue-darker); margin-bottom: 18px; }
+  .at-pain__ico svg { width: 26px; height: 26px; }
+  .at-pain h3 { font-size: 1.05rem; line-height: 1.35; margin-bottom: 10px; }
+  .at-pain p { font-size: .93rem; color: var(--c-gray-600); margin: 0; }
+
+  .at-bascule { text-align: center; font-family: var(--f-display); font-size: clamp(1.15rem, 1rem + .9vw, 1.6rem); font-weight: 700; color: var(--c-gray-600); margin: clamp(36px, 4vw, 56px) auto 0; max-width: 30ch; line-height: 1.4; }
+  .at-bascule b { color: var(--c-navy); }
+
+  /* ---------- 3. La solution (navy) ---------- */
+  .at-solution .section-head .lead { max-width: 58ch; margin-inline: auto; }
+  .at-deliv { background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .12); border-radius: var(--radius-lg); padding: 26px 24px; }
+  .at-deliv__ico { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 13px; background: rgba(255, 199, 42, .14); color: var(--c-yellow); margin-bottom: 16px; }
+  .at-deliv__ico svg { width: 24px; height: 24px; }
+  .at-deliv h3 { color: var(--c-yellow); font-size: 1.02rem; line-height: 1.32; margin-bottom: 10px; }
+  .at-deliv p { color: rgba(255, 255, 255, .78); font-size: .92rem; margin: 0; }
+
+  .at-bonus { text-align: center; color: rgba(255, 255, 255, .86); font-size: .98rem; max-width: 60ch; margin: clamp(32px, 4vw, 48px) auto 0; padding: 18px 24px; border-radius: var(--radius-md); background: rgba(255, 255, 255, .06); border: 1px dashed rgba(255, 199, 42, .4); }
+  .at-bonus b { color: var(--c-yellow); }
+
+  /* ---------- 4. Le programme ---------- */
+  .at-timeline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 2.4vw, 32px); position: relative; }
+  /* La ligne de temps : un trait derrière les trois pastilles. Sa position
+     (29px) est le RAYON de la pastille, qui est le premier élément de chaque
+     étape — le trait passe donc exactement par leur centre, quelle que soit la
+     longueur des titres. */
+  .at-timeline::before { content: ""; position: absolute; left: 8%; right: 8%; top: 29px; height: 2px; background: linear-gradient(90deg, var(--c-skyblue), var(--c-blue), var(--c-green)); opacity: .45; }
+  /* Colonne : chaque bloc s'empile (pastille → heure → titre → texte). En flux
+     normal, la pastille et l'heure sont toutes deux « inline » et se
+     retrouveraient côte à côte, l'heure tronquée derrière la pastille. */
+  .at-step { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 8px; }
+  .at-step__time { font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--c-blue); margin-bottom: 12px; }
+  .at-step__ico { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 58px; height: 58px; border-radius: 50%; background: #fff; border: 2px solid var(--c-blue); color: var(--c-blue); box-shadow: 0 0 0 8px #fff; margin-bottom: 16px; }
+  .at-step__ico svg { width: 26px; height: 26px; }
+  .at-step h3 { font-size: 1.05rem; line-height: 1.35; margin-bottom: 10px; }
+  .at-step p { font-size: .93rem; color: var(--c-gray-600); margin: 0; max-width: 34ch; margin-inline: auto; }
+
+  /* ---------- 5. Pour qui / pas pour qui ---------- */
+  .at-fit-card h3 { display: flex; align-items: center; gap: 12px; font-size: 1.15rem; margin-bottom: 20px; }
+  .at-fit-badge { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; font-size: .95rem; font-weight: 800; flex: none; }
+  .at-fit-badge--yes { background: var(--c-success-bg); color: var(--c-success); }
+  .at-fit-badge--no { background: var(--c-danger-bg); color: var(--c-danger); }
+  .at-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .at-list li { position: relative; padding-left: 26px; font-size: .95rem; color: var(--c-gray-700); line-height: 1.55; }
+  .at-list li::before { content: "✓"; position: absolute; left: 0; top: -1px; color: var(--c-success); font-weight: 800; }
+  .at-list--no li::before { content: "✕"; color: var(--c-danger); }
+  .at-fit-note { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--c-border-soft); font-size: .9rem; color: var(--c-gray-600); }
+  .at-fit-note a { color: var(--c-blue); font-weight: 700; }
+
+  /* ---------- 6. La preuve (navy) ---------- */
+  .at-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(24px, 5vw, 72px); margin-bottom: clamp(40px, 5vw, 64px); }
+  .at-stat { text-align: center; }
+  .at-stat b { display: block; font-family: var(--f-display); font-size: clamp(1.7rem, 1.2rem + 1.8vw, 2.6rem); font-weight: 800; color: var(--c-yellow); line-height: 1.05; }
+  .at-stat span { font-size: .88rem; color: rgba(255, 255, 255, .75); }
+
+  .at-videos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2.4vw, 28px); max-width: 720px; margin-inline: auto; }
+  .at-video { margin: 0; }
+  .at-video__slot { aspect-ratio: 9 / 16; border-radius: var(--radius-md); background: rgba(255, 255, 255, .05); border: 1px dashed rgba(255, 255, 255, .28); display: flex; align-items: center; justify-content: center; padding: 12px; text-align: center; }
+  .at-video figcaption { margin-top: 12px; text-align: center; font-size: .84rem; color: rgba(255, 255, 255, .7); }
+
+  /* ---------- 7. La garantie ---------- */
+  .at-guarantee { display: flex; align-items: center; gap: clamp(20px, 3vw, 36px); max-width: 860px; margin-inline: auto; padding: clamp(26px, 3.4vw, 40px); border-radius: var(--radius-lg); background: linear-gradient(135deg, #fffdf6 0%, #f4fbf8 100%); border: 1px solid rgba(255, 199, 42, .38); box-shadow: var(--shadow-sm); }
+  .at-guarantee__badge { flex: none; width: 64px; height: 64px; }
+  .at-guarantee__badge svg { width: 100%; height: 100%; }
+  .at-guarantee h2 { font-size: clamp(1.3rem, 1.1rem + 1vw, 1.9rem); margin-bottom: 10px; }
+  .at-guarantee .lead { font-size: 1rem; margin: 0; }
+
+  /* ---------- 8. Le prix ---------- */
+  .at-pricing { max-width: 620px; margin-inline: auto; text-align: center; padding: clamp(30px, 4vw, 48px) clamp(22px, 3vw, 44px); border-radius: var(--radius-xl); background: #fff; border: 2px solid var(--c-blue); box-shadow: var(--shadow-lg); }
+  .at-pricing__flag { display: inline-block; padding: 7px 18px; border-radius: var(--radius-pill); background: var(--c-navy); color: #fff; font-size: .78rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 22px; }
+  .at-pricing__old { font-size: 1.25rem; color: var(--c-gray-400); margin-bottom: 2px; }
+  .at-pricing__old s { text-decoration-thickness: 2px; }
+  .at-pricing__now { font-family: var(--f-display); font-size: clamp(2.4rem, 1.6rem + 3.4vw, 4rem); font-weight: 800; color: var(--c-navy); line-height: 1; margin-bottom: 12px; }
+  .at-pricing__save { display: inline-block; padding: 7px 16px; border-radius: var(--radius-pill); background: var(--c-success-bg); color: var(--c-success); font-size: .88rem; font-weight: 800; margin-bottom: 26px; }
+
+  .at-pricing__facts { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 9px; text-align: left; max-width: 420px; margin-inline: auto; }
+  .at-pricing__facts li { position: relative; padding-left: 26px; font-size: .95rem; color: var(--c-gray-700); }
+  .at-pricing__facts li::before { content: "•"; position: absolute; left: 6px; color: var(--c-blue); font-weight: 800; }
+  .at-pricing__facts b { color: var(--c-navy); }
+
+  .at-pricing__pay { padding: 18px 20px; border-radius: var(--radius-md); background: var(--surface-2); border: 1px solid var(--c-border-soft); margin-bottom: 26px; text-align: left; }
+  .at-pricing__pay h3 { font-size: .95rem; margin-bottom: 6px; }
+  .at-pricing__pay p { font-size: .9rem; color: var(--c-gray-600); margin: 0; }
+
+  .at-pricing__trust { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
+
+  /* ---------- 9. Le formulaire ---------- */
+  .at-form-section .section-head .lead { max-width: 52ch; margin-inline: auto; }
+  /* Plafond de réponses atteint : les options restantes s'effacent au lieu de
+     disparaître — on veut que le visiteur comprenne qu'il doit décocher, pas
+     qu'il croie à un bug. */
+  .at-form-section .field-radio-group label.is-disabled { opacity: .42; cursor: not-allowed; }
+
+  /* ---------- FAQ + CTA final ---------- */
+  .at-faq { border-top: 1px solid var(--c-border-soft); }
+  .at-legal { max-width: 760px; margin: clamp(32px, 4vw, 48px) auto 0; text-align: center; font-size: .8rem; line-height: 1.7; color: var(--c-gray-500); }
+  .at-legal a { color: var(--c-gray-600); text-decoration: underline; }
+  .at-legal a:hover { color: var(--c-blue); }
+
+  /* ---------- CTA collant (mobile) ---------- */
+  .at-sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-float); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: rgba(255, 255, 255, .95); backdrop-filter: blur(10px); border-top: 1px solid var(--c-border); transform: translateY(110%); transition: transform var(--dur) var(--ease); }
+  .at-sticky.is-visible { transform: translateY(0); }
+  .at-sticky .btn { white-space: nowrap; }
+  /* La modale du formulaire couvre l'écran : le CTA collant n'a plus rien à
+     y faire, et resterait au-dessus d'elle. */
+  .wiz-lock .at-sticky { display: none; }
+
+  /* ---------- Adaptations ---------- */
+  @media (max-width: 980px) {
+    .at-hero-grid { grid-template-columns: 1fr; }
+    .at-hero-visual { order: -1; max-width: 420px; margin-inline: auto; }
+    .at-h1 { max-width: none; }
+    .at-deliverables { grid-template-columns: repeat(2, 1fr); }
+    .at-timeline { grid-template-columns: 1fr; gap: 28px; }
+    .at-timeline::before { display: none; }
+    .at-step { text-align: left; display: grid; grid-template-columns: 58px 1fr; grid-template-areas: "ico time" "ico title" "ico text"; column-gap: 18px; align-items: start; }
+    .at-step__time { grid-area: time; margin-bottom: 6px; align-self: center; }
+    .at-step__ico { grid-area: ico; box-shadow: none; margin-bottom: 0; }
+    .at-step h3 { grid-area: title; }
+    .at-step p { grid-area: text; margin-inline: 0; max-width: none; }
+    .at-guarantee { flex-direction: column; text-align: center; }
+  }
+  @media (max-width: 720px) {
+    .at-pains, .at-fit-grid { grid-template-columns: 1fr; }
+    .at-deliverables { grid-template-columns: 1fr; }
+    .at-videos { grid-template-columns: 1fr; max-width: 300px; }
+    .at-hero-actions .btn { width: 100%; justify-content: center; }
+    .at-proof { gap: 14px 24px; }
+    /* Le CTA collant occupe le bas de l'écran : on dégage la fin de page. */
+    .at-final { padding-bottom: 110px; }
+  }
+  @media (max-width: 560px) {
+    .at-underline { white-space: normal; }
+  }
+</style>
+
+<script>
+  /* =====================================================================
+     Comportements propres à la page. Tout est facultatif : sans JS, le
+     formulaire reste complet et la page entièrement lisible.
+     ===================================================================== */
+
+  /* ---------- Cases à cocher limitées (2 maximum) ----------
+     Le scope plafonne `pain` et `call_goal` à deux réponses : au-delà, la
+     qualification perd son sens (« tout me pose problème » n'oriente rien).
+     On désactive les cases restantes plutôt que d'afficher une erreur après
+     coup — la limite se voit avant d'être franchie. La route API applique de
+     toute façon le même plafond côté serveur. */
+  document.querySelectorAll<HTMLFieldSetElement>("fieldset[data-max]").forEach((group) => {
+    const max = Number(group.dataset.max || 0);
+    if (!max) return;
+    const boxes = Array.from(group.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
+    const sync = () => {
+      const atteint = boxes.filter((b) => b.checked).length >= max;
+      boxes.forEach((b) => {
+        b.disabled = atteint && !b.checked;
+        b.closest("label")?.classList.toggle("is-disabled", b.disabled);
+      });
+    };
+    boxes.forEach((b) => b.addEventListener("change", sync));
+    sync();
+  });
+
+  /* ---------- Conversion Meta ----------
+     `Lead` est émis UNIQUEMENT quand la soumission a réellement abouti
+     (événement `bweb:submitted` de forms.ts, `ok: true`). Le déclencher sur
+     l'affichage de l'écran de succès compterait aussi les replis WhatsApp,
+     c'est-à-dire les soumissions qui n'ont pas été enregistrées. */
+  document.querySelector<HTMLFormElement>('form[data-form-key="atelier-strategie-ia"]')
+    ?.addEventListener("bweb:submitted", (e) => {
+      const ok = (e as CustomEvent<{ ok: boolean }>).detail?.ok;
+      if (ok && typeof window.fbq === "function") window.fbq("track", "Lead");
+    });
+
+  /* ---------- CTA collant mobile ----------
+     Apparaît une fois le hero passé, disparaît quand le formulaire est à
+     l'écran (le bouton pointerait sur ce que le visiteur regarde déjà). */
+  const sticky = document.querySelector<HTMLElement>("[data-at-sticky]");
+  const reservation = document.getElementById("reservation");
+  if (sticky && reservation && window.matchMedia("(max-width: 720px)").matches) {
+    sticky.hidden = false;
+    const hero = document.querySelector<HTMLElement>(".at-hero");
+    let horsHero = false;
+    let surForm = false;
+    const maj = () => sticky.classList.toggle("is-visible", horsHero && !surForm);
+    if (hero) {
+      new IntersectionObserver(([entry]) => { horsHero = !entry.isIntersecting; maj(); }).observe(hero);
+    } else {
+      horsHero = true;
+    }
+    new IntersectionObserver(([entry]) => { surForm = entry.isIntersecting; maj(); }).observe(reservation);
+    maj();
+  }
+</script>
+</BaseLayout>

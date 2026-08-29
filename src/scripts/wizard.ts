@@ -34,7 +34,10 @@ function firstFocusable(step: HTMLElement): FieldEl | null {
 }
 
 function isBad(field: FieldEl, form: HTMLFormElement): boolean {
-  if (field instanceof HTMLInputElement && field.type === "radio") {
+  // Un groupe (radios ou cases) est valide dès qu'UNE option est cochée. Sans
+  // ce cas particulier, une case décochée passerait pour remplie : son `value`
+  // est toujours là, coché ou non.
+  if (field instanceof HTMLInputElement && (field.type === "radio" || field.type === "checkbox")) {
     return !form.querySelector(`input[name="${field.name}"]:checked`);
   }
   const value = (field.value || "").trim();
@@ -160,7 +163,9 @@ export function initWizard(): void {
       const invalid = isBad(field, form);
       field.setAttribute("aria-invalid", invalid ? "true" : "false");
       if (invalid) {
-        if (field instanceof HTMLInputElement && field.type === "radio") field.closest(".wizard-fieldset")?.classList.add("is-invalid");
+        if (field instanceof HTMLInputElement && (field.type === "radio" || field.type === "checkbox")) {
+          field.closest(".wizard-fieldset")?.classList.add("is-invalid");
+        }
         if (!bad) bad = field;
       }
     });
@@ -169,6 +174,7 @@ export function initWizard(): void {
   function messageFor(field: FieldEl): string {
     if (field instanceof HTMLInputElement) {
       if (field.type === "radio") return "Merci de choisir une option pour continuer.";
+      if (field.type === "checkbox") return "Merci de cocher au moins une option pour continuer.";
       if (field.type === "email" && field.value.trim()) return "Merci de saisir une adresse e-mail valide.";
     }
     return "Merci de compléter ce champ pour continuer.";

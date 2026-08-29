@@ -1,0 +1,119 @@
+---
+/* HERO-ATELIER — « Le déclic »
+   Une étincelle jaillit d'un amas confus de traits, un chemin jalonné se
+   dessine et se valide, puis débouche sur la carte « Plan 90 jours ».
+   Métaphore de la journée : on entre avec du flou, on repart avec un plan.
+
+   Variante CLAIRE : contrairement aux autres illustrations de hero (posées sur
+   le hero navy du site), celle-ci vit sur un fond BLANC — les traits sont donc
+   en navy/bleu et non en blanc. Voir le commentaire de `--hi-accent` plus bas.
+
+   Visuel V1 du scope §5bis — dessiné ici en SVG animé plutôt qu'en image :
+   même approche que IllusConseil (aucun fichier à charger, net à toute taille,
+   et l'animation se coupe seule en `prefers-reduced-motion`). */
+const PATH = "M154 236 C 214 236 226 206 282 196 S 384 176 438 150";
+const jalons = [
+  { x: 198, y: 226, d: "1.5" },
+  { x: 300, y: 190, d: "2.2" },
+  { x: 400, y: 163, d: "2.9" },
+];
+/* Rayons de l'étincelle : angles réguliers, longueur alternée. */
+const rayons = [0, 45, 90, 135, 180, 225, 270, 315].map((a, i) => ({
+  a,
+  long: i % 2 === 0 ? 22 : 15,
+  d: (i * 0.06).toFixed(2),
+}));
+---
+<div class="hero-illus at-illus" data-parallax style="--hi-accent:#1F6CED;--hi-accent2:#00C89E" aria-hidden="true">
+  <span class="hi-glow"></span>
+  <svg class="hi-scene at-scene" viewBox="0 0 520 420" role="img">
+    <title>Un atelier d'une journée : du flou au plan d'action 90 jours</title>
+
+    <!-- 1. Le flou de départ : des traits qui s'entremêlent -->
+    <g class="at-flou">
+      <path d="M62 168 C 92 140 74 210 108 182 S 84 236 118 214" />
+      <path d="M58 200 C 96 178 70 238 112 210" />
+      <path d="M70 142 C 100 122 86 178 122 156" />
+    </g>
+
+    <!-- 2. L'étincelle : le déclic de la journée -->
+    <g class="at-spark" transform="translate(128,190)">
+      <circle class="at-spark-aura" r="26" />
+      <circle class="at-spark-core" r="7" />
+      {rayons.map((r) => (
+        <line
+          class="at-ray"
+          x1="0" y1="-12" x2="0" y2={-12 - r.long}
+          transform={`rotate(${r.a})`}
+          style={`--d:${r.d}s`}
+        />
+      ))}
+    </g>
+
+    <!-- 3. Le chemin de la journée qui se trace -->
+    <path class="at-path-ghost" d={PATH} />
+    <path class="at-path" d={PATH} />
+    <circle class="at-runner" r="4.5" style={`offset-path:path('${PATH}')`} />
+
+    <!-- 4. Les jalons validés (matin · midi · après-midi) -->
+    {jalons.map((j) => (
+      <g transform={`translate(${j.x},${j.y})`}>
+        <g class="at-jalon" style={`--d:${j.d}s`}>
+          <circle class="at-jalon-ring" r="10" />
+          <polyline class="at-jalon-mark" points="-4.5 0 -1.5 3.4 4.5 -4" />
+        </g>
+      </g>
+    ))}
+
+    <!-- 5. L'arrivée : la carte « Plan 90 jours » -->
+    <g class="at-plan" transform="translate(382,74)">
+      <rect class="at-plan-card" x="0" y="0" width="112" height="86" rx="14" />
+      <rect class="at-plan-line" x="16" y="22" width="62" height="7" rx="3.5" style="--d:2.9s" />
+      <rect class="at-plan-line" x="16" y="39" width="80" height="7" rx="3.5" style="--d:3.05s" />
+      <rect class="at-plan-line" x="16" y="56" width="46" height="7" rx="3.5" style="--d:3.2s" />
+      <text class="at-plan-lbl" x="56" y="106">PLAN 90 JOURS</text>
+    </g>
+  </svg>
+</div>
+
+<style>
+  /* Fond clair : le halo partagé (.hi-glow) est bien plus discret ici que sur
+     le hero navy — on le tempère pour ne pas voiler le texte voisin. */
+  .at-illus .hi-glow { opacity: .45; }
+
+  .at-flou path { fill: none; stroke: var(--c-gray-300, #c7cbdb); stroke-width: 2; stroke-linecap: round; opacity: .9; animation: at-fade 5.4s ease-in-out infinite; }
+
+  .at-spark-aura { fill: var(--hi-accent); opacity: .16; filter: blur(6px); transform-box: fill-box; transform-origin: center; animation: at-pulse 5.4s ease-in-out infinite; }
+  .at-spark-core { fill: var(--c-yellow, #ffc72a); stroke: var(--c-navy, #020b50); stroke-width: 1.6; }
+  .at-ray { stroke: var(--c-yellow, #ffc72a); stroke-width: 3; stroke-linecap: round; transform-box: fill-box; transform-origin: 50% 100%; animation: at-ray 5.4s ease-in-out infinite; animation-delay: var(--d); }
+
+  .at-path-ghost { fill: none; stroke: rgba(2, 11, 80, .1); stroke-width: 2.6; }
+  .at-path { fill: none; stroke: var(--hi-accent); stroke-width: 2.8; stroke-linecap: round; stroke-dasharray: 420; stroke-dashoffset: 420; animation: at-draw 5.4s ease-in-out infinite; }
+  .at-runner { fill: var(--hi-accent); animation: at-run 5.4s ease-in-out infinite; }
+
+  .at-jalon { opacity: 0; transform-box: fill-box; transform-origin: center; animation: at-pop 5.4s ease-in-out infinite; animation-delay: var(--d); }
+  .at-jalon-ring { fill: #fff; stroke: var(--hi-accent2); stroke-width: 2.2; }
+  .at-jalon-mark { fill: none; stroke: var(--hi-accent2); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+  .at-plan-card { fill: #fff; stroke: rgba(2, 11, 80, .14); stroke-width: 1.4; filter: drop-shadow(0 14px 30px rgba(2, 11, 80, .14)); }
+  .at-plan-line { fill: var(--hi-accent); opacity: 0; transform-box: fill-box; transform-origin: left center; animation: at-line 5.4s ease-in-out infinite; animation-delay: var(--d); }
+  .at-plan-lbl { font-family: var(--f-display); font-weight: 800; font-size: 11px; fill: var(--c-navy, #020b50); text-anchor: middle; letter-spacing: .12em; }
+
+  @keyframes at-fade { 0%, 12% { opacity: .9; } 45%, 100% { opacity: .3; } }
+  @keyframes at-pulse { 0%, 8% { opacity: .05; transform: scale(.7); } 22%, 70% { opacity: .22; transform: scale(1); } 100% { opacity: .05; transform: scale(.7); } }
+  @keyframes at-ray { 0%, 8% { opacity: 0; transform: scaleY(.2); } 20%, 68% { opacity: 1; transform: scaleY(1); } 100% { opacity: 0; transform: scaleY(.2); } }
+  @keyframes at-draw { 0%, 14% { stroke-dashoffset: 420; } 62%, 100% { stroke-dashoffset: 0; } }
+  @keyframes at-run { 0%, 14% { offset-distance: 0%; opacity: 0; } 20% { opacity: 1; } 62% { offset-distance: 100%; opacity: 1; } 70%, 100% { offset-distance: 100%; opacity: 0; } }
+  @keyframes at-pop { 0%, 100% { opacity: 0; transform: scale(.4); } 72%, 94% { opacity: 1; transform: scale(1); } }
+  @keyframes at-line { 0%, 100% { opacity: 0; transform: scaleX(.2); } 78%, 96% { opacity: 1; transform: scaleX(1); } }
+
+  /* Sans animation : la scène reste LISIBLE et complète (chemin tracé, jalons
+     validés, plan rempli) — jamais un visuel à moitié dessiné. */
+  @media (prefers-reduced-motion: reduce) {
+    .at-flou path, .at-spark-aura, .at-ray, .at-path, .at-runner, .at-jalon, .at-plan-line { animation: none; }
+    .at-path { stroke-dashoffset: 0; }
+    .at-jalon, .at-plan-line { opacity: 1; }
+    .at-runner { display: none; }
+    .at-spark-aura { opacity: .2; }
+  }
+</style>

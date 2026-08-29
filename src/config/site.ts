@@ -74,14 +74,37 @@ export const forms = {
   },
 };
 
-/* Services (source unique — utilisée par le mega menu du header et le footer).
-   `icon` : markup interne d'un <svg viewBox="0 0 24 24"> (voir Header.astro). */
-export const services = [
+/* Une offre nommée à l'intérieur d'une catégorie de services. C'est le niveau
+   auquel on VEND (un atelier, un diagnostic, un accompagnement) ; la catégorie,
+   elle, reste la page qui explique le métier. */
+export type SousPage = { label: string; href: string; description?: string };
+
+export type Service = {
+  label: string;
+  href: string;
+  description: string;
+  /** Markup interne d'un <svg viewBox="0 0 24 24"> (voir Header.astro). */
+  icon: string;
+  image?: string;
+  /** Offres de la catégorie, affichées en sous-niveau du menu Services.
+      Renseignée catégorie par catégorie, au fil des offres qui existent. */
+  sousPages?: SousPage[];
+};
+
+/* Services (source unique — utilisée par le mega menu du header et le footer). */
+export const services: Service[] = [
   {
     label: "Conseil & stratégie",
     href: "/services-conseil-strategie",
     description: "Diagnostic, feuille de route et priorités claires.",
     icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7c2.5 2.6 4 5.8 4 5s-1.5-2.4-4-5c-2.5 2.6-4 4.2-4 5s1.5-2.4 4-5z"/><path d="M14.5 9.5 12 12l-2.5 2.5L12 12l2.5-2.5z" fill="currentColor" stroke="none"/>',
+    /* Les trois niveaux de l'offre Conseil : Atelier (200K) → Diagnostic (1M)
+       → Accompagnement (2M/mois). Seul l'atelier a sa page ; les deux autres
+       s'ajoutent ici le jour où la leur existe — inutile de lister un lien qui
+       mène à un 404. */
+    sousPages: [
+      { label: "Atelier Stratégie IA", href: "/atelier-strategie-ia", description: "1 journée · 5 places · 200 000 FCFA" },
+    ],
   },
   {
     label: "Création de SaaS",
@@ -123,7 +146,7 @@ export const services = [
 ];
 
 /* Navigation principale */
-type NavLink = { label: string; href: string; children?: typeof services };
+type NavLink = { label: string; href: string; children?: Service[] };
 
 export const mainNav: NavLink[] = [
   { label: "Accueil", href: "/" },

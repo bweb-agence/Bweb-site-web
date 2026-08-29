@@ -156,7 +156,10 @@ mark { background: none; color: var(--c-blue); position: relative; }
 
 /* Mega menu — items enrichis (icône + titre + description), header desktop et mobile */
 .mega-panel { display: flex; align-items: stretch; gap: 4px; }
-.mega-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr; gap: 2px; flex: 1 1 auto; min-width: 0; }
+/* `grid-auto-rows: auto` (et non `1fr`) : une cellule qui porte ses offres est
+   plus haute que les autres, et des rangées toutes égales étireraient tout le
+   panneau à cette hauteur — quatre catégories flottant au milieu de leur vide. */
+.mega-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: auto; align-content: start; gap: 2px; flex: 1 1 auto; min-width: 0; }
 .mega-extra { flex: 0 0 176px; display: flex; padding-left: 14px; margin-left: 10px; border-left: 1px solid var(--c-border-soft); }
 .mega-extra__item { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px 14px; background: var(--c-skyblue); transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease); width: 100%; overflow: hidden; }
 .mega-extra__item .mega-item__icon { background: #fff; }
@@ -175,6 +178,23 @@ mark { background: none; color: var(--c-blue); position: relative; }
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
   overflow: hidden;
 }
+
+/* Sous-niveau d'une catégorie (ses offres nommées : « Atelier Stratégie IA »…).
+   Volontairement DÉPLIÉ, pas en flyout au survol : un second niveau qui ne
+   s'ouvre qu'au survol est invisible pour qui ne le cherche pas, injouable au
+   doigt, et disparaît entièrement sans JavaScript. Ici les offres sont là dès
+   que le menu Services s'ouvre — le clavier les atteint dans l'ordre, et une
+   page sans JS affiche exactement la même chose. */
+.mega-cell { display: flex; flex-direction: column; }
+.mega-sub { list-style: none; margin: 2px 0 6px; padding: 0 0 0 32px; display: grid; gap: 2px; }
+.main-nav .mega-sub__link {
+  display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border-radius: 8px;
+  border-left: 2px solid var(--c-border); font-weight: 600;
+}
+.main-nav .mega-sub__link:hover { border-left-color: var(--c-blue); background: var(--c-gray-100); }
+.mega-sub__title { font-size: .85rem; color: var(--c-navy); font-weight: 700; }
+.mega-sub__link.is-active .mega-sub__title { color: var(--c-blue); }
+.mega-sub__desc { font-size: .74rem; color: var(--c-gray-500); }
 
 .nav-cta { display: flex; align-items: center; gap: 10px; flex: none; margin-left: auto; }
 .nav-cta .btn { padding: 12px 22px; font-size: .86rem; }
@@ -216,6 +236,17 @@ mark { background: none; color: var(--c-blue); position: relative; }
 .mobile-nav .mobile-nav-submenu .mega-item:hover .mega-item__title,
 .mobile-nav .mobile-nav-submenu .mega-item:active .mega-item__title,
 .mobile-nav .mobile-nav-submenu .mega-item[aria-current="page"] .mega-item__title { color: var(--c-yellow); }
+
+/* Offres d'une catégorie, en retrait sous elle (pendant mobile de .mega-sub). */
+.mobile-nav-sub { list-style: none; margin: 0 0 8px; padding: 6px 0 6px 54px; display: grid; gap: 2px; }
+.mobile-nav .mobile-nav-sub__link {
+  display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border-radius: 10px;
+  border-left: 2px solid rgba(255,255,255,.18);
+  font-size: .95rem; font-weight: 700; color: #fff;
+}
+.mobile-nav .mobile-nav-sub__link span { font-size: .78rem; font-weight: 500; color: rgba(255,255,255,.6); }
+.mobile-nav .mobile-nav-sub__link:hover,
+.mobile-nav .mobile-nav-sub__link[aria-current="page"] { color: var(--c-yellow); border-left-color: var(--c-yellow); }
 
 .mobile-nav .mobile-nav-cta { margin-top: 32px; display: flex; flex-direction: column; gap: 12px; }
 .mobile-nav .mobile-nav-cta .btn { white-space: normal; text-align: center; }

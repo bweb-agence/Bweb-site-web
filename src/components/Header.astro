@@ -30,15 +30,45 @@ const { bare = false } = Astro.props;
               <div class="nav-dropdown__inner mega-panel" role="menu">
                 <div class="mega-grid">
                   {item.children.slice(0, 6).map((child) => (
-                    <a href={child.href} role="menuitem" class:list={["mega-item", { "is-active": isActive(child.href) }]}>
-                      <span class="mega-item__icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
-                      </span>
-                      <span class="mega-item__body">
-                        <span class="mega-item__title">{child.label}</span>
-                        <span class="mega-item__desc">{child.description}</span>
-                      </span>
-                    </a>
+                    /* Une catégorie qui a des offres nommées (sousPages) devient
+                       une CELLULE : le lien de la catégorie, puis ses offres en
+                       dessous. Le lien ne peut pas les contenir — une ancre dans
+                       une ancre n'est pas du HTML valide, et le clavier n'y
+                       arriverait jamais. Les catégories sans offre restent une
+                       simple ancre, exactement comme avant. */
+                    child.sousPages?.length ? (
+                      <div class="mega-cell">
+                        <a href={child.href} role="menuitem" class:list={["mega-item", { "is-active": isActive(child.href) }]}>
+                          <span class="mega-item__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
+                          </span>
+                          <span class="mega-item__body">
+                            <span class="mega-item__title">{child.label}</span>
+                            <span class="mega-item__desc">{child.description}</span>
+                          </span>
+                        </a>
+                        <ul class="mega-sub" aria-label={`Offres — ${child.label}`}>
+                          {child.sousPages.map((sous) => (
+                            <li>
+                              <a href={sous.href} role="menuitem" class:list={["mega-sub__link", { "is-active": isActive(sous.href) }]}>
+                                <span class="mega-sub__title">{sous.label}</span>
+                                {sous.description && <span class="mega-sub__desc">{sous.description}</span>}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <a href={child.href} role="menuitem" class:list={["mega-item", { "is-active": isActive(child.href) }]}>
+                        <span class="mega-item__icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
+                        </span>
+                        <span class="mega-item__body">
+                          <span class="mega-item__title">{child.label}</span>
+                          <span class="mega-item__desc">{child.description}</span>
+                        </span>
+                      </a>
+                    )
                   ))}
                 </div>
                 {item.children.length > 6 && (
@@ -91,15 +121,32 @@ const { bare = false } = Astro.props;
           <div class="mobile-nav-submenu">
             <div class="mobile-nav-submenu__inner">
               {item.children.map((child) => (
-                <a href={child.href} tabindex="-1" class="mega-item" aria-current={isActive(child.href) ? "page" : undefined}>
-                  <span class="mega-item__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
-                  </span>
-                  <span class="mega-item__body">
-                    <span class="mega-item__title">{child.label}</span>
-                    <span class="mega-item__desc">{child.description}</span>
-                  </span>
-                </a>
+                <Fragment>
+                  <a href={child.href} tabindex="-1" class="mega-item" aria-current={isActive(child.href) ? "page" : undefined}>
+                    <span class="mega-item__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={child.icon} />
+                    </span>
+                    <span class="mega-item__body">
+                      <span class="mega-item__title">{child.label}</span>
+                      <span class="mega-item__desc">{child.description}</span>
+                    </span>
+                  </a>
+                  {/* Offres de la catégorie, en retrait sous elle. Elles vivent
+                      DANS le sous-menu dépliable existant : initMobileNav pose
+                      déjà le tabindex de tous ses liens, celles-ci comprises. */}
+                  {child.sousPages?.length && (
+                    <ul class="mobile-nav-sub" aria-label={`Offres — ${child.label}`}>
+                      {child.sousPages.map((sous) => (
+                        <li>
+                          <a href={sous.href} tabindex="-1" class="mobile-nav-sub__link" aria-current={isActive(sous.href) ? "page" : undefined}>
+                            {sous.label}
+                            {sous.description && <span>{sous.description}</span>}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Fragment>
               ))}
             </div>
           </div>

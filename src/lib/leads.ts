@@ -20,8 +20,11 @@ import { createHash } from "node:crypto";
 import { createAdminClient } from "./supabaseAdmin";
 import { secret } from "./env";
 
-/** Type d'événement inscrit dans la timeline du contact. */
-export type LeadEventType = "soumission" | "webinaire_inscrit";
+/** Type d'événement inscrit dans la timeline du contact.
+    Sous-ensemble de la contrainte SQL de `contact_events.type` (migration 0033)
+    ouvert aux formulaires : les autres valeurs ('achat', 'campagne'…) sont
+    écrites par les webhooks et les campagnes, pas par une soumission. */
+export type LeadEventType = "soumission" | "webinaire_inscrit" | "reservation";
 
 export interface LeadRelay {
   /** Système destinataire du relais (ex. « acq_hub »). */
@@ -55,6 +58,10 @@ export interface LeadInput {
   eventType?: LeadEventType;
   /** Titre de l'événement dans la timeline (défaut : le titre du formulaire). */
   eventTitle?: string;
+  /** Détails propres à l'événement, fusionnés au `meta` de la timeline (page,
+      utm). Ce qu'on veut lire d'un coup d'œil dans la fiche du contact : un
+      score de qualification, un créneau de rappel… */
+  eventMeta?: Record<string, unknown>;
   relay?: LeadRelay;
 }
 
@@ -144,7 +151,7 @@ export async function recordSubmission(input: LeadInput): Promise<LeadResult | n
         source: input.formKey,
         submission_id: sub.id,
         dedupe_key: `submission:${sub.id}`,
-        meta: { page: input.pagePath ?? null, utm: input.utm ?? {} },
+        meta: { page: input.pagePath ?? null, utm: input.utm ?? {}, ...(input.eventMeta ?? {}) },
       });
       if (evErr) console.error("[leads] événement non enregistré", evErr.message);
     }
