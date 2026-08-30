@@ -125,12 +125,23 @@ export function initMegaMenu(): void {
     const ouvrir = () => {
       window.clearTimeout(fermeture);
       item.classList.add("is-open");
+      item.querySelector(".nav-item__ouvre")?.setAttribute("aria-expanded", "true");
     };
     const fermer = (immediat = false) => {
       window.clearTimeout(fermeture);
-      if (immediat) item.classList.remove("is-open");
-      else fermeture = window.setTimeout(() => item.classList.remove("is-open"), DELAI_FERMETURE);
+      const retirer = () => {
+        item.classList.remove("is-open");
+        item.querySelector(".nav-item__ouvre")?.setAttribute("aria-expanded", "false");
+      };
+      if (immediat) retirer();
+      else fermeture = window.setTimeout(retirer, DELAI_FERMETURE);
     };
+
+    const declencheur = item.querySelector<HTMLButtonElement>(".nav-item__ouvre");
+    declencheur?.addEventListener("click", () => {
+      if (item.classList.contains("is-open")) fermer(true);
+      else ouvrir();
+    });
 
     item.addEventListener("pointerenter", ouvrir);
     item.addEventListener("pointerleave", () => fermer());
@@ -145,7 +156,7 @@ export function initMegaMenu(): void {
     item.addEventListener("keydown", (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         fermer(true);
-        item.querySelector<HTMLElement>(":scope > a")?.focus();
+        item.querySelector<HTMLElement>(".nav-item__ouvre")?.focus();
       }
     });
   });

@@ -145,7 +145,7 @@ export function initWizard(): void {
   launch.innerHTML =
     `<span class="wiz-launch__badge">${total} étapes · ~3 min</span>` +
     `<button type="button" class="btn btn-primary wiz-open">${cta} ${ARROW_FWD}</button>` +
-    `<p class="wiz-launch__hint">Un parcours guidé, une question à la fois — sans prise de tête.</p>`;
+    `<p class="wiz-launch__hint">Un parcours guidé, une question à la fois. Sans prise de tête.</p>`;
   card?.appendChild(launch);
   const openBtn = launch.querySelector<HTMLButtonElement>(".wiz-open")!;
 

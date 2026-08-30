@@ -131,12 +131,12 @@ mark { background: none; color: var(--c-blue); position: relative; }
 .brand { display: flex; align-items: center; gap: 10px; flex: none; }
 .brand img { height: 36px; width: auto; }
 .main-nav { display: flex; align-items: center; gap: 4px; margin-left: 8px; }
-.main-nav a { position: relative; padding: 10px 16px; border-radius: var(--radius-pill); font-weight: 600; font-size: .94rem; color: var(--c-gray-700); transition: color var(--dur-fast), background-color var(--dur-fast); }
-.main-nav a:hover { color: var(--c-navy); background: var(--c-gray-100); }
-.main-nav a.is-active, .main-nav a[aria-current="page"] { color: var(--c-blue); }
+.main-nav a, .nav-item__ouvre { position: relative; padding: 10px 16px; border-radius: var(--radius-pill); font-family: inherit; font-weight: 600; font-size: .94rem; color: var(--c-gray-700); background: none; border: none; cursor: pointer; transition: color var(--dur-fast), background-color var(--dur-fast); }
+.main-nav a:hover, .nav-item__ouvre:hover { color: var(--c-navy); background: var(--c-gray-100); }
+.main-nav a.is-active, .main-nav a[aria-current="page"], .nav-item__ouvre.is-active { color: var(--c-blue); }
 
 .nav-item { position: relative; }
-.nav-item > a { display: inline-flex; align-items: center; gap: 5px; }
+.nav-item > a, .nav-item__ouvre { display: inline-flex; align-items: center; gap: 5px; }
 .nav-item__chevron { width: 10px; height: 10px; flex: none; transition: transform var(--dur-fast) var(--ease); }
 .nav-item.has-dropdown:hover .nav-item__chevron,
 .nav-item.has-dropdown:focus-within .nav-item__chevron { transform: rotate(180deg); }
@@ -281,9 +281,15 @@ mark { background: none; color: var(--c-blue); position: relative; }
 .mobile-nav nav a[aria-current="page"] { color: var(--c-blue); }
 .mobile-nav__close { color: var(--c-navy); }
 
-.mobile-nav-item__row { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--c-border-soft); }
-.mobile-nav .mobile-nav-item__row a { flex: 1; min-width: 0; border-bottom: none; }
-.mobile-nav-item__toggle { flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--c-gray-500); cursor: pointer; }
+.mobile-nav-item__row { display: flex; align-items: center; border-bottom: 1px solid var(--c-border-soft); }
+/* Le bouton EST la ligne entière : cible large au doigt, et une seule action
+   possible (déplier), au lieu d'un lien collé à un chevron de 44 px. */
+.mobile-nav-item__toggle {
+  flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 14px 0; background: transparent; border: none; cursor: pointer;
+  font-family: var(--f-display); font-size: 1.6rem; color: var(--c-navy); text-align: left;
+}
+.mobile-nav-item__toggle.is-active { color: var(--c-blue); }
 .mobile-nav-item__chevron { flex: none; width: 13px; height: 13px; transition: transform var(--dur-fast) var(--ease); }
 .mobile-nav-item.is-open .mobile-nav-item__chevron { transform: rotate(180deg); }
 

@@ -32,10 +32,14 @@ const cible = (l: MenuLien) => (l.externe ? { target: "_blank", rel: "noopener" 
              s'aligne alors sur toute la largeur de l'en-tête et non sous le
              seul libellé, qui ne fait que 90 pixels (cf. components.css). */
           <div class="nav-item has-dropdown has-mega">
-            <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined} aria-haspopup="true" class={isActive(item.href) ? "is-active" : undefined}>
+            {/* Un bouton, plus un lien : la catégorie est atteignable depuis
+                le panneau lui-même (« Tous nos services », « Toutes les
+                formations »). Un libellé qui ouvre un menu ET navigue est
+                ambigu — au clic on ne sait pas ce qu'on obtient. */}
+            <button type="button" class:list={["nav-item__ouvre", { "is-active": isActive(item.href) }]} aria-expanded="false" aria-haspopup="true">
               {item.label}
               <svg class="nav-item__chevron" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </a>
+            </button>
             <div class="nav-dropdown">
               <div class="nav-dropdown__inner mega">
                 <div class:list={["mega-cols", `mega-cols--${item.mega.colonnes.length}`]}>
@@ -118,9 +122,12 @@ const cible = (l: MenuLien) => (l.externe ? { target: "_blank", rel: "noopener" 
     {mainNav.map((item) => (
       item.mega ? (
         <div class="mobile-nav-item">
+          {/* Le libellé et le chevron ne font plus qu'un seul bouton : toute
+              la ligne déplie le menu, ce qui donne une cible au doigt bien
+              plus large que le chevron seul. */}
           <div class="mobile-nav-item__row">
-            <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>{item.label}</a>
-            <button type="button" class="mobile-nav-item__toggle" aria-expanded="false" aria-label={`Afficher ${item.label}`}>
+            <button type="button" class:list={["mobile-nav-item__toggle", { "is-active": isActive(item.href) }]} aria-expanded="false">
+              <span>{item.label}</span>
               <svg class="mobile-nav-item__chevron" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
           </div>
