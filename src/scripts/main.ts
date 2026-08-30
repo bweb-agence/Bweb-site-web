@@ -3,7 +3,7 @@
    Bundlé par Astro/Vite. Importé une seule fois dans le layout.
    ========================================================= */
 import { contact, whatsappLink } from "../config/site";
-import { setYear, initHeaderScroll, initMobileNav, initSectionNav, initAccordion, initFilters } from "./ui";
+import { setYear, initHeaderScroll, initMobileNav, initMegaMenu, initSectionNav, initAccordion, initFilters } from "./ui";
 import { initForms } from "./forms";
 import { initWizard } from "./wizard";
 import { initPhoneField } from "./phoneField";
@@ -58,6 +58,7 @@ function boot(): void {
   initContactLinks();
   initHeaderScroll();
   initMobileNav();
+  initMegaMenu();
   initSectionNav();
   initAccordion();
   initFilters();

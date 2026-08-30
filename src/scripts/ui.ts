@@ -104,6 +104,53 @@ export function initMobileNav(): void {
   });
 }
 
+/* ---------- Méga-menu : tolérance au trajet de la souris ----------
+   Le panneau s'ouvre au survol en CSS pur (`:hover`, `:focus-within`), ce qui
+   marche sans JavaScript. Mais depuis qu'il occupe TOUTE la largeur de
+   l'en-tête, ce socle ne suffit plus : il reste 19 px de bande morte entre le
+   bas du libellé et le haut du panneau, et le libellé ne fait que 107 px de
+   large contre 1 278 px au panneau. Qui vise le milieu ou la droite du menu
+   sort de la colonne du libellé avant même d'avoir atteint le panneau, et
+   celui-ci se referme sous ses yeux.
+
+   D'où ce complément : on maintient l'ouverture pendant un court instant après
+   la sortie, le temps de traverser. Le survol CSS reste le socle — sans
+   JavaScript, le menu se comporte comme avant. */
+const DELAI_FERMETURE = 260;
+
+export function initMegaMenu(): void {
+  document.querySelectorAll<HTMLElement>(".nav-item.has-mega").forEach((item) => {
+    let fermeture = 0;
+
+    const ouvrir = () => {
+      window.clearTimeout(fermeture);
+      item.classList.add("is-open");
+    };
+    const fermer = (immediat = false) => {
+      window.clearTimeout(fermeture);
+      if (immediat) item.classList.remove("is-open");
+      else fermeture = window.setTimeout(() => item.classList.remove("is-open"), DELAI_FERMETURE);
+    };
+
+    item.addEventListener("pointerenter", ouvrir);
+    item.addEventListener("pointerleave", () => fermer());
+    /* Le clavier n'a pas de trajet à parcourir : il ouvre et ferme net. */
+    item.addEventListener("focusin", ouvrir);
+    item.addEventListener("focusout", (e) => {
+      if (!item.contains(e.relatedTarget as Node)) fermer(true);
+    });
+    /* Suivre un lien du panneau doit le refermer tout de suite : sinon il
+       reste affiché par-dessus la page d'arrivée le temps du délai. */
+    item.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => fermer(true)));
+    item.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        fermer(true);
+        item.querySelector<HTMLElement>(":scope > a")?.focus();
+      }
+    });
+  });
+}
+
 /* ---------- Navigation latérale par sections (scroll-spy) ---------- */
 export function initSectionNav(): void {
   // On exclut les heros (.page-hero) : leur label opaque, fixé à droite,

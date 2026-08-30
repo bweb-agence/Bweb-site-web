@@ -45,18 +45,26 @@ const cible = (l: MenuLien) => (l.externe ? { target: "_blank", rel: "noopener" 
                       <ul class="mega-links">
                         {col.liens.map((lien) => (
                           <li>
+                            {/* La description est DANS le lien, pas à côté :
+                                sinon elle n'est pas cliquable, alors qu'elle
+                                occupe la moitié de la surface de la ligne. */}
                             {estOuvert(lien) ? (
                               <a href={lien.href} class:list={["mega-link", { "is-active": isActive(lien.href!) }]} {...cible(lien)}>
-                                {lien.label}
-                                {lien.badge && <span class={`mega-badge mega-badge--${lien.badge}`}>{BADGES[lien.badge]}</span>}
+                                <span class="mega-link__label">
+                                  {lien.label}
+                                  {lien.badge && <span class={`mega-badge mega-badge--${lien.badge}`}>{BADGES[lien.badge]}</span>}
+                                </span>
+                                {lien.description && <span class="mega-desc">{lien.description}</span>}
                               </a>
                             ) : (
                               <span class="mega-link mega-link--soon">
-                                {lien.label}
-                                {lien.badge && <span class={`mega-badge mega-badge--${lien.badge}`}>{BADGES[lien.badge]}</span>}
+                                <span class="mega-link__label">
+                                  {lien.label}
+                                  {lien.badge && <span class={`mega-badge mega-badge--${lien.badge}`}>{BADGES[lien.badge]}</span>}
+                                </span>
+                                {lien.description && <span class="mega-desc">{lien.description}</span>}
                               </span>
                             )}
-                            {lien.description && <span class="mega-desc">{lien.description}</span>}
                           </li>
                         ))}
                       </ul>
@@ -98,7 +106,11 @@ const cible = (l: MenuLien) => (l.externe ? { target: "_blank", rel: "noopener" 
   </div>
 </header>
 
-<div class="mobile-nav" id="mobile-nav">
+{/* `data-lenis-prevent` : sans lui, le défilement fluide de la page (Lenis)
+    capture la molette et le doigt, et le menu mobile devient impossible à
+    faire défiler dès qu'il dépasse la hauteur de l'écran. Même correctif que
+    la modale du formulaire (src/scripts/wizard.ts). */}
+<div class="mobile-nav" id="mobile-nav" data-lenis-prevent>
   <button class="mobile-nav__close" type="button" aria-label="Fermer le menu">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
   </button>

@@ -229,7 +229,7 @@ export const megaServices: MegaMenu = {
   ],
   carte: {
     titre: "Vous ne savez pas par où commencer ?",
-    texte: "Quinze minutes au téléphone, et vous repartez avec une direction claire — sans engagement.",
+    texte: "Quinze minutes au téléphone, et vous repartez avec une direction claire. Sans engagement.",
     cta: "Réserver un appel",
     href: "/atelier-strategie-ia#reservation",
   },

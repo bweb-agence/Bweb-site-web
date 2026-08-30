@@ -824,6 +824,10 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   .at-sol-grid:not(.is-onglets) .at-rail__num { color: rgba(255, 199, 42, .75); }
   .at-sol-grid:not(.is-onglets) .at-rail__btn { cursor: default; }
 
+  /* La jauge qui court d'une pastille à la suivante pendant le défilement
+     automatique. Créée par le script : sans lui, aucun trait doré n'apparaît. */
+  .at-rail__fill { position: absolute; left: 13px; width: 2px; border-radius: 1px; background: var(--c-yellow); pointer-events: none; }
+
   .at-sol-scene { display: none; }
   .at-sol-fig { margin-top: 16px; border-radius: var(--radius-md); background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12); padding: 14px; }
 
@@ -837,7 +841,11 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   .is-onglets .at-rail__desc { display: none; }
   .is-onglets .at-rail li.is-on .at-rail__desc { display: block; }
   .is-onglets .at-sol-fig { display: none; margin-top: 0; padding: 22px; }
-  .is-onglets .at-sol-fig.is-on { display: block; }
+  .is-onglets .at-sol-fig.is-on { display: block; animation: at-fig-in .45s var(--ease-out) both; }
+  @keyframes at-fig-in { from { opacity: 0; transform: translateY(8px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .is-onglets .at-sol-fig.is-on { animation: none; }
+  }
 
   /* ---------- 4. Le programme ---------- */
   .at-timeline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 2.4vw, 32px); position: relative; }
@@ -1057,13 +1065,111 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
         li.querySelector("[data-go]")?.setAttribute("aria-expanded", String(i === index)),
       );
     };
+
+    /* Remplacé plus bas si le défilement automatique démarre. */
+    let arreterAuto = () => {};
+
     solution.querySelectorAll<HTMLButtonElement>("[data-go]").forEach((btn) => {
       /* Les boutons naissent `disabled` : sans ce script ils ne commanderaient
          rien, et un bouton inerte qui prend le focus est un piège. */
       btn.disabled = false;
-      btn.addEventListener("click", () => activer(Number(btn.dataset.go)));
+      btn.addEventListener("click", () => {
+        /* Un clic est un choix. La boucle ne reprend pas la main derrière —
+           voir un livrable se refermer tout seul après l'avoir demandé est ce
+           qu'il y a de plus agaçant sur ce genre de composant. */
+        arreterAuto();
+        activer(Number(btn.dataset.go));
+      });
     });
     activer(0);
+
+    /* ---------- Défilement automatique ----------
+       Les quatre livrables se présentent seuls, cinq secondes chacun, pendant
+       que le rail se remplit d'une pastille à la suivante. Sans cela, trois
+       livrables sur quatre ne sont jamais vus : rien n'indique au visiteur
+       qu'il y a quelque chose à cliquer.
+
+       Coupé si le système demande de réduire les animations : une boucle
+       infinie est exactement ce que ce réglage sert à éviter. Le clic reste
+       disponible dans tous les cas. */
+    const rail = solution.querySelector<HTMLElement>(".at-rail");
+    const animationsReduites = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (rail && !animationsReduites) {
+      const jauge = document.createElement("span");
+      jauge.className = "at-rail__fill";
+      jauge.setAttribute("aria-hidden", "true");
+      rail.appendChild(jauge);
+
+      const DUREE = 5000;
+      let courant = 0;
+      let ecoule = 0;
+      let precedent = 0;
+      let visible = false;
+      let survole = false;
+      let arrete = false;
+      let image = 0;
+
+      /* Centre de la pastille : 20 px de décalage + 9 px de rayon (cf. CSS). */
+      const centre = (i: number) => items[i].offsetTop + 29;
+      /* Le rail s'arrête 26 px avant le bas de la liste (cf. .at-rail::before). */
+      const finDuRail = () => rail.offsetHeight - 26;
+
+      const dessiner = (avancement: number) => {
+        const depart = centre(courant);
+        const arrivee = courant < items.length - 1 ? centre(courant + 1) : finDuRail();
+        jauge.style.top = `${depart}px`;
+        jauge.style.height = `${Math.max(0, (arrivee - depart) * avancement)}px`;
+      };
+
+      const image_suivante = (horodatage: number) => {
+        if (arrete) return;
+        /* Plafonné à 100 ms : un onglet resté en arrière-plan renverrait un
+           écart de plusieurs secondes et ferait sauter deux livrables d'un
+           coup au retour. */
+        const delta = precedent ? Math.min(horodatage - precedent, 100) : 0;
+        precedent = horodatage;
+
+        if (visible && !survole) {
+          ecoule += delta;
+          const avancement = Math.min(ecoule / DUREE, 1);
+          dessiner(avancement);
+          if (avancement >= 1) {
+            ecoule = 0;
+            courant = (courant + 1) % items.length;
+            activer(courant);
+            dessiner(0);
+          }
+        }
+        image = requestAnimationFrame(image_suivante);
+      };
+
+      arreterAuto = () => {
+        arrete = true;
+        cancelAnimationFrame(image);
+        jauge.remove();
+      };
+
+      /* Ne démarre qu'une fois la section à l'écran : sinon la boucle tourne
+         dans le vide et le visiteur arrive au milieu du troisième livrable. */
+      new IntersectionObserver(
+        ([entree]) => { visible = entree.isIntersecting; },
+        { threshold: 0.35 },
+      ).observe(solution);
+
+      /* Le survol met en pause : on ne change pas de livrable sous les yeux
+         de quelqu'un en train de le lire. */
+      solution.addEventListener("pointerenter", () => { survole = true; });
+      solution.addEventListener("pointerleave", () => { survole = false; });
+      /* Même chose au clavier : tabuler dans la liste suspend le défilement. */
+      solution.addEventListener("focusin", () => { survole = true; });
+      solution.addEventListener("focusout", (e) => {
+        if (!solution.contains(e.relatedTarget as Node)) survole = false;
+      });
+
+      dessiner(0);
+      image = requestAnimationFrame(image_suivante);
+    }
   }
 
   /* ---------- CTA collant mobile ----------

@@ -172,6 +172,15 @@ mark { background: none; color: var(--c-blue); position: relative; }
 .nav-item.has-mega:hover .nav-dropdown,
 .nav-item.has-mega:focus-within .nav-dropdown { transform: translateY(0); }
 
+/* Ouverture pilotée par le script (src/scripts/ui.ts, initMegaMenu) : elle
+   SURVIT quelques instants à la sortie du survol, le temps que la souris
+   traverse la bande morte entre le libellé et le panneau. Le `:hover`
+   ci-dessus reste le socle — sans JavaScript, rien ne change. */
+.nav-item.has-mega.is-open .nav-dropdown {
+  opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto;
+}
+.nav-item.has-mega.is-open .nav-item__chevron { transform: rotate(180deg); }
+
 .mega { padding: 34px 34px 28px; }
 /* Le nombre de colonnes est posé par le composant (`mega-cols--3`, `--4`) et
    non déduit en CSS : un sélecteur qui compte les enfants compte AUSSI la
@@ -184,12 +193,15 @@ mark { background: none; color: var(--c-blue); position: relative; }
   font-size: .69rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
   color: var(--c-gray-400); margin-bottom: 18px; line-height: 1.4;
 }
-.mega-links { list-style: none; display: grid; gap: 15px; margin: 0; padding: 0; }
+.mega-links { list-style: none; display: grid; gap: 13px; margin: 0; padding: 0; }
 
-/* Le lien porte le nom ; le badge est un MOT de ce nom (inline), sinon il
-   tombe seul sur la ligne suivante dès que la colonne se resserre. */
-.main-nav .mega-link { display: block; padding: 0; border-radius: 0; font-size: .95rem; font-weight: 700; color: var(--c-navy); line-height: 1.35; }
-.main-nav .mega-link:hover { background: transparent; color: var(--c-blue); }
+/* Le lien porte le nom ET sa description : toute la ligne est cliquable, pas
+   seulement le libellé. Le badge reste un MOT du nom (inline), sinon il tombe
+   seul sur la ligne suivante dès que la colonne se resserre. */
+.main-nav .mega-link { display: block; padding: 6px 8px; margin: -6px -8px; border-radius: 10px; font-size: .95rem; font-weight: 700; color: var(--c-navy); line-height: 1.35; }
+.main-nav .mega-link:hover { background: var(--c-gray-100); color: var(--c-blue); }
+.main-nav .mega-link:hover .mega-desc { color: var(--c-gray-600); }
+.mega-link__label { display: block; }
 .mega-link.is-active { color: var(--c-blue); }
 /* Offre annoncée, pas encore ouverte : visible mais visiblement inerte.
    Préfixé `.main-nav` pour passer devant `.main-nav .mega-link`, sinon la
