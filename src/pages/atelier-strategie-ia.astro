@@ -21,6 +21,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import PhoneField from "../components/PhoneField.astro";
 import IllusAtelier from "../components/illus/IllusAtelier.astro";
 import IllusProbleme from "../components/illus/IllusProbleme.astro";
+import IllusLivrable from "../components/illus/IllusLivrable.astro";
 import { contact, whatsappLink } from "../config/site";
 
 /* Chiffres de l'offre — un seul endroit à modifier. Ils apparaissent dans le
@@ -108,6 +109,35 @@ const douleurs = [
       "Vous craignez de repayer pour un outil de plus, sans un client de plus au bout.",
       "Votre équipe n'est pas formée, et vous n'avez personne à qui poser la question.",
     ],
+  },
+];
+
+/* Les quatre livrables. `legende` s'affiche sous le visuel, `desc` sous le
+   titre : deux registres différents, jamais la même phrase. */
+const livrables = [
+  {
+    illus: "fiche" as const,
+    titre: "La fiche d'audit de votre entreprise",
+    desc: "Vos chiffres, vos process, vos points de fuite. Elle se remplit avec nous pendant la journée, pas en devoir à la maison.",
+    legende: "Remplie avec vous, pendant la journée.",
+  },
+  {
+    illus: "plan" as const,
+    titre: "Votre plan d'action sur 90 jours",
+    desc: "Trois priorités, dans l'ordre, avec ce que chacune coûte et ce qu'elle doit rapporter. C'est le document que vous ouvrez lundi matin.",
+    legende: "Trois priorités, dans l'ordre, chiffrées.",
+  },
+  {
+    illus: "kit" as const,
+    titre: "Le kit IA pour votre PME",
+    desc: "Les outils gratuits qui marchent vraiment, et les instructions prêtes à copier pour vos devis, vos relances et vos réponses clients.",
+    legende: "Des outils gratuits, et le texte exact à coller.",
+  },
+  {
+    illus: "replay" as const,
+    titre: "Le replay de la journée",
+    desc: "La journée entière filmée. Pour la revoir tranquillement, ou la montrer à votre équipe de direction qui n'était pas là.",
+    legende: "La journée entière, en chapitres.",
   },
 ];
 
@@ -224,51 +254,41 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
     <div class="section-head center reveal">
       <div class="eyebrow on-dark" style="justify-content:center">L'Atelier Stratégie IA</div>
       <h2 class="text-white">Une journée. Un plan.</h2>
-      <p class="lead text-white" style="margin-top:16px">
-        Vous n'assistez pas à une conférence : vous travaillez sur VOTRE entreprise,
-        avec quatre livrables entre les mains en repartant.
+      <p class="lead text-white at-sol-chapeau">
+        Vous n'assistez pas à une conférence. Vous travaillez sur votre entreprise,
+        et vous repartez le soir avec quatre documents en main.
       </p>
     </div>
 
-    {/* Visuel V3 du scope §5bis — cartes bénéfices, titre en or sur fond sombre. */}
-    <div class="grid grid-4 at-deliverables" data-stagger>
-      <article class="at-deliv">
-        <span class="at-deliv__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7z"/><polyline points="14 3 14 7 18 7"/><line x1="10" y1="12" x2="15" y2="12"/><line x1="10" y1="16" x2="15" y2="16"/></svg>
-        </span>
-        <h3>La fiche d'audit de votre entreprise</h3>
-        <p>Complétée pendant la journée, avec nous — pas un questionnaire à remplir chez vous.</p>
-      </article>
+    {/* Chaque visuel vit DANS son livrable. Sans JavaScript, la liste s'affiche
+        donc dépliée, chaque document sous son titre — rien ne disparaît. C'est
+        le script qui, sur grand écran seulement, déplace les visuels dans la
+        scène de droite et transforme la liste en onglets. */}
+    <div class="at-sol-grid reveal" data-solution>
+      <div class="at-sol-col">
+        <ul class="at-rail">
+          {livrables.map((l, i) => (
+            <li class:list={{ "is-on": i === 0 }} data-livrable>
+              <span class="at-rail__dot" aria-hidden="true"></span>
+              <button type="button" class="at-rail__btn" data-go={i} disabled>
+                <span class="at-rail__num">Livrable {i + 1}</span>
+                <span class="at-rail__titre">{l.titre}</span>
+              </button>
+              <p class="at-rail__desc">{l.desc}</p>
+              <IllusLivrable variante={l.illus}>{l.legende}</IllusLivrable>
+            </li>
+          ))}
+        </ul>
 
-      <article class="at-deliv">
-        <span class="at-deliv__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17.5 9 11l4 4 8-8.5"/><polyline points="15 6.5 21 6.5 21 12.5"/></svg>
-        </span>
-        <h3>Un plan d'action IA priorisé sur 90 jours</h3>
-        <p>Votre feuille de route : quoi faire, dans quel ordre, avec quel budget.</p>
-      </article>
+        <p class="at-bonus">
+          <b>Et un cinquième, moins visible :</b> les {PRIX} de l'atelier se déduisent
+          du Diagnostic si vous décidez d'aller plus loin avec nous.
+        </p>
+      </div>
 
-      <article class="at-deliv">
-        <span class="at-deliv__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7.5 10 9.5 12 7.5 14"/><line x1="12.5" y1="14" x2="16.5" y2="14"/></svg>
-        </span>
-        <h3>Le kit IA PME</h3>
-        <p>La liste des outils gratuits qui marchent, et des prompts prêts à l'emploi.</p>
-      </article>
-
-      <article class="at-deliv">
-        <span class="at-deliv__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="14" height="14" rx="2.5"/><polygon points="21.5 7.5 21.5 16.5 16.5 14 16.5 10"/></svg>
-        </span>
-        <h3>Le replay de la journée</h3>
-        <p>Pour le repasser à votre équipe de direction, et ne rien perdre en route.</p>
-      </article>
+      {/* Reste vide sans JavaScript : le script y déplace les visuels. */}
+      <div class="at-sol-scene" data-scene></div>
     </div>
-
-    <p class="at-bonus reveal">
-      <b>Et un cinquième livrable, moins visible :</b> les {PRIX} de l'atelier sont
-      déductibles du Diagnostic si vous décidez d'aller plus loin avec nous.
-    </p>
   </div>
 </section>
 
@@ -779,15 +799,45 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   .at-checks li svg { position: absolute; left: 0; top: 2px; width: 19px; height: 19px; color: var(--c-blue); }
 
   /* ---------- 3. La solution (navy) ---------- */
-  .at-solution .section-head .lead { max-width: 58ch; margin-inline: auto; }
-  .at-deliv { background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .12); border-radius: var(--radius-lg); padding: 26px 24px; }
-  .at-deliv__ico { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 13px; background: rgba(255, 199, 42, .14); color: var(--c-yellow); margin-bottom: 16px; }
-  .at-deliv__ico svg { width: 24px; height: 24px; }
-  .at-deliv h3 { color: var(--c-yellow); font-size: 1.02rem; line-height: 1.32; margin-bottom: 10px; }
-  .at-deliv p { color: rgba(255, 255, 255, .78); font-size: .92rem; margin: 0; }
+  .at-sol-chapeau { max-width: 58ch; margin: 16px auto 0; }
+  .at-sol-grid { display: grid; grid-template-columns: 1fr; gap: clamp(30px, 4vw, 64px); align-items: start; max-width: 1180px; margin-inline: auto; }
 
-  .at-bonus { text-align: center; color: rgba(255, 255, 255, .86); font-size: .98rem; max-width: 60ch; margin: clamp(32px, 4vw, 48px) auto 0; padding: 18px 24px; border-radius: var(--radius-md); background: rgba(255, 255, 255, .06); border: 1px dashed rgba(255, 199, 42, .4); }
+  /* Le rail : un trait vertical qui relie les quatre pastilles. Il s'arrête au
+     centre des pastilles extrêmes, pas aux bords de la liste. */
+  .at-rail { position: relative; list-style: none; margin: 0; padding: 0; }
+  .at-rail::before { content: ""; position: absolute; left: 13px; top: 26px; bottom: 26px; width: 2px; background: rgba(255, 255, 255, .16); }
+  .at-rail li { position: relative; padding: 0 0 8px 46px; }
+  .at-rail__dot { position: absolute; left: 5px; top: 20px; width: 18px; height: 18px; border-radius: 50%; background: var(--c-navy-soft); border: 2px solid rgba(255, 255, 255, .28); transition: background-color var(--dur-fast), border-color var(--dur-fast), box-shadow var(--dur-fast); }
+  .at-rail__btn { display: block; width: 100%; padding: 14px 0; background: none; border: none; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+  .at-rail__num { display: block; font-family: var(--f-display); font-size: .7rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 255, 255, .5); }
+  .at-rail__titre { display: block; font-family: var(--f-display); font-size: clamp(1.05rem, .95rem + .45vw, 1.25rem); font-weight: 700; line-height: 1.3; color: rgba(255, 255, 255, .62); margin-top: 4px; transition: color var(--dur-fast); }
+  .at-rail__desc { margin: 10px 0 0; font-size: .95rem; line-height: 1.62; color: rgba(255, 255, 255, .74); max-width: 44ch; }
+
+  .at-rail li.is-on .at-rail__dot { background: var(--c-yellow); border-color: var(--c-yellow); box-shadow: 0 0 0 5px rgba(255, 199, 42, .16); }
+  .at-rail li.is-on .at-rail__titre { color: var(--c-yellow); }
+  .at-rail li.is-on .at-rail__num { color: rgba(255, 199, 42, .75); }
+
+  /* Hors mode onglets, les quatre livrables sont ouverts : ils portent donc
+     tous la couleur d'un livrable actif. */
+  .at-sol-grid:not(.is-onglets) .at-rail__dot { background: var(--c-yellow); border-color: var(--c-yellow); }
+  .at-sol-grid:not(.is-onglets) .at-rail__titre { color: var(--c-yellow); }
+  .at-sol-grid:not(.is-onglets) .at-rail__num { color: rgba(255, 199, 42, .75); }
+  .at-sol-grid:not(.is-onglets) .at-rail__btn { cursor: default; }
+
+  .at-sol-scene { display: none; }
+  .at-sol-fig { margin-top: 16px; border-radius: var(--radius-md); background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12); padding: 14px; }
+
+  .at-bonus { color: rgba(255, 255, 255, .86); font-size: .95rem; line-height: 1.6; max-width: 46ch; margin: 30px 0 0; padding: 18px 22px; border-radius: var(--radius-md); background: rgba(255, 255, 255, .06); border: 1px dashed rgba(255, 199, 42, .42); }
   .at-bonus b { color: var(--c-yellow); }
+
+  /* Onglets : posé par le script UNIQUEMENT au-dessus de 1080 px. En dessous,
+     et sans JavaScript, tout reste déplié — chaque document sous son titre. */
+  .at-sol-grid.is-onglets { grid-template-columns: .82fr 1.18fr; }
+  .is-onglets .at-sol-scene { display: block; }
+  .is-onglets .at-rail__desc { display: none; }
+  .is-onglets .at-rail li.is-on .at-rail__desc { display: block; }
+  .is-onglets .at-sol-fig { display: none; margin-top: 0; padding: 22px; }
+  .is-onglets .at-sol-fig.is-on { display: block; }
 
   /* ---------- 4. Le programme ---------- */
   .at-timeline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 2.4vw, 32px); position: relative; }
@@ -914,7 +964,6 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   }
 
   @media (max-width: 980px) {
-    .at-deliverables { grid-template-columns: repeat(2, 1fr); }
     .at-timeline { grid-template-columns: 1fr; gap: 28px; }
     .at-timeline::before { display: none; }
     .at-step { text-align: left; display: grid; grid-template-columns: 58px 1fr; grid-template-areas: "ico time" "ico title" "ico text"; column-gap: 18px; align-items: start; }
@@ -933,7 +982,6 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
     .at-hero-actions { margin-bottom: 0; }
     .at-hero-visual { max-width: 340px; }
     .at-fit-grid { grid-template-columns: 1fr; }
-    .at-deliverables { grid-template-columns: 1fr; }
     .at-videos { grid-template-columns: 1fr; max-width: 300px; }
     .at-hero-actions .btn { width: 100%; justify-content: center; }
     .at-proof { gap: 14px 24px; }
@@ -982,6 +1030,41 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
       const ok = (e as CustomEvent<{ ok: boolean }>).detail?.ok;
       if (ok && typeof window.fbq === "function") window.fbq("track", "Lead");
     });
+
+  /* ---------- Les livrables en onglets ----------
+     Au-dessus de 1080 px seulement. En dessous, la liste reste dépliée : sur un
+     téléphone, des onglets forceraient à revenir en haut pour changer de
+     livrable, et le visuel serait de toute façon trop petit pour valoir le
+     détour. Le seuil est le même que celui du hero et de l'en-tête.
+
+     Les visuels sont écrits DANS leur livrable et déplacés ici vers la scène
+     de droite. Sans ce script, ils restent où ils sont : la section fonctionne
+     entièrement sans JavaScript, simplement dépliée. */
+  const solution = document.querySelector<HTMLElement>("[data-solution]");
+  const scene = solution?.querySelector<HTMLElement>("[data-scene]");
+  if (solution && scene && window.matchMedia("(min-width: 1081px)").matches) {
+    const items = Array.from(solution.querySelectorAll<HTMLElement>("[data-livrable]"));
+    const figures = items.map((li) => li.querySelector<HTMLElement>("[data-fig]")!);
+    figures.forEach((fig) => scene.appendChild(fig));
+    solution.classList.add("is-onglets");
+
+    const activer = (index: number) => {
+      items.forEach((li, i) => li.classList.toggle("is-on", i === index));
+      figures.forEach((fig, i) => fig.classList.toggle("is-on", i === index));
+      /* `aria-expanded` plutôt que le motif tablist : ces boutons déplient un
+         contenu qui reste dans le flux, ils ne changent pas de panneau. */
+      items.forEach((li, i) =>
+        li.querySelector("[data-go]")?.setAttribute("aria-expanded", String(i === index)),
+      );
+    };
+    solution.querySelectorAll<HTMLButtonElement>("[data-go]").forEach((btn) => {
+      /* Les boutons naissent `disabled` : sans ce script ils ne commanderaient
+         rien, et un bouton inerte qui prend le focus est un piège. */
+      btn.disabled = false;
+      btn.addEventListener("click", () => activer(Number(btn.dataset.go)));
+    });
+    activer(0);
+  }
 
   /* ---------- CTA collant mobile ----------
      Apparaît une fois le hero passé, disparaît quand le formulaire est à
