@@ -20,6 +20,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PhoneField from "../components/PhoneField.astro";
 import IllusAtelier from "../components/illus/IllusAtelier.astro";
+import IllusProbleme from "../components/illus/IllusProbleme.astro";
 import { contact, whatsappLink } from "../config/site";
 
 /* Chiffres de l'offre — un seul endroit à modifier. Ils apparaissent dans le
@@ -72,6 +73,43 @@ const faqLd = {
     acceptedAnswer: { "@type": "Answer", text: f.r },
   })),
 };
+
+/* Les trois douleurs. Chaque constat est écrit pour être RECONNU, pas pour
+   décrire : « deux jours pour recevoir un devis », « trois cahiers
+   différents ». D'où l'absence de tiret dans ces phrases (décision Godwin du
+   29/08/2026) : elles se coupent au point, ce qui les rend plus sèches. */
+const douleurs = [
+  {
+    illus: "digital" as const,
+    titre: "Vous avez déjà payé pour du digital sans résultat.",
+    intro: "Un site, une page Facebook, une agence. La facture est passée. Les clients, eux, ne sont jamais venus.",
+    constats: [
+      "Votre site est en ligne depuis des mois et ne vous a jamais amené un seul appel.",
+      "Vous avez payé des publicités sans jamais savoir ce qu'elles vous ont rapporté.",
+      "Le logiciel qu'on vous a vendu dort dans un coin. Personne dans l'équipe ne l'ouvre.",
+    ],
+  },
+  {
+    illus: "manuel" as const,
+    titre: "Vous perdez du temps et des ventes dans des process manuels.",
+    intro: "Votre équipe passe ses journées à recopier ce qu'un outil ferait en une seconde.",
+    constats: [
+      "Chaque devis est retapé à la main, et le client attend parfois deux jours pour le recevoir.",
+      "Les relances dépendent de la mémoire de quelqu'un. Les clients qu'on oublie ne reviennent pas.",
+      "Le stock, les commandes WhatsApp et les factures vivent dans trois cahiers différents.",
+    ],
+  },
+  {
+    illus: "depart" as const,
+    titre: "Vous ne savez pas par où commencer avec l'IA.",
+    intro: "Tout le monde vous parle d'intelligence artificielle. Personne ne vous dit ce que ça change pour votre entreprise.",
+    constats: [
+      "Vous ignorez ce que l'IA donne concrètement dans votre secteur, et sur quoi la brancher en premier.",
+      "Vous craignez de repayer pour un outil de plus, sans un client de plus au bout.",
+      "Votre équipe n'est pas formée, et vous n'avez personne à qui poser la question.",
+    ],
+  },
+];
 
 const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>';
 ---
@@ -141,39 +179,40 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   <div class="container">
     <div class="section-head center reveal">
       <div class="eyebrow" style="justify-content:center">Ce qu'on entend tous les jours</div>
-      <h2>Vous n'avez pas un problème de moyens.</h2>
+      <h2>Vous avez déjà essayé.<br>Et vous êtes toujours au même point.</h2>
+      {/* Le pivot vit ICI, en chapeau. Il était répété en bas de section, où il
+          redisait mot pour mot le titre d'alors — le retournement tombait à
+          plat, on l'avait déjà lu. */}
+      <p class="at-chapeau">
+        Ce n'est pas un problème de moyens.<br>
+        <b>C'est un problème de <span class="at-underline">clarté</span>.</b>
+      </p>
     </div>
 
-    <div class="grid grid-3 at-pains" data-stagger>
-      {/* Visuel V2 du scope §5bis — icônes SVG inline, fond bleu-100 (#D1E9FE). */}
-      <article class="card at-pain">
-        <span class="at-pain__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9.2a3 3 0 0 0-2.8-1.7c-1.6 0-2.6.8-2.6 2s1 1.7 2.6 2.1 2.8.9 2.8 2.2-1.1 2.1-2.8 2.1a3.1 3.1 0 0 1-2.9-1.8"/><line x1="12" y1="6" x2="12" y2="18"/></svg>
-        </span>
-        <h3>Vous avez déjà payé pour du digital sans résultat.</h3>
-        <p>Un site, une page, une agence — et toujours pas de clients en plus.</p>
-      </article>
-
-      <article class="card at-pain">
-        <span class="at-pain__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 6.6 12 12 15.8 14.2"/></svg>
-        </span>
-        <h3>Vous perdez du temps et des ventes dans des process manuels.</h3>
-        <p>Devis recopiés, relances oubliées, factures à la main : votre équipe rame.</p>
-      </article>
-
-      <article class="card at-pain">
-        <span class="at-pain__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 9a2.9 2.9 0 0 1 5.6 1c0 2-2.8 2.4-2.8 4"/><line x1="12" y1="17.6" x2="12" y2="17.7"/><circle cx="12" cy="12" r="9"/></svg>
-        </span>
-        <h3>Vous ne savez pas par où commencer avec l'IA.</h3>
-        <p>Tout le monde en parle, personne ne vous dit quoi faire lundi matin.</p>
-      </article>
+    <div class="at-blocs">
+      {douleurs.map((d, i) => (
+        /* Un bloc sur deux inverse visuel et texte. Sur mobile l'inversion est
+           annulée : le texte passe toujours en premier, quelle que soit la
+           parité (cf. .at-bloc__vis dans le palier 860px). */
+        <div class:list={["at-bloc", "reveal", { "at-bloc--inverse": i % 2 === 1 }]}>
+          <div class="at-bloc__vis">
+            <IllusProbleme variante={d.illus} />
+          </div>
+          <div class="at-bloc__texte">
+            <h3>{d.titre}</h3>
+            <p class="at-bloc__intro">{d.intro}</p>
+            <ul class="at-checks">
+              {d.constats.map((c) => (
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 12 10 18 20 6"/></svg>
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ))}
     </div>
-
-    <p class="at-bascule reveal">
-      Ce n'est pas un problème de moyens. <b>C'est un problème de clarté.</b>
-    </p>
   </div>
 </section>
 
@@ -721,15 +760,23 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   .at-proof span { font-size: .84rem; color: var(--c-gray-500); }
 
   /* ---------- 2. Le problème ---------- */
-  .at-problem .section-head h2 { max-width: 20ch; margin-inline: auto; }
-  .at-pain { text-align: left; }
-  .at-pain__ico { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 15px; background: #d1e9fe; color: var(--c-blue-darker); margin-bottom: 18px; }
-  .at-pain__ico svg { width: 26px; height: 26px; }
-  .at-pain h3 { font-size: 1.05rem; line-height: 1.35; margin-bottom: 10px; }
-  .at-pain p { font-size: .93rem; color: var(--c-gray-600); margin: 0; }
+  .at-problem .section-head { margin-bottom: clamp(20px, 2.4vw, 32px); }
+  /* `position: relative` + `z-index: 0` sont OBLIGATOIRES : le surlignage de
+     « clarté » est un ::after en z-index -1. Sans contexte d'empilement ici,
+     il passe derrière le fond de la section et disparaît. */
+  .at-chapeau { position: relative; z-index: 0; max-width: 52ch; margin: 18px auto 0; font-size: clamp(1rem, .95rem + .3vw, 1.12rem); line-height: 1.6; color: var(--c-gray-600); }
+  .at-chapeau b { color: var(--c-navy); }
 
-  .at-bascule { text-align: center; font-family: var(--f-display); font-size: clamp(1.15rem, 1rem + .9vw, 1.6rem); font-weight: 700; color: var(--c-gray-600); margin: clamp(36px, 4vw, 56px) auto 0; max-width: 30ch; line-height: 1.4; }
-  .at-bascule b { color: var(--c-navy); }
+  .at-blocs { max-width: 1160px; margin-inline: auto; }
+  .at-bloc { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(30px, 5vw, 80px); align-items: center; padding: clamp(28px, 3.4vw, 44px) 0; }
+  .at-bloc__vis { display: flex; justify-content: center; }
+  .at-bloc--inverse .at-bloc__vis { order: 2; }
+  .at-bloc h3 { font-size: clamp(1.3rem, 1.05rem + 1vw, 1.85rem); line-height: 1.22; letter-spacing: -.01em; margin-bottom: 14px; max-width: 19ch; }
+  .at-bloc__intro { font-size: clamp(.98rem, .93rem + .3vw, 1.06rem); line-height: 1.65; color: var(--c-gray-600); margin: 0 0 24px; max-width: 46ch; }
+
+  .at-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; max-width: 48ch; }
+  .at-checks li { position: relative; padding-left: 36px; font-size: .96rem; line-height: 1.6; color: var(--c-gray-700); }
+  .at-checks li svg { position: absolute; left: 0; top: 2px; width: 19px; height: 19px; color: var(--c-blue); }
 
   /* ---------- 3. La solution (navy) ---------- */
   .at-solution .section-head .lead { max-width: 58ch; margin-inline: auto; }
@@ -843,6 +890,29 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
     .at-h1 { max-width: none; }
   }
 
+  /* Les blocs du problème passent en une colonne plus tôt que le reste : à
+     860 px, le texte à côté d'un visuel de 390 px n'a plus de place utile. */
+  @media (max-width: 860px) {
+    .at-bloc { grid-template-columns: 1fr; gap: 22px; padding: 26px 0; border-bottom: 1px solid var(--c-border-soft); }
+    .at-bloc:last-child { border-bottom: none; }
+    /* Le texte d'abord dans TOUS les blocs. L'inversion des blocs pairs est
+       annulée, sinon un bloc sur deux montrerait son visuel avant son titre. */
+    .at-bloc__vis, .at-bloc--inverse .at-bloc__vis { order: 2; }
+    .at-bloc h3 { max-width: none; }
+    .at-bloc__vis .pb-illus { max-width: 300px; }
+  }
+
+  /* Sur un téléphone, chaque illustration ajoute sa hauteur SOUS un bloc de
+     texte déjà long : à 300 px, les trois portaient la section à près de
+     2 600 px. Elles restent lisibles bien plus petites, ce sont des visuels
+     d'accompagnement et non des schémas à déchiffrer. */
+  @media (max-width: 560px) {
+    .at-bloc { padding: 20px 0; gap: 18px; }
+    .at-bloc__vis .pb-illus { max-width: 210px; }
+    .at-checks { gap: 14px; }
+    .at-bloc__intro { margin-bottom: 18px; }
+  }
+
   @media (max-width: 980px) {
     .at-deliverables { grid-template-columns: repeat(2, 1fr); }
     .at-timeline { grid-template-columns: 1fr; gap: 28px; }
@@ -862,7 +932,7 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
     .at-hero-sub { margin-bottom: 24px; }
     .at-hero-actions { margin-bottom: 0; }
     .at-hero-visual { max-width: 340px; }
-    .at-pains, .at-fit-grid { grid-template-columns: 1fr; }
+    .at-fit-grid { grid-template-columns: 1fr; }
     .at-deliverables { grid-template-columns: 1fr; }
     .at-videos { grid-template-columns: 1fr; max-width: 300px; }
     .at-hero-actions .btn { width: 100%; justify-content: center; }

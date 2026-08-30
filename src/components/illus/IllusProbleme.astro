@@ -1,0 +1,123 @@
+---
+/* SECTION « LE PROBLÈME » — les trois visuels
+   -----------------------------------------------------------
+   Une scène par douleur, posée dans le disque bleu clair de la charte, avec
+   les étoiles à quatre branches. Rien d'animé : ces visuels accompagnent une
+   lecture, ils ne doivent pas la disputer au texte d'à côté.
+
+   Isolés dans un composant plutôt qu'écrits dans la page : trois SVG de vingt
+   lignes noieraient le contenu éditorial de la section, qui est ce qu'on
+   relit et corrige le plus souvent.
+
+   Chaque scène se remplace par une vraie capture ou une photo sans toucher au
+   reste de la section : seul ce fichier change. */
+export interface Props {
+  /** digital : un site qui n'amène personne · manuel : la paperasse recopiée
+      · depart : aucune première étape claire. */
+  variante: "digital" | "manuel" | "depart";
+}
+const { variante } = Astro.props;
+
+/* Étoile à quatre branches de la charte. Les positions évitent les formes
+   blanches : posée dessous, elle disparaîtrait derrière. */
+const ETOILE = "M0,-17 C2.4,-4.8 4.8,-2.4 17,0 C4.8,2.4 2.4,4.8 0,17 C-2.4,4.8 -4.8,2.4 -17,0 C-4.8,-2.4 -2.4,-4.8 0,-17Z";
+const etoiles: Record<Props["variante"], { x: number; y: number; e: number }[]> = {
+  digital: [{ x: 70, y: 306, e: 1 }, { x: 334, y: 124, e: 0.8 }],
+  manuel: [{ x: 324, y: 116, e: 1 }, { x: 74, y: 286, e: 0.8 }],
+  depart: [{ x: 78, y: 132, e: 1 }, { x: 326, y: 282, e: 0.8 }],
+};
+
+const TITRES: Record<Props["variante"], string> = {
+  digital: "Un site en ligne dont la courbe de visites reste plate",
+  manuel: "Des documents recopiés à la main, et le temps qui passe",
+  depart: "Des directions possibles dans tous les sens, sans première étape",
+};
+---
+<div class="pb-illus">
+  <svg viewBox="0 0 400 400" role="img" aria-label={TITRES[variante]}>
+    <circle class="pb-disc" cx="200" cy="200" r="168" />
+    {etoiles[variante].map((s) => (
+      <path class="pb-star" transform={`translate(${s.x},${s.y}) scale(${s.e})`} d={ETOILE} />
+    ))}
+
+    {variante === "digital" && (
+      <Fragment>
+        <rect class="pb-card" x="76" y="104" width="248" height="176" rx="14" />
+        <line class="pb-rule" x1="76" y1="136" x2="324" y2="136" />
+        <circle cx="94" cy="120" r="4" fill="rgba(2,11,80,.2)" />
+        <circle cx="108" cy="120" r="4" fill="rgba(2,11,80,.2)" />
+        <circle cx="122" cy="120" r="4" fill="rgba(2,11,80,.2)" />
+        <text class="pb-lbl" x="100" y="166">Visites ce mois</text>
+        <text class="pb-num" x="100" y="192">0 client</text>
+        {/* La courbe plate : c'est elle qui dit « sans résultat ». */}
+        <polyline class="pb-flat" points="100,246 148,244 196,247 244,245 292,246" />
+        <line class="pb-axis" x1="100" y1="262" x2="300" y2="262" />
+        <g transform="translate(238,268)">
+          <rect class="pb-card" x="0" y="0" width="104" height="66" rx="10" />
+          <rect class="pb-line" x="16" y="18" width="52" height="7" rx="3.5" />
+          <rect class="pb-line" x="16" y="33" width="70" height="7" rx="3.5" />
+          <rect class="pb-line pb-line--accent" x="16" y="48" width="34" height="7" rx="3.5" />
+        </g>
+      </Fragment>
+    )}
+
+    {variante === "manuel" && (
+      <Fragment>
+        <g transform="rotate(-8 168 216)">
+          <rect class="pb-card" x="88" y="120" width="150" height="192" rx="12" />
+          <rect class="pb-line" x="110" y="148" width="72" height="8" rx="4" />
+          <rect class="pb-line" x="110" y="176" width="106" height="7" rx="3.5" />
+          <rect class="pb-line" x="110" y="194" width="86" height="7" rx="3.5" />
+          <rect class="pb-line" x="110" y="212" width="100" height="7" rx="3.5" />
+          <rect class="pb-line" x="110" y="230" width="64" height="7" rx="3.5" />
+          <rect class="pb-line pb-line--accent" x="110" y="266" width="60" height="9" rx="4.5" />
+        </g>
+        <g transform="rotate(6 250 236)">
+          <rect class="pb-card" x="188" y="150" width="146" height="188" rx="12" />
+          <rect class="pb-line" x="208" y="178" width="68" height="8" rx="4" />
+          <rect class="pb-line" x="208" y="206" width="102" height="7" rx="3.5" />
+          <rect class="pb-line" x="208" y="224" width="80" height="7" rx="3.5" />
+          <rect class="pb-line" x="208" y="242" width="96" height="7" rx="3.5" />
+          <rect class="pb-line pb-line--accent" x="208" y="278" width="58" height="9" rx="4.5" />
+        </g>
+        <g transform="translate(118,300)">
+          <circle class="pb-clock" cx="0" cy="0" r="40" />
+          <polyline class="pb-hands" points="0,-22 0,0 16,10" />
+        </g>
+      </Fragment>
+    )}
+
+    {variante === "depart" && (
+      <Fragment>
+        {/* Quatre départs possibles, aucun mis en avant. */}
+        <g class="pb-arrows">
+          <path d="M200,214 C168,196 140,186 108,182" /><polyline points="122,172 106,182 120,194" />
+          <path d="M200,214 C196,178 190,150 178,120" /><polyline points="188,132 177,118 168,134" />
+          <path d="M200,214 C232,198 262,192 294,190" /><polyline points="280,180 296,190 282,202" />
+          <path d="M200,214 C214,178 232,156 258,134" /><polyline points="250,148 259,132 268,148" />
+        </g>
+        <circle class="pb-card" cx="200" cy="248" r="62" />
+        <text class="pb-qm" x="200" y="270">?</text>
+      </Fragment>
+    )}
+  </svg>
+</div>
+
+<style>
+  .pb-illus { width: 100%; max-width: 390px; margin-inline: auto; }
+  .pb-illus svg { width: 100%; height: auto; display: block; }
+
+  .pb-disc { fill: #d1e9fe; opacity: .7; } /* bleu-100 du site, sans token dédié */
+  .pb-star { fill: #16407d; }
+  .pb-card { fill: #fff; stroke: rgba(2, 11, 80, .14); stroke-width: 2; }
+  .pb-rule, .pb-axis { stroke: rgba(2, 11, 80, .12); stroke-width: 2; }
+  .pb-line { fill: rgba(2, 11, 80, .13); }
+  .pb-line--accent { fill: var(--c-blue); }
+  .pb-flat { fill: none; stroke: var(--c-orange); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+  .pb-lbl { font-family: var(--f-body); font-weight: 700; font-size: 13px; fill: var(--c-gray-500); }
+  .pb-num { font-family: var(--f-display); font-weight: 800; font-size: 15px; fill: var(--c-navy); }
+  .pb-clock { fill: #fff; stroke: var(--c-orange); stroke-width: 5; }
+  .pb-hands { fill: none; stroke: var(--c-orange); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+  .pb-arrows { fill: none; stroke: var(--c-navy); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: .28; }
+  .pb-qm { font-family: var(--f-display); font-weight: 800; font-size: 56px; fill: var(--c-blue); text-anchor: middle; }
+</style>
