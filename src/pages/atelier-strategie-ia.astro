@@ -112,6 +112,48 @@ const douleurs = [
   },
 ];
 
+/* Le déroulé de la journée. La pause déjeuner est une VRAIE pause d'une heure
+   (correction Godwin du 31/08/2026) : elle apparaît en clair dans le bloc du
+   midi plutôt que d'être absorbée dans ses horaires, sinon le visiteur compte
+   trois heures de travail là où il n'y en a que deux.
+   `points` contient du HTML (des `<b>`) : c'est du texte que nous écrivons
+   ici, jamais une saisie visiteur, donc `set:html` ne présente pas de risque. */
+const programme = [
+  {
+    heures: "9h — 12h",
+    quand: "Matin · 3 h",
+    titre: "Les 5 opportunités IA de votre secteur",
+    points: [
+      "Ce qui marche vraiment dans le commerce, les services et la distribution à Abidjan.",
+      "<b>Des démonstrations en direct sur des cas réels</b>, pas des captures d'écran.",
+      "Ce que chaque solution coûte, et ce qu'elle doit rapporter au bout de trois mois.",
+      "Ce qu'il ne faut surtout pas faire, et pourquoi tant de PME s'y brûlent.",
+    ],
+  },
+  {
+    heures: "12h — 15h",
+    quand: "Midi · déjeuner puis audit",
+    pause: { heures: "12h — 13h", texte: "Pause déjeuner, comprise dans le prix." },
+    titre: "L'audit express de votre entreprise",
+    points: [
+      "Vous remplissez <b>votre fiche d'audit</b>, guidé question par question.",
+      "On regarde vos vrais chiffres : vos ventes, vos délais, vos coûts.",
+      "On repère où vous perdez du temps, et où vous perdez des clients.",
+    ],
+  },
+  {
+    heures: "15h — 17h",
+    quand: "Après-midi · 2 h",
+    titre: "Votre plan 90 jours",
+    points: [
+      "On choisit <b>trois priorités, dans l'ordre</b>, et on écarte tout le reste.",
+      "On chiffre chacune : ce qu'elle coûte, qui s'en occupe, ce qu'elle rapporte.",
+      "On configure vos premiers outils avec vous, sur votre téléphone.",
+      "Vous repartez avec la feuille de route en main.",
+    ],
+  },
+];
+
 /* Les quatre livrables. `legende` s'affiche sous le visuel, `desc` sous le
    titre : deux registres différents, jamais la même phrase. */
 const livrables = [
@@ -298,47 +340,35 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
     <div class="section-head center reveal">
       <div class="eyebrow" style="justify-content:center">Le déroulé</div>
       <h2>De 9h à 17h, une journée qui avance.</h2>
+      <p class="lead">
+        Pas une conférence en trois actes. Une journée de travail sur votre entreprise,
+        découpée en trois temps qui s'enchaînent.
+      </p>
     </div>
 
-    {/* Visuel V4 du scope §5bis — ligne de temps + 3 icônes. */}
-    <ol class="at-timeline" data-stagger>
-      <li class="at-step">
-        <span class="at-step__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="3" x2="12" y2="5.5"/><line x1="12" y1="18.5" x2="12" y2="21"/><line x1="3" y1="12" x2="5.5" y2="12"/><line x1="18.5" y1="12" x2="21" y2="12"/><line x1="5.6" y1="5.6" x2="7.4" y2="7.4"/><line x1="16.6" y1="16.6" x2="18.4" y2="18.4"/></svg>
-        </span>
-        <span class="at-step__time">9h — 12h30</span>
-        <h3>Matin : les 5 opportunités IA de votre secteur</h3>
-        <p>
-          Ce qui marche vraiment dans le commerce, les services et la distribution en
-          Côte d'Ivoire, avec des <b>démonstrations en direct sur des cas réels</b>.
-          pas des captures d'écran.
-        </p>
-      </li>
+    <div class="at-day" data-stagger>
+      {programme.map((bloc, i) => (
+        <article class:list={["at-day__card", `at-day__card--${i + 1}`]}>
+          <header class="at-day__top">
+            <span class="at-day__num" aria-hidden="true">{i + 1}</span>
+            <span class="at-day__when">{bloc.heures}<small>{bloc.quand}</small></span>
+          </header>
 
-      <li class="at-step">
-        <span class="at-step__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V9.5A1.5 1.5 0 0 1 5.5 8h13A1.5 1.5 0 0 1 20 9.5V20z"/><line x1="3" y1="20" x2="21" y2="20"/><path d="M8 8V5.5"/><path d="M12 8V4"/><path d="M16 8V5.5"/></svg>
-        </span>
-        <span class="at-step__time">12h30 — 14h30</span>
-        <h3>Midi : l'audit express de VOTRE entreprise</h3>
-        <p>
-          Déjeuner de travail : vous remplissez votre fiche d'audit, guidé pas à pas.
-          On regarde vos chiffres, vos process, vos points de fuite.
-        </p>
-      </li>
-
-      <li class="at-step">
-        <span class="at-step__ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V4.8A.8.8 0 0 1 5.8 4h9.4a.8.8 0 0 1 .8.8V20"/><line x1="3" y1="20" x2="21" y2="20"/><polyline points="8.5 12 10.5 14 15 9.5"/></svg>
-        </span>
-        <span class="at-step__time">14h30 — 17h</span>
-        <h3>Après-midi : votre plan 90 jours</h3>
-        <p>
-          On priorise, on chiffre, on planifie. Puis échanges entre dirigeants et
-          prochaines étapes : vous repartez avec la feuille de route en main.
-        </p>
-      </li>
-    </ol>
+          <div class="at-day__body">
+            {bloc.pause && (
+              <p class="at-day__pause">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v7a2 2 0 0 0 4 0V3"/><line x1="7" y1="12" x2="7" y2="21"/><path d="M16 3c-1.4 1.6-2 3.4-2 5.5S14.6 12 16 13v8"/><path d="M19 3v18"/></svg>
+                <span><b>{bloc.pause.heures}</b> · {bloc.pause.texte}</span>
+              </p>
+            )}
+            <h3>{bloc.titre}</h3>
+            <ul class="at-day__pts">
+              {bloc.points.map((pt) => <li set:html={pt} />)}
+            </ul>
+          </div>
+        </article>
+      ))}
+    </div>
   </div>
 </section>
 
@@ -451,7 +481,7 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
       <ul class="at-pricing__facts">
         <li><b>{PLACES} places</b> par session, pas une de plus.</li>
         <li>1<sup>re</sup> session&nbsp;: <b>{SESSION}</b>, à Abidjan (Cocody, Riviera Abatta).</li>
-        <li>Journée complète 9h — 17h, déjeuner de travail compris.</li>
+        <li>Journée complète 9h — 17h, déjeuner compris.</li>
       </ul>
 
       <div class="at-pricing__pay">
@@ -848,21 +878,32 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   }
 
   /* ---------- 4. Le programme ---------- */
-  .at-timeline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 2.4vw, 32px); position: relative; }
-  /* La ligne de temps : un trait derrière les trois pastilles. Sa position
-     (29px) est le RAYON de la pastille, qui est le premier élément de chaque
-     étape — le trait passe donc exactement par leur centre, quelle que soit la
-     longueur des titres. */
-  .at-timeline::before { content: ""; position: absolute; left: 8%; right: 8%; top: 29px; height: 2px; background: linear-gradient(90deg, var(--c-skyblue), var(--c-blue), var(--c-green)); opacity: .45; }
-  /* Colonne : chaque bloc s'empile (pastille → heure → titre → texte). En flux
-     normal, la pastille et l'heure sont toutes deux « inline » et se
-     retrouveraient côte à côte, l'heure tronquée derrière la pastille. */
-  .at-step { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 8px; }
-  .at-step__time { font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--c-blue); margin-bottom: 12px; }
-  .at-step__ico { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 58px; height: 58px; border-radius: 50%; background: #fff; border: 2px solid var(--c-blue); color: var(--c-blue); box-shadow: 0 0 0 8px #fff; margin-bottom: 16px; }
-  .at-step__ico svg { width: 26px; height: 26px; }
-  .at-step h3 { font-size: 1.05rem; line-height: 1.35; margin-bottom: 10px; }
-  .at-step p { font-size: .93rem; color: var(--c-gray-600); margin: 0; max-width: 34ch; margin-inline: auto; }
+  .at-program .section-head .lead { max-width: 52ch; margin: 16px auto 0; }
+  .at-day { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(18px, 2vw, 24px); align-items: start; }
+  .at-day__card { display: flex; flex-direction: column; background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
+  .at-day__top { display: flex; align-items: center; gap: 13px; padding: 18px 22px; color: #fff; }
+  /* Trois dégradés au lieu d'une seule couleur : la journée doit se lire comme
+     une progression, du bleu du matin au vert de la fin. */
+  .at-day__card--1 .at-day__top { background: linear-gradient(135deg, #2a7bf5, var(--c-blue)); }
+  .at-day__card--2 .at-day__top { background: linear-gradient(135deg, var(--c-blue-darker), var(--c-navy-soft)); }
+  .at-day__card--3 .at-day__top { background: linear-gradient(135deg, var(--c-green), #00a483); }
+  .at-day__num { flex: none; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, .2); font-family: var(--f-display); font-weight: 800; font-size: .95rem; }
+  .at-day__when { font-family: var(--f-display); font-weight: 700; font-size: 1rem; line-height: 1.15; }
+  .at-day__when small { display: block; font-family: var(--f-body); font-weight: 400; font-size: .72rem; letter-spacing: .07em; text-transform: uppercase; opacity: .82; margin-top: 3px; }
+  .at-day__body { flex: 1; padding: 22px; }
+  /* La pause est une vraie interruption du programme : bordure pointillée et
+     fond gris pour qu'on ne la confonde pas avec un temps de travail. */
+  .at-day__pause { display: flex; align-items: center; gap: 10px; margin: 0 0 18px; padding: 10px 13px; border-radius: var(--radius-md); background: var(--surface-2); border: 1px dashed var(--c-border); font-size: .84rem; color: var(--c-gray-600); }
+  .at-day__pause svg { flex: none; width: 17px; height: 17px; color: var(--c-gray-400); }
+  .at-day__pause b { color: var(--c-navy); font-weight: 700; }
+  .at-day__body h3 { font-size: 1.1rem; line-height: 1.32; margin-bottom: 16px; }
+  .at-day__pts { list-style: none; margin: 0; padding: 0; display: grid; gap: 11px; }
+  .at-day__pts li { position: relative; padding-left: 26px; font-size: .92rem; line-height: 1.55; color: var(--c-gray-700); }
+  .at-day__pts li::before { content: ""; position: absolute; left: 2px; top: .45em; width: 9px; height: 9px; border-radius: 50%; border: 2.5px solid var(--c-blue); }
+  .at-day__pts b { color: var(--c-navy); }
+  /* Trois colonnes de puces se serrent avant le point de rupture habituel :
+     les lignes cassent en deux ou trois mots bien avant 768px. */
+  @media (max-width: 980px) { .at-day { grid-template-columns: 1fr; max-width: 560px; margin-inline: auto; } }
 
   /* ---------- 5. Pour qui / pas pour qui ---------- */
   .at-fit-card h3 { display: flex; align-items: center; gap: 12px; font-size: 1.15rem; margin-bottom: 20px; }
@@ -972,13 +1013,6 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   }
 
   @media (max-width: 980px) {
-    .at-timeline { grid-template-columns: 1fr; gap: 28px; }
-    .at-timeline::before { display: none; }
-    .at-step { text-align: left; display: grid; grid-template-columns: 58px 1fr; grid-template-areas: "ico time" "ico title" "ico text"; column-gap: 18px; align-items: start; }
-    .at-step__time { grid-area: time; margin-bottom: 6px; align-self: center; }
-    .at-step__ico { grid-area: ico; box-shadow: none; margin-bottom: 0; }
-    .at-step h3 { grid-area: title; }
-    .at-step p { grid-area: text; margin-inline: 0; max-width: none; }
     .at-guarantee { flex-direction: column; text-align: center; }
   }
   @media (max-width: 720px) {
