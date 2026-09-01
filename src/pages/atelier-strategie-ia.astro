@@ -183,6 +183,67 @@ const livrables = [
   },
 ];
 
+/* Les études de cas du carrousel « La preuve ».
+   RÈGLE : on n'invente aucun chiffre client. Tant qu'un résultat n'est pas
+   fourni et validé par le client, le champ reste vide et la fiche l'affiche
+   franchement. Une fausse preuve sur une page à 200 000 FCFA se retourne au
+   premier confrère qui décroche son téléphone.
+   Seules ACOPCI et Ivoire 2C sont des références confirmées (cf. /realisations).
+
+   `video` porte l'IDENTIFIANT YouTube, pas une URL : le lecteur est construit
+   sur youtube-nocookie.com au clic seulement. Quand `video` est absent, le
+   bouton n'existe pas (décision Godwin du 01/09/2026). */
+type Video = { id: string; duree: string; qui: string };
+type EtudeDeCas = {
+  client: string;
+  sigle: string;
+  secteur: string;
+  aCompleter?: string;
+  depart: string;
+  actions: string[];
+  resultat: { chiffre: string; libelle: string };
+  metriques: { valeur: string; libelle: string }[];
+  verbatim?: { texte: string; qui: string };
+  video?: Video;
+};
+
+const etudesDeCas: EtudeDeCas[] = [
+  {
+    client: "ACOPCI",
+    sigle: "AC",
+    secteur: "Organisation professionnelle · Abidjan",
+    aCompleter: "Chiffres à fournir",
+    depart: "À compléter : en une ou deux phrases, ce qui n'allait pas avant notre intervention, dit comme le dirigeant le dirait.",
+    actions: [
+      "Formation des équipes aux outils digitaux.",
+      "Structuration digitale de l'organisation.",
+      "À compléter : la troisième action menée.",
+    ],
+    resultat: { chiffre: "—", libelle: "Le chiffre principal reste à fournir. C'est lui qui porte toute la fiche." },
+    metriques: [
+      { valeur: "—", libelle: "Deuxième indicateur" },
+      { valeur: "—", libelle: "Troisième indicateur" },
+    ],
+  },
+  {
+    client: "Ivoire 2C",
+    sigle: "I2",
+    secteur: "Distribution · Abidjan",
+    aCompleter: "Chiffres à fournir",
+    depart: "À compléter : le point de départ du client, avant l'accompagnement.",
+    actions: [
+      "Renforcement de la présence en ligne.",
+      "Mise en place des outils de gestion.",
+      "À compléter : la troisième action menée.",
+    ],
+    resultat: { chiffre: "—", libelle: "Le chiffre principal reste à fournir. C'est lui qui porte toute la fiche." },
+    metriques: [
+      { valeur: "—", libelle: "Deuxième indicateur" },
+      { valeur: "—", libelle: "Troisième indicateur" },
+    ],
+  },
+];
+
 const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>';
 ---
 
@@ -425,23 +486,98 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
       <div class="at-stat"><b>97 %</b><span>de satisfaction</span></div>
     </div>
 
-    {/* Visuel V6 du scope §5bis — 3 vidéos clients VERTICALES (9:16).
-        Placeholders assumés : aucun faux témoignage, aucune photo d'illustration
-        faisant passer un inconnu pour un client. Les vidéos sont fournies par
-        Godwin ; tant qu'elles manquent, l'emplacement l'annonce lui-même. */}
-    <div class="at-videos" data-stagger>
-      <figure class="at-video">
-        <div class="at-video__slot"><span class="badge badge-placeholder">Témoignage à insérer</span></div>
-        <figcaption>Dirigeant de PME, commerce</figcaption>
-      </figure>
-      <figure class="at-video">
-        <div class="at-video__slot"><span class="badge badge-placeholder">Témoignage à insérer</span></div>
-        <figcaption>Dirigeante de PME, services</figcaption>
-      </figure>
-      <figure class="at-video">
-        <div class="at-video__slot"><span class="badge badge-placeholder">Témoignage à insérer</span></div>
-        <figcaption>Dirigeant de PME, distribution</figcaption>
-      </figure>
+    {/* Carrousel d'études de cas. Le rail est un simple défilement à accroche
+        CSS : les fiches sont dans le HTML et se font glisser au doigt même
+        sans JavaScript. Le script n'ajoute que le compteur, les flèches, les
+        pastilles et la fenêtre vidéo, et se déclare par `is-carrousel`. */}
+    <div class="at-cas" data-cas>
+      <div class="at-cas__barre" data-cas-barre hidden>
+        <span class="at-cas__compte"><b data-cas-index>1</b> <i>/ {etudesDeCas.length}</i></span>
+        <span class="at-cas__rail"><span class="at-cas__jauge" data-cas-jauge></span></span>
+        <span class="at-cas__nav">
+          <button type="button" class="at-cas__fleche" data-cas-prec aria-label="Étude de cas précédente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 6 9 12 15 18"/></svg>
+          </button>
+          <button type="button" class="at-cas__fleche" data-cas-suiv aria-label="Étude de cas suivante">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+          </button>
+        </span>
+      </div>
+
+      <div class="at-cas__piste" data-cas-piste>
+        {etudesDeCas.map((cas) => (
+          <article class="at-cas__fiche">
+            <div class="at-cas__gauche">
+              <div class="at-cas__id">
+                <span class="at-cas__logo" aria-hidden="true">{cas.sigle}</span>
+                <span>
+                  <span class="at-cas__nom">{cas.client}</span>
+                  <span class="at-cas__secteur">{cas.secteur}</span>
+                </span>
+                {cas.aCompleter && <span class="at-cas__todo">{cas.aCompleter}</span>}
+              </div>
+
+              <div class="at-cas__bloc">
+                <span class="at-cas__lbl">Le point de départ</span>
+                <p>{cas.depart}</p>
+              </div>
+
+              <div class="at-cas__bloc">
+                <span class="at-cas__lbl">Ce que nous avons fait</span>
+                <ul class="at-cas__actions">
+                  {cas.actions.map((a) => <li>{a}</li>)}
+                </ul>
+              </div>
+            </div>
+
+            <div class="at-cas__droite">
+              <div>
+                <div class="at-cas__chiffre">{cas.resultat.chiffre}</div>
+                <p class="at-cas__chiffreL">{cas.resultat.libelle}</p>
+              </div>
+
+              <div class="at-cas__metriques">
+                {cas.metriques.map((m) => (
+                  <div class="at-cas__metrique"><b>{m.valeur}</b><span>{m.libelle}</span></div>
+                ))}
+              </div>
+
+              {cas.verbatim && (
+                <figure class="at-cas__verbatim">
+                  <blockquote>{cas.verbatim.texte}</blockquote>
+                  <figcaption>{cas.verbatim.qui}</figcaption>
+                </figure>
+              )}
+
+              {/* Un LIEN, pas un bouton : sans JavaScript il ouvre la vidéo sur
+                  YouTube ; avec, le script l'intercepte et ouvre la fenêtre.
+                  Rien n'est chargé depuis YouTube tant qu'on n'a pas cliqué. */}
+              {cas.video && (
+                <a
+                  class="at-cas__voir"
+                  href={`https://www.youtube.com/watch?v=${cas.video.id}`}
+                  target="_blank"
+                  rel="noopener"
+                  data-cas-video={cas.video.id}
+                  data-cas-qui={cas.video.qui}
+                  data-cas-secteur={cas.secteur}
+                >
+                  <span class="at-cas__disque" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>
+                  </span>
+                  <span class="at-cas__voirT">
+                    <b>Voir son témoignage</b>
+                    <span>{cas.video.qui}</span>
+                  </span>
+                  <span class="at-cas__duree">{cas.video.duree}</span>
+                </a>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div class="at-cas__pastilles" data-cas-pastilles hidden></div>
     </div>
   </div>
 </section>
@@ -918,15 +1054,117 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
   .at-fit-note a { color: var(--c-blue); font-weight: 700; }
 
   /* ---------- 6. La preuve (navy) ---------- */
-  .at-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(24px, 5vw, 72px); margin-bottom: clamp(40px, 5vw, 64px); }
-  .at-stat { text-align: center; }
-  .at-stat b { display: block; font-family: var(--f-display); font-size: clamp(1.7rem, 1.2rem + 1.8vw, 2.6rem); font-weight: 800; color: var(--c-yellow); line-height: 1.05; }
-  .at-stat span { font-size: .88rem; color: rgba(255, 255, 255, .75); }
+  /* Les statistiques passent en pastilles compactes : elles restent la caution
+     chiffrée, mais ne concurrencent plus les études de cas qui suivent. */
+  .at-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-bottom: clamp(34px, 4vw, 48px); }
+  .at-stat { display: flex; align-items: baseline; gap: 9px; padding: 11px 20px; border-radius: var(--radius-pill); background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .14); }
+  .at-stat b { font-family: var(--f-display); font-size: 1.18rem; font-weight: 800; color: var(--c-yellow); line-height: 1; }
+  .at-stat span { font-size: .82rem; color: rgba(255, 255, 255, .72); }
 
-  .at-videos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2.4vw, 28px); max-width: 720px; margin-inline: auto; }
-  .at-video { margin: 0; }
-  .at-video__slot { aspect-ratio: 9 / 16; border-radius: var(--radius-md); background: rgba(255, 255, 255, .05); border: 1px dashed rgba(255, 255, 255, .28); display: flex; align-items: center; justify-content: center; padding: 12px; text-align: center; }
-  .at-video figcaption { margin-top: 12px; text-align: center; font-size: .84rem; color: rgba(255, 255, 255, .7); }
+  /* --- la barre de contrôle (écran large) --- */
+  .at-cas__barre { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; }
+  .at-cas__compte { flex: none; font-family: var(--f-display); font-size: .88rem; font-weight: 800; color: #fff; letter-spacing: .04em; }
+  .at-cas__compte i { font-style: normal; color: rgba(255, 255, 255, .55); }
+  .at-cas__rail { flex: 1; height: 2px; border-radius: 2px; background: rgba(255, 255, 255, .14); overflow: hidden; }
+  .at-cas__jauge { display: block; height: 100%; border-radius: 2px; background: var(--c-yellow); transition: width var(--dur) var(--ease); }
+  .at-cas__nav { display: flex; gap: 9px; flex: none; }
+  .at-cas__fleche { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .05); color: #fff; cursor: pointer; transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+  .at-cas__fleche svg { width: 18px; height: 18px; }
+  .at-cas__fleche:disabled { opacity: .32; cursor: default; }
+  @media (hover: hover) { .at-cas__fleche:not(:disabled):hover { background: rgba(255, 255, 255, .13); border-color: rgba(255, 255, 255, .3); } }
+
+  /* --- le rail de fiches --- */
+  .at-cas__piste { display: flex; gap: 22px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -6px; padding: 0 6px 6px; }
+  .at-cas__piste::-webkit-scrollbar { display: none; }
+  .at-cas__fiche { flex: 0 0 100%; scroll-snap-align: center; display: grid; grid-template-columns: 1.15fr .85fr; border-radius: var(--radius-lg); background: rgba(255, 255, 255, .055); border: 1px solid rgba(255, 255, 255, .14); overflow: hidden; }
+
+  .at-cas__gauche { padding: clamp(26px, 2.6vw, 38px) clamp(24px, 2.8vw, 40px); }
+  .at-cas__id { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .at-cas__logo { flex: none; display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 14px; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .14); font-family: var(--f-display); font-weight: 800; font-size: .95rem; color: #fff; }
+  /* Le bloc nom + secteur doit pouvoir rétrécir, sinon il passe à la ligne et
+     laisse le logo seul sur la sienne dès que l'écran se resserre. */
+  .at-cas__id > span:not(.at-cas__logo):not(.at-cas__todo) { flex: 1; min-width: 0; }
+  .at-cas__nom { display: block; font-family: var(--f-display); font-size: 1.28rem; font-weight: 800; color: #fff; line-height: 1.2; }
+  .at-cas__secteur { display: block; font-size: .8rem; color: rgba(255, 255, 255, .55); margin-top: 3px; }
+  .at-cas__todo { flex: none; margin-left: auto; padding: 5px 11px; border-radius: var(--radius-pill); font-size: .68rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; background: rgba(255, 199, 42, .14); color: var(--c-yellow); border: 1px solid rgba(255, 199, 42, .42); }
+
+  .at-cas__bloc { margin-bottom: 20px; }
+  .at-cas__bloc:last-child { margin-bottom: 0; }
+  .at-cas__lbl { display: block; font-size: .68rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: rgba(255, 255, 255, .55); margin-bottom: 7px; }
+  .at-cas__bloc p { margin: 0; font-size: .93rem; line-height: 1.62; color: rgba(255, 255, 255, .9); }
+  .at-cas__actions { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+  .at-cas__actions li { position: relative; padding-left: 26px; font-size: .9rem; line-height: 1.55; color: rgba(255, 255, 255, .72); }
+  .at-cas__actions li::before { content: ""; position: absolute; left: 0; top: .38em; width: 13px; height: 13px; border-radius: 50%; background: rgba(0, 200, 158, .18); border: 1px solid rgba(0, 200, 158, .55); }
+  .at-cas__actions li::after { content: ""; position: absolute; left: 4px; top: .62em; width: 5px; height: 2.5px; border-left: 2px solid var(--c-green); border-bottom: 2px solid var(--c-green); transform: rotate(-45deg); }
+
+  .at-cas__droite { display: flex; flex-direction: column; padding: clamp(26px, 2.6vw, 38px); background: rgba(255, 255, 255, .045); border-left: 1px solid rgba(255, 255, 255, .14); }
+  .at-cas__chiffre { font-family: var(--f-display); font-size: clamp(2.2rem, 1.5rem + 2.4vw, 3.4rem); font-weight: 800; color: var(--c-yellow); line-height: 1; letter-spacing: -.02em; }
+  .at-cas__chiffreL { margin: 8px 0 0; font-size: .88rem; line-height: 1.5; color: rgba(255, 255, 255, .9); }
+  .at-cas__metriques { display: grid; gap: 1px; margin-top: 26px; border-radius: var(--radius-md); border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .14); overflow: hidden; }
+  .at-cas__metrique { background: rgba(2, 11, 80, .35); padding: 14px 16px; }
+  .at-cas__metrique b { display: block; font-family: var(--f-display); font-size: 1.2rem; font-weight: 800; color: #fff; line-height: 1.1; }
+  .at-cas__metrique span { display: block; font-size: .78rem; color: rgba(255, 255, 255, .55); margin-top: 4px; }
+  .at-cas__verbatim { margin: 26px 0 0; }
+  .at-cas__verbatim blockquote { margin: 0; font-size: .91rem; line-height: 1.62; color: rgba(255, 255, 255, .9); font-style: italic; }
+  .at-cas__verbatim figcaption { margin-top: 11px; font-size: .78rem; color: rgba(255, 255, 255, .55); }
+
+  /* Le bouton vidéo est collé en bas : il tombe au même endroit d'une fiche à
+     l'autre, même quand les textes n'ont pas la même longueur. */
+  .at-cas__voir { display: flex; align-items: center; gap: 14px; margin-top: auto; padding: 13px 16px; border-radius: var(--radius-md); border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .05); transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+  .at-cas__droite > .at-cas__voir { margin-top: 24px; }
+  .at-cas__voir + * { margin-top: 0; }
+  @media (hover: hover) { .at-cas__voir:hover { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .3); } }
+  .at-cas__disque { flex: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--c-yellow); color: var(--c-navy); }
+  .at-cas__disque svg { width: 15px; height: 15px; margin-left: 2px; }
+  .at-cas__voirT { flex: 1; min-width: 0; }
+  .at-cas__voirT b { display: block; font-family: var(--f-display); font-size: .9rem; font-weight: 800; color: #fff; line-height: 1.25; }
+  .at-cas__voirT span { display: block; font-size: .78rem; color: rgba(255, 255, 255, .55); margin-top: 3px; }
+  .at-cas__duree { flex: none; font-size: .78rem; font-weight: 800; color: rgba(255, 255, 255, .72); font-variant-numeric: tabular-nums; }
+
+  /* --- les pastilles (mobile) --- */
+  /* Sur écran large, les flèches et le compteur suffisent : les pastilles
+     feraient un troisième repère pour la même information. */
+  .at-cas__pastilles { display: none; justify-content: center; gap: 9px; margin-top: 20px; }
+  .at-cas__pastille { width: 9px; height: 9px; padding: 0; border: none; border-radius: 50%; background: rgba(255, 255, 255, .28); cursor: pointer; transition: background var(--dur) var(--ease), width var(--dur) var(--ease); }
+  .at-cas__pastille.is-on { width: 26px; border-radius: var(--radius-pill); background: var(--c-yellow); }
+
+  /* --- la fenêtre vidéo --- */
+  .at-cas__fenetre { position: fixed; inset: 0; z-index: var(--z-lightbox); display: flex; align-items: center; justify-content: center; padding: clamp(20px, 4vw, 40px); background: rgba(1, 6, 32, .82); backdrop-filter: blur(8px); }
+  .at-cas__fenetre[hidden] { display: none; }
+  .at-cas__boite { width: min(880px, 100%); }
+  .at-cas__fTete { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 14px; }
+  .at-cas__fTitre { font-family: var(--f-display); font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1.25; }
+  .at-cas__fSous { font-size: .8rem; color: rgba(255, 255, 255, .55); margin-top: 4px; }
+  .at-cas__fX { flex: none; margin-left: auto; display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .05); color: #fff; cursor: pointer; }
+  .at-cas__fX svg { width: 16px; height: 16px; }
+  .at-cas__cadre { aspect-ratio: 16 / 9; border-radius: var(--radius-lg); overflow: hidden; background: #040d33; border: 1px solid rgba(255, 255, 255, .14); }
+  .at-cas__cadre iframe { width: 100%; height: 100%; border: 0; display: block; }
+  /* YouTube est un contenu externe : la bannière du site promet qu'il n'y en a
+     aucun sans accord. Tant que la catégorie « externes » n'est pas acceptée,
+     on affiche ce volet au lieu de l'iframe, comme la carte Maps le fait. */
+  .at-cas__consent { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; height: 100%; padding: 28px; text-align: center; }
+  .at-cas__consent svg { width: 40px; height: 40px; color: var(--c-yellow); }
+  .at-cas__consent p { margin: 0; max-width: 38ch; font-size: .9rem; line-height: 1.6; color: rgba(255, 255, 255, .8); }
+
+  @media (max-width: 980px) {
+    .at-cas__fiche { grid-template-columns: 1fr; }
+    .at-cas__droite { border-left: none; border-top: 1px solid rgba(255, 255, 255, .14); }
+    .at-cas__id { flex-wrap: wrap; }
+    .at-cas__todo { margin-left: 66px; order: 3; }
+  }
+
+  /* Mobile : la fiche suivante DÉPASSE volontairement du bord droit. C'est ce
+     débord qui dit qu'il y en a d'autres ; sans lui, le visiteur ne devine pas
+     qu'il peut faire glisser. Les flèches disparaissent (le doigt suffit et la
+     cible est minuscule) et les pastilles prennent le relais. */
+  @media (max-width: 720px) {
+    .at-cas__barre { display: none; }
+    .at-cas__piste { gap: 12px; margin: 0 -16px; padding: 0 16px 6px; scroll-padding-left: 16px; }
+    .at-cas__fiche { flex: 0 0 88%; scroll-snap-align: start; }
+    .at-cas__gauche { padding: 24px 20px 20px; }
+    .at-cas__droite { padding: 22px 20px; }
+    .at-cas__pastilles:not([hidden]) { display: flex; }
+  }
 
   /* ---------- 7. La garantie ---------- */
   .at-guarantee { display: flex; align-items: center; gap: clamp(20px, 3vw, 36px); max-width: 860px; margin-inline: auto; padding: clamp(26px, 3.4vw, 40px); border-radius: var(--radius-lg); background: linear-gradient(135deg, #fffdf6 0%, #f4fbf8 100%); border: 1px solid rgba(255, 199, 42, .38); box-shadow: var(--shadow-sm); }
@@ -1203,6 +1441,177 @@ const PLUS = '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19"
 
       dessiner(0);
       image = requestAnimationFrame(image_suivante);
+    }
+  }
+
+  /* ---------- Carrousel « La preuve » ----------
+     Le rail défile déjà tout seul (accroche CSS) : ce script n'ajoute que les
+     repères. D'où les `hidden` retirés ici et non dans le balisage — sans
+     JavaScript, une barre de progression morte et des pastilles inertes
+     vaudraient moins que rien. */
+  const cas = document.querySelector<HTMLElement>("[data-cas]");
+  if (cas) {
+    const piste = cas.querySelector<HTMLElement>("[data-cas-piste]");
+    const fiches = Array.from(cas.querySelectorAll<HTMLElement>(".at-cas__fiche"));
+
+    if (piste && fiches.length > 1) {
+      const barre = cas.querySelector<HTMLElement>("[data-cas-barre]");
+      const index = cas.querySelector<HTMLElement>("[data-cas-index]");
+      const jauge = cas.querySelector<HTMLElement>("[data-cas-jauge]");
+      const prec = cas.querySelector<HTMLButtonElement>("[data-cas-prec]");
+      const suiv = cas.querySelector<HTMLButtonElement>("[data-cas-suiv]");
+      const boitePastilles = cas.querySelector<HTMLElement>("[data-cas-pastilles]");
+      let courant = 0;
+
+      if (barre) barre.hidden = false;
+
+      const pastilles: HTMLButtonElement[] = fiches.map((_, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "at-cas__pastille";
+        b.setAttribute("aria-label", `Étude de cas ${i + 1} sur ${fiches.length}`);
+        b.addEventListener("click", () => aller(i));
+        boitePastilles?.append(b);
+        return b;
+      });
+      if (boitePastilles) boitePastilles.hidden = false;
+
+      const majRepere = () => {
+        if (index) index.textContent = String(courant + 1);
+        if (jauge) jauge.style.width = `${((courant + 1) / fiches.length) * 100}%`;
+        if (prec) prec.disabled = courant === 0;
+        if (suiv) suiv.disabled = courant === fiches.length - 1;
+        pastilles.forEach((b, i) => {
+          b.classList.toggle("is-on", i === courant);
+          b.setAttribute("aria-current", i === courant ? "true" : "false");
+        });
+      };
+
+      const aller = (i: number) => {
+        courant = Math.max(0, Math.min(fiches.length - 1, i));
+        piste.scrollTo({ left: fiches[courant].offsetLeft - piste.offsetLeft, behavior: "smooth" });
+        majRepere();
+      };
+
+      prec?.addEventListener("click", () => aller(courant - 1));
+      suiv?.addEventListener("click", () => aller(courant + 1));
+
+      /* Le défilement au doigt ne passe pas par `aller()` : on relit donc la
+         position réelle du rail pour resynchroniser les repères. */
+      let attente = 0;
+      piste.addEventListener("scroll", () => {
+        cancelAnimationFrame(attente);
+        attente = requestAnimationFrame(() => {
+          const milieu = piste.scrollLeft + piste.clientWidth / 2;
+          let proche = 0;
+          let ecart = Infinity;
+          fiches.forEach((f, i) => {
+            const centre = f.offsetLeft - piste.offsetLeft + f.offsetWidth / 2;
+            const d = Math.abs(centre - milieu);
+            if (d < ecart) { ecart = d; proche = i; }
+          });
+          if (proche !== courant) { courant = proche; majRepere(); }
+        });
+      }, { passive: true });
+
+      cas.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight") { e.preventDefault(); aller(courant + 1); }
+        if (e.key === "ArrowLeft") { e.preventDefault(); aller(courant - 1); }
+      });
+
+      majRepere();
+    }
+
+    /* --- la fenêtre vidéo ---
+       L'iframe n'est créée qu'au clic, et détruite à la fermeture : rien n'est
+       demandé à YouTube tant que personne ne regarde, et la lecture s'arrête
+       vraiment quand on ferme. */
+    const liens = Array.from(cas.querySelectorAll<HTMLAnchorElement>("[data-cas-video]"));
+    if (liens.length) {
+      let fenetre: HTMLElement | null = null;
+      let rendreLeFocus: HTMLElement | null = null;
+
+      const fermer = () => {
+        fenetre?.remove();
+        fenetre = null;
+        document.body.style.overflow = "";
+        rendreLeFocus?.focus();
+      };
+
+      const ouvrir = (lien: HTMLAnchorElement) => {
+        const id = lien.dataset.casVideo!;
+        rendreLeFocus = lien;
+        fenetre = document.createElement("div");
+        fenetre.className = "at-cas__fenetre";
+        fenetre.setAttribute("role", "dialog");
+        fenetre.setAttribute("aria-modal", "true");
+        fenetre.setAttribute("aria-label", `Témoignage de ${lien.dataset.casQui ?? "notre client"}`);
+        fenetre.innerHTML = `
+          <div class="at-cas__boite">
+            <div class="at-cas__fTete">
+              <div>
+                <div class="at-cas__fTitre"></div>
+                <div class="at-cas__fSous"></div>
+              </div>
+              <button type="button" class="at-cas__fX" aria-label="Fermer la vidéo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+              </button>
+            </div>
+            <div class="at-cas__cadre"></div>
+          </div>`;
+        /* Les libellés viennent des données de la page, mais on les pose en
+           `textContent` : une apostrophe dans un nom de client ne doit pas
+           pouvoir casser le balisage. */
+        fenetre.querySelector(".at-cas__fTitre")!.textContent = lien.dataset.casQui ?? "";
+        fenetre.querySelector(".at-cas__fSous")!.textContent = lien.dataset.casSecteur ?? "";
+
+        const cadre = fenetre.querySelector(".at-cas__cadre")!;
+
+        const poserVideo = () => {
+          if (!document.documentElement.classList.contains("consent-externes")) return;
+          if (cadre.querySelector("iframe")) return;
+          cadre.innerHTML = "";
+          const video = document.createElement("iframe");
+          video.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&modestbranding=1`;
+          video.title = `Témoignage de ${lien.dataset.casQui ?? "notre client"}`;
+          video.allow = "accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen";
+          video.setAttribute("allowfullscreen", "");
+          cadre.append(video);
+        };
+
+        if (!document.documentElement.classList.contains("consent-externes")) {
+          cadre.innerHTML = `
+            <div class="at-cas__consent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="14" height="14" rx="3"/><path d="m16 11 6-3.5v9L16 13z"/></svg>
+              <p>Cette vidéo est hébergée par YouTube. Elle ne se charge qu'avec votre accord pour les contenus externes.</p>
+              <button type="button" class="btn btn-primary btn-sm" data-cas-accepter>Afficher la vidéo</button>
+            </div>`;
+          cadre.querySelector("[data-cas-accepter]")?.addEventListener("click", () => {
+            (window as unknown as { bwebCookies?: { acceptExternes: () => void } }).bwebCookies?.acceptExternes();
+          });
+          window.addEventListener("bweb:consent", poserVideo);
+        } else {
+          poserVideo();
+        }
+
+        fenetre.addEventListener("click", (e) => {
+          if (e.target === fenetre || (e.target as HTMLElement).closest(".at-cas__fX")) fermer();
+        });
+        document.body.style.overflow = "hidden";
+        document.body.append(fenetre);
+        fenetre.querySelector<HTMLButtonElement>(".at-cas__fX")?.focus();
+      };
+
+      liens.forEach((lien) => {
+        lien.addEventListener("click", (e) => {
+          e.preventDefault();
+          ouvrir(lien);
+        });
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && fenetre) fermer();
+      });
     }
   }
 

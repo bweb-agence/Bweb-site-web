@@ -62,7 +62,7 @@ export function initCookies(autoShow = true, delaiMs = 0): void {
           consentModal: {
             title: "Nous respectons votre vie privée",
             description:
-              "Ce site utilise des cookies techniques nécessaires à son fonctionnement. Avec votre accord, nous affichons aussi des contenus externes, comme la carte Google Maps de notre localisation.",
+              "Ce site utilise des cookies techniques nécessaires à son fonctionnement. Avec votre accord, nous affichons aussi des contenus externes, comme la carte Google Maps de notre localisation et les témoignages vidéo de nos clients.",
             acceptAllBtn: "Tout accepter",
             acceptNecessaryBtn: "Refuser",
             showPreferencesBtn: "Personnaliser",
@@ -82,7 +82,7 @@ export function initCookies(autoShow = true, delaiMs = 0): void {
                 linkedCategory: "necessary",
               },
               {
-                title: "Contenus externes (cartes)",
+                title: "Contenus externes (cartes, vidéos)",
                 description:
                   "Autorise l'affichage de la carte Google Maps de notre localisation. Google est susceptible de déposer ses propres cookies.",
                 linkedCategory: "externes",
