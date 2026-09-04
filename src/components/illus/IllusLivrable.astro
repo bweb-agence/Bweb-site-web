@@ -1,0 +1,212 @@
+---
+/* SECTION « LA SOLUTION » — les quatre livrables
+   -----------------------------------------------------------
+   Chaque livrable est montré comme un DOCUMENT, pas comme une icône : une
+   fiche d'audit avec ses deux colonnes, un plan avec ses priorités chiffrées,
+   un kit avec sa grille d'outils et son bloc à copier, un lecteur avec ses
+   chapitres. C'est ce qui donne envie — le dirigeant voit ce qu'il emporte le
+   soir, pas un pictogramme.
+
+   Ce sont des MAQUETTES de vos livrables, pas les vrais documents. Le jour où
+   la fiche et le plan existeront, chaque scène se remplace par une capture
+   sans toucher à la section. */
+export interface Props {
+  variante: "fiche" | "plan" | "kit" | "replay";
+}
+const { variante } = Astro.props;
+
+const TITRES: Record<Props["variante"], string> = {
+  fiche: "La fiche d'audit, remplie pendant la journée",
+  plan: "Le plan d'action sur 90 jours, priorité par priorité",
+  kit: "Le kit IA : des outils et des instructions à copier",
+  replay: "Le replay de la journée, découpé en chapitres",
+};
+
+/* Les trois priorités du plan : couleur, mois et libellé du jalon. */
+const priorites = [
+  { n: "1", couleur: "var(--c-blue)", mois: "Mois 1", fondMois: "#d6f7ef", texteMois: "#0b6b56", large: 196, gain: 46 },
+  { n: "2", couleur: "var(--c-green)", mois: "Mois 2", fondMois: "#fff3d2", texteMois: "#8a5a00", large: 228, gain: 38 },
+  { n: "3", couleur: "var(--c-orange)", mois: "Mois 3", fondMois: "#e2f0ff", texteMois: "#0f3d8c", large: 172, gain: 44 },
+];
+---
+<figure class="at-sol-fig" data-fig>
+  <svg viewBox="0 0 640 440" role="img" aria-label={TITRES[variante]}>
+    <rect class="lv-page" x="0" y="0" width="640" height="440" rx="14" />
+
+    {variante !== "replay" && (
+      <Fragment>
+        {/* Bandeau de titre. Le second rectangle comble l'arrondi du bas. */}
+        <rect class="lv-head" x="0" y="0" width="640" height="72" rx="14" />
+        <rect class="lv-head" x="0" y="52" width="640" height="20" />
+        <line class="lv-rule" x1="0" y1="72" x2="640" y2="72" />
+      </Fragment>
+    )}
+
+    {variante === "fiche" && (
+      <Fragment>
+        <text class="lv-titre" x="34" y="44">Fiche d'audit</text>
+        <text class="lv-mini" x="504" y="44">Votre PME</text>
+
+        <text class="lv-mini" x="34" y="112">CE QUI MARCHE</text>
+        <rect class="lv-ok" x="34" y="128" width="226" height="9" rx="4.5" />
+        <rect class="lv-gris" x="34" y="148" width="180" height="7" rx="3.5" />
+        <rect class="lv-ok" x="34" y="172" width="196" height="9" rx="4.5" />
+        <rect class="lv-gris" x="34" y="192" width="150" height="7" rx="3.5" />
+
+        <text class="lv-mini" x="34" y="240">CE QUI VOUS COÛTE</text>
+        <rect class="lv-ko" x="34" y="256" width="242" height="9" rx="4.5" />
+        <rect class="lv-gris" x="34" y="276" width="196" height="7" rx="3.5" />
+        <rect class="lv-ko" x="34" y="300" width="208" height="9" rx="4.5" />
+        <rect class="lv-gris" x="34" y="320" width="168" height="7" rx="3.5" />
+
+        <line class="lv-rule" x1="330" y1="96" x2="330" y2="404" />
+
+        <text class="lv-mini" x="366" y="112">VOS CHIFFRES</text>
+        <rect class="lv-cadre" x="366" y="132" width="236" height="82" rx="12" />
+        {[16, 32, 46, 26, 38].map((h, i) => (
+          <rect class="lv-bleu" x={388 + i * 36} y={198 - h} width="26" height={h} rx="5" />
+        ))}
+
+        <text class="lv-mini" x="366" y="252">POINTS DE FUITE</text>
+        {[180, 208, 156].map((w, i) => (
+          <g transform={`translate(366,${268 + i * 32})`}>
+            <circle cx="9" cy="9" r="9" fill="#ffe7dd" />
+            <text class="lv-puce" x="9" y="14">{i + 1}</text>
+            <rect class="lv-gris" x="28" y="5" width={w} height="8" rx="4" />
+          </g>
+        ))}
+      </Fragment>
+    )}
+
+    {variante === "plan" && (
+      <Fragment>
+        <text class="lv-titre" x="34" y="44">Plan d'action 90 jours</text>
+        <text class="lv-mini" x="34" y="106">PRIORITÉ</text>
+        <text class="lv-mini" x="330" y="106">QUAND</text>
+        <text class="lv-mini" x="450" y="106">BUDGET</text>
+        <text class="lv-mini" x="560" y="106">GAIN</text>
+        <line class="lv-rule" x1="34" y1="118" x2="606" y2="118" />
+
+        {priorites.map((p, i) => (
+          <Fragment>
+            <g transform={`translate(0,${138 + i * 78})`}>
+              <circle cx="48" cy="18" r="14" style={`fill:${p.couleur}`} />
+              <text class="lv-num" x="48" y="23">{p.n}</text>
+              <rect class="lv-gris" x="76" y="8" width={p.large} height="9" rx="4.5" />
+              <rect class="lv-gris" x="76" y="24" width={p.large - 56} height="7" rx="3.5" opacity=".7" />
+              <rect x="330" y="8" width="76" height="22" rx="11" style={`fill:${p.fondMois}`} />
+              <text class="lv-jalon" x="368" y="24" style={`fill:${p.texteMois}`}>{p.mois}</text>
+              <rect class="lv-gris" x="450" y="12" width={58 + i * 10} height="9" rx="4.5" />
+              <rect class="lv-ok" x="560" y="12" width={p.gain} height="9" rx="4.5" />
+            </g>
+            {i < 2 && <line class="lv-rule" x1="34" y1={196 + i * 78} x2="606" y2={196 + i * 78} />}
+          </Fragment>
+        ))}
+
+        <rect class="lv-cadre" x="34" y="366" width="572" height="44" rx="12" />
+        <polyline class="lv-check" points="58,388 68,398 88,376" />
+        <rect class="lv-gris" x="104" y="384" width="220" height="9" rx="4.5" />
+      </Fragment>
+    )}
+
+    {variante === "kit" && (
+      <Fragment>
+        <text class="lv-titre" x="34" y="44">Kit IA PME</text>
+        <text class="lv-mini" x="34" y="108">LES OUTILS</text>
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <rect
+            class:list={["lv-chip", { "lv-chip--appuyee": i === 1 || i === 4 }]}
+            x={34 + (i % 2) * 142} y={124 + Math.floor(i / 2) * 82}
+            width="126" height="70" rx="14"
+          />
+        ))}
+
+        <text class="lv-mini" x="348" y="108">À COPIER, PRÊT À L'EMPLOI</text>
+        {/* Le bloc sombre : c'est ce qui dit « instruction toute faite ». */}
+        <rect class="lv-code" x="348" y="124" width="258" height="234" rx="14" />
+        <rect class="lv-code-titre" x="368" y="148" width="128" height="8" rx="4" />
+        {[200, 176, 212].map((w, i) => (
+          <rect class="lv-code-ligne" x="368" y={172 + i * 18} width={w} height="7" rx="3.5" />
+        ))}
+        <rect class="lv-code-titre" x="368" y="238" width="112" height="8" rx="4" />
+        {[188, 204, 152].map((w, i) => (
+          <rect class="lv-code-ligne" x="368" y={262 + i * 18} width={w} height="7" rx="3.5" />
+        ))}
+        <rect class="lv-code-btn" x="368" y="326" width="88" height="20" rx="10" />
+        <text class="lv-code-lbl" x="412" y="340">Copier</text>
+
+        <rect class="lv-cadre lv-cadre--plein" x="34" y="384" width="572" height="26" rx="10" />
+        <rect class="lv-gris" x="52" y="392" width="196" height="9" rx="4.5" />
+      </Fragment>
+    )}
+
+    {variante === "replay" && (
+      <Fragment>
+        <rect class="lv-ecran" x="0" y="0" width="640" height="330" rx="14" />
+        <rect class="lv-ecran" x="0" y="300" width="640" height="30" />
+        <circle cx="320" cy="158" r="46" fill="rgba(255,255,255,.14)" />
+        <path fill="#fff" d="M306,138 L348,158 L306,178 Z" />
+        <rect x="34" y="268" width="572" height="6" rx="3" fill="rgba(255,255,255,.2)" />
+        <rect x="34" y="268" width="228" height="6" rx="3" fill="var(--c-yellow)" />
+        <circle cx="262" cy="271" r="9" fill="var(--c-yellow)" />
+        <text class="lv-temps" x="34" y="300">2:41:08</text>
+        <text class="lv-temps lv-temps--fin" x="606" y="300">7:12:00</text>
+
+        <text class="lv-mini" x="34" y="368">CHAPITRES</text>
+        {["Matin", "Audit express", "Plan 90 jours"].map((c, i) => (
+          <Fragment>
+            <rect
+              class:list={["lv-chap", { "lv-chap--on": i === 0 }]}
+              x={34 + i * 198} y="382" width="176" height="30" rx="10"
+            />
+            <text class:list={["lv-chap-lbl", { "lv-chap-lbl--on": i === 0 }]} x={122 + i * 198} y="401">{c}</text>
+          </Fragment>
+        ))}
+      </Fragment>
+    )}
+  </svg>
+  <figcaption><slot /></figcaption>
+</figure>
+
+<style>
+  .at-sol-fig { margin: 0; }
+  .at-sol-fig svg { width: 100%; height: auto; display: block; border-radius: 12px; }
+  .at-sol-fig figcaption { margin-top: 14px; font-size: .82rem; color: rgba(255, 255, 255, .6); text-align: center; }
+
+  .lv-page { fill: #fff; }
+  .lv-head { fill: #eef4ff; }
+  .lv-rule { stroke: rgba(2, 11, 80, .1); stroke-width: 1.4; }
+  .lv-cadre { fill: #f6f9ff; stroke: rgba(2, 11, 80, .1); stroke-width: 1.4; }
+  .lv-cadre--plein { stroke: none; }
+
+  .lv-gris { fill: rgba(2, 11, 80, .13); }
+  .lv-bleu { fill: var(--c-blue); }
+  .lv-ok { fill: var(--c-green); }
+  .lv-ko { fill: var(--c-orange); }
+  .lv-check { fill: none; stroke: var(--c-green); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  .lv-titre { font-family: var(--f-display); font-weight: 800; font-size: 21px; fill: var(--c-navy); }
+  .lv-mini { font-family: var(--f-body); font-weight: 700; font-size: 13px; fill: var(--c-gray-500); }
+  .lv-num { font-family: var(--f-display); font-weight: 700; font-size: 13px; fill: #fff; text-anchor: middle; }
+  .lv-puce { font-family: var(--f-body); font-weight: 700; font-size: 12px; fill: #c24e2c; text-anchor: middle; }
+  .lv-jalon { font-family: var(--f-body); font-weight: 700; font-size: 12px; text-anchor: middle; }
+
+  /* Comme dans l'illustration du hero : la teinte des pastilles appuyées passe
+     par `fill-opacity`, pour ne pas entrer en conflit avec `opacity`. */
+  .lv-chip { fill: #e2f0ff; }
+  .lv-chip--appuyee { fill: var(--c-blue); fill-opacity: .2; }
+
+  .lv-code { fill: #0b1866; }
+  .lv-code-titre { fill: rgba(255, 199, 42, .85); }
+  .lv-code-ligne { fill: rgba(255, 255, 255, .32); }
+  .lv-code-btn { fill: rgba(255, 255, 255, .14); }
+  .lv-code-lbl { font-family: var(--f-body); font-weight: 700; font-size: 11px; fill: rgba(255, 255, 255, .75); text-anchor: middle; }
+
+  .lv-ecran { fill: #0b1866; }
+  .lv-temps { font-family: var(--f-body); font-weight: 700; font-size: 12px; fill: rgba(255, 255, 255, .6); }
+  .lv-temps--fin { text-anchor: end; }
+  .lv-chap { fill: #f6f9ff; }
+  .lv-chap--on { fill: #e2f0ff; }
+  .lv-chap-lbl { font-family: var(--f-body); font-weight: 700; font-size: 12px; fill: var(--c-gray-500); text-anchor: middle; }
+  .lv-chap-lbl--on { fill: var(--c-blue-darker); }
+</style>

@@ -74,9 +74,17 @@ export const forms = {
   },
 };
 
-/* Services (source unique — utilisée par le mega menu du header et le footer).
-   `icon` : markup interne d'un <svg viewBox="0 0 24 24"> (voir Header.astro). */
-export const services = [
+export type Service = {
+  label: string;
+  href: string;
+  description: string;
+  /** Markup interne d'un <svg viewBox="0 0 24 24"> (voir Header.astro). */
+  icon: string;
+  image?: string;
+};
+
+/* Services (source unique — utilisée par le mega menu du header et le footer). */
+export const services: Service[] = [
   {
     label: "Conseil & stratégie",
     href: "/services-conseil-strategie",
@@ -122,14 +130,171 @@ export const services = [
   },
 ];
 
+/* =========================================================
+   MÉGA-MENU
+   -----------------------------------------------------------
+   Les colonnes ne reprennent PAS l'organigramme de l'agence : elles rangent
+   les offres par ce que le dirigeant vient chercher — décider, construire,
+   vendre. C'est la seule question qu'il se pose en ouvrant le menu.
+
+   Trois règles d'écriture, tenues dans tout ce qui suit :
+     • le lien porte le NOM, la ligne dessous dit ce que c'est — jamais un
+       adjectif publicitaire ;
+     • aucun prix. Le menu sert à s'orienter, pas à vendre : un montant y
+       arrête la lecture avant que l'offre soit comprise (décision Godwin du
+       29/08/2026) ;
+     • une offre sans page porte `bientot` et n'est PAS un lien. Annoncer la
+       suite du catalogue, oui ; envoyer sur un 404, jamais.
+   ========================================================= */
+
+export type MenuBadge = "nouveau" | "bientot" | "boutique";
+
+export type MenuLien = {
+  label: string;
+  /** Absent = offre annoncée mais pas encore ouverte : rendue non cliquable. */
+  href?: string;
+  description?: string;
+  badge?: MenuBadge;
+  externe?: boolean;
+};
+
+export type MenuColonne = {
+  /** Intitulé de la colonne. Dit un résultat, pas un service. */
+  titre: string;
+  /** « editorial » : liens en gros caractères, sans description (colonne 1). */
+  style?: "editorial";
+  liens: MenuLien[];
+};
+
+export type MegaMenu = {
+  colonnes: MenuColonne[];
+  /** L'unique action mise en avant du panneau. */
+  carte: { titre: string; texte: string; cta: string; href: string };
+  pied?: { intro: string; liens: MenuLien[] };
+};
+
+/* Reprend le libellé et l'URL depuis `services` : le menu ne peut donc pas
+   afficher un nom périmé ni pointer vers une page renommée. Seule la
+   description est propre au menu — elle y est plus courte et plus concrète
+   que sur les cartes de la page /services. */
+function offre(href: string, description: string, badge?: MenuBadge): MenuLien {
+  const service = services.find((s) => s.href === href);
+  if (!service) throw new Error(`[site.ts] service introuvable pour le menu : ${href}`);
+  return { label: service.label, href: service.href, description, badge };
+}
+
+export const megaServices: MegaMenu = {
+  colonnes: [
+    {
+      titre: "L'essentiel",
+      style: "editorial",
+      liens: [
+        { label: "Tous nos services", href: "/services" },
+        { label: "Notre méthode", href: "/methodologie" },
+        { label: "Nos réalisations", href: "/realisations" },
+      ],
+    },
+    {
+      titre: "Décider quoi faire",
+      liens: [
+        offre("/services-conseil-strategie", "Diagnostic, feuille de route, priorités"),
+        {
+          label: "Atelier Stratégie IA",
+          href: "/atelier-strategie-ia",
+          description: "Une journée pour les dirigeants de PME",
+          badge: "nouveau",
+        },
+        /* Les deux étages suivants de l'entonnoir. Ils n'ont pas encore de page :
+           annoncés, grisés, non cliquables — jusqu'à ce qu'un `href` arrive. */
+        { label: "Mission Clarté", description: "Le diagnostic complet de votre entreprise", badge: "bientot" },
+        { label: "Directeur Digital & IA", description: "Un expert à vos côtés, tous les mois", badge: "bientot" },
+      ],
+    },
+    {
+      titre: "Construire vos outils",
+      liens: [
+        offre("/services-creation-saas", "Plateformes et outils pensés pour vendre"),
+        offre("/services-digitalisation", "Sites, boutiques, process en ligne"),
+        offre("/services-automatisation-ia", "Agents IA, WhatsApp, relances automatiques"),
+      ],
+    },
+    {
+      titre: "Vendre & former",
+      liens: [
+        offre("/services-marketing-digital", "Contenus et acquisition de clients"),
+        offre("/services-formation", "Vos équipes autonomes sur l'IA"),
+        offre("/services-location-salle", "Salle équipée à Cocody Riviera Abatta"),
+      ],
+    },
+  ],
+  carte: {
+    titre: "Vous ne savez pas par où commencer ?",
+    texte: "Quinze minutes au téléphone, et vous repartez avec une direction claire. Sans engagement.",
+    cta: "Réserver un appel",
+    href: "/atelier-strategie-ia#reservation",
+  },
+  pied: {
+    intro: "Vous cherchez autre chose ?",
+    liens: [
+      { label: "Demander un devis", href: "/devis" },
+      { label: "Nous contacter", href: "/contact" },
+    ],
+  },
+};
+
+export const megaFormations: MegaMenu = {
+  colonnes: [
+    {
+      titre: "Se former avec Bweb",
+      style: "editorial",
+      liens: [
+        { label: "Toutes les formations", href: "/formations" },
+        { label: "Le calendrier", href: "/formations/calendrier" },
+      ],
+    },
+    {
+      titre: "En présentiel à Abidjan",
+      liens: [
+        { label: "Prochaines sessions", href: "/formations/calendrier", description: "Dates ouvertes et places restantes" },
+        {
+          label: "Atelier Stratégie IA",
+          href: "/atelier-strategie-ia",
+          description: "Réservé aux dirigeants de PME",
+          badge: "nouveau",
+        },
+        offre("/services-formation", "Chez vous, pour vos équipes"),
+      ],
+    },
+    {
+      titre: "En ligne",
+      liens: [
+        {
+          label: "Bweb Academy",
+          href: "https://boutique.bwebagence.com",
+          description: "Nos cours à suivre à votre rythme",
+          badge: "boutique",
+          externe: true,
+        },
+        { label: "Webinaire gratuit", href: "/webinaire-initiation", description: "Notre prochain rendez-vous en direct" },
+      ],
+    },
+  ],
+  carte: {
+    titre: "Former toute une équipe ?",
+    texte: "Nous construisons le programme sur vos outils et vos cas réels.",
+    cta: "Demander un programme",
+    href: "/devis",
+  },
+};
+
 /* Navigation principale */
-type NavLink = { label: string; href: string; children?: typeof services };
+type NavLink = { label: string; href: string; mega?: MegaMenu };
 
 export const mainNav: NavLink[] = [
   { label: "Accueil", href: "/" },
   { label: "À propos", href: "/a-propos" },
-  { label: "Services", href: "/services", children: services },
-  { label: "Formations", href: "/formations" },
+  { label: "Services", href: "/services", mega: megaServices },
+  { label: "Formations", href: "/formations", mega: megaFormations },
   { label: "Blog", href: "/blog" },
 ];
 

@@ -1,0 +1,184 @@
+---
+/* HERO-ATELIER — « Ce avec quoi vous repartez »
+   -----------------------------------------------------------
+   Les trois livrables de la journée — la fiche d'audit, le plan 90 jours au
+   premier plan, le kit IA — sous le ruban des trois temps (9h · 13h · 17h).
+
+   La première version montrait le CHEMIN : une étincelle, une courbe, des
+   jalons. En traits fins sur fond blanc, elle disparaissait — sur un téléphone
+   l'illustration mesure 340 px de large et il ne restait que des filets gris.
+   Celle-ci montre le RÉSULTAT, en cartes pleines et en ombres portées : de la
+   masse, lisible à toute taille, et le même propos que la section
+   « Une journée. Un plan. » plus bas dans la page.
+
+   Rien à lire pour comprendre : les libellés sont un bonus, la composition
+   tient sans eux. */
+
+/* Les trois priorités du plan. Les largeurs sont inégales à dessein — trois
+   barres identiques se lisent comme un gabarit, pas comme un vrai document. */
+const priorites = [
+  { n: "1", couleur: "var(--c-blue, #1f6ced)", pleine: 128, sous: 94, delai: "2.4s" },
+  { n: "2", couleur: "var(--c-green, #00c89e)", pleine: 152, sous: 118, delai: "2.6s" },
+  { n: "3", couleur: "var(--c-orange, #ff835f)", pleine: 104, sous: 70, delai: "2.8s" },
+];
+
+/* Aux mêmes heures que la section Programme : le hero et le déroulé ne doivent
+   jamais annoncer deux journées différentes. */
+const temps = [
+  { x: 96, label: "9h", delai: "0s" },
+  { x: 260, label: "13h", delai: ".7s" },
+  { x: 424, label: "17h", delai: "1.4s" },
+];
+
+/* Les barres du mini-graphe reposent toutes sur la même base (y = 330), sinon
+   elles s'échappent du bas de leur carte. */
+const BASE = 330;
+const barres = [
+  { x: 70, h: 52, delai: "0s" },
+  { x: 100, h: 76, delai: ".25s" },
+  { x: 130, h: 38, delai: ".5s" },
+  { x: 160, h: 92, delai: ".75s" },
+];
+
+/* Grille du kit : trois pastilles sur neuf sont appuyées, pour que la grille
+   ait un rythme au lieu d'un aplat uniforme. */
+const pastilles = Array.from({ length: 9 }, (_, i) => ({
+  x: 322 + (i % 3) * 48,
+  y: 200 + Math.floor(i / 3) * 46,
+  appuyee: i === 0 || i === 4 || i === 8,
+  delai: `${(i * 0.09).toFixed(2)}s`,
+}));
+---
+<div class="hero-illus at-illus" data-parallax style="--hi-accent:#1F6CED;--hi-accent2:#00C89E" aria-hidden="true">
+  <span class="hi-glow"></span>
+  <svg class="hi-scene at-scene" viewBox="0 0 520 420" role="img">
+    <title>Les livrables d'une journée d'atelier : fiche d'audit, plan 90 jours et kit IA</title>
+
+    <!-- ══ Le ruban de la journée ══ -->
+    <g>
+      <line class="at-rail" x1="96" y1="44" x2="424" y2="44" />
+      <line class="at-rail-fill" x1="96" y1="44" x2="424" y2="44" />
+      {temps.map((t) => (
+        <g style={`--d:${t.delai}`}>
+          <circle class="at-halo" cx={t.x} cy="44" r="13" />
+          <circle class="at-dot" cx={t.x} cy="44" r="6" />
+          <text class="at-time" x={t.x} y="24">{t.label}</text>
+        </g>
+      ))}
+    </g>
+
+    <!-- ══ Arrière-plan gauche : la fiche d'audit ══ -->
+    <g transform="rotate(-7 148 250)">
+      <rect class="at-card at-card--back" x="46" y="146" width="204" height="208" rx="18" />
+      <rect class="at-line at-line--muted" x="70" y="176" width="86" height="8" rx="4" />
+      <rect class="at-line at-line--muted" x="70" y="200" width="140" height="6" rx="3" />
+      <rect class="at-line at-line--muted" x="70" y="216" width="112" height="6" rx="3" />
+      {/* Un mini-graphe : c'est ce qui dit « audit » sans écrire le mot. */}
+      {barres.map((b) => (
+        <rect class="at-bar" x={b.x} y={BASE - b.h} width="20" height={b.h} rx="5" style={`--d:${b.delai}`} />
+      ))}
+      <line class="at-axis" x1="66" y1="332" x2="230" y2="332" />
+    </g>
+
+    <!-- ══ Arrière-plan droit : le kit IA ══ -->
+    <g transform="rotate(7 392 244)">
+      <rect class="at-card at-card--back" x="300" y="152" width="186" height="196" rx="18" />
+      <rect class="at-line at-line--muted" x="322" y="180" width="72" height="8" rx="4" />
+      {pastilles.map((p) => (
+        <rect
+          class:list={["at-chip", { "at-chip--appuyee": p.appuyee }]}
+          x={p.x} y={p.y} width="38" height="38" rx="11"
+          style={`--d:${p.delai}`}
+        />
+      ))}
+    </g>
+
+    <!-- ══ Premier plan : le plan 90 jours ══ -->
+    <g>
+      <rect class="at-card at-card--front" x="146" y="128" width="230" height="248" rx="20" />
+      <text class="at-front-lbl" x="170" y="164">PLAN 90 JOURS</text>
+      <line class="at-sep" x1="170" y1="178" x2="352" y2="178" />
+
+      {priorites.map((p, i) => (
+        <g class="at-prio" style={`--d:${p.delai}`}>
+          <circle cx="184" cy={210 + i * 42} r="12" style={`fill:${p.couleur}`} />
+          <text class="at-prio-n" x="184" y={215 + i * 42}>{p.n}</text>
+          <rect class="at-line" x="206" y={204 + i * 42} width={p.pleine} height="8" rx="4" />
+          <rect class="at-line at-line--muted" x="206" y={218 + i * 42} width={p.sous} height="6" rx="3" />
+        </g>
+      ))}
+
+      {/* Le sceau de fin. Deux groupes imbriqués, et non un seul : la propriété
+          `transform` de l'animation CSS REMPLACE celle de l'attribut SVG — d'un
+          seul tenant, le sceau repartirait se coller dans le coin haut-gauche. */}
+      <g transform="translate(352,352)">
+        <g class="at-seal">
+          <circle class="at-seal-ring" r="24" />
+          <polyline class="at-seal-mark" points="-9 1 -3 7 9 -6" />
+        </g>
+      </g>
+    </g>
+  </svg>
+</div>
+
+<style>
+  /* Le halo partagé est réglé pour le hero navy du site ; à pleine puissance
+     sur fond blanc, il voile le texte voisin. */
+  .at-illus .hi-glow { opacity: .38; }
+
+  /* ---------- Cartes ---------- */
+  .at-card { fill: #fff; }
+  .at-card--back { stroke: rgba(2, 11, 80, .1); stroke-width: 1.4; filter: drop-shadow(0 10px 22px rgba(2, 11, 80, .1)); }
+  .at-card--front { stroke: rgba(2, 11, 80, .12); stroke-width: 1.6; filter: drop-shadow(0 22px 44px rgba(2, 11, 80, .2)); }
+
+  .at-line { fill: var(--c-blue, #1f6ced); opacity: .9; }
+  .at-line--muted { fill: rgba(2, 11, 80, .14); }
+  .at-sep { stroke: rgba(2, 11, 80, .1); stroke-width: 1.4; }
+  .at-axis { stroke: rgba(2, 11, 80, .12); stroke-width: 1.4; }
+
+  .at-front-lbl { font-family: var(--f-display); font-weight: 800; font-size: 15px; letter-spacing: .1em; fill: var(--c-navy, #020b50); }
+  .at-prio-n { font-family: var(--f-display); font-weight: 700; font-size: 13px; fill: #fff; text-anchor: middle; }
+
+  /* ---------- Ruban de la journée ---------- */
+  .at-rail { stroke: rgba(2, 11, 80, .12); stroke-width: 3; stroke-linecap: round; }
+  .at-rail-fill {
+    stroke: var(--c-blue, #1f6ced); stroke-width: 3; stroke-linecap: round;
+    stroke-dasharray: 328; stroke-dashoffset: 328; animation: at-rail 6s ease-in-out infinite;
+  }
+  .at-halo { fill: var(--c-blue, #1f6ced); opacity: 0; animation: at-halo 6s ease-in-out infinite; animation-delay: var(--d); }
+  .at-dot { fill: #fff; stroke: var(--c-blue, #1f6ced); stroke-width: 3; }
+  .at-time { font-family: var(--f-body); font-weight: 700; font-size: 12px; fill: var(--c-gray-500, #5c6488); text-anchor: middle; }
+
+  /* ---------- Contenu des cartes ---------- */
+  .at-bar { fill: var(--c-blue, #1f6ced); opacity: .55; transform-box: fill-box; transform-origin: bottom;
+            animation: at-grow 6s ease-in-out infinite; animation-delay: var(--d); }
+
+  /* La TEINTE des pastilles appuyées passe par `fill-opacity`, pas `opacity` :
+     cette dernière est déjà pilotée par l'animation d'apparition, qui les
+     ramènerait toutes à la même valeur en fin de course. */
+  .at-chip { fill: #e2f0ff; transform-box: fill-box; transform-origin: center;
+             animation: at-chip 6s ease-in-out infinite; animation-delay: var(--d); }
+  .at-chip--appuyee { fill: var(--c-blue, #1f6ced); fill-opacity: .22; }
+
+  .at-prio { opacity: 0; animation: at-prio 6s ease-in-out infinite; animation-delay: var(--d); }
+
+  .at-seal-ring { fill: #fff; stroke: var(--c-green, #00c89e); stroke-width: 3; }
+  .at-seal-mark { fill: none; stroke: var(--c-green, #00c89e); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+  .at-seal { opacity: 0; transform-box: fill-box; transform-origin: center; animation: at-seal 6s ease-in-out infinite; }
+
+  @keyframes at-rail { 0%, 4% { stroke-dashoffset: 328; } 32%, 100% { stroke-dashoffset: 0; } }
+  @keyframes at-halo { 0%, 6% { opacity: 0; transform: scale(.5); } 14%, 88% { opacity: .16; transform: scale(1); } 100% { opacity: 0; transform: scale(.5); } }
+  @keyframes at-grow { 0%, 10% { transform: scaleY(.15); } 34%, 90% { transform: scaleY(1); } 100% { transform: scaleY(.15); } }
+  @keyframes at-chip { 0%, 14% { opacity: 0; transform: scale(.6); } 38%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.6); } }
+  @keyframes at-prio { 0%, 100% { opacity: 0; transform: translateX(-8px); } 52%, 92% { opacity: 1; transform: translateX(0); } }
+  @keyframes at-seal { 0%, 100% { opacity: 0; transform: scale(.5); } 72%, 94% { opacity: 1; transform: scale(1); } }
+
+  /* Sans animation, la scène est COMPLÈTE et non figée à mi-course : plan
+     rempli, sceau posé, journée parcourue. C'est l'état qui raconte l'offre. */
+  @media (prefers-reduced-motion: reduce) {
+    .at-rail-fill, .at-halo, .at-bar, .at-chip, .at-prio, .at-seal { animation: none; }
+    .at-rail-fill { stroke-dashoffset: 0; }
+    .at-halo { opacity: .16; }
+    .at-chip, .at-prio, .at-seal { opacity: 1; }
+  }
+</style>

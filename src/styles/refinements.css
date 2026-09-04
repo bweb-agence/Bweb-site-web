@@ -84,16 +84,18 @@
   padding: 88px 28px calc(40px + env(safe-area-inset-bottom));
   overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
+/* Panneau blanc depuis le 29/08/2026 : une croix blanche sur fond blanc ne se
+   voyait plus, et la barre du bloc CTA non plus. */
 .mobile-nav__close {
   position: absolute; top: 20px; right: 20px; width: 46px; height: 46px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; z-index: 2;
-  background: rgba(255, 255, 255, 0.1); color: #fff;
+  background: var(--c-gray-100); color: var(--c-navy);
   transition: background-color .25s;
 }
-.mobile-nav__close:hover { background: rgba(255, 255, 255, 0.2); }
+.mobile-nav__close:hover { background: var(--c-skyblue); }
 .mobile-nav__close svg { width: 22px; height: 22px; }
 .mobile-nav nav a { font-size: clamp(1.5rem, 1.2rem + 2vw, 2rem); }
-.mobile-nav .mobile-nav-cta { margin-top: 28px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.12); }
+.mobile-nav .mobile-nav-cta { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--c-border-soft); }
 /* Écrans courts : on resserre pour que les 2 CTA restent visibles/atteignables */
 @media (max-height: 660px) {
   .mobile-nav { padding-top: 72px; }

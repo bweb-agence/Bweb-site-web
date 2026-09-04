@@ -94,7 +94,12 @@ function validate(form: HTMLFormElement): boolean {
   let ok = true;
   form.querySelectorAll<HTMLInputElement>("[required]").forEach((field) => {
     let empty: boolean;
-    if (field.type === "radio") {
+    // Radios ET cases à cocher : l'exigence porte sur le GROUPE, pas sur la
+    // case. Une case décochée garde son attribut `value`, donc la vérification
+    // par valeur la déclarerait remplie — un groupe obligatoire entièrement
+    // vide passerait sans un mot. On marque `required` sur la première case du
+    // groupe, comme pour les radios.
+    if (field.type === "radio" || field.type === "checkbox") {
       empty = !form.querySelector(`input[name="${field.name}"]:checked`);
     } else {
       empty = !field.value || !field.value.trim();
@@ -240,10 +245,17 @@ export function initForms(): void {
       submitBtn?.classList.remove("is-loading");
       setStatus(form, "", "");
       showSuccess(form, waUrl, emailOk);
+
+      /* Issue réelle de la soumission, à disposition de la page.
+         Une page qui suit une conversion publicitaire a besoin de savoir si le
+         lead a été ENREGISTRÉ, pas seulement si l'écran de succès s'affiche —
+         celui-ci apparaît aussi pour le repli WhatsApp. Sans ce signal, chaque
+         page rejouerait la même heuristique fragile sur le DOM. */
+      form.dispatchEvent(new CustomEvent("bweb:submitted", { detail: { ok: emailOk } }));
     });
 
     form.querySelectorAll<HTMLInputElement>("[required]").forEach((field) => {
-      const evt = field.type === "radio" ? "change" : "input";
+      const evt = field.type === "radio" || field.type === "checkbox" ? "change" : "input";
       field.addEventListener(evt, () => field.setAttribute("aria-invalid", "false"));
     });
   });

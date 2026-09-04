@@ -55,6 +55,24 @@ import IllusConseil from "../components/illus/IllusConseil.astro";
   </div>
 </section>
 
+<!-- L'offre d'entrée de la catégorie : c'est par là qu'un dirigeant commence,
+     avant le diagnostic et l'accompagnement. -->
+<section class="section section-tight-top" data-nav-section="Atelier Stratégie IA">
+  <div class="container">
+    <a class="cs-atelier reveal" href="/atelier-strategie-ia">
+      <span class="cs-atelier__body">
+        <span class="cs-atelier__eyebrow">Notre offre d'entrée</span>
+        <span class="cs-atelier__title">Atelier Stratégie IA — une journée pour repartir avec votre plan</span>
+        <span class="cs-atelier__desc">Pour les dirigeants de PME de 10 à 100 employés. 5 places par session · Abidjan · 200 000 FCFA.</span>
+      </span>
+      <span class="cs-atelier__cta">
+        Découvrir l'atelier
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/></svg>
+      </span>
+    </a>
+  </div>
+</section>
+
 <section class="section section-gray" data-nav-section="Autres services">
   <div class="container">
     <div class="section-head center reveal">
@@ -85,4 +103,25 @@ import IllusConseil from "../components/illus/IllusConseil.astro";
     </div>
   </div>
 </section>
+
+<style>
+  /* Bandeau vers l'offre d'entrée de la catégorie. Une carte pleine largeur
+     plutôt qu'une des trois cartes « Explorez aussi » : l'atelier n'est pas un
+     service voisin, c'est la porte d'entrée de CETTE page. */
+  .cs-atelier {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px;
+    padding: clamp(24px, 3vw, 36px) clamp(24px, 3.4vw, 44px);
+    border-radius: var(--radius-lg); background: var(--c-skyblue);
+    border: 1px solid rgba(31, 108, 237, .18);
+    transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  }
+  .cs-atelier:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .cs-atelier__body { display: flex; flex-direction: column; gap: 6px; max-width: 62ch; }
+  .cs-atelier__eyebrow { font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--c-blue-darker); }
+  .cs-atelier__title { font-family: var(--f-display); font-size: clamp(1.1rem, .95rem + .8vw, 1.5rem); font-weight: 800; color: var(--c-navy); line-height: 1.3; }
+  .cs-atelier__desc { font-size: .93rem; color: var(--c-gray-700); }
+  .cs-atelier__cta { display: inline-flex; align-items: center; gap: 8px; flex: none; white-space: nowrap; font-weight: 700; color: var(--c-blue); }
+  .cs-atelier__cta svg { width: 18px; height: 18px; transition: transform var(--dur-fast) var(--ease); }
+  .cs-atelier:hover .cs-atelier__cta svg { transform: translateX(4px); }
+</style>
 </BaseLayout>
