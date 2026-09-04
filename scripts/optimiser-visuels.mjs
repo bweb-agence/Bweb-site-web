@@ -36,6 +36,7 @@ const PROFILS = [
   { motif: /parcours-initiation\/phase-\d+\./, largeur: 640, qualite: 88, usage: "visuel de phase (300 px)" },
   { motif: /parcours-initiation\/(glass|hero)-/, largeur: 1400, qualite: 84, usage: "visuel de section" },
   { motif: /parcours-initiation\/godwin-portrait\./, largeur: 720, qualite: 86, usage: "portrait (360 px)" },
+  { motif: /parcours-initiation\/certificat-/, largeur: 1200, qualite: 88, usage: "certificat (560 px, texte fin à préserver)" },
   { motif: /\/(godwin-soola|ops-manager|media-buyer|closer-senior|content-creator|tech-manager|sdr-closer2)/, largeur: 800, qualite: 82, usage: "avatar équipe (96 px + lightbox)" },
   { motif: /\/mission-/, largeur: 1400, qualite: 84, usage: "photo Mission & vision" },
   { motif: /\/salle\//, largeur: 1600, qualite: 82, usage: "galerie salle (pleine largeur)" },
@@ -68,10 +69,14 @@ function estExclu(cheminWeb, sources) {
   const nom = basename(cheminWeb);
 
   // Aperçus de partage social : WebP non supporté par Facebook / WhatsApp / LinkedIn
+  // Le troisième motif couvre la prop `image=` des layouts, par laquelle une
+  // page passe SON aperçu de partage : sans lui, une og:image déclarée de
+  // cette façon était convertie en WebP et l'aperçu WhatsApp devenait vide.
   const enOg = sources.some(
     ({ contenu }) =>
       new RegExp(`ogImage\\s*:\\s*["'\`][^"'\`]*${nom}`).test(contenu) ||
-      new RegExp(`og:image[^>]*${nom}`).test(contenu),
+      new RegExp(`og:image[^>]*${nom}`).test(contenu) ||
+      new RegExp(`\\bimage\\s*=\\s*["'\`{][^"'\`]*${nom}`).test(contenu),
   );
   if (enOg) return "image de partage social (og:image) — WebP non supporté par les réseaux";
 

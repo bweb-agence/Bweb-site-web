@@ -54,6 +54,13 @@ const COHORTE_ISO = cohorte?.starts_at ?? SECOURS.starts_at;
    elle retombe sur la date de démarrage quand elle n'est pas renseignée. */
 const ECHEANCE_ISO = cohorte?.deadline_at ?? SECOURS.deadline_at;
 
+/* Rappel de rareté porté par les boutons eux-mêmes. Écrit une fois : le
+   singulier compte, « il reste 1 places » sur la dernière place serait la
+   faute que tout le monde remarque. */
+const PLACES_LABEL = COMPLET
+  ? "Cohorte complète"
+  : `Il reste ${PLACES_RESTANTES} place${PLACES_RESTANTES > 1 ? "s" : ""} sur ${CAPACITE}`;
+
 /* « Septembre 2026 » : écrit une fois, réutilisé dans tous les rappels de la
    page (badge, CTA, rareté, section finale). */
 const moisAnnee = new Date(COHORTE_ISO).toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
@@ -185,7 +192,7 @@ const faqs = [
   { q: "J'ai un emploi à temps plein. Est-ce que je peux suivre le rythme ?", a: "Oui. Le parcours demande environ 1 h par jour + 2 lives de 90 minutes par semaine. Les lives sont enregistrés si tu ne peux pas être présent. Et si tu décroches une semaine, ton responsable de cohorte te relance, c'est précisément son rôle. Des centaines de salariés ont suivi mes programmes avant toi." },
   { q: "Est-ce que je dois être un expert en tech ou en IA ?", a: "Non. Si tu sais envoyer un message WhatsApp et utiliser Google, tu as le niveau. On utilise l'IA pour accélérer la création (prompts fournis, tutoriels pas à pas), mais tu n'as besoin d'aucune compétence technique." },
   { q: "Et si je n'ai pas de compétence à monétiser ?", a: "Tout le monde a une compétence. Tu sais peut-être cuisiner, organiser, écrire, parler anglais, gérer des réseaux sociaux, utiliser Excel, coiffer, maquiller, conseiller… La Phase 1 est spécifiquement conçue pour t'aider à identifier ta compétence monétisable, même si tu penses n'en avoir aucune." },
-  { q: "65 000 FCFA, c'est un investissement. Comment être sûr que ça va marcher ?", a: "C'est pour ça qu'on a une garantie. Si tu exécutes le programme, que tu rends tes livrables chaque semaine et qu'à J+30 tu n'as pas décroché ta première vente, on continue de t'accompagner gratuitement jusqu'à ce que tu l'aies. Le risque est de notre côté." },
+  { q: "65 000 FCFA, c'est un investissement. Comment être sûr que ça va marcher ?", a: "C'est pour ça qu'on a une garantie. Si tu exécutes le programme, que tu rends tes livrables chaque semaine et qu'à J+35 tu n'as pas décroché ta première vente, on continue de t'accompagner gratuitement jusqu'à ce que tu l'aies. Le risque est de notre côté." },
   { q: "Est-ce que je reçois un certificat ?", a: "Oui. Mais la vraie certification, c'est ton produit en ligne et tes premières ventes. Un PDF ne paie pas tes factures." },
   { q: "Quelle est la différence entre ce parcours et les formations gratuites sur YouTube ?", a: "Sur YouTube, personne ne regarde ce que tu fais. C'est toute la différence. Ici tu construis dans le bon ordre, tu rends un livrable à chaque étape, et quelqu'un te dit s'il est bon avant que tu passes à la suite. Tu repars avec un produit fini et corrigé, pas avec une liste de vidéos regardées." },
   { q: "Je suis au Cameroun / Sénégal / Bénin / Burkina… je peux participer ?", a: "Oui. La formation est 100 % accessible en ligne (Zoom). Les paiements fonctionnent avec Mobile Money (Wave, Orange Money). Les exemples et templates sont adaptés à l'Afrique francophone." },
@@ -196,12 +203,12 @@ const faqs = [
   {/* Le titre garde « produit digital », le terme réellement cherché, et dit
       dès la page de résultats ce qui est vendu : un accompagnement, pas un
       accès à des vidéos. 57 caractères : Google tronque autour de 600 px. */}
-  title="Ton produit digital en 30 jours, accompagné | Bweb Academy"
+  title="Ton produit digital en 35 jours, accompagné | Bweb Academy"
   {/* Aperçu de partage : la miniature de la vidéo du hero, pour que le lien
       partagé sur WhatsApp ou Facebook montre exactement ce que le visiteur
       verra en arrivant. Sans ça, c'est l'image générique du site. */}
   image="/images/parcours-initiation/og-parcours.jpg"
-  description={`30 jours d'accompagnement pour transformer une compétence que tu possèdes déjà en produit digital en ligne et en vente : un responsable de cohorte qui suit tes livrables, un mentor qui corrige ton offre, 10 lives avec Godwin. Cohorte ${COHORTE_LABEL}, ${CAPACITE} places.`}
+  description={`35 jours d'accompagnement pour transformer une compétence que tu possèdes déjà en produit digital en ligne et en vente : un responsable de cohorte qui suit tes livrables, un mentor qui corrige ton offre, 10 lives avec Godwin. Cohorte ${COHORTE_LABEL}, ${CAPACITE} places.`}
   hideWhatsApp={true}
   bareChrome={true}
 >
@@ -219,11 +226,11 @@ const faqs = [
 
         <h1 data-hero-in>
           Des gens moins compétents que toi se font déjà payer pour leur savoir.
-          <span class="pi-h1-hook">Dans 30 jours, ce sera ton tour de faire <span class="pi-hl-gold">325 000 FCFA</span> par mois.</span>
+          <span class="pi-h1-hook">Dans 35 jours, ce sera ton tour de faire <span class="pi-hl-gold">325 000 FCFA</span> par mois.</span>
         </h1>
 
         <p class="lead pi-hero-sub" data-hero-in>
-          <b>30 jours d'accompagnement</b> où un responsable de cohorte vérifie chacun de tes
+          <b>35 jours d'accompagnement</b> où un responsable de cohorte vérifie chacun de tes
           travaux, un mentor corrige ton offre, Godwin est en direct 2 fois par semaine
           jusqu'à ce que ton produit digital soit en ligne et en vente.
         </p>
@@ -244,8 +251,13 @@ const faqs = [
         </div>
 
         <div class="pi-hero-cta" data-hero-in>
-          <a href="#reserver" class="pi-btn-buy pi-cta">Je réserve ma place à 65 000 FCFA <span class="pi-arrow">→</span></a>
-          <p class="pi-cta-note">Cohorte {COHORTE_LABEL} · {CAPACITE} places accompagnées · Tu es suivi sous 24 h</p>
+          <a href="#reserver" class="pi-btn-buy pi-cta">
+            <span class="pi-btn-main">Je réserve ma place à 65 000 FCFA <span class="pi-arrow">→</span></span>
+            <span class="pi-btn-places">{PLACES_LABEL}</span>
+          </a>
+          {/* Le compteur de places vit maintenant DANS le bouton : la note ne garde
+              que ce qu'il ne dit pas, la cohorte visée et le délai de prise en charge. */}
+          <p class="pi-cta-note">Cohorte {COHORTE_LABEL} · Tu es suivi sous 24 h</p>
         </div>
 
       </div>
@@ -328,14 +340,14 @@ const faqs = [
     <div class="container">
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">La solution</div>
-        <h2>Le Parcours Initiation aux produits digitaux&nbsp;: 30 jours d'accompagnement pour transformer ta compétence en produit digital qui se vend.</h2>
+        <h2>Le Parcours Initiation aux produits digitaux&nbsp;: 35 jours d'accompagnement pour transformer ta compétence en produit digital qui se vend.</h2>
         <span class="pi-tag-atelier">🤝 Un accompagnement encadré, pas une bibliothèque de cours.</span>
       </div>
 
       <div class="pi-solution-grid">
         <div class="pi-solution-text reveal">
           <p class="lead">YouTube t'apprend des choses, puis te laisse seul devant ton écran. Ici, <b>quelqu'un travaille avec toi jusqu'à ce que ton produit soit en ligne et mis sur le marché.</b></p>
-          <p>Tu ne viens pas pour « apprendre les produits digitaux ». Tu viens avec ta compétence, tu es accompagné pendant 30 jours, et tu repars avec&nbsp;:</p>
+          <p>Tu ne viens pas pour « apprendre les produits digitaux ». Tu viens avec ta compétence, tu es accompagné pendant 35 jours, et tu repars avec&nbsp;:</p>
           <ul class="tick-list card pi-outcomes">
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Ton produit créé et accessible en ligne</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 13 10 18 19 7"/></svg>Ton offre structurée (promesse, prix, cible)</li>
@@ -350,7 +362,7 @@ const faqs = [
             <img src="/images/parcours-initiation/glass-orbit.webp" alt="Formes 3D abstraites représentant la progression du parcours" width="1200" height="800" loading="lazy" decoding="async" />
           </figure>
           <div class="pi-promise">
-            30 jours d'accompagnement pour transformer une compétence que tu possèdes déjà en un produit digital prêt à vendre, le mettre en ligne et décrocher tes premières ventes, avec quelqu'un qui valide chaque étape avant que tu passes à la suivante.
+            35 jours d'accompagnement pour transformer une compétence que tu possèdes déjà en un produit digital prêt à vendre, le mettre en ligne et décrocher tes premières ventes, avec quelqu'un qui valide chaque étape avant que tu passes à la suivante.
           </div>
         </div>
       </div>
@@ -363,7 +375,7 @@ const faqs = [
     <div class="container">
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">Le programme</div>
-        <h2><span class="pi-h2-accent">5 phases. 10 lives. 30 jours.</span> Voici ce que tu construis et ce qu'on valide avec toi.</h2>
+        <h2><span class="pi-h2-accent">5 phases. 10 lives. 35 jours.</span> Voici ce que tu construis et ce qu'on valide avec toi.</h2>
         <p class="lead">Chaque phase se termine par un livrable. Tu ne passes pas à la suivante tant que quelqu'un ne l'a pas relu. Clique sur une phase pour voir le détail.</p>
       </div>
 
@@ -428,7 +440,7 @@ const faqs = [
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">Ce que tu achètes vraiment</div>
         <h2>Le contenu, tu peux le trouver ailleurs. L'accompagnement, non.</h2>
-        <p class="lead">Pendant 30 jours, tu n'es pas seul devant un écran. Trois personnes et un outil regardent ce que tu produis, et te disent quoi corriger.</p>
+        <p class="lead">Pendant 35 jours, tu n'es pas seul devant un écran. Trois personnes et un outil regardent ce que tu produis, et te disent quoi corriger.</p>
       </div>
 
       <ul class="pi-cost reveal" data-stagger>
@@ -543,9 +555,12 @@ const faqs = [
         <div class="pi-guar-content reveal">
           <span class="pi-guar-eyebrow">● Garantie béton</span>
           <h2>Garantie <span class="pi-gold">« Première vente ou on continue avec toi »</span></h2>
-          <p class="pi-guar-lede">Un accompagnement qui s'arrête à J+30 quel que soit le résultat, ce n'est pas un accompagnement. C'est un calendrier.</p>
-          <p class="pi-guar-lede">Si tu suis le programme, que tu soumets tes livrables chaque semaine et qu'à J+30 tu n'as pas décroché ta première vente, <b>on continue de t'accompagner gratuitement jusqu'à ce que tu l'aies.</b></p>
-          <a href="#reserver" class="pi-btn-buy pi-cta pi-guar-cta">Oui, je veux être accompagné <span class="pi-arrow">→</span></a>
+          <p class="pi-guar-lede">Un accompagnement qui s'arrête à J+35 quel que soit le résultat, ce n'est pas un accompagnement. C'est un calendrier.</p>
+          <p class="pi-guar-lede">Si tu suis le programme, que tu soumets tes livrables chaque semaine et qu'à J+35 tu n'as pas décroché ta première vente, <b>on continue de t'accompagner gratuitement jusqu'à ce que tu l'aies.</b></p>
+          <a href="#reserver" class="pi-btn-buy pi-cta pi-guar-cta">
+            <span class="pi-btn-main">Oui, je veux être accompagné <span class="pi-arrow">→</span></span>
+            <span class="pi-btn-places">{PLACES_LABEL}</span>
+          </a>
           <div class="pi-guar-sign">Mon engagement personnel&nbsp;: <span class="nm">Godwin Soola</span></div>
         </div>
 
@@ -624,7 +639,7 @@ const faqs = [
       <div class="pi-pricing reveal">
         <span class="pi-price-tag">🔥 Offre de lancement</span>
         <ul class="pi-stack">
-          <li><span>Parcours Initiation : 5 phases, 10 lives en direct, 30 jours accompagné</span><b>150 000 FCFA</b></li>
+          <li><span>Parcours Initiation : 5 phases, 10 lives en direct, 35 jours accompagné</span><b>150 000 FCFA</b></li>
           <li><span>Ton responsable de cohorte, qui vérifie tes livrables chaque semaine</span><b>50 000 FCFA</b></li>
           <li><span>Ton mentor, qui corrige ton offre et ta page de vente</span><b>50 000 FCFA</b></li>
           <li><span>Bonus (8 ressources exclusives)</span><b>180 000+ FCFA</b></li>
@@ -643,7 +658,10 @@ const faqs = [
           </p>
         </div>
 
-        <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">Oui, je veux être accompagné <span class="pi-arrow">→</span></a>
+        <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">
+          <span class="pi-btn-main">Oui, je veux être accompagné <span class="pi-arrow">→</span></span>
+          <span class="pi-btn-places">{PLACES_LABEL}</span>
+        </a>
         <p class="pi-price-note">Tu réserves une place accompagnée, pas un accès à des vidéos. {CAPACITE} personnes maximum par cohorte, 1 cohorte par mois.</p>
 
         <div class="pi-assurances">
@@ -668,8 +686,45 @@ const faqs = [
   </section>
 
   <!-- ============================================================
+       11 bis · CERTIFICAT
+       Placé juste après le prix : le visiteur vient de voir ce qu'il paie,
+       on lui montre ce qu'il en reste une fois les 35 jours passés, avant
+       de le laisser aux questions. -->
+  <section class="section section-gray" data-nav-section="Le certificat">
+    <div class="container">
+      <div class="pi-cert-grid">
+        <div class="pi-cert-text reveal">
+          <div class="eyebrow">Ta preuve</div>
+          <h2>Un certificat de compétences, vérifiable en un scan.</h2>
+          <p class="lead pi-cert-lead">À la fin des 35 jours, quand tes livrables sont validés, Bweb Agence te remet un certificat de compétences authentique pour valider tes acquis.</p>
+          <ul class="card pi-cert-points" data-stagger>
+            <li>
+              <span class="pi-cert-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 2.5V11c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V5.5L12 3z"/><polyline points="8.5 12 11 14.5 15.5 9.5"/></svg></span>
+              <p><b>Il se mérite.</b> Délivré uniquement quand ton responsable de cohorte a validé tes livrables, pas pour avoir regardé des vidéos.</p>
+            </li>
+            <li>
+              <span class="pi-cert-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="7" width="4" height="4"/><rect x="7" y="13" width="4" height="4"/><path d="M13 13h4v4"/></svg></span>
+              <p><b>Il se vérifie.</b> Un scan du QR code ouvre la fiche du certificat sur notre site, avec son numéro. Quelqu'un peut le contrôler sans te croire sur parole.</p>
+            </li>
+            <li>
+              <span class="pi-cert-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></span>
+              <p><b>Il se partage.</b> En PDF, sur LinkedIn, dans ton portfolio ou sur ta propre page de vente.</p>
+            </li>
+          </ul>
+        </div>
+
+        <figure class="pi-cert-art reveal" data-delay=".1">
+          <img src="/images/parcours-initiation/certificat-competences.webp"
+            alt="Certificat de compétences Bweb Agence au nom de l'apprenant, portant l'intitulé « Création et lancement d'un produit digital », un numéro unique et un QR code de vérification."
+            width="1200" height="848" loading="lazy" decoding="async" />
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
        12 · FAQ -->
-  <section class="section section-gray" data-nav-section="Questions">
+  <section class="section" data-nav-section="Questions">
     <div class="container pi-narrow">
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">Tes questions</div>
@@ -698,7 +753,7 @@ const faqs = [
       <div class="pi-final-inner">
         <div class="eyebrow on-dark reveal" style="justify-content:center">Cohorte {COHORTE_LABEL} · {CAPACITE} personnes accompagnées</div>
         <h2 class="reveal">C'est le moment d'arrêter d'apprendre.<br />Et de commencer à construire.</h2>
-        <p class="pi-final-sub reveal">Chaque place, c'est une personne qu'on suit pendant 30 jours. Un produit qui va naître. Une compétence qui va enfin générer des revenus.</p>
+        <p class="pi-final-sub reveal">Chaque place, c'est une personne qu'on suit pendant 35 jours. Un produit qui va naître. Une compétence qui va enfin générer des revenus.</p>
 
         <div class="pi-final-card reveal-scale">
           <div class="pi-final-price">
@@ -707,8 +762,8 @@ const faqs = [
             <span class="pi-save pi-save--dark">💥 Tu économises 85 000 FCFA</span>
           </div>
           <ul class="pi-final-ticks">
-            <li>30 jours accompagné : responsable de cohorte, mentor, 10 lives</li>
-            <li>Ton produit en ligne et en vente à J+30</li>
+            <li>35 jours accompagné : responsable de cohorte, mentor, 10 lives</li>
+            <li>Ton produit en ligne et en vente à J+35</li>
             <li>Garantie « Première vente ou on continue »</li>
             <li>8 bonus offerts (180 000+ FCFA)</li>
           </ul>
@@ -725,7 +780,10 @@ const faqs = [
             </div>
             <span class="pi-final-places">{COMPLET ? `Cohorte de ${COHORTE_LABEL} complète` : (<>Il reste <b>{PLACES_RESTANTES}</b> places sur {CAPACITE}</>)}</span>
           </div>
-          <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">Oui, je veux être accompagné →</a>
+          <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">
+            <span class="pi-btn-main">Oui, je veux être accompagné →</span>
+            <span class="pi-btn-places">{PLACES_LABEL}</span>
+          </a>
           <div class="pi-final-trust">
             <span>🔒 Paiement sécurisé</span>
             <span>📱 Accès mobile</span>
@@ -735,7 +793,7 @@ const faqs = [
 
         <!-- 14 · PS -->
         <p class="pi-ps reveal">
-          <b>PS&nbsp;:</b> Si t'as lu jusqu'ici, c'est que tu es sérieux. Tu sais que ta compétence a de la valeur. Et tu sais aussi que ce n'est pas une formation de plus qui va changer quelque chose, tu en as déjà acheté. Ce que tu prends ici, c'est 30 jours pendant lesquels quelqu'un regarde ce que tu fais et ne te laisse pas abandonner. Rejoins la cohorte. Dans 30 jours, tu auras un produit. Pas juste des notes dans ton téléphone.
+          <b>PS&nbsp;:</b> Si t'as lu jusqu'ici, c'est que tu es sérieux. Tu sais que ta compétence a de la valeur. Et tu sais aussi que ce n'est pas une formation de plus qui va changer quelque chose, tu en as déjà acheté. Ce que tu prends ici, c'est 35 jours pendant lesquels quelqu'un regarde ce que tu fais et ne te laisse pas abandonner. Rejoins la cohorte. Dans 35 jours, tu auras un produit. Pas juste des notes dans ton téléphone.
         </p>
       </div>
     </div>
@@ -1389,6 +1447,20 @@ const faqs = [
   }
   @keyframes pi-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 
+  /* ---------- 8 bis · Certificat ---------- */
+  /* Le visuel prend la colonne la plus large : c'est un document qu'on doit
+     pouvoir lire, pas une illustration d'accompagnement. */
+  .pi-cert-grid { display: grid; grid-template-columns: .92fr 1.08fr; gap: 48px; align-items: center; max-width: 1100px; margin: 0 auto; }
+  .pi-cert-lead { margin: 18px 0 24px; }
+  .pi-cert-points { display: flex; flex-direction: column; gap: 18px; }
+  .pi-cert-points li { display: flex; align-items: flex-start; gap: 14px; }
+  .pi-cert-points p { font-size: .96rem; line-height: 1.55; color: var(--c-gray-700); }
+  .pi-cert-points b { font-family: var(--f-display); font-weight: 700; color: var(--c-ink); }
+  .pi-cert-ico { flex: none; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: linear-gradient(150deg, rgba(31,108,237,.1), rgba(0,200,158,.08)); border: 1px solid rgba(31,108,237,.14); box-shadow: inset 0 1px 0 rgba(255,255,255,.9); color: var(--c-blue); }
+  .pi-cert-ico svg { width: 19px; height: 19px; }
+  .pi-cert-art { margin: 0; }
+  .pi-cert-art img { width: 100%; height: auto; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+
   /* ---------- 9 · Rareté ---------- */
   .pi-scarcity { display: grid; grid-template-columns: 240px 1fr; gap: 40px; align-items: center; }
   .pi-scarcity-count { text-align: center; background: var(--surface-2); border: 1px solid var(--c-border-soft); border-radius: var(--radius-lg); padding: 32px 24px; box-shadow: var(--shadow-sm); }
@@ -1471,7 +1543,8 @@ const faqs = [
   /* CTA en surbrillance */
   .pi-btn-buy {
     position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-    width: 100%; max-width: 440px; margin-top: 26px; padding: 21px 40px; border-radius: var(--radius-pill); white-space: nowrap;
+    flex-direction: column; gap: 3px;
+    width: 100%; max-width: 440px; margin-top: 26px; padding: 15px 40px; border-radius: var(--radius-pill); white-space: nowrap;
     font-family: var(--f-display); font-weight: 700; font-size: 1.12rem; color: #fff;
     background: linear-gradient(135deg, #2f7bff, var(--c-blue) 55%, var(--c-blue-dark));
     box-shadow: 0 14px 38px -10px rgba(31,108,237,.65);
@@ -1479,6 +1552,11 @@ const faqs = [
     transition: transform var(--dur) var(--ease);
   }
   .pi-btn-buy:hover { transform: translateY(-2px); }
+  /* Le libellé garde son rang de titre ; la rareté vient dessous, à voix plus
+     basse. Les deux restent en nowrap : le bouton est trop étroit sur
+     téléphone pour supporter un retour à la ligne. */
+  .pi-btn-main { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+  .pi-btn-places { font-family: var(--f-body); font-weight: 600; font-size: .78rem; letter-spacing: .01em; color: rgba(255,255,255,.82); }
   @keyframes pi-glow {
     0%, 100% { box-shadow: 0 14px 38px -10px rgba(31,108,237,.65), 0 0 0 0 rgba(31,108,237,.4); }
     50% { box-shadow: 0 14px 44px -8px rgba(31,108,237,.8), 0 0 0 12px rgba(31,108,237,0); }
@@ -1623,8 +1701,11 @@ const faqs = [
     .pi-author-stats { grid-template-columns: repeat(3, 1fr); }
   }
   @media (max-width: 900px) {
-    .pi-solution-grid, .pi-author-grid, .pi-guar-grid { grid-template-columns: 1fr; gap: 36px; }
-    .pi-guar-art { order: -1; }
+    .pi-solution-grid, .pi-author-grid, .pi-guar-grid, .pi-cert-grid { grid-template-columns: 1fr; gap: 36px; }
+    .pi-guar-art, .pi-cert-art { order: -1; }
+    /* En une colonne, le certificat ne doit pas avaler l'écran : il sert
+       à reconnaître un document, pas à en lire les mentions. */
+    .pi-cert-art img { max-width: 520px; margin: 0 auto; }
     .pi-guar-video { max-width: 280px; }
     .pi-portrait { max-width: 320px; }
     .pi-scarcity { grid-template-columns: 1fr; gap: 24px; text-align: center; }
@@ -1665,7 +1746,8 @@ const faqs = [
     section[data-nav-section="L'accompagnement"],
     section[data-nav-section="Ils l'ont fait"],
     section[data-nav-section="Garantie"],
-    section[data-nav-section="Ton investissement"] { padding-top: 64px; padding-bottom: 64px; }
+    section[data-nav-section="Ton investissement"],
+    section[data-nav-section="Le certificat"] { padding-top: 64px; padding-bottom: 64px; }
     section[data-nav-section="Rejoindre"] { padding-top: 72px; padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
     .section-head { margin-bottom: 32px; }
 
@@ -1751,7 +1833,8 @@ const faqs = [
     .pi-fcd-box { min-width: 62px; padding: 10px 8px 8px; }
     .pi-fcd-box .n { font-size: 1.5rem; }
     .pi-fcd-sep { font-size: 1.2rem; padding-bottom: 14px; }
-    .pi-btn-buy { padding: 18px 16px; font-size: .92rem; }
+    .pi-btn-buy { padding: 13px 16px; font-size: .92rem; }
+    .pi-btn-places { font-size: .72rem; }
     .pi-payment-shell { padding: 30px 20px 24px; }
     .pi-deal { font-size: .86rem; padding: 9px 16px; text-align: left; }
     .pi-deal b { font-size: .98rem; }
