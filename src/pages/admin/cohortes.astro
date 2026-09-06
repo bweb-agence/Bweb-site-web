@@ -111,12 +111,17 @@ import Button from "../../components/starwind/button/Button.astro";
     // cohorte : il y en a une poignée, pas de quoi charger la timeline).
     ventes = {};
     await Promise.all(all.filter((c) => c.chariow_product_id).map(async (c) => {
-      const { count } = await supabaseBrowser
+      /* Même borne que `cohorte_places` : une cohorte rouverte ne décompte
+         que les ventes postérieures à sa réouverture. Sans ce filtre, le
+         tableau de bord contredirait la page de vente. */
+      let q = supabaseBrowser
         .from("contact_events")
         .select("id", { count: "exact", head: true })
         .eq("type", "achat")
         .eq("source", "chariow")
         .eq("meta->>product_id", c.chariow_product_id);
+      if (c.sales_counted_from) q = q.gte("occurred_at", c.sales_counted_from);
+      const { count } = await q;
       ventes[c.id] = count || 0;
     }));
     applySearch();
