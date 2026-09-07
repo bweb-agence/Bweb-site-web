@@ -85,9 +85,19 @@ const CTA_STICKY_LABEL = COMPLET ? "Réserver la prochaine cohorte →" : "Je re
 const CTA_HREF = COMPLET ? "#liste-attente" : "#paiement";
 const CTA_HREF_ANCRE = COMPLET ? "#liste-attente" : "#reserver";
 
+/* Le compteur parle de la cohorte EN COURS de remplissage, pas du total
+   ouvert : les groupes précédents étant pleins, « il reste N places sur 30 »
+   décrit exactement le groupe qu'on remplit, et garde l'urgence des 30 sans
+   jamais afficher le total. Si le reste dépassait la taille d'un groupe, la
+   phrase deviendrait fausse : on retombe alors sur le décompte seul. */
+const RESTE_TIENT_DANS_UN_GROUPE = PLACES_RESTANTES <= TAILLE_GROUPE;
+const DENOMINATEUR = RESTE_TIENT_DANS_UN_GROUPE ? TAILLE_GROUPE : CAPACITE;
+
 const PLACES_LABEL = COMPLET
   ? "Cohorte complète"
-  : `Il reste ${PLACES_RESTANTES} place${PLACES_RESTANTES > 1 ? "s" : ""} sur ${CAPACITE}`;
+  : RESTE_TIENT_DANS_UN_GROUPE
+    ? `Il reste ${PLACES_RESTANTES} place${PLACES_RESTANTES > 1 ? "s" : ""} sur ${TAILLE_GROUPE}`
+    : `Il reste ${PLACES_RESTANTES} place${PLACES_RESTANTES > 1 ? "s" : ""}`;
 
 /* « Septembre 2026 » : écrit une fois, réutilisé dans tous les rappels de la
    page (badge, CTA, rareté, section finale). */
@@ -243,7 +253,7 @@ const faqs = [
       partagé sur WhatsApp ou Facebook montre exactement ce que le visiteur
       verra en arrivant. Sans ça, c'est l'image générique du site. */}
   image="/images/parcours-initiation/og-parcours.jpg"
-  description={`35 jours d'accompagnement pour transformer une compétence que tu possèdes déjà en produit digital en ligne et en vente : un responsable de cohorte qui suit tes livrables, un mentor qui corrige ton offre, 10 lives avec Godwin. ${COHORTE_TITRE}, ${CAPACITE} places.`}
+  description={`35 jours d'accompagnement pour transformer une compétence que tu possèdes déjà en produit digital en ligne et en vente : un responsable de cohorte qui suit tes livrables, un mentor qui corrige ton offre, 10 lives avec Godwin. ${COHORTE_TITRE}.`}
   hideWhatsApp={true}
   bareChrome={true}
 >
@@ -257,7 +267,7 @@ const faqs = [
     <img class="pi-hero-glass pi-hero-glass--left" src="/images/parcours-initiation/glass-shapes.webp" alt="" aria-hidden="true" width="1200" height="675" loading="lazy" decoding="async" />
     <div class="container">
       <div class="pi-hero-inner">
-        <span class="pi-badge-urgence" data-hero-in>🤝 {COHORTE_TITRE} - {CAPACITE} personnes à accompagner</span>
+        <span class="pi-badge-urgence" data-hero-in>🤝 {COHORTE_TITRE} - {TAILLE_GROUPE} personnes par cohorte</span>
 
         <h1 data-hero-in>
           Des gens moins compétents que toi se font déjà payer pour leur savoir.
@@ -505,9 +515,9 @@ const faqs = [
       <div class="pi-author-grid">
         <div class="reveal">
           <div class="eyebrow">Pourquoi moi</div>
-          <h2>J'ai formé 17 116 personnes. Aujourd'hui, je n'en accompagne que {CAPACITE} à la fois.</h2>
+          <h2>J'ai formé 17 116 personnes. Aujourd'hui, je n'en accompagne que {TAILLE_GROUPE} à la fois.</h2>
           <p class="lead" style="margin:20px 0 14px">Je m'appelle Godwin Soola. J'ai fondé Bweb Agence, un cabinet de conseil et formation à l'IA en Côte d'Ivoire.</p>
-          <p style="color:var(--c-gray-700)">Pendant longtemps, j'ai vendu des formations. J'ai vu le même scénario se répéter&nbsp;: des gens qui achètent, qui regardent, et qui ne lancent jamais. Alors j'ai arrêté. Aujourd'hui <b>j'accompagne des cohortes de {CAPACITE} personnes</b>, parce que c'est la seule façon que j'ai trouvée pour que les gens finissent vraiment ce qu'ils commencent.</p>
+          <p style="color:var(--c-gray-700)">Pendant longtemps, j'ai vendu des formations. J'ai vu le même scénario se répéter&nbsp;: des gens qui achètent, qui regardent, et qui ne lancent jamais. Alors j'ai arrêté. Aujourd'hui <b>j'accompagne des cohortes de {TAILLE_GROUPE} personnes</b>, parce que c'est la seule façon que j'ai trouvée pour que les gens finissent vraiment ce qu'ils commencent.</p>
         </div>
         <figure class:list={["pi-portrait", "reveal", { "no-img": !imgSrc("godwin-portrait") }]} data-delay=".1">
           {imgSrc("godwin-portrait") && <img src={imgSrc("godwin-portrait")} alt="Godwin Soola, fondateur de Bweb Agence" width="640" height="760" loading="lazy" decoding="async" />}
@@ -620,12 +630,12 @@ const faqs = [
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">Rareté réelle</div>
         <h2>{PLUSIEURS_GROUPES
-          ? `${CAPACITE} places, en ${NB_GROUPES} cohortes de ${TAILLE_GROUPE}. Pas une de plus.`
-          : `${CAPACITE} personnes accompagnées. Pas une de plus.`}</h2>
+          ? `${NB_GROUPES} cohortes de ${TAILLE_GROUPE}. Pas une de plus.`
+          : `${TAILLE_GROUPE} personnes accompagnées. Pas une de plus.`}</h2>
       </div>
       <div class="pi-scarcity reveal">
         <div class="pi-scarcity-count">
-          <span class="pi-scarcity-n" id="placesLeft" data-places={PLACES_RESTANTES} data-capacity={CAPACITE}>{PLACES_RESTANTES}</span>
+          <span class="pi-scarcity-n" id="placesLeft" data-places={PLACES_RESTANTES} data-capacity={DENOMINATEUR}>{PLACES_RESTANTES}</span>
           <span class="pi-scarcity-l">{COMPLET ? COMPLET_LABEL : `places restantes pour ${COHORTE_LABEL.toLowerCase()}`}</span>
         </div>
         <div class="pi-scarcity-text">
@@ -790,7 +800,7 @@ const faqs = [
     <img class="pi-final-glass pi-final-glass--left" src="/images/parcours-initiation/glass-shapes.webp" alt="" aria-hidden="true" width="1200" height="675" loading="lazy" decoding="async" />
     <div class="container">
       <div class="pi-final-inner">
-        <div class="eyebrow on-dark reveal" style="justify-content:center">{COHORTE_TITRE} · {CAPACITE} personnes accompagnées</div>
+        <div class="eyebrow on-dark reveal" style="justify-content:center">{COHORTE_TITRE} · {TAILLE_GROUPE} personnes par cohorte</div>
         <h2 class="reveal">C'est le moment d'arrêter d'apprendre.<br />Et de commencer à construire.</h2>
         <p class="pi-final-sub reveal">Chaque place, c'est une personne qu'on suit pendant 35 jours. Un produit qui va naître. Une compétence qui va enfin générer des revenus.</p>
 
@@ -817,7 +827,7 @@ const faqs = [
               <span class="pi-fcd-sep">:</span>
               <span class="pi-fcd-box"><span class="n" data-cd="s">00</span><span class="u">Sec</span></span>
             </div>
-            <span class="pi-final-places">{COMPLET ? COMPLET_LABEL : (<>Il reste <b>{PLACES_RESTANTES}</b> places sur {CAPACITE}</>)}</span>
+            <span class="pi-final-places">{COMPLET ? COMPLET_LABEL : (<>Il reste <b>{PLACES_RESTANTES}</b> places sur {DENOMINATEUR}</>)}</span>
           </div>
           <a href={CTA_HREF} class="pi-btn-buy" data-payment-trigger={COMPLET ? undefined : true} data-waitlist-trigger={COMPLET ? true : undefined} aria-haspopup="dialog">
             <span class="pi-btn-main">{CTA_LABEL} →</span>
@@ -858,7 +868,7 @@ const faqs = [
         <button class="pi-payment-close" type="button" aria-label="Fermer" data-waitlist-close>×</button>
         <p class="pi-payment-eyebrow">{COMPLET_LABEL}</p>
         <h2 id="listeAttenteTitre">Réserve ta place pour la prochaine</h2>
-        <p class="pi-payment-intro">Les {CAPACITE} places sont prises. Laisse-nous tes coordonnées : tu seras prévenu en priorité à l'ouverture de la prochaine cohorte, avant la mise en vente publique.</p>
+        <p class="pi-payment-intro">Toutes les places sont prises. Laisse-nous tes coordonnées : tu seras prévenu en priorité à l'ouverture de la prochaine cohorte, avant la mise en vente publique.</p>
 
         <form class="pi-wl-form" id="listeAttenteForm" novalidate>
           <div class="pi-wl-field">
