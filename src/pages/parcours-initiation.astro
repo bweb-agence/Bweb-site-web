@@ -6,6 +6,7 @@ export const prerender = false;
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { supabase } from "../lib/supabase";
 import PreuveSociale from "../components/PreuveSociale.astro";
+import PhoneField from "../components/PhoneField.astro";
 
 /* Les visuels WebP optimisés font partie du dépôt et sont servis directement
    depuis /public : cela évite toute dépendance au système de fichiers du build. */
@@ -46,7 +47,7 @@ const cohorte = (Array.isArray(cohorteRows) ? cohorteRows[0] : cohorteRows) ?? n
 
 const CAPACITE = cohorte?.capacity ?? SECOURS.capacity;
 const PLACES_RESTANTES = cohorte?.remaining ?? SECOURS.remaining;
-const COMPLET = PLACES_RESTANTES <= 0;
+const COMPLET_PAR_LES_PLACES = PLACES_RESTANTES <= 0;
 const COHORTE_ISO = cohorte?.starts_at ?? SECOURS.starts_at;
 
 /* Le compte à rebours vise la CLÔTURE DES INSCRIPTIONS, pas le démarrage : c'est
@@ -54,9 +55,36 @@ const COHORTE_ISO = cohorte?.starts_at ?? SECOURS.starts_at;
    elle retombe sur la date de démarrage quand elle n'est pas renseignée. */
 const ECHEANCE_ISO = cohorte?.deadline_at ?? SECOURS.deadline_at;
 
+/* Passée l'échéance, la cohorte est close, quel que soit le compteur. Sans
+   cette ligne, l'échéance ne pilotait que l'affichage du compte à rebours :
+   il tombait à zéro et la page continuait d'annoncer des places libres. La
+   date se règle dans le tableau de bord (`deadline_at`), le basculement est
+   donc automatique — le cache de 60 s près. */
+const CLOTUREE = Date.parse(ECHEANCE_ISO) <= Date.now();
+const COMPLET = COMPLET_PAR_LES_PLACES || CLOTUREE;
+
 /* Rappel de rareté porté par les boutons eux-mêmes. Écrit une fois : le
    singulier compte, « il reste 1 places » sur la dernière place serait la
    faute que tout le monde remarque. */
+/* La capacité du tableau de bord est le TOTAL ouvert à la vente ; un groupe
+   reste plafonné à 30, parce que c'est ce nombre qui rend le suivi tenable.
+   Quand le total dépasse un groupe, la page le dit : deux cohortes de 30,
+   et non une cohorte de 60 — sinon l'argument « au-delà on ne peut plus
+   accompagner » se retourne contre lui-même. */
+const TAILLE_GROUPE = 30;
+const NB_GROUPES = Math.max(1, Math.round(CAPACITE / TAILLE_GROUPE));
+const PLUSIEURS_GROUPES = NB_GROUPES > 1;
+
+
+/* Cohorte close : plus rien n'ouvre le paiement. Un bouton qui encaisse sous
+   un « Cohorte complète », c'est une vente à rembourser et un acheteur qui se
+   sent piégé. Les mêmes boutons ouvrent alors la liste d'attente. */
+const CTA_LABEL = COMPLET ? "Réserver la prochaine cohorte" : "Oui, je veux être accompagné";
+const CTA_HERO_LABEL = COMPLET ? "Réserver la prochaine cohorte" : "Je réserve ma place à 65 000 FCFA";
+const CTA_STICKY_LABEL = COMPLET ? "Réserver la prochaine cohorte →" : "Je rejoins la cohorte →";
+const CTA_HREF = COMPLET ? "#liste-attente" : "#paiement";
+const CTA_HREF_ANCRE = COMPLET ? "#liste-attente" : "#reserver";
+
 const PLACES_LABEL = COMPLET
   ? "Cohorte complète"
   : `Il reste ${PLACES_RESTANTES} place${PLACES_RESTANTES > 1 ? "s" : ""} sur ${CAPACITE}`;
@@ -65,6 +93,13 @@ const PLACES_LABEL = COMPLET
    page (badge, CTA, rareté, section finale). */
 const moisAnnee = new Date(COHORTE_ISO).toLocaleDateString("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
 const COHORTE_LABEL = moisAnnee.charAt(0).toUpperCase() + moisAnnee.slice(1);
+
+/* Écrits une fois : « Cohorte de septembre » devient faux dès qu'il y en a
+   deux, et l'accord suit (cohorte complète / cohortes complètes). */
+const COHORTE_TITRE = PLUSIEURS_GROUPES ? `Cohortes de ${COHORTE_LABEL.toLowerCase()}` : `Cohorte ${COHORTE_LABEL}`;
+const COMPLET_LABEL = PLUSIEURS_GROUPES
+  ? `Cohortes de ${COHORTE_LABEL.toLowerCase()} complètes`
+  : `Cohorte de ${COHORTE_LABEL} complète`;
 
 /* Le rendu est dynamique, mais la page encaisse du trafic publicitaire : on la
    laisse en cache 60 s au bord plutôt que de la recalculer à chaque clic. */
@@ -208,7 +243,7 @@ const faqs = [
       partagé sur WhatsApp ou Facebook montre exactement ce que le visiteur
       verra en arrivant. Sans ça, c'est l'image générique du site. */}
   image="/images/parcours-initiation/og-parcours.jpg"
-  description={`35 jours d'accompagnement pour transformer une compétence que tu possèdes déjà en produit digital en ligne et en vente : un responsable de cohorte qui suit tes livrables, un mentor qui corrige ton offre, 10 lives avec Godwin. Cohorte ${COHORTE_LABEL}, ${CAPACITE} places.`}
+  description={`35 jours d'accompagnement pour transformer une compétence que tu possèdes déjà en produit digital en ligne et en vente : un responsable de cohorte qui suit tes livrables, un mentor qui corrige ton offre, 10 lives avec Godwin. ${COHORTE_TITRE}, ${CAPACITE} places.`}
   hideWhatsApp={true}
   bareChrome={true}
 >
@@ -222,7 +257,7 @@ const faqs = [
     <img class="pi-hero-glass pi-hero-glass--left" src="/images/parcours-initiation/glass-shapes.webp" alt="" aria-hidden="true" width="1200" height="675" loading="lazy" decoding="async" />
     <div class="container">
       <div class="pi-hero-inner">
-        <span class="pi-badge-urgence" data-hero-in>🤝 Cohorte {COHORTE_LABEL} - {CAPACITE} personnes à accompagner</span>
+        <span class="pi-badge-urgence" data-hero-in>🤝 {COHORTE_TITRE} - {CAPACITE} personnes à accompagner</span>
 
         <h1 data-hero-in>
           Des gens moins compétents que toi se font déjà payer pour leur savoir.
@@ -251,13 +286,13 @@ const faqs = [
         </div>
 
         <div class="pi-hero-cta" data-hero-in>
-          <a href="#reserver" class="pi-btn-buy pi-cta">
-            <span class="pi-btn-main">Je réserve ma place à 65 000 FCFA <span class="pi-arrow">→</span></span>
+          <a href={CTA_HREF_ANCRE} class="pi-btn-buy pi-cta" data-waitlist-trigger={COMPLET ? true : undefined} aria-haspopup={COMPLET ? "dialog" : undefined}>
+            <span class="pi-btn-main">{CTA_HERO_LABEL} <span class="pi-arrow">→</span></span>
             <span class="pi-btn-places">{PLACES_LABEL}</span>
           </a>
           {/* Le compteur de places vit maintenant DANS le bouton : la note ne garde
               que ce qu'il ne dit pas, la cohorte visée et le délai de prise en charge. */}
-          <p class="pi-cta-note">Cohorte {COHORTE_LABEL} · Tu es suivi sous 24 h</p>
+          <p class="pi-cta-note">{COHORTE_TITRE} · Tu es suivi sous 24 h</p>
         </div>
 
       </div>
@@ -557,8 +592,8 @@ const faqs = [
           <h2>Garantie <span class="pi-gold">« Première vente ou on continue avec toi »</span></h2>
           <p class="pi-guar-lede">Un accompagnement qui s'arrête à J+35 quel que soit le résultat, ce n'est pas un accompagnement. C'est un calendrier.</p>
           <p class="pi-guar-lede">Si tu suis le programme, que tu soumets tes livrables chaque semaine et qu'à J+35 tu n'as pas décroché ta première vente, <b>on continue de t'accompagner gratuitement jusqu'à ce que tu l'aies.</b></p>
-          <a href="#reserver" class="pi-btn-buy pi-cta pi-guar-cta">
-            <span class="pi-btn-main">Oui, je veux être accompagné <span class="pi-arrow">→</span></span>
+          <a href={CTA_HREF_ANCRE} class="pi-btn-buy pi-cta pi-guar-cta" data-waitlist-trigger={COMPLET ? true : undefined} aria-haspopup={COMPLET ? "dialog" : undefined}>
+            <span class="pi-btn-main">{CTA_LABEL} <span class="pi-arrow">→</span></span>
             <span class="pi-btn-places">{PLACES_LABEL}</span>
           </a>
           <div class="pi-guar-sign">Mon engagement personnel&nbsp;: <span class="nm">Godwin Soola</span></div>
@@ -584,17 +619,21 @@ const faqs = [
     <div class="container pi-narrow">
       <div class="section-head center reveal">
         <div class="eyebrow" style="justify-content:center">Rareté réelle</div>
-        <h2>{CAPACITE} personnes accompagnées. Pas une de plus.</h2>
+        <h2>{PLUSIEURS_GROUPES
+          ? `${CAPACITE} places, en ${NB_GROUPES} cohortes de ${TAILLE_GROUPE}. Pas une de plus.`
+          : `${CAPACITE} personnes accompagnées. Pas une de plus.`}</h2>
       </div>
       <div class="pi-scarcity reveal">
         <div class="pi-scarcity-count">
           <span class="pi-scarcity-n" id="placesLeft" data-places={PLACES_RESTANTES} data-capacity={CAPACITE}>{PLACES_RESTANTES}</span>
-          <span class="pi-scarcity-l">{COMPLET ? `cohorte de ${COHORTE_LABEL} complète` : `places restantes pour la cohorte de ${COHORTE_LABEL}`}</span>
+          <span class="pi-scarcity-l">{COMPLET ? COMPLET_LABEL : `places restantes pour ${COHORTE_LABEL.toLowerCase()}`}</span>
         </div>
         <div class="pi-scarcity-text">
-          <p>Chaque cohorte est limitée à {CAPACITE} personnes. Pour une raison simple&nbsp;: <b>au-delà, on ne peut plus accompagner sérieusement.</b></p>
+          {PLUSIEURS_GROUPES
+            ? <p>La première cohorte s'est remplie en quelques jours. On en a ouvert {NB_GROUPES === 2 ? "une seconde" : `${NB_GROUPES - 1} autres`}, au même format&nbsp;: <b>{TAILLE_GROUPE} personnes par cohorte, pas une de plus.</b> Au-delà, on ne peut plus accompagner sérieusement.</p>
+            : <p>Chaque cohorte est limitée à {TAILLE_GROUPE} personnes. Pour une raison simple&nbsp;: <b>au-delà, on ne peut plus accompagner sérieusement.</b></p>}
           <p>Ton responsable de cohorte vérifie chacun de tes livrables. Ton mentor valide ton offre, ton produit, ta page de vente. Godwin est en direct 2 fois par semaine.</p>
-          <p>Avec 100 personnes, plus personne ne relit rien : on te vend un accès et on te souhaite bonne chance. Avec {CAPACITE}, c'est intensif, exigeant, et quelqu'un sait où tu en es.</p>
+          <p>Avec 100 personnes dans un groupe, plus personne ne relit rien : on te vend un accès et on te souhaite bonne chance. Avec {TAILLE_GROUPE}, c'est intensif, exigeant, et quelqu'un sait où tu en es.</p>
         </div>
       </div>
       <div class="pi-scarcity-bar reveal" aria-hidden="true"><span id="placesBar"></span></div>
@@ -651,18 +690,18 @@ const faqs = [
           <div class="pi-price">65 000 <small>FCFA</small></div>
           <span class="pi-deal">✨ <b>− 57 %</b> pour ton inscription dans les 48 h</span>
 
-          <p class="pi-deal-timer" id="dealTimer">
+          <p class="pi-deal-timer" id="dealTimer" hidden={COMPLET}>
             ⏳ L'offre expire dans
             <span class="pi-dt-clock"><span data-t="h">48</span><i>h</i><span data-t="m">00</span><i>m</i><span data-t="s">00</span><i>s</i></span>
             puis retour à <b>150 000 FCFA</b>
           </p>
         </div>
 
-        <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">
-          <span class="pi-btn-main">Oui, je veux être accompagné <span class="pi-arrow">→</span></span>
+        <a href={CTA_HREF} class="pi-btn-buy" data-payment-trigger={COMPLET ? undefined : true} data-waitlist-trigger={COMPLET ? true : undefined} aria-haspopup="dialog">
+          <span class="pi-btn-main">{CTA_LABEL} <span class="pi-arrow">→</span></span>
           <span class="pi-btn-places">{PLACES_LABEL}</span>
         </a>
-        <p class="pi-price-note">Tu réserves une place accompagnée, pas un accès à des vidéos. {CAPACITE} personnes maximum par cohorte, 1 cohorte par mois.</p>
+        <p class="pi-price-note">Tu réserves une place accompagnée, pas un accès à des vidéos. {TAILLE_GROUPE} personnes maximum par cohorte{PLUSIEURS_GROUPES ? `, ${NB_GROUPES} cohortes ouvertes ce mois-ci` : ", 1 cohorte par mois"}.</p>
 
         <div class="pi-assurances">
           <div class="pi-assurance">
@@ -751,7 +790,7 @@ const faqs = [
     <img class="pi-final-glass pi-final-glass--left" src="/images/parcours-initiation/glass-shapes.webp" alt="" aria-hidden="true" width="1200" height="675" loading="lazy" decoding="async" />
     <div class="container">
       <div class="pi-final-inner">
-        <div class="eyebrow on-dark reveal" style="justify-content:center">Cohorte {COHORTE_LABEL} · {CAPACITE} personnes accompagnées</div>
+        <div class="eyebrow on-dark reveal" style="justify-content:center">{COHORTE_TITRE} · {CAPACITE} personnes accompagnées</div>
         <h2 class="reveal">C'est le moment d'arrêter d'apprendre.<br />Et de commencer à construire.</h2>
         <p class="pi-final-sub reveal">Chaque place, c'est une personne qu'on suit pendant 35 jours. Un produit qui va naître. Une compétence qui va enfin générer des revenus.</p>
 
@@ -778,10 +817,10 @@ const faqs = [
               <span class="pi-fcd-sep">:</span>
               <span class="pi-fcd-box"><span class="n" data-cd="s">00</span><span class="u">Sec</span></span>
             </div>
-            <span class="pi-final-places">{COMPLET ? `Cohorte de ${COHORTE_LABEL} complète` : (<>Il reste <b>{PLACES_RESTANTES}</b> places sur {CAPACITE}</>)}</span>
+            <span class="pi-final-places">{COMPLET ? COMPLET_LABEL : (<>Il reste <b>{PLACES_RESTANTES}</b> places sur {CAPACITE}</>)}</span>
           </div>
-          <a href="#paiement" class="pi-btn-buy" data-payment-trigger aria-haspopup="dialog">
-            <span class="pi-btn-main">Oui, je veux être accompagné →</span>
+          <a href={CTA_HREF} class="pi-btn-buy" data-payment-trigger={COMPLET ? undefined : true} data-waitlist-trigger={COMPLET ? true : undefined} aria-haspopup="dialog">
+            <span class="pi-btn-main">{CTA_LABEL} →</span>
             <span class="pi-btn-places">{PLACES_LABEL}</span>
           </a>
           <div class="pi-final-trust">
@@ -801,11 +840,59 @@ const faqs = [
 
   <!-- Sticky CTA mobile -->
   <div class="pi-sticky">
-    <a href="#paiement" class="pi-btn-buy pi-cta pi-sticky-buy" data-payment-trigger aria-haspopup="dialog">
-      <span>Je rejoins la cohorte →</span>
-      <span class="pi-sticky-prices"><b>65 000 FCFA</b><s>150 000 FCFA</s></span>
+    <a href={CTA_HREF} class="pi-btn-buy pi-cta pi-sticky-buy" data-payment-trigger={COMPLET ? undefined : true} data-waitlist-trigger={COMPLET ? true : undefined} aria-haspopup="dialog">
+      <span>{CTA_STICKY_LABEL}</span>
+      {COMPLET
+        ? <span class="pi-sticky-prices"><b>Cohorte complète</b></span>
+        : <span class="pi-sticky-prices"><b>65 000 FCFA</b><s>150 000 FCFA</s></span>}
     </a>
   </div>
+
+  {/* Liste d'attente : ne sort qu'une fois la cohorte close. Elle remplace le
+      paiement plutôt que de le doubler — on ne peut pas à la fois annoncer
+      complet et encaisser. Les demandes atterrissent dans /admin/soumissions
+      sous la clé `parcours-initiation-liste-attente`. */}
+  {COMPLET && (
+    <dialog class="pi-payment-modal" id="listeAttenteModal" aria-labelledby="listeAttenteTitre">
+      <div class="pi-payment-shell" id="liste-attente">
+        <button class="pi-payment-close" type="button" aria-label="Fermer" data-waitlist-close>×</button>
+        <p class="pi-payment-eyebrow">{COMPLET_LABEL}</p>
+        <h2 id="listeAttenteTitre">Réserve ta place pour la prochaine</h2>
+        <p class="pi-payment-intro">Les {CAPACITE} places sont prises. Laisse-nous tes coordonnées : tu seras prévenu en priorité à l'ouverture de la prochaine cohorte, avant la mise en vente publique.</p>
+
+        <form class="pi-wl-form" id="listeAttenteForm" novalidate>
+          <div class="pi-wl-field">
+            <label for="wl-prenom">Ton prénom</label>
+            <input id="wl-prenom" name="prenom" type="text" autocomplete="given-name" required minlength="2" maxlength="80" placeholder="Marius" />
+          </div>
+          <div class="pi-wl-field">
+            <label for="wl-phone">Ton numéro WhatsApp</label>
+            <PhoneField id="wl-phone" />
+          </div>
+          <div class="pi-wl-field">
+            <label for="wl-email">Ton e-mail</label>
+            <input id="wl-email" name="email" type="email" autocomplete="email" required maxlength="160" placeholder="marius@exemple.com" />
+          </div>
+          {/* Piège à robots : invisible, et jamais rempli par un humain. */}
+          <input type="text" name="website" tabindex="-1" autocomplete="off" class="pi-wl-hp" aria-hidden="true" />
+
+          <p class="pi-wl-error" id="listeAttenteErreur" hidden></p>
+          <button class="pi-btn-buy pi-wl-submit" type="submit">
+            <span class="pi-btn-main" id="listeAttenteLabel">Réserver ma place <span class="pi-arrow">→</span></span>
+          </button>
+          <p class="pi-wl-note">Aucun paiement à cette étape. On te contacte quand la prochaine cohorte ouvre.</p>
+        </form>
+
+        <div class="pi-wl-ok" id="listeAttenteOk" hidden>
+          <span class="pi-wl-ok-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8 12.5 11 15.5 16 9.5"/></svg>
+          </span>
+          <h3>C'est noté.</h3>
+          <p>Tu es sur la liste. On t'écrit dès que la prochaine cohorte ouvre, avant tout le monde.</p>
+        </div>
+      </div>
+    </dialog>
+  )}
 
   <!-- Paiement Chariow : ouvert par chaque CTA de réservation -->
   <dialog class="pi-payment-modal" id="paymentModal" aria-labelledby="paymentModalTitle">
@@ -1095,6 +1182,79 @@ const faqs = [
       });
 
       if (close && modal) close.addEventListener("click", function () { modal.close(); });
+
+      /* Liste d'attente. Le formulaire part vers /api/lead, l'endpoint de
+         capture générique : la demande est visible dans /admin/soumissions
+         sans migration ni table dédiée. */
+      var wlModal = document.getElementById("listeAttenteModal");
+      var wlForm = document.getElementById("listeAttenteForm");
+      if (wlModal) {
+        document.querySelectorAll("[data-waitlist-trigger]").forEach(function (t) {
+          t.addEventListener("click", function (event) {
+            event.preventDefault();
+            if (typeof wlModal.showModal === "function") wlModal.showModal();
+          });
+        });
+        var wlClose = wlModal.querySelector("[data-waitlist-close]");
+        if (wlClose) wlClose.addEventListener("click", function () { wlModal.close(); });
+        wlModal.addEventListener("click", function (event) {
+          if (event.target === wlModal) wlModal.close();
+        });
+      }
+      if (wlForm) {
+        var wlErr = document.getElementById("listeAttenteErreur");
+        var wlOk = document.getElementById("listeAttenteOk");
+        var wlLabel = document.getElementById("listeAttenteLabel");
+        var wlBtn = wlForm.querySelector("button[type=submit]");
+        var montrerErreur = function (message) {
+          wlErr.textContent = message;
+          wlErr.hidden = false;
+          wlBtn.disabled = false;
+          wlLabel.textContent = "Réserver ma place";
+        };
+        wlForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+          wlErr.hidden = true;
+          var data = new FormData(wlForm);
+          var prenom = (data.get("prenom") || "").toString().trim();
+          var email = (data.get("email") || "").toString().trim();
+          var numero = (data.get("phone") || "").toString().replace(/\D/g, "");
+          if (prenom.length < 2) return montrerErreur("Indique ton prénom.");
+          if (numero.length < 6) return montrerErreur("Ce numéro WhatsApp semble incomplet.");
+          if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) return montrerErreur("Cette adresse e-mail semble incorrecte.");
+
+          wlBtn.disabled = true;
+          wlLabel.textContent = "Enregistrement…";
+          /* JSON et non FormData : la protection CSRF d'Astro refuse les POST
+             en multipart/form-data (« Cross-site POST form submissions are
+             forbidden »). Le formulaire du webinaire envoie du JSON pour la
+             même raison. */
+          fetch("/api/lead", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              form_key: "parcours-initiation-liste-attente",
+              form_title: "Liste d'attente — Parcours Initiation",
+              page_path: location.pathname,
+              prenom: prenom,
+              email: email,
+              whatsapp: ((data.get("phone_cc") || "") + " " + (data.get("phone") || "")).trim(),
+              website: (data.get("website") || "").toString(),
+            }),
+          })
+            .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+            .then(function (res) {
+              if (res && res.ok) {
+                if (window.fbq) window.fbq("track", "Lead", { content_name: "Liste d'attente Parcours Initiation" });
+                wlForm.hidden = true;
+                wlOk.hidden = false;
+                return;
+              }
+              montrerErreur("L'enregistrement n'a pas abouti. Réessaie dans un instant.");
+            })
+            .catch(function () { montrerErreur("Connexion interrompue. Réessaie dans un instant."); });
+        });
+      }
       if (modal) modal.addEventListener("click", function (event) {
         if (event.target === modal) modal.close();
       });
@@ -1679,6 +1839,46 @@ const faqs = [
   .pi-final-trust span { font-size: .84rem; color: rgba(255,255,255,.9); background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); padding: 8px 16px; border-radius: var(--radius-pill); }
   .pi-ps { max-width: 700px; margin: 44px auto 0; text-align: center; font-size: 1rem; line-height: 1.7; color: var(--c-gray-400); }
   .pi-ps b { color: #fff; }
+
+  /* ---------- Liste d'attente (cohorte close) ---------- */
+  .pi-wl-form { display: flex; flex-direction: column; gap: 16px; margin-top: 22px; text-align: left; }
+  .pi-wl-form[hidden], .pi-wl-ok[hidden] { display: none; }
+  .pi-wl-field { display: flex; flex-direction: column; gap: 7px; }
+  .pi-wl-field label { font-family: var(--f-display); font-weight: 600; font-size: .88rem; color: var(--c-ink); }
+  .pi-wl-field input[type="text"], .pi-wl-field input[type="email"] {
+    height: 46px; padding: 0 14px; font-family: var(--f-body); font-size: 1rem; color: var(--c-ink);
+    background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  }
+  .pi-wl-field input:focus { outline: 0; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31,108,237,.15); }
+  /* PhoneField a son propre scope Astro : sans :global(), un sélecteur scopé
+     ne l'atteint pas. On le réaligne sur les deux autres champs. */
+  .pi-wl-field :global(.phone-field) { gap: 8px; }
+  .pi-wl-field :global(.phone-field input[type="tel"]),
+  .pi-wl-field :global(.phone-field .pf-trigger),
+  .pi-wl-field :global(.phone-field .phone-cc) {
+    height: 46px; padding: 0 14px; font-family: var(--f-body); font-size: 1rem; color: var(--c-ink);
+    background: #fff; border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  }
+  .pi-wl-field :global(.phone-field .pf-combo) { flex: 0 0 auto; }
+  .pi-wl-field :global(.phone-field .pf-trigger) { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+  .pi-wl-field :global(.phone-field input[type="tel"]:focus),
+  .pi-wl-field :global(.phone-field .pf-trigger:focus-visible) { outline: 0; border-color: var(--c-blue); box-shadow: 0 0 0 3px rgba(31,108,237,.15); }
+  /* Piège à robots : hors écran plutôt que display:none, que certains
+     remplisseurs automatiques savent détecter. */
+  .pi-wl-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .pi-wl-error { font-size: .9rem; font-weight: 600; color: var(--c-danger); background: var(--c-danger-bg); border: 1px solid rgba(203,43,43,.2); border-radius: var(--radius-sm); padding: 11px 14px; }
+  .pi-wl-submit { margin-top: 2px; animation: none; }
+  .pi-wl-note { margin-top: 12px; font-size: .84rem; color: var(--c-gray-600); text-align: center; }
+  .pi-wl-ok { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 26px; text-align: center; }
+  /* La croix de fermeture occupe le coin : on lui laisse la place plutôt que
+     de rogner l'accroche. */
+  #listeAttenteModal .pi-payment-eyebrow { padding-right: 44px; }
+  .pi-wl-ok-ic { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--c-success); background: var(--c-success-bg); border: 1px solid rgba(10,156,119,.25); }
+  .pi-wl-ok-ic svg { width: 28px; height: 28px; }
+  .pi-wl-ok h3 { font-size: 1.25rem; color: var(--c-navy); }
+  .pi-wl-ok p { font-size: .96rem; color: var(--c-gray-700); max-width: 380px; }
 
   /* ---------- Sticky CTA mobile ---------- */
   .pi-sticky { display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-float); padding: 0 0 env(safe-area-inset-bottom); background: rgba(255,255,255,.97); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--c-border); box-shadow: 0 -8px 28px rgba(2,11,80,.12); transform: translateY(120%); transition: transform var(--dur) var(--ease); }
