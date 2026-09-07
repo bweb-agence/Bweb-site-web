@@ -45,6 +45,7 @@ import Button from "../../components/starwind/button/Button.astro";
       <div class="a-field"><label for="f-taken">Places prises à la main</label><input class="a-input" id="f-taken" type="number" min="0" value="0" /><div class="hint">Inscriptions hors Chariow. S'ajoutent aux ventes automatiques.</div></div>
       <div class="a-field"><label for="f-product">Produit Chariow</label><input class="a-input" id="f-product" placeholder="prd_xxxxxxxx" /><div class="hint">Chaque vente de ce produit retire une place. Vide = décompte manuel uniquement.</div></div>
       <div class="a-field"><label for="f-start">Démarrage</label><input class="a-input" id="f-start" type="datetime-local" /><div class="hint">Pilote le compte à rebours et le libellé «&nbsp;cohorte de …&nbsp;».</div></div>
+      <div class="a-field"><label for="f-whatsapp">Groupe WhatsApp de la cohorte</label><input class="a-input" id="f-whatsapp" placeholder="https://chat.whatsapp.com/…" /><div class="hint">Affiché sur la page de bienvenue, après paiement. Vide&nbsp;: la carte annonce que le responsable de cohorte ajoutera l'acheteur, plutôt qu'un lien mort.</div></div>
       <div class="a-field"><label class="co-toggle"><input type="checkbox" id="f-active" checked /> <span>Cohorte active</span></label><div class="hint">Inactive : la page de vente retombe sur ses valeurs de secours.</div></div>
     </div>
     <div class="a-drawer-foot">
@@ -135,6 +136,7 @@ import Button from "../../components/starwind/button/Button.astro";
     $("f-taken").value = (c?.seats_taken ?? 0).toString();
     $("f-product").value = c?.chariow_product_id || "";
     $("f-start").value = c?.starts_at ? dtLocalValue(c.starts_at) : "";
+    $("f-whatsapp").value = c?.whatsapp_group_url || "";
     $("f-active").checked = c ? !!c.active : true;
     slugTouched = !!c?.slug;
     document.getElementById("co-drawer-title")!.textContent = c ? "Modifier la cohorte" : "Nouvelle cohorte";
@@ -167,6 +169,7 @@ import Button from "../../components/starwind/button/Button.astro";
       seats_taken: parseInt($("f-taken").value || "0") || 0,
       chariow_product_id: $("f-product").value.trim() || null,
       starts_at: startV ? new Date(startV).toISOString() : null,
+      whatsapp_group_url: $("f-whatsapp").value.trim() || null,
       active: $("f-active").checked,
     };
     const id = $("f-id").value;
