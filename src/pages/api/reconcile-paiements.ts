@@ -14,8 +14,8 @@ const json = (obj: unknown, status = 200) =>
  * manqué). Pour chaque jeton distinct, on rejoue /api/paiement-confirme (qui
  * re-vérifie le paiement auprès de Money Fusion et confirme, de façon idempotente).
  *
- * Déclencheurs : cron Vercel (Authorization: Bearer CRON_SECRET, ajouté auto par
- * Vercel) OU cron externe (Hostinger) avec ?key=CRON_SECRET.
+ * Propriétaire : cron Vercel (Authorization: Bearer CRON_SECRET, ajouté auto
+ * par Vercel). Voir docs/CRON-OWNERS.md.
  */
 async function handle(request: Request): Promise<Response> {
   // Fail-closed : sans secret configuré, l'endpoint est fermé (jamais public).
