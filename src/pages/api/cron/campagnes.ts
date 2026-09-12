@@ -18,8 +18,7 @@ const json = (obj: unknown, status = 200) =>
  * programmation ; il ne reste que {prenom}, rempli par destinataire ici.
  * L'opt-out est re-vérifié au moment de l'envoi (autorité serveur).
  *
- * Déclencheurs : cron Vercel (Bearer CRON_SECRET) OU cron externe Hostinger
- * (?key=CRON_SECRET) — idéalement toutes les ~15 min pour une heure précise.
+ * Propriétaire : cron Vercel (registre docs/CRON-OWNERS.md).
  */
 async function handle(request: Request): Promise<Response> {
   // Fail-closed : sans secret configuré, l'endpoint est fermé (jamais public).
