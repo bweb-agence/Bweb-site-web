@@ -299,18 +299,50 @@ const CTA_COURT = AVEC_GROUPE ? "Rejoindre le groupe — gratuit" : "Recevoir le
          Pas de formulaire : le clic vers WhatsApp EST l'inscription, c'est
          donc lui qui part en Lead vers Meta. Un seul Lead par visiteur, même
          s'il clique trois boutons, sinon le coût par inscrit est sous-évalué.
-         Le lien s'ouvre dans un nouvel onglet : la page reste en place le
-         temps que l'événement parte. */
+
+         Sur téléphone, le lien bascule aussitôt dans l'app WhatsApp et le
+         navigateur met la page en pause : un Lead encore en file d'attente
+         (pixel pas fini de charger, réseau lent) ne partait jamais. On retient
+         donc la navigation le temps que le pixel soit chargé et ait envoyé
+         l'événement, 1,5 s au plus : au-delà, on laisse partir le visiteur
+         plutôt que de le bloquer sur un bouton qui ne répond pas. */
+      var CLE_LEAD = "bweb_lead_webinaire_fb_ads";
+      var envoyerLead = function () {
+        try {
+          if (localStorage.getItem(CLE_LEAD)) return false;
+          localStorage.setItem(CLE_LEAD, String(Date.now()));
+        } catch (e) {}
+        if (!window.fbq) return false;
+        window.fbq("track", "Lead", { content_name: "Webinaire Facebook Ads" });
+        return true;
+      };
+      var enRoute = false;
       document.querySelectorAll("[data-fb-join]").forEach(function (a) {
-        a.addEventListener("click", function () {
-          try {
-            var cle = "bweb_lead_webinaire_fb_ads";
-            if (localStorage.getItem(cle)) return;
-            localStorage.setItem(cle, String(Date.now()));
-          } catch (e) {}
-          if (window.fbq) window.fbq("track", "Lead", { content_name: "Webinaire Facebook Ads" });
+        a.addEventListener("click", function (e) {
+          /* Ctrl/Cmd-clic, clic molette : le navigateur ouvre un onglet et la
+             page reste là, l'événement a tout le temps de partir. */
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) { envoyerLead(); return; }
+          e.preventDefault();
+          if (enRoute) return;
+          enRoute = true;
+          var href = a.href;
+          if (!envoyerLead()) { location.href = href; return; }
+          var t0 = Date.now();
+          (function attendre() {
+            /* `callMethod` n'existe qu'une fois fbevents.js chargé : avant,
+               l'événement n'est qu'en file d'attente. */
+            var charge = !!(window.fbq && window.fbq.callMethod);
+            if (charge || Date.now() - t0 > 1500) {
+              setTimeout(function () { location.href = href; }, charge ? 300 : 0);
+            } else {
+              setTimeout(attendre, 100);
+            }
+          })();
         });
       });
+      /* Retour arrière depuis WhatsApp : la page revient du cache, les
+         boutons doivent de nouveau répondre. */
+      window.addEventListener("pageshow", function () { enRoute = false; });
 
       /* ---------- FAQ ---------- */
       document.querySelectorAll(".fb-faq-q").forEach(function (btn) {
