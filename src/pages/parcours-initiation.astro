@@ -40,7 +40,7 @@ const imgSrc = (base: string): string => IMG_BASE + base + ".webp";
    Si la base est injoignable, on retombe sur les valeurs de secours : mieux
    vaut une landing vendable avec un chiffre daté qu'un compteur vide. */
 const COHORTE_SLUG = "parcours-initiation";
-const SECOURS = { capacity: 30, remaining: 25, starts_at: "2026-09-01T09:00:00", deadline_at: "2026-09-07T00:00:00Z" };
+const SECOURS = { capacity: 30, remaining: 25, starts_at: "2026-10-05T09:00:00Z", deadline_at: "2026-10-09T00:00:00Z" };
 
 const { data: cohorteRows } = await supabase.rpc("cohorte_places", { p_slug: COHORTE_SLUG });
 const cohorte = (Array.isArray(cohorteRows) ? cohorteRows[0] : cohorteRows) ?? null;
@@ -106,10 +106,13 @@ const COHORTE_LABEL = moisAnnee.charAt(0).toUpperCase() + moisAnnee.slice(1);
 
 /* Écrits une fois : « Cohorte de septembre » devient faux dès qu'il y en a
    deux, et l'accord suit (cohorte complète / cohortes complètes). */
-const COHORTE_TITRE = PLUSIEURS_GROUPES ? `Cohortes de ${COHORTE_LABEL.toLowerCase()}` : `Cohorte ${COHORTE_LABEL}`;
+/* « de septembre » mais « d'octobre » : l'élision suit la première lettre
+   du mois (avril, août, octobre). */
+const de = (mot: string): string => (/^[aeiouâéè]/i.test(mot) ? `d'${mot}` : `de ${mot}`);
+const COHORTE_TITRE = PLUSIEURS_GROUPES ? `Cohortes ${de(COHORTE_LABEL.toLowerCase())}` : `Cohorte ${COHORTE_LABEL}`;
 const COMPLET_LABEL = PLUSIEURS_GROUPES
-  ? `Cohortes de ${COHORTE_LABEL.toLowerCase()} complètes`
-  : `Cohorte de ${COHORTE_LABEL} complète`;
+  ? `Cohortes ${de(COHORTE_LABEL.toLowerCase())} complètes`
+  : `Cohorte ${de(COHORTE_LABEL)} complète`;
 
 /* Le rendu est dynamique, mais la page encaisse du trafic publicitaire : on la
    laisse en cache 60 s au bord plutôt que de la recalculer à chaque clic. */
@@ -827,7 +830,7 @@ const faqs = [
               <span class="pi-fcd-sep">:</span>
               <span class="pi-fcd-box"><span class="n" data-cd="s">00</span><span class="u">Sec</span></span>
             </div>
-            <span class="pi-final-places">{COMPLET ? COMPLET_LABEL : (<>Il reste <b>{PLACES_RESTANTES}</b> places sur {DENOMINATEUR}</>)}</span>
+            <span class="pi-final-places">{COMPLET ? COMPLET_LABEL : (<>Il reste <b>{PLACES_RESTANTES}</b> place{PLACES_RESTANTES > 1 ? "s" : ""}{RESTE_TIENT_DANS_UN_GROUPE && ` sur ${TAILLE_GROUPE}`}</>)}</span>
           </div>
           <a href={CTA_HREF} class="pi-btn-buy" data-payment-trigger={COMPLET ? undefined : true} data-waitlist-trigger={COMPLET ? true : undefined} aria-haspopup="dialog">
             <span class="pi-btn-main">{CTA_LABEL} →</span>
