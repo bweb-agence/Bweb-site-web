@@ -33,6 +33,28 @@ const COHORTE_SLUG = "parcours-initiation";
 const { data: accesRows } = await supabase.rpc("cohorte_acces", { p_slug: COHORTE_SLUG });
 const acces = (Array.isArray(accesRows) ? accesRows[0] : accesRows) ?? null;
 
+/* Mois et date de démarrage : lus sur la même cohorte que la page de vente,
+   sinon chaque nouvelle cohorte laissait « Bienvenue dans la cohorte de
+   septembre » et « lundi 7 septembre » aux acheteurs du mois suivant.
+   Base injoignable : le titre reste neutre et la date disparaît, plutôt
+   qu'annoncer une date fausse à quelqu'un qui vient de payer. */
+const { data: cohorteRows } = await supabase.rpc("cohorte_places", { p_slug: COHORTE_SLUG });
+const cohorte = (Array.isArray(cohorteRows) ? cohorteRows[0] : cohorteRows) ?? null;
+const TZ = "Africa/Abidjan";
+const debut = cohorte?.starts_at ? new Date(cohorte.starts_at) : null;
+/* « lundi 5 octobre » */
+const DEMARRAGE = debut
+  ? debut.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: TZ })
+  : null;
+/* « Lundi 5 octobre », en tête de ligne du récapitulatif. */
+const DEMARRAGE_RECAP = DEMARRAGE
+  ? DEMARRAGE.charAt(0).toUpperCase() + DEMARRAGE.slice(1)
+  : "Communiqué par ton responsable de cohorte";
+/* « d'octobre », « de septembre » : l'élision suit la première lettre du mois. */
+const mois = debut ? debut.toLocaleDateString("fr-FR", { month: "long", timeZone: TZ }) : null;
+const COHORTE_NOM = mois ? `la cohorte ${/^[aeiouâéè]/i.test(mois) ? "d'" : "de "}${mois}` : "ta cohorte";
+const TAILLE_GROUPE = 30;
+
 /* Tant qu'un lien est vide, la carte affiche une consigne claire au lieu
    d'un lien mort — un acheteur qui clique dans le vide juste après avoir
    payé, c'est un ticket de support garanti. */
@@ -54,7 +76,7 @@ const aideUrl = whatsappLink(
 ---
 
 <BaseLayout
-  title="Bienvenue dans la cohorte de septembre | Bweb Academy"
+  title={`Bienvenue dans ${COHORTE_NOM} | Bweb Academy`}
   description="Ton inscription au Parcours Initiation aux Produits Digitaux est confirmée. Voici ton parcours, tes accès et ta première action."
   noindex={true}
   hideWhatsApp={true}
@@ -84,11 +106,11 @@ const aideUrl = whatsappLink(
     <div class="container fc-hero-inner">
       <div class="fc-seal fc-seal--party" data-hero-in><span aria-hidden="true">🎉</span></div>
 
-      <h1 data-hero-in>Bienvenue dans la cohorte de septembre&nbsp;!</h1>
+      <h1 data-hero-in>Bienvenue dans {COHORTE_NOM}&nbsp;!</h1>
 
       <p class="lead fc-hero-sub" data-hero-in>
-        Ta place est verrouillée. Le parcours démarre le <b>lundi 7 septembre</b>.
-        Tu fais partie des <b>30</b>.
+        Ta place est verrouillée.{DEMARRAGE && <> Le parcours démarre le <b>{DEMARRAGE}</b>.</>}
+        Tu fais partie des <b>{TAILLE_GROUPE}</b>.
       </p>
 
       <div class="fc-recap" data-hero-in>
@@ -96,7 +118,7 @@ const aideUrl = whatsappLink(
           <span class="fc-recap-ic">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
           </span>
-          <span class="fc-recap-txt"><span>Démarrage</span><b>Lundi 7 septembre</b></span>
+          <span class="fc-recap-txt"><span>Démarrage</span><b>{DEMARRAGE_RECAP}</b></span>
         </div>
         <div class="fc-recap-row">
           <span class="fc-recap-ic">
@@ -123,7 +145,7 @@ const aideUrl = whatsappLink(
       </div>
 
       <ul class="bv-stats reveal">
-        <li><b>30</b><span>jours</span></li>
+        <li><b>35</b><span>jours</span></li>
         <li><b>5</b><span>phases</span></li>
         <li><b>10</b><span>lives</span></li>
       </ul>
