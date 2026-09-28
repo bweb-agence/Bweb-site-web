@@ -275,7 +275,7 @@ export const megaFormations: MegaMenu = {
           badge: "boutique",
           externe: true,
         },
-        { label: "Webinaire gratuit", href: "/webinaire-initiation", description: "Notre prochain rendez-vous en direct" },
+        { label: "Webinaire gratuit", href: "/webinaire-facebook-ads", description: "Notre prochain rendez-vous en direct" },
       ],
     },
   ],
