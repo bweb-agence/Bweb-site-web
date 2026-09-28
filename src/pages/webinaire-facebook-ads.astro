@@ -1,0 +1,530 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import VideoLazy from "../components/VideoLazy.astro";
+import { whatsappLink } from "../config/site";
+/* Tuiles .tb-* partagées avec le reste du site (voir webinaire-initiation). */
+import "../styles/tiles.css";
+
+/* =========================================================
+   WEBINAIRE « 1 M/mois avec les produits digitaux grâce à la pub Facebook »
+   Landing sans formulaire : rejoindre le groupe WhatsApp EST l'inscription.
+   Un formulaire de plus, c'est un écran de plus entre l'envie et le geste,
+   sur un téléphone venu de la publicité. Le lien du live, les rappels et
+   l'offre de fin de live passent par le groupe.
+   ---------------------------------------------------------
+   À CONFIGURER (Godwin) :
+   - GROUPE_WHATSAPP : lien d'invitation https://chat.whatsapp.com/…
+     Tant qu'il est vide, les boutons ouvrent une discussion avec le numéro
+     de l'agence, message prérempli : jamais de lien mort.
+   - VIDEO_ID : ID YouTube de la vidéo de présentation. Vide = pas de bloc
+     vidéo en ligne.
+   ========================================================= */
+
+const GROUPE_WHATSAPP = "";
+const VIDEO_ID = "";
+
+/* Le « Z » compte : sans lui, le navigateur lirait 19:00 dans SON fuseau et un
+   visiteur à Paris verrait un décompte faux de 2 heures. Abidjan = UTC+0. */
+const LIVE_ISO = "2026-10-04T19:00:00Z";
+const DUREE = 90;
+
+const TZ = "Africa/Abidjan";
+const dateLive = new Date(LIVE_ISO);
+/* « Dimanche 4 octobre » */
+const JOUR = (() => {
+  const j = dateLive.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: TZ });
+  return j.charAt(0).toUpperCase() + j.slice(1);
+})();
+const jour = JOUR.toLowerCase();
+/* « 19 h » */
+const HEURE = dateLive
+  .toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: TZ })
+  .replace(":", " h ")
+  .replace(/ h 00$/, " h");
+
+const AVEC_GROUPE = GROUPE_WHATSAPP !== "";
+const LIEN = AVEC_GROUPE
+  ? GROUPE_WHATSAPP
+  : whatsappLink(`Bonjour, je veux participer au live du ${jour} à ${HEURE} : « Comment gagner 1 000 000 FCFA/mois avec les produits digitaux grâce à la publicité Facebook ». Envoyez-moi le lien.`);
+/* Le libellé dit ce qui va se passer : « rejoindre un groupe » quand on
+   ouvre un groupe, « recevoir le lien » quand on ouvre une discussion. */
+const CTA = AVEC_GROUPE ? "Rejoindre le groupe WhatsApp du live" : "Recevoir le lien du live sur WhatsApp";
+const CTA_COURT = AVEC_GROUPE ? "Rejoindre le groupe — gratuit" : "Recevoir le lien — gratuit";
+---
+
+<BaseLayout
+  title="Webinaire gratuit — 1 M FCFA/mois avec la pub Facebook | Bweb Academy"
+  description={`Live gratuit le ${jour} à ${HEURE} (Abidjan) : comment la publicité Facebook peut vendre ton produit digital chaque jour, jusqu'à 1 000 000 FCFA par mois. Rejoins le groupe WhatsApp du live.`}
+  hideWhatsApp={true}
+  bareChrome={true}
+>
+
+  <!-- ═══════════ 1 · HERO ═══════════ -->
+  <header class="fb-hero">
+    <div class="fb-hero-halo" aria-hidden="true"></div>
+    <div class="container fb-hero-inner">
+      <span class="fb-badge-live" data-hero-in>
+        <span class="fb-dot" aria-hidden="true"></span>
+        Live gratuit · {JOUR} · {HEURE}
+      </span>
+
+      <h1 data-hero-in>
+        Comment gagner 1&nbsp;000&nbsp;000&nbsp;FCFA/mois avec les produits digitaux
+        <span class="fb-h1-accent">grâce à la publicité Facebook.</span>
+      </h1>
+
+      <p class="lead fb-hero-sub" data-hero-in>
+        <b>{DUREE} minutes en direct</b> pour comprendre comment une publicité à quelques
+        milliers de FCFA par jour peut vendre ton produit digital pendant que tu dors.
+      </p>
+
+      {VIDEO_ID && (
+        <div class="fb-video-slot" data-hero-in>
+          <VideoLazy
+            id={VIDEO_ID}
+            autoplay
+            label="Découvre en 1 minute ce qu'on va voir ensemble"
+            title="Présentation du webinaire — Godwin Soola"
+          />
+        </div>
+      )}
+
+      <div class="fb-hero-cta" data-hero-in>
+        <a href={LIEN} class="fb-cta fb-cta--glow" target="_blank" rel="noopener" data-fb-join>
+          <svg class="fb-wa" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2m0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23a8.2 8.2 0 0 1 8.24 8.24c0 4.54-3.7 8.23-8.24 8.23m4.52-6.16c-.25-.13-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.13-.56-1.35-.77-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.22.25-.87.85-.87 2.07s.9 2.4 1.02 2.56c.12.17 1.75 2.67 4.25 3.75.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29"/></svg>
+          {CTA}
+        </a>
+        <p class="fb-cta-note">Gratuit · aucun formulaire · le lien du live est partagé dans le groupe</p>
+      </div>
+
+      <div class="fb-countdown" data-hero-in>
+        <span class="fb-cd-label" data-cd-label>⏳ Le live démarre dans</span>
+        <div class="fb-cd" data-countdown={LIVE_ISO} data-duree={DUREE}>
+          <span class="fb-cd-box"><b data-cd="d">00</b><span>Jours</span></span>
+          <span class="fb-cd-sep">:</span>
+          <span class="fb-cd-box"><b data-cd="h">00</b><span>Heures</span></span>
+          <span class="fb-cd-sep">:</span>
+          <span class="fb-cd-box"><b data-cd="m">00</b><span>Min</span></span>
+          <span class="fb-cd-sep">:</span>
+          <span class="fb-cd-box"><b data-cd="s">00</b><span>Sec</span></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════ 2 · CE QUE TU VAS VOIR ═══════════ -->
+  <section class="section" data-nav-section="Le contenu">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Le contenu du live</div>
+        <h2>Ce que tu repars avec, en {DUREE} minutes</h2>
+      </div>
+
+      <div class="tb-bento fb-bento" data-stagger>
+        <article class="tb-tile" style="--c:#1f6ced">
+          <span class="tb-num">01</span>
+          <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg></span>
+          <h3>La campagne à 3&nbsp;000&nbsp;FCFA par jour</h3>
+          <p>Comment monter ta première campagne pour vendre un produit digital, sans brûler ton budget en « boostant » des publications.</p>
+        </article>
+        <article class="tb-tile" style="--c:#ff835f">
+          <span class="tb-num">02</span>
+          <span class="tb-ic"><svg viewBox="0 0 24 24"><path d="M13 2 4.5 13H11l-1 9 8.5-11H12z"/></svg></span>
+          <h3>La publicité qui fait acheter</h3>
+          <p>L'accroche, la vidéo et le texte&nbsp;: ce qui arrête le pouce sur le fil d'actualité, et ce qui fait cliquer jusqu'au paiement.</p>
+        </article>
+        <article class="tb-tile" style="--c:#00c89e">
+          <span class="tb-num">03</span>
+          <span class="tb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.1-1.8 2.5-1.8s2.5.7 2.5 1.8-1 1.6-2.5 2-2.5.9-2.5 2 1.1 1.8 2.5 1.8 2.5-.7 2.5-1.8"/></svg></span>
+          <h3>Le calcul du million</h3>
+          <p>Prix, coût par vente, budget&nbsp;: les chiffres à atteindre pour 1&nbsp;000&nbsp;000&nbsp;FCFA par mois, et où les lire dans ton gestionnaire de publicités.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3 · LE CALCUL (rupture navy) ═══════════ -->
+  <section class="section fb-math" data-nav-section="Le calcul">
+    <div class="container fb-math-inner">
+      <div class="eyebrow on-dark reveal" style="justify-content:center">Pas de magie, un calcul</div>
+      <h2 class="reveal">1&nbsp;000&nbsp;000&nbsp;FCFA par mois, ça fait <span class="fb-gold">combien de ventes&nbsp;?</span></h2>
+      <div class="fb-eq reveal">
+        <div class="fb-eq-item"><b>100</b><span>ventes par mois</span></div>
+        <span class="fb-eq-op" aria-hidden="true">×</span>
+        <div class="fb-eq-item"><b>10&nbsp;000</b><span>FCFA le produit</span></div>
+        <span class="fb-eq-op" aria-hidden="true">=</span>
+        <div class="fb-eq-item fb-eq-item--total"><b>1&nbsp;M</b><span>FCFA par mois</span></div>
+      </div>
+      <p class="fb-math-text reveal">
+        100 ventes par mois, c'est <b>un peu plus de 3 ventes par jour</b>. Personne ne les obtient en
+        envoyant des messages un par un. La publicité Facebook, si. Le live te montre comment elle fait
+        ce travail chaque jour, et comment savoir si ta campagne gagne de l'argent ou en perd.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════ 4 · POUR QUI / PAS POUR QUI ═══════════ -->
+  <section class="section section-gray" data-nav-section="Pour qui">
+    <div class="container">
+      <div class="section-head center reveal">
+        <div class="eyebrow" style="justify-content:center">Le filtre</div>
+        <h2>Ce live est fait pour toi… ou pas.</h2>
+      </div>
+
+      <div class="fb-fit-grid">
+        <div class="fb-fit fb-fit--yes reveal">
+          <h3><span class="fb-fit-ico" aria-hidden="true">✓</span> C'est pour toi si…</h3>
+          <ul>
+            <li>Tu as un produit digital, ou une idée, mais presque personne ne l'achète</li>
+            <li>Tu as déjà « boosté » une publication sans rien vendre</li>
+            <li>Tu veux vendre tous les jours sans passer tes journées dans les messages privés</li>
+          </ul>
+        </div>
+        <div class="fb-fit fb-fit--no reveal" data-delay=".1">
+          <h3><span class="fb-fit-ico" aria-hidden="true">✕</span> Ce n'est pas pour toi si…</h3>
+          <ul>
+            <li>Tu veux gagner sans rien investir, ni temps ni budget publicitaire</li>
+            <li>Tu n'es pas prêt à tester, mesurer et ajuster ce qui ne marche pas</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 5 · QUI ANIME ═══════════ -->
+  <section class="section" data-nav-section="L'animateur">
+    <div class="container">
+      <div class="fb-host reveal">
+        <div class="fb-host-photo" aria-hidden="true">
+          <img src="/images/godwin-soola.webp" alt="" width="800" height="800" loading="lazy" decoding="async" />
+        </div>
+        <div class="fb-host-body">
+          <div class="eyebrow">Animé par</div>
+          <h2>Godwin Soola</h2>
+          <p class="lead">Fondateur de Bweb Agence, spécialiste en marketing digital, ayant déjà aidé ses apprenants à générer plus de <b>300&nbsp;000&nbsp;000&nbsp;FCFA</b> avec les produits digitaux.</p>
+          <ul class="fb-host-stats">
+            <li><b>42 948 €</b><span>investis en publicité Facebook</span></li>
+            <li><b>17 116</b><span>personnes formées</span></li>
+            <li><b>95 %</b><span>d'avis positifs sur 593 clients</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 6 · APPEL FINAL + FAQ ═══════════ -->
+  <section class="section section-gray" data-nav-section="Questions">
+    <div class="container fb-narrow">
+      <div class="fb-final reveal">
+        <h2>{JOUR}, {HEURE}. On t'attend.</h2>
+        <p>Rejoins le groupe maintenant&nbsp;: c'est là que tu reçois le lien du live et les rappels.</p>
+        <a href={LIEN} class="fb-cta fb-cta--glow" target="_blank" rel="noopener" data-fb-join>{CTA} <span class="fb-arrow">→</span></a>
+      </div>
+
+      <div class="fb-faq reveal">
+        <div class="fb-faq-item">
+          <button class="fb-faq-q" type="button" aria-expanded="false">
+            <span>C'est vraiment gratuit&nbsp;?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="fb-faq-a"><div class="fb-faq-a-in">Oui. Le live est gratuit et tu repars avec la méthode. À la fin, je présente le Parcours Initiation&nbsp;: optionnel, 65&nbsp;000&nbsp;FCFA. Tu n'es obligé à rien.</div></div>
+        </div>
+        <div class="fb-faq-item">
+          <button class="fb-faq-q" type="button" aria-expanded="false">
+            <span>Je n'ai pas encore de produit digital. Ça me concerne&nbsp;?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="fb-faq-a"><div class="fb-faq-a-in">Oui. Tu sauras ce qu'un produit doit avoir pour se vendre en publicité avant même de le créer. C'est le meilleur moment pour l'apprendre.</div></div>
+        </div>
+        <div class="fb-faq-item">
+          <button class="fb-faq-q" type="button" aria-expanded="false">
+            <span>Il faut quel budget publicitaire&nbsp;?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="fb-faq-a"><div class="fb-faq-a-in">Rien pour assister au live. Pour lancer ta première campagne ensuite, on part de 3&nbsp;000&nbsp;FCFA par jour, et le live te montre comment ne pas les dépenser à l'aveugle.</div></div>
+        </div>
+        <div class="fb-faq-item">
+          <button class="fb-faq-q" type="button" aria-expanded="false">
+            <span>Je ne peux pas être là à {HEURE}&nbsp;?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="fb-faq-a"><div class="fb-faq-a-in">Rejoins quand même le groupe&nbsp;: tout ce qui concerne le live y est partagé. Mais en direct, tu peux poser tes questions sur ton cas à toi, et ça, un enregistrement ne le fait pas.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA collant mobile -->
+  <div class="fb-sticky">
+    <a href={LIEN} class="fb-cta fb-sticky-cta" target="_blank" rel="noopener" data-fb-join>{CTA_COURT} →</a>
+  </div>
+
+  <script is:inline>
+    (function () {
+      /* ---------- Compte à rebours ----------
+         Avant le live : le décompte. Pendant : « en direct », le groupe reste
+         la porte d'entrée. Après : le décompte disparaît plutôt que de rester
+         bloqué sur 00:00:00. */
+      var root = document.querySelector("[data-countdown]");
+      if (root) {
+        var label = document.querySelector("[data-cd-label]");
+        var debut = new Date(root.getAttribute("data-countdown")).getTime();
+        var fin = debut + Number(root.getAttribute("data-duree") || 90) * 60000;
+        var pad = function (v) { return String(v).padStart(2, "0"); };
+        var timer;
+        var tick = function () {
+          var now = Date.now();
+          if (now >= fin) {
+            root.hidden = true;
+            if (label) label.textContent = "Le live est terminé · rejoins le groupe pour la suite";
+            clearInterval(timer);
+            return;
+          }
+          if (now >= debut) {
+            root.hidden = true;
+            if (label) label.textContent = "🔴 En direct maintenant · rejoins le groupe pour le lien";
+            return;
+          }
+          var d = debut - now;
+          root.querySelector('[data-cd="d"]').textContent = pad(Math.floor(d / 86400000));
+          root.querySelector('[data-cd="h"]').textContent = pad(Math.floor((d % 86400000) / 3600000));
+          root.querySelector('[data-cd="m"]').textContent = pad(Math.floor((d % 3600000) / 60000));
+          root.querySelector('[data-cd="s"]').textContent = pad(Math.floor((d % 60000) / 1000));
+        };
+        tick();
+        timer = setInterval(tick, 1000);
+      }
+
+      /* ---------- Conversion ----------
+         Pas de formulaire : le clic vers WhatsApp EST l'inscription, c'est
+         donc lui qui part en Lead vers Meta. Un seul Lead par visiteur, même
+         s'il clique trois boutons, sinon le coût par inscrit est sous-évalué.
+         Le lien s'ouvre dans un nouvel onglet : la page reste en place le
+         temps que l'événement parte. */
+      document.querySelectorAll("[data-fb-join]").forEach(function (a) {
+        a.addEventListener("click", function () {
+          try {
+            var cle = "bweb_lead_webinaire_fb_ads";
+            if (localStorage.getItem(cle)) return;
+            localStorage.setItem(cle, String(Date.now()));
+          } catch (e) {}
+          if (window.fbq) window.fbq("track", "Lead", { content_name: "Webinaire Facebook Ads" });
+        });
+      });
+
+      /* ---------- FAQ ---------- */
+      document.querySelectorAll(".fb-faq-q").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var item = btn.parentElement;
+          var open = item.classList.contains("open");
+          document.querySelectorAll(".fb-faq-item.open").forEach(function (i) {
+            i.classList.remove("open");
+            i.querySelector(".fb-faq-a").style.maxHeight = "0";
+            i.querySelector(".fb-faq-q").setAttribute("aria-expanded", "false");
+          });
+          if (!open) {
+            item.classList.add("open");
+            var a = item.querySelector(".fb-faq-a");
+            a.style.maxHeight = a.scrollHeight + "px";
+            btn.setAttribute("aria-expanded", "true");
+          }
+        });
+      });
+
+      /* ---------- CTA collant : visible dès qu'on a quitté le hero ---------- */
+      var sticky = document.querySelector(".fb-sticky");
+      var hero = document.querySelector(".fb-hero");
+      if (sticky && hero && "IntersectionObserver" in window) {
+        new IntersectionObserver(function (e) { sticky.classList.toggle("show", !e[0].isIntersecting); }, { threshold: 0 }).observe(hero);
+      }
+    })();
+  </script>
+</BaseLayout>
+
+<style>
+  /* ===== CTA : vert WhatsApp foncé ===== */
+  /* Vert assez sombre pour que le texte blanc reste lisible (contraste AA en
+     gros caractères) : le vert WhatsApp pur (#25d366) tombe à 2:1. */
+  .fb-cta {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 19px 36px; border-radius: var(--radius-pill);
+    font-family: var(--f-display); font-weight: 700; font-size: 1.08rem; color: #fff; text-align: center;
+    background: linear-gradient(135deg, #1a9d4d, #0e7a3a 60%, #0b6a32);
+    box-shadow: 0 14px 38px -10px rgba(14,122,58,.6);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .fb-cta:hover { color: #fff; transform: translateY(-2px); box-shadow: 0 20px 46px -10px rgba(14,122,58,.72); }
+  .fb-wa { width: 24px; height: 24px; flex: none; }
+  .fb-arrow { transition: transform var(--dur) var(--ease); }
+  .fb-cta:hover .fb-arrow { transform: translateX(4px); }
+
+  .fb-cta--glow { position: relative; overflow: hidden; animation: fb-glow 2.6s ease-in-out infinite; }
+  @keyframes fb-glow {
+    0%, 100% { box-shadow: 0 14px 38px -10px rgba(14,122,58,.65), 0 0 0 0 rgba(26,157,77,.4); }
+    50% { box-shadow: 0 14px 44px -8px rgba(14,122,58,.8), 0 0 0 12px rgba(26,157,77,0); }
+  }
+  .fb-cta--glow::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -70%; width: 40%;
+    background: linear-gradient(115deg, transparent, rgba(255,255,255,.4), transparent);
+    transform: skewX(-20deg); animation: fb-shine 3s ease-in-out infinite;
+  }
+  @keyframes fb-shine { 0% { left: -70%; } 55%, 100% { left: 135%; } }
+  @media (prefers-reduced-motion: reduce) {
+    .fb-cta--glow, .fb-cta--glow::after, .fb-dot { animation: none; }
+  }
+
+  /* ===== 1 · Hero ===== */
+  .fb-hero {
+    position: relative; overflow: hidden; text-align: center;
+    padding-top: clamp(130px, 13vw, 180px); padding-bottom: clamp(48px, 5vw, 72px);
+    background:
+      radial-gradient(760px 380px at 50% -6%, rgba(31,108,237,.1), transparent 62%),
+      radial-gradient(620px 520px at 85% 20%, rgba(255,131,95,.07), transparent 60%),
+      var(--c-white);
+  }
+  .fb-hero-halo { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(420px 360px at 10% 90%, rgba(0,200,158,.07), transparent 60%); }
+  .fb-hero-inner { position: relative; z-index: 1; max-width: 880px; }
+
+  .fb-badge-live {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-weight: 700; font-size: .8rem; line-height: 1.35; color: #fff;
+    background: linear-gradient(135deg, var(--c-orange), #ef5f36);
+    padding: 9px 18px; border-radius: var(--radius-pill); margin-bottom: 22px;
+    box-shadow: 0 8px 22px -8px rgba(255,131,95,.7);
+  }
+  .fb-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: fb-pulse 1.8s ease-in-out infinite; }
+  @keyframes fb-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
+
+  .fb-hero h1 { font-size: clamp(1.9rem, 1.2rem + 2.8vw, 3.1rem); line-height: 1.12; letter-spacing: -.02em; max-width: 22ch; margin: 0 auto; color: var(--c-ink); }
+  .fb-h1-accent { display: block; margin-top: .16em; color: var(--c-blue); }
+  .fb-hero-sub { max-width: 640px; margin: 22px auto 0; color: var(--c-gray-700); }
+  .fb-hero-sub b { color: var(--c-ink); }
+  .fb-video-slot { max-width: 620px; margin: 32px auto 0; }
+  .fb-hero-cta { margin-top: 30px; }
+  .fb-cta-note { margin-top: 14px; font-size: .88rem; color: var(--c-gray-600); }
+
+  /* Compte à rebours */
+  .fb-countdown { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 36px; }
+  .fb-cd-label { font-family: var(--f-display); font-weight: 700; font-size: .78rem; text-transform: uppercase; letter-spacing: .09em; color: #c2410c; }
+  .fb-cd { display: flex; align-items: center; gap: 7px; }
+  .fb-cd[hidden] { display: none; }
+  .fb-cd-box {
+    min-width: 72px; padding: 11px 12px 8px; border-radius: 14px; text-align: center;
+    background: linear-gradient(160deg, #fff5f0, #ffe6db);
+    border: 1px solid rgba(255,131,95,.38);
+    box-shadow: inset 0 1px 0 #fff, 0 8px 18px -12px rgba(255,131,95,.6);
+  }
+  .fb-cd-box b { display: block; font-family: var(--f-display); font-weight: 800; font-size: 1.7rem; line-height: 1.1; color: #b8380c; font-variant-numeric: tabular-nums; }
+  .fb-cd-box span { display: block; font-size: .6rem; text-transform: uppercase; letter-spacing: .09em; color: #a4553a; }
+  .fb-cd-sep { font-family: var(--f-display); font-weight: 800; font-size: 1.3rem; color: rgba(184,56,12,.35); padding-bottom: 14px; }
+
+  /* ===== 2 · Contenu (tuiles .tb-tile du site) ===== */
+  .fb-bento { max-width: 1040px; margin-inline: auto; }
+  @media (max-width: 719px) { .fb-bento { grid-template-columns: 1fr; } }
+  @media (min-width: 1000px) { .fb-bento { grid-template-columns: repeat(3, 1fr); } }
+  .fb-bento .tb-tile { min-height: 220px; }
+  @media (max-width: 719px) { .fb-bento .tb-tile { min-height: 0; } }
+  .fb-bento .tb-ic { margin-bottom: 0; }
+
+  /* ===== 3 · Le calcul (rupture navy) ===== */
+  .fb-math {
+    position: relative; overflow: hidden; color: #fff; text-align: center;
+    background:
+      radial-gradient(900px 460px at 50% 0%, rgba(31,108,237,.26), transparent 60%),
+      linear-gradient(180deg, var(--c-navy), #01052e);
+  }
+  .fb-math-inner { max-width: 800px; }
+  .fb-math h2 { color: #fff; font-size: clamp(1.7rem, 3.4vw, 2.5rem); margin-bottom: 28px; }
+  .fb-gold { color: var(--c-yellow); }
+  .fb-eq { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; }
+  .fb-eq-item {
+    min-width: 150px; padding: 18px 20px; border-radius: var(--radius-md);
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14);
+  }
+  .fb-eq-item b { display: block; font-family: var(--f-display); font-weight: 800; font-size: 2rem; line-height: 1.1; color: #fff; }
+  .fb-eq-item span { display: block; margin-top: 4px; font-size: .84rem; color: var(--c-gray-300); }
+  .fb-eq-item--total { background: rgba(255,200,0,.1); border-color: rgba(255,200,0,.4); }
+  .fb-eq-item--total b { color: var(--c-yellow); }
+  .fb-eq-op { font-family: var(--f-display); font-weight: 800; font-size: 1.6rem; color: rgba(255,255,255,.45); }
+  .fb-math-text { color: var(--c-gray-300); font-size: 1.06rem; line-height: 1.7; }
+  .fb-math-text b { color: #fff; }
+
+  /* ===== 4 · Pour qui / pas pour qui ===== */
+  .fb-fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; max-width: 940px; margin: 0 auto; }
+  .fb-fit { background: #fff; border: 1px solid var(--c-border-soft); border-left: 4px solid; border-radius: var(--radius-lg); padding: 28px 28px 26px; box-shadow: var(--shadow-sm); }
+  .fb-fit--yes { border-left-color: var(--c-green); }
+  .fb-fit--no { border-left-color: var(--c-danger); }
+  .fb-fit h3 { display: flex; align-items: center; gap: 11px; font-size: 1.1rem; margin-bottom: 16px; }
+  .fb-fit-ico { flex: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .9rem; font-weight: 700; }
+  .fb-fit--yes .fb-fit-ico { background: var(--c-success-bg); color: var(--c-success); }
+  .fb-fit--no .fb-fit-ico { background: var(--c-danger-bg); color: var(--c-danger); }
+  .fb-fit ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .fb-fit li { position: relative; padding-left: 18px; font-size: .96rem; color: var(--c-gray-700); line-height: 1.55; }
+  .fb-fit li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .35; }
+
+  /* ===== 5 · Animateur ===== */
+  .fb-host { display: grid; grid-template-columns: 340px 1fr; gap: 48px; align-items: center; max-width: 1000px; margin: 0 auto; }
+  .fb-host-photo { border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); background: var(--g-navy); }
+  .fb-host-photo img { display: block; width: 100%; height: auto; }
+  .fb-host-body h2 { margin-bottom: 12px; }
+  .fb-host-stats { list-style: none; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .fb-host-stats li { flex: 1 1 150px; background: var(--surface-2); border: 1px solid var(--c-border-soft); border-radius: var(--radius-md); padding: 16px 18px; }
+  .fb-host-stats b { display: block; font-family: var(--f-display); font-weight: 700; font-size: 1.3rem; color: var(--c-blue); line-height: 1.1; }
+  .fb-host-stats span { display: block; margin-top: 4px; font-size: .84rem; color: var(--c-gray-700); }
+
+  /* ===== 6 · Appel final + FAQ ===== */
+  .fb-narrow { max-width: 760px; }
+  .fb-final {
+    text-align: center; margin-bottom: 40px; padding: clamp(28px, 4vw, 40px) clamp(20px, 4vw, 36px);
+    background: #fff; border: 1px solid rgba(14,122,58,.22); border-radius: 28px;
+    box-shadow: 0 24px 70px -28px rgba(2,11,80,.22);
+  }
+  .fb-final h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin-bottom: 10px; }
+  .fb-final p { color: var(--c-gray-700); margin: 0 auto 22px; max-width: 46ch; }
+  .fb-faq-item { border: 1px solid var(--c-border-soft); border-radius: var(--radius-md); margin-bottom: 12px; background: #fff; overflow: hidden; transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
+  .fb-faq-item.open { border-color: rgba(31,108,237,.28); box-shadow: var(--shadow-sm); }
+  .fb-faq-q { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 16px; text-align: left; padding: 20px 24px; font-family: var(--f-display); font-weight: 700; font-size: 1rem; color: var(--c-navy); background: none; border: 0; cursor: pointer; }
+  .fb-faq-q svg { flex: none; width: 20px; height: 20px; color: var(--c-blue); transition: transform var(--dur) var(--ease); }
+  .fb-faq-item.open .fb-faq-q svg { transform: rotate(45deg); }
+  .fb-faq-a { max-height: 0; overflow: hidden; transition: max-height var(--dur-slow) var(--ease); }
+  .fb-faq-a-in { padding: 0 24px 22px; color: var(--c-gray-700); font-size: .96rem; line-height: 1.6; }
+
+  /* ===== CTA collant mobile ===== */
+  .fb-sticky {
+    display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-float);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(255,255,255,.97); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--c-border); box-shadow: 0 -8px 28px rgba(2,11,80,.12);
+    transform: translateY(120%); transition: transform var(--dur) var(--ease);
+  }
+  .fb-sticky.show { transform: translateY(0); }
+  .fb-sticky-cta { width: 100%; padding: 16px 20px; font-size: .96rem; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 900px) {
+    .fb-fit-grid { grid-template-columns: 1fr; }
+    .fb-host { grid-template-columns: 1fr; gap: 28px; }
+    .fb-host-photo { max-width: 220px; margin: 0 auto; }
+  }
+  @media (max-width: 760px) {
+    .fb-sticky { display: block; }
+    .fb-cd-box { min-width: 60px; padding: 9px 8px 7px; }
+    .fb-cd-box b { font-size: 1.4rem; }
+    .fb-cd-sep { font-size: 1.1rem; padding-bottom: 12px; }
+    .fb-cta { padding: 17px 22px; font-size: .98rem; width: 100%; }
+    .fb-badge-live { font-size: .74rem; padding: 8px 14px; margin-bottom: 14px; }
+    .fb-host-stats li { flex-basis: 100%; }
+    .fb-eq-item { min-width: 0; flex: 1 1 100%; }
+    .fb-eq-op { line-height: 1; }
+
+    /* Hero mobile : la promesse et le bouton tiennent dans le premier écran,
+       le trafic vient de la publicité, sur téléphone. */
+    .fb-hero { padding-top: clamp(96px, 22vw, 130px); padding-bottom: 36px; }
+    .fb-hero h1 { font-size: clamp(1.45rem, 5.6vw, 1.9rem); line-height: 1.18; max-width: 20ch; }
+    .fb-hero-sub { font-size: .94rem; line-height: 1.5; margin-top: 14px; max-width: 34ch; }
+    .fb-video-slot { margin-top: 18px; }
+    .fb-hero-cta { margin-top: 20px; }
+    .fb-cta-note { margin-top: 10px; font-size: .8rem; }
+    .fb-countdown { margin-top: 24px; }
+  }
+</style>
