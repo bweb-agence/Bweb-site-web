@@ -1,6 +1,12 @@
 ---
+/* Rendu à la demande : la date, la durée et le groupe viennent de l'édition en
+   cours (écran /admin/webinaires, entonnoir « webinaire-facebook-ads »). Le
+   prochain live se règle en dupliquant l'édition, sans toucher à ce fichier. */
+export const prerender = false;
+
 import BaseLayout from "../layouts/BaseLayout.astro";
 import VideoLazy from "../components/VideoLazy.astro";
+import { supabase } from "../lib/supabase";
 import { whatsappLink } from "../config/site";
 /* Tuiles .tb-* partagées avec le reste du site (voir webinaire-initiation). */
 import "../styles/tiles.css";
@@ -12,21 +18,37 @@ import "../styles/tiles.css";
    sur un téléphone venu de la publicité. Le lien du live, les rappels et
    l'offre de fin de live passent par le groupe.
    ---------------------------------------------------------
-   À CONFIGURER (Godwin) :
-   - GROUPE_WHATSAPP : lien d'invitation https://chat.whatsapp.com/…
-     Tant qu'il est vide, les boutons ouvrent une discussion avec le numéro
-     de l'agence, message prérempli : jamais de lien mort.
-   - VIDEO_ID : ID YouTube de la vidéo de présentation. Vide = pas de bloc
-     vidéo en ligne.
+   Réglé dans /admin/webinaires (édition « Inscription par le groupe ») :
+   date, durée, lien du groupe WhatsApp. Chaque clic vers le groupe y est
+   compté (/api/webinaire/clic).
+   Reste ici : VIDEO_ID, l'ID YouTube de la vidéo de présentation. Vide = pas
+   de bloc vidéo en ligne.
    ========================================================= */
 
-const GROUPE_WHATSAPP = "https://chat.whatsapp.com/Gg9cYqejJB71h9OMMmP2MM";
+const TUNNEL = "webinaire-facebook-ads";
 const VIDEO_ID = "UBsffwlxOh8";
 
-/* Le « Z » compte : sans lui, le navigateur lirait 19:00 dans SON fuseau et un
-   visiteur à Paris verrait un décompte faux de 2 heures. Abidjan = UTC+0. */
-const LIVE_ISO = "2026-10-04T19:00:00Z";
-const DUREE = 90;
+/* Base injoignable : on garde l'édition du 4 octobre plutôt qu'une landing
+   vide. Le « Z » compte : sans lui, le navigateur lirait 19:00 dans SON fuseau
+   et un visiteur à Paris verrait un décompte faux de 2 heures. */
+const SECOURS = {
+  starts_at: "2026-10-04T19:00:00Z",
+  duration_min: 90,
+  groupe_url: "https://chat.whatsapp.com/Gg9cYqejJB71h9OMMmP2MM",
+};
+const { data: editionRows } = await supabase.rpc("webinaire_public", { p_slug: TUNNEL });
+const edition = (Array.isArray(editionRows) ? editionRows[0] : editionRows) ?? null;
+
+const LIVE_ISO = edition?.starts_at ?? SECOURS.starts_at;
+const DUREE = edition?.duration_min ?? SECOURS.duration_min;
+/* Édition trouvée mais sans groupe renseigné : les boutons ouvrent une
+   discussion avec l'agence, jamais un lien mort. */
+const GROUPE_WHATSAPP = edition ? (edition.groupe_url ?? "") : SECOURS.groupe_url;
+
+/* Trafic publicitaire : cache de 5 minutes au bord, comme la landing du
+   webinaire à formulaire. Une date changée en admin met au plus ce délai à
+   se propager. */
+Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=300, stale-while-revalidate=600");
 
 const TZ = "Africa/Abidjan";
 const dateLive = new Date(LIVE_ISO);
@@ -259,7 +281,7 @@ const CTA_COURT = AVEC_GROUPE ? "Rejoindre le groupe — gratuit" : "Recevoir le
     <a href={LIEN} class="fb-cta fb-sticky-cta" target="_blank" rel="noopener" data-fb-join>{CTA_COURT} →</a>
   </div>
 
-  <script is:inline>
+  <script is:inline define:vars={{ TUNNEL, LIVE_ISO }}>
     (function () {
       /* ---------- Compte à rebours ----------
          Avant le live : le décompte. Pendant : « en direct », le groupe reste
@@ -305,13 +327,48 @@ const CTA_COURT = AVEC_GROUPE ? "Rejoindre le groupe — gratuit" : "Recevoir le
          (pixel pas fini de charger, réseau lent) ne partait jamais. On retient
          donc la navigation le temps que le pixel soit chargé et ait envoyé
          l'événement, 1,5 s au plus : au-delà, on laisse partir le visiteur
-         plutôt que de le bloquer sur un bouton qui ne répond pas. */
-      var CLE_LEAD = "bweb_lead_webinaire_fb_ads";
+         plutôt que de le bloquer sur un bouton qui ne répond pas.
+
+         Le même premier clic est enregistré en base (/api/webinaire/clic) :
+         c'est le compteur « ont rejoint le groupe » de /admin/webinaires. La
+         clé porte la date de l'édition, pour qu'un visiteur d'octobre compte
+         à nouveau au live suivant. */
+      var CLE_LEAD = "bweb_lead_" + TUNNEL + "_" + String(LIVE_ISO).slice(0, 10);
+      var visiteurId = function () {
+        var id = "";
+        try { id = localStorage.getItem("bweb_visiteur") || ""; } catch (e) {}
+        if (!/^[a-z0-9-]{8,64}$/.test(id)) {
+          id = (window.crypto && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12);
+          try { localStorage.setItem("bweb_visiteur", id); } catch (e) {}
+        }
+        return id;
+      };
+      var enregistrerClic = function () {
+        var p = new URLSearchParams(location.search);
+        try {
+          /* `keepalive` : la requête survit au départ vers WhatsApp. */
+          fetch("/api/webinaire/clic", {
+            method: "POST",
+            keepalive: true,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tunnel: TUNNEL,
+              visiteur: visiteurId(),
+              source: p.get("utm_source") || (p.get("fbclid") ? "facebook" : ""),
+              campagne: p.get("utm_campaign") || "",
+            }),
+          }).catch(function () {});
+        } catch (e) {}
+      };
+      /* Vrai si un Lead vient de partir (il faut alors lui laisser le temps). */
       var envoyerLead = function () {
         try {
           if (localStorage.getItem(CLE_LEAD)) return false;
           localStorage.setItem(CLE_LEAD, String(Date.now()));
         } catch (e) {}
+        enregistrerClic();
         if (!window.fbq) return false;
         window.fbq("track", "Lead", { content_name: "Webinaire Facebook Ads" });
         return true;

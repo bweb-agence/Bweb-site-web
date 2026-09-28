@@ -55,9 +55,11 @@ export interface Webinaire {
   /** Canaux de discussion de l'édition, modifiables dans /admin/webinaires. */
   whatsapp_url: string | null;
   telegram_url: string | null;
+  /** Inscription par le groupe WhatsApp, sans formulaire : aucun e-mail à envoyer. */
+  inscription_groupe: boolean;
 }
 
-const CHAMPS = "id, tunnel, slug, title, starts_at, duration_min, places, inscrits_depuis, join_url, join_info, replay_url, whatsapp_url, telegram_url";
+const CHAMPS = "id, tunnel, slug, title, starts_at, duration_min, places, inscrits_depuis, join_url, join_info, replay_url, whatsapp_url, telegram_url, inscription_groupe";
 
 /* Le live est mensuel : plusieurs éditions coexistent en base. « L'édition en
    cours » est la prochaine à venir — et, dans les trois jours qui suivent un
@@ -417,6 +419,10 @@ export async function envoyerSequenceWebinaire(admin: any, maintenant = new Date
   }
 
   for (const w of (webinaires || []) as Webinaire[]) {
+    /* Inscription par le groupe : personne n'a laissé d'adresse, il n'y a
+       personne à qui écrire. Écarté explicitement plutôt que de compter sur
+       une liste d'inscrits vide. */
+    if (w.inscription_groupe) continue;
     const kinds = kindsDus(w.starts_at, maintenant);
     if (!kinds.length) continue;
     rapport.webinaire = w.slug;

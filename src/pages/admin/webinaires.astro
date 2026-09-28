@@ -48,6 +48,7 @@ import Button from "../../components/starwind/button/Button.astro";
       </div>
       <div class="a-field"><label for="f-info">Consigne aux inscrits</label><input class="a-input" id="f-info" placeholder="Connecte-toi 5 minutes en avance, avec un carnet." /></div>
       <div class="a-field"><label for="f-whatsapp">Groupe WhatsApp</label><input class="a-input" id="f-whatsapp" placeholder="https://chat.whatsapp.com/…" /><div class="hint">Repris par la page de remerciement et par les deux premiers e-mails. Vide = le bloc disparaît partout.</div></div>
+      <div class="a-field"><label class="wb-toggle"><input type="checkbox" id="f-groupe" /> <span>Inscription par le groupe WhatsApp (sans formulaire)</span></label><div class="hint">La page n'a pas de formulaire : son bouton mène au groupe ci-dessus, qui devient public. Les clics vers le groupe sont comptés à la place des inscrits, et aucun e-mail ne part.</div></div>
       <div class="a-field"><label for="f-telegram">Canal Telegram</label><input class="a-input" id="f-telegram" placeholder="https://t.me/…" /></div>
       <div class="a-field"><label for="f-replay">Lien du replay</label><input class="a-input" id="f-replay" placeholder="À renseigner après le live" /><div class="hint">Utilisé par l'e-mail du lendemain. À défaut, le lien du live est repris.</div></div>
       <div class="a-field"><label for="f-tunnel">Entonnoir *</label><input class="a-input" id="f-tunnel" value="webinaire-initiation" /><div class="hint">Identité stable, partagée par toutes les éditions. C'est la clé du formulaire d'inscription — ne pas la changer sans changer la page.</div></div>
@@ -84,6 +85,8 @@ import Button from "../../components/starwind/button/Button.astro";
   let all: any[] = [];
   let inscrits: Record<string, number> = {};
   let envois: Record<string, number> = {};
+  /** Clics vers le groupe, pour les éditions en inscription par le groupe. */
+  let clics: Record<string, number> = {};
 
   const statsDrawer = document.getElementById("wb-stats")!;
 
@@ -103,6 +106,8 @@ import Button from "../../components/starwind/button/Button.astro";
     const body = document.getElementById("wb-stats-body")!;
     body.innerHTML = `<p class="hint">Chargement…</p>`;
     statsDrawer.classList.add("open"); overlay.classList.add("open"); document.body.style.overflow = "hidden";
+
+    if (w?.inscription_groupe) { await analyserGroupe(w, body); return; }
 
     const { data, error } = await supabaseBrowser.rpc("webinaire_analytics", { p_webinaire_id: id });
     const a = Array.isArray(data) ? data[0] : data;
@@ -210,6 +215,61 @@ import Button from "../../components/starwind/button/Button.astro";
       <p class="wbz-foot">Période : depuis le ${a.premiere_inscription || "—"}, première inscription de l'édition.${visites === null ? "" : " Les visites Google Analytics couvrent exactement la même fenêtre."}</p>`;
   }
 
+  /* ---------- Analyse d'une édition sans formulaire ----------
+     Il n'y a ni inscrits, ni e-mails, ni achats rattachables : personne n'a
+     laissé d'adresse. Ce qu'on sait, c'est combien de visiteurs sont partis
+     vers le groupe, d'où ils venaient, et — si GA est branché — sur combien
+     de visites. On l'écrit tel quel, sans faire passer des clics pour des
+     inscriptions. */
+  async function analyserGroupe(w: any, body: HTMLElement) {
+    const { data: rows, error } = await supabaseBrowser.from("webinaire_clics")
+      .select("source, created_at").eq("webinaire_id", w.id).order("created_at", { ascending: true });
+    if (error) {
+      body.innerHTML = `<p class="hint">Analyse indisponible (migration 0045 appliquée ?).</p>`;
+      return;
+    }
+    const liste = (rows || []) as { source: string | null; created_at: string }[];
+    const n = liste.length;
+    const premier = liste[0]?.created_at?.slice(0, 10) || null;
+
+    let ga: any = null;
+    if (premier) {
+      try {
+        const { data: sess } = await supabaseBrowser.auth.getSession();
+        const jeton = sess?.session?.access_token;
+        if (jeton) {
+          const r = await fetch(`/api/admin/ga-webinaire?tunnel=${encodeURIComponent(w.tunnel)}&depuis=${premier}`,
+            { headers: { Authorization: `Bearer ${jeton}` } });
+          ga = await r.json();
+        }
+      } catch { /* l'analyse s'affiche sans les visites */ }
+    }
+    const visites: number | null = ga?.joignable ? ga.visites : null;
+
+    const acquisition = `<div class="wbz-acq${visites === null ? " wbz-acq--vide" : ""}">
+        <div class="wbz-end"><div class="wbz-lab">Visites</div><div class="wbz-num${visites === null ? " wbz-attente" : ""}">${visites ?? "—"}</div><div class="wbz-src">${visites === null ? "Google Analytics non connecté" : "Google Analytics · sessions"}</div></div>
+        <div class="wbz-mid"><div class="wbz-rate${visites === null ? " wbz-attente" : ""}">${visites === null ? "—" : pct(n, visites || 1)} %</div><div class="wbz-rate-lab">cliquent</div></div>
+        <div class="wbz-end wbz-end--droite"><div class="wbz-lab">Vers le groupe</div><div class="wbz-num wbz-bleu">${n}</div><div class="wbz-src">Base du site · 1 par visiteur</div></div>
+      </div>`;
+
+    const parSource = new Map<string, number>();
+    for (const r of liste) {
+      const k = (r.source || "direct / inconnu").toLowerCase();
+      parSource.set(k, (parSource.get(k) || 0) + 1);
+    }
+    const sources = [...parSource.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+      `<div class="wbz-row wbz-row--fait"><span class="wbz-mark">·</span><span><span class="wbz-who">${esc(k)}</span></span><span class="wbz-val"><b>${v}</b><span>${pct(v, n || 1)} %</span></span></div>`).join("");
+
+    body.innerHTML = `
+      <h3 class="wbz-titre">Acquisition</h3>
+      ${acquisition}
+
+      <h3 class="wbz-titre">D'où viennent les clics</h3>
+      <div class="wbz-seq">${sources || `<p class="hint">Aucun clic pour l'instant.</p>`}</div>
+
+      <p class="wbz-foot">Inscription par le groupe WhatsApp : pas de formulaire, donc ni e-mails ni achats rattachables à un inscrit. Un clic = un navigateur parti vers le groupe, une seule fois par édition ; on ne sait pas s'il a vraiment rejoint. L'effectif réel se lit dans le groupe.${premier ? ` Période : depuis le ${premier}, premier clic.` : ""}</p>`;
+  }
+
   /** « webinaire-initiation-2026-10 » : l'entonnoir, puis le mois du live. */
   const slugEdition = (tunnel: string, iso: string) => {
     const d = new Date(iso);
@@ -222,10 +282,14 @@ import Button from "../../components/starwind/button/Button.astro";
       <tr>
         <td><strong>${esc(w.title)}</strong><br><span style="color:var(--c-gray-500);font-size:.78rem">${esc(w.slug)}</span></td>
         <td>${dshort(w.starts_at)}<br><span style="color:var(--c-gray-500);font-size:.78rem">${w.duration_min} min · ${w.places} places</span></td>
-        <td>${w.join_url
+        <td>${w.inscription_groupe
+          ? `<span class="tag-pill draft" title="Pas d'e-mail dans ce mode : le lien passe par le groupe">Via le groupe</span>`
+          : w.join_url
           ? `<span class="tag-pill ok">Renseigné</span>`
           : `<span class="tag-pill full" title="Les rappels ne partiront pas tant qu'il manque">Manquant</span>`}</td>
-        <td style="font-variant-numeric:tabular-nums">${inscrits[w.id] ?? "—"}</td>
+        <td style="font-variant-numeric:tabular-nums">${w.inscription_groupe
+          ? `${clics[w.id] ?? "—"}<br><span style="color:var(--c-gray-500);font-size:.78rem">clics vers le groupe</span>`
+          : (inscrits[w.id] ?? "—")}</td>
         <td style="font-variant-numeric:tabular-nums">${envois[w.id] || 0}</td>
         <td>${w.active ? '<span class="tag-pill pub">Active</span>' : '<span class="tag-pill draft">Inactive</span>'}</td>
         <td><div class="row-actions">
@@ -252,8 +316,14 @@ import Button from "../../components/starwind/button/Button.astro";
     all = data || [];
 
     // Compteurs par édition : inscrits de la période, e-mails déjà partis.
-    inscrits = {}; envois = {};
+    inscrits = {}; envois = {}; clics = {};
     await Promise.all(all.map(async (w: any) => {
+      if (w.inscription_groupe) {
+        const { count } = await supabaseBrowser.from("webinaire_clics")
+          .select("id", { count: "exact", head: true }).eq("webinaire_id", w.id);
+        clics[w.id] = count || 0;
+        return;
+      }
       let q = supabaseBrowser.from("form_submissions").select("id", { count: "exact", head: true })
         .eq("form_key", w.tunnel).not("email", "is", null);
       if (w.inscrits_depuis) q = q.gte("submitted_at", w.inscrits_depuis);
@@ -278,6 +348,7 @@ import Button from "../../components/starwind/button/Button.astro";
     $("f-replay").value = w?.replay_url || "";
     $("f-whatsapp").value = w?.whatsapp_url || "";
     $("f-telegram").value = w?.telegram_url || "";
+    $("f-groupe").checked = !!w?.inscription_groupe;
     $("f-tunnel").value = w?.tunnel || "webinaire-initiation";
     $("f-slug").value = w?.slug || "";
     $("f-depuis").value = w?.inscrits_depuis ? dtLocalValue(w.inscrits_depuis) : "";
@@ -312,6 +383,7 @@ import Button from "../../components/starwind/button/Button.astro";
          mois sur l'autre, contrairement au lien du live qui est propre à la
          séance. Ils restent modifiables sur la nouvelle édition. */
       whatsapp_url: w.whatsapp_url, telegram_url: w.telegram_url,
+      inscription_groupe: !!w.inscription_groupe,
       inscrits_depuis: w.starts_at, active: true,
     });
     if (error) { toast((error.message || "").includes("duplicate") ? "Cette édition existe déjà." : "Duplication impossible.", "err"); return; }
@@ -350,6 +422,7 @@ import Button from "../../components/starwind/button/Button.astro";
       replay_url: $("f-replay").value.trim() || null,
       whatsapp_url: $("f-whatsapp").value.trim() || null,
       telegram_url: $("f-telegram").value.trim() || null,
+      inscription_groupe: $("f-groupe").checked,
       inscrits_depuis: depuisV ? new Date(depuisV).toISOString() : null,
       active: $("f-active").checked,
     };
