@@ -64,6 +64,13 @@ const HEURE = dateLive
   .replace(":", " h ")
   .replace(/ h 00$/, " h");
 
+/* Nom du Lead envoyé à Meta : « Webinaire Facebook Ads 04-10 ». La date
+   distingue les éditions dans le gestionnaire d'événements et permet une
+   conversion personnalisée par live ; elle suit l'édition en base. */
+const NOM_LEAD = `Webinaire Facebook Ads ${dateLive
+  .toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", timeZone: TZ })
+  .replace("/", "-")}`;
+
 const AVEC_GROUPE = GROUPE_WHATSAPP !== "";
 const LIEN = AVEC_GROUPE
   ? GROUPE_WHATSAPP
@@ -281,7 +288,7 @@ const CTA_COURT = AVEC_GROUPE ? "Rejoindre le groupe — gratuit" : "Recevoir le
     <a href={LIEN} class="fb-cta fb-sticky-cta" target="_blank" rel="noopener" data-fb-join>{CTA_COURT} →</a>
   </div>
 
-  <script is:inline define:vars={{ TUNNEL, LIVE_ISO }}>
+  <script is:inline define:vars={{ TUNNEL, LIVE_ISO, NOM_LEAD }}>
     (function () {
       /* ---------- Compte à rebours ----------
          Avant le live : le décompte. Pendant : « en direct », le groupe reste
@@ -370,7 +377,7 @@ const CTA_COURT = AVEC_GROUPE ? "Rejoindre le groupe — gratuit" : "Recevoir le
         } catch (e) {}
         enregistrerClic();
         if (!window.fbq) return false;
-        window.fbq("track", "Lead", { content_name: "Webinaire Facebook Ads" });
+        window.fbq("track", "Lead", { content_name: NOM_LEAD });
         return true;
       };
       var enRoute = false;
