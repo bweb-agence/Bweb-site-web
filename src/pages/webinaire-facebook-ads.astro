@@ -74,7 +74,7 @@ const NOM_LEAD = `Webinaire Facebook Ads ${dateLive
 const AVEC_GROUPE = GROUPE_WHATSAPP !== "";
 const LIEN = AVEC_GROUPE
   ? GROUPE_WHATSAPP
-  : whatsappLink(`Bonjour, je veux participer au live du ${jour} à ${HEURE} : « Comment gagner 1 000 000 FCFA/mois avec les produits digitaux grâce à la publicité Facebook ». Envoyez-moi le lien.`);
+  : whatsappLink(`Bonjour, je veux participer au live du ${jour} à ${HEURE} : « Comment tu peux gagner +33 000 FCFA/jour avec les produits digitaux grâce à la publicité Facebook ». Envoyez-moi le lien.`);
 /* Le libellé dit ce qui va se passer : « rejoindre un groupe » quand on
    ouvre un groupe, « recevoir le lien » quand on ouvre une discussion. */
 const CTA = AVEC_GROUPE ? "Rejoindre le groupe WhatsApp du live" : "Recevoir le lien du live sur WhatsApp";
@@ -82,8 +82,8 @@ const CTA_COURT = AVEC_GROUPE ? "Rejoindre le groupe — gratuit" : "Recevoir le
 ---
 
 <BaseLayout
-  title="Webinaire gratuit — 1 M FCFA/mois avec la pub Facebook | Bweb Academy"
-  description={`Live gratuit le ${jour} à ${HEURE} (Abidjan) : comment la publicité Facebook peut vendre ton produit digital chaque jour, jusqu'à 1 000 000 FCFA par mois. Rejoins le groupe WhatsApp du live.`}
+  title="Webinaire gratuit — +33 000 FCFA/jour avec la pub Facebook | Bweb Academy"
+  description={`Live gratuit le ${jour} à ${HEURE} (Abidjan) : comment gagner +33 000 FCFA par jour avec les produits digitaux grâce à la publicité Facebook. Rejoins le groupe WhatsApp du live.`}
   hideWhatsApp={true}
   bareChrome={true}
 >
@@ -98,7 +98,7 @@ const CTA_COURT = AVEC_GROUPE ? "Rejoindre le groupe — gratuit" : "Recevoir le
       </span>
 
       <h1 data-hero-in>
-        Comment gagner 1&nbsp;000&nbsp;000&nbsp;FCFA/mois avec les produits digitaux
+        Comment tu peux gagner +33&nbsp;000&nbsp;FCFA/jour avec les produits digitaux
         <span class="fb-h1-accent">grâce à la publicité Facebook.</span>
       </h1>
 
