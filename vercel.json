@@ -13,7 +13,8 @@
     { "source": "/index.html", "destination": "/", "permanent": true },
     { "source": "/:slug.html", "destination": "/:slug", "permanent": true },
     { "source": "/services-creation-sites-web", "destination": "/services-creation-saas", "permanent": true },
-    { "source": "/webinaire-initiation", "destination": "/webinaire-facebook-ads", "permanent": false }
+    { "source": "/webinaire-initiation", "destination": "/masterclass", "permanent": false },
+    { "source": "/webinaire-facebook-ads", "destination": "/masterclass", "permanent": false }
   ],
   "headers": [
     {
