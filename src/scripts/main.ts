@@ -52,7 +52,8 @@ function boot(): void {
      est posée — et son accord libère la file d'événements que le pixel Meta
      retient depuis la première seconde. */
   const differee = document.body.hasAttribute("data-sans-banniere-cookies");
-  initCookies(true, differee ? 30_000 : 0);
+  const aucune = document.body.hasAttribute("data-aucune-banniere-cookies");
+  initCookies(!aucune, differee ? 30_000 : 0);
   setYear();
   hideDecorativeSvg();
   initContactLinks();
