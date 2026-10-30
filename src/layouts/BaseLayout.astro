@@ -50,12 +50,15 @@ interface Props {
      Le bouton « Gérer les cookies » du pied de page reste disponible partout,
      et l'onglet reste accessible aux pages classiques. */
   hideCookieBanner?: boolean;
+  /* Aucune bannière, même différée. Le pixel ne dépend pas de la bannière (voir
+     MetaPixel.astro) et « Gérer les cookies » reste dans le pied de page. */
+  noCookieBanner?: boolean;
 }
 
 const {
   title, description = site.description, image = site.ogImage, noindex = false,
   ogType = "website", organization = false, breadcrumbs, schemas = [], hideWhatsApp = false,
-  bareChrome = false, hideCookieBanner = bareChrome, charteTypo = !bareChrome,
+  bareChrome = false, hideCookieBanner = bareChrome, noCookieBanner = false, charteTypo = !bareChrome,
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, site.url).href.replace(/\/$/, "") || site.url;
 const ogImageUrl = new URL(image, site.url).href;
@@ -188,7 +191,7 @@ const breadcrumbLd = breadcrumbs?.length
       })();
     </script>
   </head>
-  <body class:list={[charteTypo && "charte"]} data-sans-banniere-cookies={hideCookieBanner ? "" : undefined}>
+  <body class:list={[charteTypo && "charte"]} data-sans-banniere-cookies={hideCookieBanner ? "" : undefined} data-aucune-banniere-cookies={noCookieBanner ? "" : undefined}>
     <a href="#main" class="skip-link">Aller au contenu</a>
     <Header bare={bareChrome} />
     <main id="main">

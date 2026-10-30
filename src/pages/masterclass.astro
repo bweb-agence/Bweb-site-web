@@ -1,0 +1,669 @@
+---
+/* Rendu à la demande : la date et la durée viennent de l'édition en cours
+   (écran /admin/webinaires, entonnoir « masterclass »). Sans édition en base,
+   la page garde SECOURS. */
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import VideoLazy from "../components/VideoLazy.astro";
+import { supabase } from "../lib/supabase";
+import { whatsappLink } from "../config/site";
+import "@fontsource/sacramento/latin-400.css";
+
+/* =========================================================
+   MASTERCLASS GRATUITE « BUSINESS EN LIGNE 2027 »
+   One page : hero, vidéo, témoignages. Pas de formulaire et pas de lien de
+   groupe ici : le bouton ouvre une discussion avec CloserWA, qui envoie le
+   lien du groupe. Chaque inscrit devient ainsi un contact avec son numéro,
+   et peut recevoir les rappels jusqu'au live. C'est toute la différence avec
+   /webinaire-facebook-ads, dont le groupe ne laisse aucune liste de numéros.
+   ---------------------------------------------------------
+   Reste ici : VIDEO_ID, l'ID YouTube de la vidéo de présentation. Vide = la
+   section vidéo n'apparaît pas en ligne (elle reste visible en développement).
+   ========================================================= */
+
+const TUNNEL = "masterclass";
+const VIDEO_ID = "";
+/* Numéro relié à CloserWA, distinct du numéro de l'agence (contact.whatsapp).
+   Format international sans le « + ». */
+const WHATSAPP_CLOSERWA = "2250748896999";
+
+const SECOURS = { starts_at: "2026-11-08T19:00:00Z", duration_min: 90 };
+const { data: editionRows } = await supabase.rpc("webinaire_public", { p_slug: TUNNEL });
+const edition = (Array.isArray(editionRows) ? editionRows[0] : editionRows) ?? null;
+
+const LIVE_ISO = edition?.starts_at ?? SECOURS.starts_at;
+const DUREE = edition?.duration_min ?? SECOURS.duration_min;
+
+Astro.response.headers.set("Cache-Control", "public, max-age=0, s-maxage=300, stale-while-revalidate=600");
+
+/* GMT, comme l'affiche. Abidjan est à GMT toute l'année. */
+const TZ = "Africa/Abidjan";
+const dateLive = new Date(LIVE_ISO);
+/* « Dimanche 8 novembre 2026 » */
+const JOUR = (() => {
+  const j = dateLive.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: TZ });
+  return j.charAt(0).toUpperCase() + j.slice(1);
+})();
+/* « 19h00 » */
+const HEURE = dateLive
+  .toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: TZ })
+  .replace(":", "h");
+
+const NOM_LEAD = `Masterclass Business en Ligne ${dateLive
+  .toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", timeZone: TZ })
+  .replace("/", "-")}`;
+
+/* Ce message doit contenir « masterclass », le mot-clé réglé sur l'offre
+   gratuite dans le cockpit CloserWA : c'est lui qui déclenche l'inscription. */
+const LIEN = whatsappLink("Bonjour, je réserve ma place pour la MASTERCLASS", WHATSAPP_CLOSERWA);
+
+const PROGRAMME = [
+  ["Ton produit digital", "prêt en 30 minutes", "M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12 4 7.500"],
+  ["Ta boutique en ligne", "ouverte et prête à vendre", "M3 21h18M5 21V11M19 21V11M9 21v-6h6v6M3 7l2-4h14l2 4a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0"],
+  ["La stratégie 2027", "pour attirer des clients chaque jour", "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 12l7-7M16 5h3v3"],
+  ["La recette des 500K/mois", "qui tourne en auto avec l'IA", "M7 7h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2M12 3v4M9 12v1M15 12v1M9 16h6M2 12v3M22 12v3"],
+];
+
+/* Chiffres donnés par Godwin. `compte` : la valeur s'incrémente à l'apparition. */
+const RESULTATS = [
+  { titre: "+100M", label: "générés en 1 an", compte: { fin: 100, avant: "+", apres: "M" }, icone: "M3 3v18h18M7 15l4-4 3 3 5-6" },
+  { titre: "+20 000", label: "clients dans 68 pays", compte: { fin: 20000, avant: "+", apres: "" }, icone: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.500 5.500 12 3" },
+  { titre: "Expert N°1", label: "sur la thématique", icone: "M8 4h8v6a4 4 0 0 1-8 0zM5 5h3v3a3 3 0 0 1-3-3zM19 5h-3v3a3 3 0 0 0 3-3zM12 14v4M8 21h8" },
+  { titre: "Certifié Chariow", label: "Rang Saturne", icone: "M12 3l2.600 2 3.200-.2.900 3.100 2.600 1.900-1.100 3 1.100 3-2.600 1.900-.9 3.100-3.200-.2-2.600 2-2.600-2-3.200.2-.9-3.100-2.600-1.900 1.100-3-1.100-3 2.600-1.900.9-3.100 3.200.2zM8.500 12l2.500 2.500 4.500-4.500" },
+];
+
+/* Captures du dossier Drive « temoignages ». Numéros de téléphone masqués et
+   images recadrées avant publication. Légendes = ce qu'on lit sur la capture. */
+const TEMOIGNAGES = [
+  { n: 1, w: 640, h: 1066, nom: "Kendra", res: "6 826 900 FCFA de revenus" },
+  { n: 2, w: 640, h: 830, nom: "Franck Arthur", res: "673 540 FCFA en un mois" },
+  { n: 9, w: 640, h: 469, nom: "Jennifer", res: "1 700 000 FCFA en 3 semaines" },
+  { n: 11, w: 576, h: 950, nom: "Nek Solution", res: "5 286 900 FCFA de ventes" },
+  { n: 4, w: 640, h: 775, nom: "Mageti Gadgets", res: "Après 5 ans à acheter des formations" },
+  { n: 8, w: 640, h: 1135, nom: "Le Champion Touré", res: "400 000 FCFA en organique" },
+  { n: 12, w: 640, h: 905, nom: "David", res: "5 639 857 FCFA de ventes" },
+  { n: 6, w: 640, h: 1215, nom: "Ange", res: "2 à 3 millions par mois" },
+  { n: 3, w: 640, h: 1086, nom: "Mélissa", res: "1 234 000 FCFA" },
+  { n: 5, w: 640, h: 677, nom: "Martin", res: "2 779 174 FCFA de ventes" },
+  { n: 10, w: 640, h: 666, nom: "Un apprenant", res: "1 002 150 FCFA en 33 jours" },
+  { n: 7, w: 640, h: 633, nom: "Kadmiel", res: "Pub Facebook à 0,07 € la conversation" },
+];
+---
+
+<BaseLayout
+  title="Masterclass gratuite : Business en ligne 2027 | Bweb Agence"
+  description={`${JOUR}, ${HEURE} GMT, en direct sur YouTube : comment lancer un business en ligne qui rapporte +500K/mois avec l'IA et le Marketing Digital. Réserve ta place sur WhatsApp.`}
+  image="/images/masterclass/affiche.jpg"
+  hideWhatsApp={true}
+  bareChrome={true}
+  noCookieBanner={true}
+>
+  <!-- ═══════════ 1 · HERO ═══════════ -->
+  <header class="mc-hero">
+    <div class="mc-hero-grid">
+      <div class="mc-hero-txt">
+        <h1>
+          Business en&nbsp;ligne&nbsp;2027
+          <span class="mc-script">Masterclass gratuite</span>
+        </h1>
+        <p class="mc-lead">Comment lancer un business en ligne qui rapporte <b>+500K/mois</b> avec l'IA et le Marketing Digital</p>
+
+        <div class="mc-infos">
+          <div class="mc-info">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span>{JOUR.split(" ")[0]}<b>{JOUR.split(" ").slice(1).join(" ")}</b></span>
+          </div>
+          <div class="mc-info">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span>En direct sur YouTube<b>{HEURE} GMT</b></span>
+          </div>
+        </div>
+
+        <a href={LIEN} class="mc-cta" target="_blank" rel="noopener" data-mc-join>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2m0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23a8.2 8.2 0 0 1 8.24 8.24c0 4.54-3.7 8.23-8.24 8.23m4.52-6.16c-.25-.13-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.13-.56-1.35-.77-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.22.25-.87.85-.87 2.07s.9 2.4 1.02 2.56c.12.17 1.75 2.67 4.25 3.75.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.11-.22-.17-.47-.29"/></svg>
+          Écris-moi pour réserver ta place
+        </a>
+        <p class="mc-note">Inscription gratuite. Envoie le message : tu reçois aussitôt le lien du groupe du live.</p>
+
+        <div class="mc-countdown">
+          <span class="mc-cd-label" data-cd-label>Le live commence dans</span>
+          <div class="mc-cd" data-countdown={LIVE_ISO} data-duree={DUREE}>
+            <span><b data-cd="d">00</b>jours</span>
+            <span><b data-cd="h">00</b>heures</span>
+            <span><b data-cd="m">00</b>min</span>
+            <span><b data-cd="s" class="mc-mint">00</b>sec</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mc-hero-media">
+        <ul class="mc-proofs" data-mc-proofs aria-label="Les résultats de Godwin Soola">
+          {RESULTATS.map((r) => (
+            <li>
+              <div class="mc-proof">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d={r.icone} /></svg>
+                <span>
+                  <b data-compte={r.compte ? r.compte.fin : undefined} data-avant={r.compte?.avant} data-apres={r.compte?.apres}>{r.titre}</b>
+                  {r.label}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <img src="/images/masterclass/godwin-soola.webp" alt="Godwin Soola, formateur de la masterclass" width="560" height="592" fetchpriority="high" decoding="async" />
+        <span class="mc-speaker">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 4.5a3.3 3.3 0 1 1 0 6.6 3.3 3.3 0 0 1 0-6.6m0 13.7a8.2 8.2 0 0 1-6.1-2.7c.9-1.8 3.4-3 6.1-3s5.2 1.2 6.1 3a8.2 8.2 0 0 1-6.1 2.7"/></svg>
+          Godwin Soola
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════ 2 · AU PROGRAMME ═══════════ -->
+  <section class="mc-prog" aria-labelledby="mc-prog-titre">
+    <div class="mc-wrap">
+      <h2 id="mc-prog-titre" class="mc-prog-titre"><span class="mc-mint">Au</span> programme</h2>
+      <ul data-mc-prog>
+        {PROGRAMME.map(([debut, fin, icone], i) => (
+          <li class:list={[i === 0 && "is-on"]}>
+            <span class="mc-prog-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d={icone} /></svg></span>
+            <span>{debut} <b>{fin}</b></span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3 · VIDÉO ═══════════ -->
+  {(VIDEO_ID || import.meta.env.DEV) && (
+    <section class="mc-video" aria-labelledby="mc-video-titre">
+      <div class="mc-wrap mc-narrow">
+        <h2 id="mc-video-titre">Regarde cette vidéo avant le live</h2>
+        <div class="mc-video-slot">
+          <VideoLazy id={VIDEO_ID} title="Présentation de la masterclass, Godwin Soola" hint="src/pages/masterclass.astro → VIDEO_ID" />
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ═══════════ 4 · TÉMOIGNAGES ═══════════ -->
+  <section class="mc-tem" aria-labelledby="mc-tem-titre">
+    <div class="mc-wrap">
+      <figure class="mc-chariow">
+        <img src="/images/masterclass/chariow-saturne.webp" alt="Tableau de bord Chariow de Godwin Soola : rang Saturne, 98 435 144 FCFA de chiffre d'affaires" width="937" height="355" loading="lazy" decoding="async" />
+        <figcaption><b>Mon tableau de bord Chariow</b>Certifié Rang Saturne</figcaption>
+      </figure>
+      <div class="mc-tem-head">
+        <h2 id="mc-tem-titre">Ils ont suivi Godwin. <span class="mc-mint">Voici leurs résultats.</span></h2>
+        <p>Captures envoyées par des apprenants. Les résultats dépendent du travail de chacun&nbsp;: aucun gain n'est garanti.</p>
+      </div>
+    </div>
+    <div class="mc-tem-diapo" data-mc-diapo>
+      <div class="mc-tem-piste">
+        {TEMOIGNAGES.map((t) => (
+          <figure>
+            <figcaption><b>{t.nom}</b>{t.res}</figcaption>
+            <img src={`/images/masterclass/temoignage-${t.n}.webp`} alt={`Capture du témoignage de ${t.nom} : ${t.res}`} width={t.w} height={t.h} loading="lazy" decoding="async" />
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 5 · APPEL FINAL ═══════════ -->
+  <section class="mc-final">
+    <div class="mc-wrap mc-narrow">
+      <h2>{JOUR.replace(/ \d{4}$/, "")}, {HEURE} GMT. On t'attend.</h2>
+      <p>Écris-moi sur WhatsApp : tu reçois le lien du groupe et les rappels jusqu'au live.</p>
+      <a href={LIEN} class="mc-cta" target="_blank" rel="noopener" data-mc-join>Écris-moi pour réserver ta place</a>
+    </div>
+  </section>
+
+  <!-- CTA collant mobile -->
+  <div class="mc-sticky">
+    <a href={LIEN} class="mc-cta mc-sticky-cta" target="_blank" rel="noopener" data-mc-join>Écris-moi pour réserver ta place</a>
+  </div>
+
+  <script is:inline define:vars={{ TUNNEL, LIVE_ISO, NOM_LEAD }}>
+    (function () {
+      /* ---------- Compte à rebours ---------- */
+      var root = document.querySelector("[data-countdown]");
+      if (root) {
+        var label = document.querySelector("[data-cd-label]");
+        var debut = new Date(root.getAttribute("data-countdown")).getTime();
+        var fin = debut + Number(root.getAttribute("data-duree") || 90) * 60000;
+        var pad = function (v) { return String(v).padStart(2, "0"); };
+        var timer;
+        var tick = function () {
+          var now = Date.now();
+          if (now >= debut) {
+            root.hidden = true;
+            if (label) label.textContent = now >= fin ? "Le live est terminé" : "En direct maintenant sur YouTube";
+            if (now >= fin) clearInterval(timer);
+            return;
+          }
+          var d = debut - now;
+          root.querySelector('[data-cd="d"]').textContent = pad(Math.floor(d / 86400000));
+          root.querySelector('[data-cd="h"]').textContent = pad(Math.floor((d % 86400000) / 3600000));
+          root.querySelector('[data-cd="m"]').textContent = pad(Math.floor((d % 3600000) / 60000));
+          root.querySelector('[data-cd="s"]').textContent = pad(Math.floor((d % 60000) / 1000));
+        };
+        tick();
+        timer = setInterval(tick, 1000);
+      }
+
+      /* ---------- Conversion ----------
+         Même mécanique que /webinaire-facebook-ads : un seul Lead par visiteur
+         et par édition, et la navigation vers WhatsApp attend le pixel 1,5 s
+         au plus, sinon le téléphone bascule dans l'app avant son envoi. Le clic
+         n'est pas encore une inscription : la personne doit envoyer le message.
+         Le vrai nombre d'inscrits se lit dans CloserWA. */
+      var CLE_LEAD = "bweb_lead_" + TUNNEL + "_" + String(LIVE_ISO).slice(0, 10);
+      var visiteurId = function () {
+        var id = "";
+        try { id = localStorage.getItem("bweb_visiteur") || ""; } catch (e) {}
+        if (!/^[a-z0-9-]{8,64}$/.test(id)) {
+          id = (window.crypto && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12);
+          try { localStorage.setItem("bweb_visiteur", id); } catch (e) {}
+        }
+        return id;
+      };
+      var enregistrerClic = function () {
+        var p = new URLSearchParams(location.search);
+        try {
+          fetch("/api/webinaire/clic", {
+            method: "POST",
+            keepalive: true,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tunnel: TUNNEL,
+              visiteur: visiteurId(),
+              source: p.get("utm_source") || (p.get("fbclid") ? "facebook" : ""),
+              campagne: p.get("utm_campaign") || "",
+            }),
+          }).catch(function () {});
+        } catch (e) {}
+      };
+      var envoyerLead = function () {
+        try {
+          if (localStorage.getItem(CLE_LEAD)) return false;
+          localStorage.setItem(CLE_LEAD, String(Date.now()));
+        } catch (e) {}
+        enregistrerClic();
+        if (!window.fbq) return false;
+        window.fbq("track", "Lead", { content_name: NOM_LEAD });
+        return true;
+      };
+      var enRoute = false;
+      document.querySelectorAll("[data-mc-join]").forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) { envoyerLead(); return; }
+          e.preventDefault();
+          if (enRoute) return;
+          enRoute = true;
+          var href = a.href;
+          if (!envoyerLead()) { location.href = href; return; }
+          var t0 = Date.now();
+          (function attendre() {
+            var charge = !!(window.fbq && window.fbq.callMethod);
+            if (charge || Date.now() - t0 > 1500) {
+              setTimeout(function () { location.href = href; }, charge ? 300 : 0);
+            } else {
+              setTimeout(attendre, 100);
+            }
+          })();
+        });
+      });
+      window.addEventListener("pageshow", function () { enRoute = false; });
+
+      /* ---------- Résultats : ils entrent un par un, les chiffres montent ----------
+         Sans JavaScript ou avec « réduire les animations », ils restent affichés
+         avec leur valeur finale. */
+      var preuves = document.querySelector("[data-mc-proofs]");
+      if (preuves && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        var compter = function (el) {
+          var fin = Number(el.getAttribute("data-compte"));
+          var avant = el.getAttribute("data-avant") || "";
+          var apres = el.getAttribute("data-apres") || "";
+          var t0 = performance.now();
+          var etape = function (t) {
+            var p = Math.min(1, (t - t0) / 1400);
+            var v = Math.round(fin * (1 - Math.pow(1 - p, 3)));
+            el.textContent = avant + v.toLocaleString("fr-FR").replace(/\u202f/g, " ") + apres;
+            if (p < 1) requestAnimationFrame(etape);
+          };
+          requestAnimationFrame(etape);
+        };
+        var lancer = function () {
+          preuves.classList.add("is-vu");
+          preuves.querySelectorAll("[data-compte]").forEach(compter);
+        };
+        preuves.classList.add("is-anim");
+        if ("IntersectionObserver" in window) {
+          var veilleur = new IntersectionObserver(function (e) {
+            if (e[0].isIntersecting) { veilleur.disconnect(); lancer(); }
+          }, { threshold: .3 });
+          veilleur.observe(preuves);
+        } else {
+          lancer();
+        }
+      }
+
+      /* ---------- Programme : le halo passe d'une carte à l'autre ---------- */
+      var cartes = document.querySelectorAll("[data-mc-prog] li");
+      if (cartes.length && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        var carteOn = 0;
+        setInterval(function () {
+          if (document.hidden) return;
+          cartes[carteOn].classList.remove("is-on");
+          carteOn = (carteOn + 1) % cartes.length;
+          cartes[carteOn].classList.add("is-on");
+        }, 1700);
+      }
+
+      /* ---------- Témoignages : une diapo vers la gauche toutes les 3 s ----------
+         La piste glisse d'un cran, puis la diapo sortie repart en fin de file :
+         le défilement ne revient jamais en arrière. Le doigt fait passer les
+         diapos dans les deux sens ; le survol et le toucher mettent en pause.
+         Sans JavaScript ou avec « réduire les animations », la liste reste
+         simplement défilable à la main (voir le CSS). */
+      var diapo = document.querySelector("[data-mc-diapo]");
+      if (diapo && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        var piste = diapo.firstElementChild;
+        var DUREE_GLISSE = 600;
+        var enCours = false;
+        var visible = !("IntersectionObserver" in window);
+        var survol = false;
+        var repriseApres = 0;
+        var departX = null;
+        diapo.classList.add("is-auto");
+        var pas = function () {
+          return piste.firstElementChild.offsetWidth + parseFloat(getComputedStyle(piste).columnGap || 0);
+        };
+        var glisser = function (x) {
+          piste.style.transition = "transform " + DUREE_GLISSE + "ms ease";
+          piste.style.transform = "translateX(" + x + "px)";
+        };
+        var figer = function () {
+          piste.style.transition = "none";
+          piste.style.transform = "none";
+        };
+        var suivante = function () {
+          if (enCours) return;
+          enCours = true;
+          glisser(-pas());
+          setTimeout(function () {
+            piste.appendChild(piste.firstElementChild);
+            figer();
+            enCours = false;
+          }, DUREE_GLISSE);
+        };
+        var precedente = function () {
+          if (enCours) return;
+          enCours = true;
+          var largeur = pas();
+          piste.insertBefore(piste.lastElementChild, piste.firstElementChild);
+          piste.style.transition = "none";
+          piste.style.transform = "translateX(" + -largeur + "px)";
+          void piste.offsetWidth;
+          glisser(0);
+          setTimeout(function () { figer(); enCours = false; }, DUREE_GLISSE);
+        };
+        setInterval(function () {
+          if (visible && !survol && !document.hidden && Date.now() >= repriseApres) suivante();
+        }, 3000);
+        diapo.addEventListener("mouseenter", function () { survol = true; });
+        diapo.addEventListener("mouseleave", function () { survol = false; });
+        diapo.addEventListener("touchstart", function (e) {
+          departX = e.touches[0].clientX;
+          repriseApres = Date.now() + 5000;
+        }, { passive: true });
+        diapo.addEventListener("touchend", function (e) {
+          if (departX === null) return;
+          var ecart = e.changedTouches[0].clientX - departX;
+          departX = null;
+          repriseApres = Date.now() + 5000;
+          if (ecart < -40) suivante();
+          if (ecart > 40) precedente();
+        }, { passive: true });
+        if ("IntersectionObserver" in window) {
+          new IntersectionObserver(function (e) { visible = e[0].isIntersecting; }, { threshold: .2 }).observe(diapo);
+        }
+      }
+
+      /* ---------- CTA collant : visible dès qu'on a quitté le hero ---------- */
+      var sticky = document.querySelector(".mc-sticky");
+      var hero = document.querySelector(".mc-hero");
+      if (sticky && hero && "IntersectionObserver" in window) {
+        new IntersectionObserver(function (e) { sticky.classList.toggle("show", !e[0].isIntersecting); }, { threshold: 0 }).observe(hero);
+      }
+    })();
+  </script>
+</BaseLayout>
+
+<style>
+  .mc-hero, .mc-prog, .mc-video, .mc-tem, .mc-final, .mc-sticky {
+    --navy: #04123a; --blue: #0a2470; --card: #0f2e85; --line: #2a4590;
+    --mint: #19e3a8; --wa: #39f07f; --soft: #c9d5f5; --muted: #9fb3e6;
+    --halo: #4aa3ff; --halo-clair: #dbe8ff;
+    --halo-doux: 0 0 8px rgba(74, 163, 255, .55), 0 0 22px rgba(74, 163, 255, .25);
+  }
+  .mc-mint { color: var(--mint); }
+  /* Barre du haut de la maquette : logo blanc sur fond sombre. */
+  :global(body:has(.mc-hero) .site-header--bare .container) { background: transparent; box-shadow: none; }
+  :global(body:has(.mc-hero) .site-header--bare img) { filter: brightness(0) invert(1); }
+  :global(body:has(.mc-hero) .site-header--bare.is-scrolled .container) { background: rgba(4, 18, 58, .92); }
+  .mc-wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  .mc-narrow { max-width: 820px; }
+  section h2, .mc-hero h1 { font-family: "Plus Jakarta Sans Variable", system-ui, sans-serif; font-weight: 800; letter-spacing: -.02em; }
+  section h2 { margin: 0; color: #fff; font-size: clamp(1.7rem, 3.5vw, 2.4rem); line-height: 1.15; }
+
+  /* ===== Le bouton reprend les deux effets de l'affiche de la maquette :
+     le zoom lent et le reflet qui passe. ===== */
+  .mc-cta {
+    position: relative; overflow: hidden; isolation: isolate;
+    display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+    min-height: 58px; padding: 18px 34px; border-radius: 12px;
+    font-family: "Plus Jakarta Sans Variable", system-ui, sans-serif;
+    font-weight: 800; font-size: 1.1rem; letter-spacing: .01em; text-align: center;
+    background: var(--wa); color: var(--navy);
+    animation: mc-zoom 1.6s ease-in-out infinite alternate;
+  }
+  .mc-cta::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.65) 50%, transparent 65%);
+    transform: translateX(-120%); animation: mc-shine 3.4s ease-in-out infinite 1s;
+  }
+  .mc-cta:hover { color: var(--navy); filter: brightness(1.08); }
+  .mc-cta svg { width: 24px; height: 24px; flex: none; }
+  @keyframes mc-zoom { from { transform: scale(1); } to { transform: scale(1.05); } }
+  @keyframes mc-shine { 0% { transform: translateX(-120%); } 45%, 100% { transform: translateX(120%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .mc-cta, .mc-cta::after { animation: none; }
+  }
+
+  /* ===== 1 · Hero ===== */
+  .mc-hero {
+    position: relative; overflow: hidden; color: #fff;
+    background:
+      radial-gradient(900px 700px at 78% 40%, #1f7bff 0%, transparent 62%),
+      linear-gradient(100deg, #04123a 0%, #0a2f9e 58%, #0f55d8 100%);
+  }
+  .mc-hero-grid { max-width: 1180px; margin: 0 auto; padding: 118px 20px 0; }
+  .mc-hero-txt { position: relative; z-index: 1; max-width: 540px; padding-bottom: 48px; display: flex; flex-direction: column; align-items: flex-start; }
+  .mc-hero h1 { margin: 0; color: #fff; font-size: clamp(2.6rem, 5.4vw, 4.5rem); line-height: 1.02; text-transform: uppercase; }
+  .mc-script {
+    display: block; margin-top: -.02em;
+    font-family: "Sacramento", cursive; font-weight: 400; font-size: 1.1em; line-height: 1;
+    letter-spacing: 0; text-transform: none; color: var(--mint);
+  }
+  .mc-lead { margin: 14px 0 0; max-width: 34em; color: #fff; font-size: 1.2rem; line-height: 1.45; }
+  .mc-lead b { color: var(--mint); font-weight: 800; }
+
+  .mc-infos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; max-width: 560px; margin: 24px 0; }
+  .mc-info {
+    display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: 14px;
+    background: rgba(4, 18, 58, .55); border: 1px solid rgba(219, 232, 255, .7); box-shadow: var(--halo-doux);
+  }
+  .mc-info svg { width: 32px; height: 32px; flex: none; fill: none; stroke: #4aa3ff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .mc-info span { font-size: .84rem; line-height: 1.3; color: var(--soft); }
+  .mc-info b { display: block; color: #fff; font-size: 1.02rem; font-weight: 800; }
+
+  .mc-note { margin: 12px 0 0; font-size: .86rem; color: var(--soft); max-width: 46ch; }
+
+  .mc-countdown { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; }
+  .mc-cd-label { font-size: .82rem; font-weight: 600; color: var(--soft); }
+  .mc-cd { display: flex; gap: 8px; }
+  .mc-cd[hidden] { display: none; }
+  .mc-cd span { min-width: 64px; padding: 8px 6px; border-radius: 10px; background: var(--navy); text-align: center; font-size: .72rem; color: var(--muted); }
+  .mc-cd b { display: block; font-size: 1.5rem; font-weight: 800; line-height: 1.15; color: #fff; font-variant-numeric: tabular-nums; }
+  .mc-cd b.mc-mint { color: var(--mint); }
+
+  /* Le portrait vient de l'affiche, coupé à droite : collé au bord de l'écran,
+     la coupe ne se voit pas. */
+  .mc-hero-media { --portrait: min(43vw, 620px); position: absolute; right: 0; bottom: 0; width: var(--portrait); }
+  .mc-hero-media > img { display: block; width: 100%; height: auto; }
+
+  /* Résultats : collés à gauche du visage, qui occupe la moitié droite de
+     l'image. Le calcul suit la largeur du portrait à toutes les tailles. */
+  .mc-proofs {
+    position: absolute; z-index: 1; top: 7%; right: calc(var(--portrait) * .57); width: 206px;
+    list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px;
+  }
+  .mc-proof {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px;
+    background: rgba(4, 18, 58, .82); border: 1px solid rgba(219, 232, 255, .7); box-shadow: var(--halo-doux);
+    font-size: .78rem; line-height: 1.25; color: var(--soft); text-align: left;
+    animation: mc-flotte 4s ease-in-out infinite alternate;
+  }
+  .mc-proofs li:nth-child(2) .mc-proof { animation-delay: -1s; }
+  .mc-proofs li:nth-child(3) .mc-proof { animation-delay: -2s; }
+  .mc-proofs li:nth-child(4) .mc-proof { animation-delay: -3s; }
+  .mc-proof svg { width: 26px; height: 26px; flex: none; fill: none; stroke: var(--mint); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .mc-proof b { display: block; color: #fff; font-size: 1.08rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mc-proofs.is-anim li { opacity: 0; }
+  .mc-proofs.is-vu li { animation: mc-preuve .6s ease-out forwards; }
+  .mc-proofs.is-vu li:nth-child(2) { animation-delay: .3s; }
+  .mc-proofs.is-vu li:nth-child(3) { animation-delay: .6s; }
+  .mc-proofs.is-vu li:nth-child(4) { animation-delay: .9s; }
+  @keyframes mc-preuve { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+  @keyframes mc-flotte { from { transform: translateY(-3px); } to { transform: translateY(3px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .mc-proof { animation: none; }
+  }
+  .mc-speaker {
+    position: absolute; right: 7%; bottom: 26px;
+    display: inline-flex; align-items: center; gap: 9px; padding: 11px 18px; border-radius: 12px;
+    font-weight: 800; font-size: .92rem; letter-spacing: .03em; text-transform: uppercase; color: #fff;
+    background: linear-gradient(120deg, #0a2470, #0f55d8); border: 1px solid rgba(219, 232, 255, .7); box-shadow: var(--halo-doux);
+  }
+  .mc-speaker svg { width: 20px; height: 20px; flex: none; color: var(--mint); }
+
+  /* ===== 2 · Programme ===== */
+  .mc-prog { background: var(--navy); padding: 34px 0; }
+  .mc-prog h2.mc-prog-titre { margin-bottom: 26px; text-align: center; text-transform: uppercase; letter-spacing: .02em; }
+  .mc-prog ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .mc-prog li {
+    position: relative; display: flex; flex-direction: column; gap: 14px; padding: 18px 16px;
+    border-radius: 18px; background: #0a1e5a; border: 1px solid var(--line);
+    color: var(--soft); font-size: .94rem; line-height: 1.3;
+    transition: border-color .5s, box-shadow .5s;
+  }
+  /* Le filet de lumière du haut des cartes de la référence. */
+  .mc-prog li::before {
+    content: ""; position: absolute; top: -1px; left: 18px; right: 18px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .6), transparent);
+  }
+  .mc-prog li.is-on {
+    border-color: var(--halo-clair);
+    box-shadow: 0 0 10px var(--halo), 0 0 34px rgba(74, 163, 255, .6), inset 0 0 18px rgba(74, 163, 255, .18);
+  }
+  .mc-prog-ic {
+    width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 14px;
+    background: var(--navy); border: 1px solid var(--line); color: var(--soft);
+    transition: color .5s, border-color .5s, box-shadow .5s;
+  }
+  .mc-prog li.is-on .mc-prog-ic { color: #fff; border-color: var(--halo-clair); box-shadow: 0 0 14px rgba(74, 163, 255, .8); }
+  .mc-prog-ic svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .mc-prog b { display: block; color: #fff; font-size: 1.02rem; font-weight: 800; }
+
+  /* ===== 3 · Vidéo ===== */
+  .mc-video { background: #061a55; padding: 56px 0; text-align: center; }
+  .mc-video-slot { margin-top: 24px; border: 1px solid rgba(219, 232, 255, .7); border-radius: 18px; overflow: hidden; box-shadow: var(--halo-doux); }
+
+  /* ===== 4 · Témoignages ===== */
+  .mc-tem { background: var(--blue); padding: 60px 0; }
+  .mc-tem figure.mc-chariow { flex: none; max-width: 620px; margin: 0 auto 44px; background: #fff; border-color: rgba(219, 232, 255, .7); box-shadow: var(--halo-doux); }
+  .mc-tem .mc-chariow figcaption { background: var(--navy); text-align: center; }
+  .mc-tem-head { text-align: center; max-width: 720px; margin: 0 auto 30px; }
+  .mc-tem-head p { margin: 12px 0 0; color: var(--soft); font-size: .92rem; }
+  /* Le padding vertical laisse la place au halo des cartes. */
+  .mc-tem-diapo { padding: 16px 20px; overflow-x: auto; scrollbar-width: none; }
+  .mc-tem-diapo::-webkit-scrollbar { display: none; }
+  .mc-tem-diapo.is-auto { overflow: hidden; touch-action: pan-y; }
+  .mc-tem-piste { display: flex; gap: 16px; }
+  .mc-tem figure {
+    flex: 0 0 min(78vw, 300px); margin: 0; overflow: hidden; border-radius: 16px;
+    background: var(--navy); border: 1px solid rgba(120, 170, 255, .45);
+    box-shadow: 0 0 14px rgba(74, 163, 255, .22);
+  }
+  .mc-tem img { display: block; width: 100%; height: auto; }
+  .mc-tem figcaption { padding: 12px 14px; font-size: .86rem; line-height: 1.35; color: var(--soft); }
+  .mc-tem figcaption b { display: block; color: #fff; font-weight: 800; }
+
+  /* ===== 5 · Appel final ===== */
+  .mc-final { background: linear-gradient(100deg, #04123a 0%, #0a2f9e 100%); padding: 56px 0; text-align: center; }
+  .mc-final p { margin: 10px auto 22px; color: var(--soft); }
+
+  /* ===== CTA collant mobile ===== */
+  .mc-sticky {
+    display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-float);
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(4, 18, 58, .96); border-top: 1px solid var(--line);
+    transform: translateY(120%); transition: transform var(--dur) var(--ease);
+  }
+  .mc-sticky.show { transform: translateY(0); }
+  .mc-sticky-cta { width: 100%; min-height: 52px; padding: 14px 18px; font-size: 1rem; }
+
+  /* ===== Responsive ===== */
+  /* Le texte passe au-dessus du portrait avant que les résultats ne le touchent. */
+  @media (max-width: 1023px) {
+    .mc-hero-grid { padding-top: 96px; }
+    .mc-hero-txt { max-width: none; padding-bottom: 8px; align-items: center; text-align: center; }
+    .mc-hero h1 { font-size: clamp(2.1rem, 10.2vw, 3.4rem); }
+    .mc-lead { font-size: 1.06rem; margin-top: 10px; }
+    .mc-infos { margin: 18px 0; }
+    .mc-info { padding: 10px 10px; gap: 8px; text-align: left; }
+    .mc-info svg { width: 26px; height: 26px; }
+    .mc-info span { font-size: .74rem; }
+    .mc-info b { font-size: .9rem; }
+    .mc-cta { width: 100%; max-width: 480px; padding: 16px 18px; font-size: 1.02rem; }
+    .mc-sticky .mc-cta { max-width: none; }
+    .mc-countdown { align-items: center; }
+    .mc-hero-media { --portrait: min(440px, 90vw); position: relative; right: auto; bottom: auto; width: auto; margin: 16px -20px 0 0; }
+    .mc-hero-media > img { width: var(--portrait); margin-left: auto; }
+    .mc-proofs { top: 4%; width: min(45vw, 230px); }
+    .mc-speaker { right: calc(var(--portrait) * .5); transform: translateX(50%); bottom: 14px; white-space: nowrap; }
+  }
+  @media (max-width: 480px) {
+    .mc-proofs { gap: 7px; }
+    .mc-proof { gap: 7px; padding: 7px 9px; font-size: .68rem; }
+    .mc-proof svg { width: 20px; height: 20px; }
+    .mc-proof b { font-size: .92rem; }
+    .mc-speaker { padding: 8px 13px; font-size: .78rem; }
+  }
+  @media (max-width: 900px) {
+    .mc-prog ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .mc-prog li { padding: 14px 12px; gap: 11px; font-size: .84rem; }
+    .mc-prog b { font-size: .92rem; }
+    .mc-prog-ic { width: 42px; height: 42px; border-radius: 12px; }
+    .mc-prog-ic svg { width: 22px; height: 22px; }
+    .mc-video { padding: 40px 0; }
+    .mc-tem { padding: 44px 0; }
+    .mc-sticky { display: block; }
+    .mc-final { padding-bottom: 96px; }
+  }
+</style>
