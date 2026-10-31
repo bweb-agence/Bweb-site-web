@@ -18,12 +18,11 @@ import "@fontsource/sacramento/latin-400.css";
    et peut recevoir les rappels jusqu'au live. C'est toute la différence avec
    /webinaire-facebook-ads, dont le groupe ne laisse aucune liste de numéros.
    ---------------------------------------------------------
-   Reste ici : VIDEO_ID, l'ID YouTube de la vidéo de présentation. Vide = la
-   section vidéo n'apparaît pas en ligne (elle reste visible en développement).
+   Reste ici : VIDEO_ID, l'ID YouTube de la vidéo de présentation.
    ========================================================= */
 
 const TUNNEL = "masterclass";
-const VIDEO_ID = "";
+const VIDEO_ID = "OKa5zp__K8s";
 /* Numéro relié à CloserWA, distinct du numéro de l'agence (contact.whatsapp).
    Format international sans le « + ». */
 const WHATSAPP_CLOSERWA = "2250748896999";
@@ -176,12 +175,12 @@ const TEMOIGNAGES = [
   </section>
 
   <!-- ═══════════ 3 · VIDÉO ═══════════ -->
-  {(VIDEO_ID || import.meta.env.DEV) && (
+  {VIDEO_ID && (
     <section class="mc-video" aria-labelledby="mc-video-titre">
       <div class="mc-wrap mc-narrow">
         <h2 id="mc-video-titre">Regarde cette vidéo avant le live</h2>
         <div class="mc-video-slot">
-          <VideoLazy id={VIDEO_ID} title="Présentation de la masterclass, Godwin Soola" hint="src/pages/masterclass.astro → VIDEO_ID" />
+          <VideoLazy id={VIDEO_ID} title="Présentation de la masterclass, Godwin Soola" />
         </div>
       </div>
     </section>
