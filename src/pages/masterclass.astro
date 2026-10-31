@@ -18,12 +18,11 @@ import "@fontsource/sacramento/latin-400.css";
    et peut recevoir les rappels jusqu'au live. C'est toute la différence avec
    /webinaire-facebook-ads, dont le groupe ne laisse aucune liste de numéros.
    ---------------------------------------------------------
-   Reste ici : VIDEO_ID, l'ID YouTube de la vidéo de présentation. Vide = la
-   section vidéo n'apparaît pas en ligne (elle reste visible en développement).
+   Reste ici : VIDEO_ID, l'ID YouTube de la vidéo de présentation.
    ========================================================= */
 
 const TUNNEL = "masterclass";
-const VIDEO_ID = "";
+const VIDEO_ID = "OKa5zp__K8s";
 /* Numéro relié à CloserWA, distinct du numéro de l'agence (contact.whatsapp).
    Format international sans le « + ». */
 const WHATSAPP_CLOSERWA = "2250748896999";
@@ -101,6 +100,7 @@ const TEMOIGNAGES = [
 >
   <!-- ═══════════ 1 · HERO ═══════════ -->
   <header class="mc-hero">
+    <div class="mc-hero-haut">
     <div class="mc-hero-grid">
       <div class="mc-hero-txt">
         <h1>
@@ -125,17 +125,8 @@ const TEMOIGNAGES = [
           Écris-moi pour réserver ta place
         </a>
         <p class="mc-note">Inscription gratuite. Envoie le message : tu reçois aussitôt le lien du groupe du live.</p>
-
-        <div class="mc-countdown">
-          <span class="mc-cd-label" data-cd-label>Le live commence dans</span>
-          <div class="mc-cd" data-countdown={LIVE_ISO} data-duree={DUREE}>
-            <span><b data-cd="d">00</b>jours</span>
-            <span><b data-cd="h">00</b>heures</span>
-            <span><b data-cd="m">00</b>min</span>
-            <span><b data-cd="s" class="mc-mint">00</b>sec</span>
-          </div>
-        </div>
       </div>
+    </div>
 
       <div class="mc-hero-media">
         <ul class="mc-proofs" data-mc-proofs aria-label="Les résultats de Godwin Soola">
@@ -158,6 +149,27 @@ const TEMOIGNAGES = [
         </span>
       </div>
     </div>
+
+    <div class="mc-hero-suite">
+      {VIDEO_ID && (
+        <div class="mc-video">
+          <p class="mc-video-titre">Regarde cette vidéo avant le live</p>
+          <div class="mc-video-slot">
+            <VideoLazy id={VIDEO_ID} title="Présentation de la masterclass, Godwin Soola" />
+          </div>
+        </div>
+      )}
+
+      <div class="mc-countdown">
+        <span class="mc-cd-label" data-cd-label>Le live commence dans</span>
+        <div class="mc-cd" data-countdown={LIVE_ISO} data-duree={DUREE}>
+          <span><b data-cd="d">00</b>jours</span>
+          <span><b data-cd="h">00</b>heures</span>
+          <span><b data-cd="m">00</b>min</span>
+          <span><b data-cd="s" class="mc-mint">00</b>sec</span>
+        </div>
+      </div>
+    </div>
   </header>
 
   <!-- ═══════════ 2 · AU PROGRAMME ═══════════ -->
@@ -175,19 +187,7 @@ const TEMOIGNAGES = [
     </div>
   </section>
 
-  <!-- ═══════════ 3 · VIDÉO ═══════════ -->
-  {(VIDEO_ID || import.meta.env.DEV) && (
-    <section class="mc-video" aria-labelledby="mc-video-titre">
-      <div class="mc-wrap mc-narrow">
-        <h2 id="mc-video-titre">Regarde cette vidéo avant le live</h2>
-        <div class="mc-video-slot">
-          <VideoLazy id={VIDEO_ID} title="Présentation de la masterclass, Godwin Soola" hint="src/pages/masterclass.astro → VIDEO_ID" />
-        </div>
-      </div>
-    </section>
-  )}
-
-  <!-- ═══════════ 4 · TÉMOIGNAGES ═══════════ -->
+  <!-- ═══════════ 3 · TÉMOIGNAGES ═══════════ -->
   <section class="mc-tem" aria-labelledby="mc-tem-titre">
     <div class="mc-wrap">
       <figure class="mc-chariow">
@@ -211,7 +211,7 @@ const TEMOIGNAGES = [
     </div>
   </section>
 
-  <!-- ═══════════ 5 · APPEL FINAL ═══════════ -->
+  <!-- ═══════════ 4 · APPEL FINAL ═══════════ -->
   <section class="mc-final">
     <div class="mc-wrap mc-narrow">
       <h2>{JOUR.replace(/ \d{4}$/, "")}, {HEURE} GMT. On t'attend.</h2>
@@ -492,6 +492,9 @@ const TEMOIGNAGES = [
       radial-gradient(900px 700px at 78% 40%, #1f7bff 0%, transparent 62%),
       linear-gradient(100deg, #04123a 0%, #0a2f9e 58%, #0f55d8 100%);
   }
+  /* Le portrait se pose sur le bord haut de la bande vidéo : la hauteur minimale
+     lui laisse la place de montrer la tête entière. */
+  .mc-hero-haut { --portrait: min(43vw, 620px); position: relative; min-height: calc(var(--portrait) * 1.057 + 56px); }
   .mc-hero-grid { max-width: 1180px; margin: 0 auto; padding: 118px 20px 0; }
   .mc-hero-txt { position: relative; z-index: 1; max-width: 540px; padding-bottom: 48px; display: flex; flex-direction: column; align-items: flex-start; }
   .mc-hero h1 { margin: 0; color: #fff; font-size: clamp(2.6rem, 5.4vw, 4.5rem); line-height: 1.02; text-transform: uppercase; }
@@ -514,7 +517,8 @@ const TEMOIGNAGES = [
 
   .mc-note { margin: 12px 0 0; font-size: .86rem; color: var(--soft); max-width: 46ch; }
 
-  .mc-countdown { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; }
+  .mc-hero-suite { padding: 28px 20px 34px; background: #061a55; text-align: center; }
+  .mc-countdown { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 22px; }
   .mc-cd-label { font-size: .82rem; font-weight: 600; color: var(--soft); }
   .mc-cd { display: flex; gap: 8px; }
   .mc-cd[hidden] { display: none; }
@@ -524,7 +528,7 @@ const TEMOIGNAGES = [
 
   /* Le portrait vient de l'affiche, coupé à droite : collé au bord de l'écran,
      la coupe ne se voit pas. */
-  .mc-hero-media { --portrait: min(43vw, 620px); position: absolute; right: 0; bottom: 0; width: var(--portrait); }
+  .mc-hero-media { position: absolute; right: 0; bottom: 0; width: var(--portrait); }
   .mc-hero-media > img { display: block; width: 100%; height: auto; }
 
   /* Résultats : collés à gauche du visage, qui occupe la moitié droite de
@@ -590,11 +594,12 @@ const TEMOIGNAGES = [
   .mc-prog-ic svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
   .mc-prog b { display: block; color: #fff; font-size: 1.02rem; font-weight: 800; }
 
-  /* ===== 3 · Vidéo ===== */
-  .mc-video { background: #061a55; padding: 56px 0; text-align: center; }
-  .mc-video-slot { margin-top: 24px; border: 1px solid rgba(219, 232, 255, .7); border-radius: 18px; overflow: hidden; box-shadow: var(--halo-doux); }
+  /* ===== Vidéo, sous le bouton ===== */
+  .mc-video { max-width: 760px; margin: 0 auto; }
+  .mc-video-titre { margin: 0 0 10px; color: #fff; font-size: 1.02rem; font-weight: 800; }
+  .mc-video-slot { border: 1px solid rgba(219, 232, 255, .7); border-radius: 18px; overflow: hidden; box-shadow: var(--halo-doux); }
 
-  /* ===== 4 · Témoignages ===== */
+  /* ===== 3 · Témoignages ===== */
   .mc-tem { background: var(--blue); padding: 60px 0; }
   .mc-tem figure.mc-chariow { flex: none; max-width: 620px; margin: 0 auto 44px; background: #fff; border-color: rgba(219, 232, 255, .7); box-shadow: var(--halo-doux); }
   .mc-tem .mc-chariow figcaption { background: var(--navy); text-align: center; }
@@ -614,7 +619,7 @@ const TEMOIGNAGES = [
   .mc-tem figcaption { padding: 12px 14px; font-size: .86rem; line-height: 1.35; color: var(--soft); }
   .mc-tem figcaption b { display: block; color: #fff; font-weight: 800; }
 
-  /* ===== 5 · Appel final ===== */
+  /* ===== 4 · Appel final ===== */
   .mc-final { background: linear-gradient(100deg, #04123a 0%, #0a2f9e 100%); padding: 56px 0; text-align: center; }
   .mc-final p { margin: 10px auto 22px; color: var(--soft); }
 
@@ -631,7 +636,12 @@ const TEMOIGNAGES = [
   /* ===== Responsive ===== */
   /* Le texte passe au-dessus du portrait avant que les résultats ne le touchent. */
   @media (max-width: 1023px) {
-    .mc-hero-grid { padding-top: 96px; }
+    /* Au téléphone : texte, bouton, vidéo, compte à rebours, puis le portrait. */
+    .mc-hero { display: flex; flex-direction: column; }
+    .mc-hero-haut { display: contents; --portrait: min(440px, 90vw); }
+    .mc-hero-grid { order: 1; width: 100%; padding-top: 96px; }
+    .mc-hero-suite { order: 2; padding: 14px 20px 0; background: none; }
+    .mc-hero-media { order: 3; }
     .mc-hero-txt { max-width: none; padding-bottom: 8px; align-items: center; text-align: center; }
     .mc-hero h1 { font-size: clamp(2.1rem, 10.2vw, 3.4rem); }
     .mc-lead { font-size: 1.06rem; margin-top: 10px; }
@@ -642,8 +652,8 @@ const TEMOIGNAGES = [
     .mc-info b { font-size: .9rem; }
     .mc-cta { width: 100%; max-width: 480px; padding: 16px 18px; font-size: 1.02rem; }
     .mc-sticky .mc-cta { max-width: none; }
-    .mc-countdown { align-items: center; }
-    .mc-hero-media { --portrait: min(440px, 90vw); position: relative; right: auto; bottom: auto; width: auto; margin: 16px -20px 0 0; }
+    .mc-video { max-width: 480px; }
+    .mc-hero-media { position: relative; right: auto; bottom: auto; width: 100%; margin: 16px 0 0; }
     .mc-hero-media > img { width: var(--portrait); margin-left: auto; }
     .mc-proofs { top: 4%; width: min(45vw, 230px); }
     .mc-speaker { right: calc(var(--portrait) * .5); transform: translateX(50%); bottom: 14px; white-space: nowrap; }
@@ -661,7 +671,6 @@ const TEMOIGNAGES = [
     .mc-prog b { font-size: .92rem; }
     .mc-prog-ic { width: 42px; height: 42px; border-radius: 12px; }
     .mc-prog-ic svg { width: 22px; height: 22px; }
-    .mc-video { padding: 40px 0; }
     .mc-tem { padding: 44px 0; }
     .mc-sticky { display: block; }
     .mc-final { padding-bottom: 96px; }
