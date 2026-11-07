@@ -28,6 +28,11 @@
 
 # ---------- Service renommé : sites web -> SaaS ----------
 [[redirects]]
+  from = "/premium"
+  to = "https://academie.bwebagence.com/?offre=premium"
+  status = 302
+
+[[redirects]]
   from = "/services-creation-sites-web"
   to = "/services-creation-saas"
   status = 301
