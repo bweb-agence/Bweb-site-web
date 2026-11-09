@@ -10,13 +10,13 @@ import VideoVSL from "../components/VideoVSL.astro";
    ---------------------------------------------------------
    À changer ici :
    - VIDEO_ID : l'ID YouTube de la rediffusion.
-   - ACADEMIE_URL : où mène le bouton. Par défaut la page de vente du Parcours
-     Initiation (l'offre de la Bweb Academy présentée dans la vidéo) ; mettre
-     "https://boutique.bwebagence.com" pour envoyer vers la boutique entière.
+   - ACADEMIE_URL : où mène le bouton (et celui de l'écran de fin de la
+     vidéo) : la Bweb Academy. Un lien externe s'ouvre dans un nouvel onglet,
+     la vidéo reste ouverte derrière.
    ========================================================= */
 
 const VIDEO_ID = "ySGDcu9euZU";
-const ACADEMIE_URL = "/parcours-initiation";
+const ACADEMIE_URL = "https://academie.bwebagence.com/";
 const ACADEMIE_EXTERNE = ACADEMIE_URL.startsWith("http");
 ---
 
