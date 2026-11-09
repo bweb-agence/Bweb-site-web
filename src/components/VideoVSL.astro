@@ -1,0 +1,391 @@
+---
+/* =========================================================
+   VideoVSL — lecteur YouTube « verrouillé » pour les pages de vente vidéo
+   ---------------------------------------------------------
+   Le visiteur regarde la vidéo SANS pouvoir partir sur YouTube : titre,
+   logo, avatar de la chaîne, vidéos suggérées à la pause ou à la fin, tout
+   ce qui mène à youtube.com est rendu inatteignable.
+
+   Comment :
+   - l'iframe est chargée sans les commandes YouTube (`controls=0`), sans
+     raccourcis clavier ni plein écran YouTube ;
+   - un calque transparent (`.vv-shield`) recouvre toute la vidéo et capte
+     les clics : ils n'atteignent jamais l'iframe ;
+   - nos propres commandes (lecture, barre de progression, son, plein écran)
+     pilotent le lecteur par postMessage — le protocole qu'utilise la
+     bibliothèque officielle de YouTube. On évite ainsi de charger
+     www.youtube.com/iframe_api, qui n'est pas autorisé par la CSP
+     (vercel.json, script-src) ;
+   - à la fin, un panneau opaque remplace l'écran de suggestions YouTube et
+     propose l'appel à l'action de la page.
+
+   Lecture automatique : en sourdine (seule forme acceptée par les
+   navigateurs), avec un gros bouton « Active le son ». Ce premier clic remet
+   la vidéo au début : le visiteur entend l'accroche qu'il a vue sans le son.
+   ========================================================= */
+interface Props {
+  id: string;
+  /** Titre de l'iframe — lu par les lecteurs d'écran. */
+  title?: string;
+  /** Démarre seule, en sourdine, dès que la page a fini de charger. */
+  autoplay?: boolean;
+  /** Bouton affiché à la fin de la vidéo. */
+  endHref?: string;
+  endLabel?: string;
+  class?: string;
+}
+
+const { id, title = "Vidéo", autoplay = false, endHref, endLabel = "Continuer", class: className = "" } = Astro.props;
+const endExterne = endHref?.startsWith("http");
+---
+
+<div class={`vv ${className}`} data-vv={id} data-autoplay={autoplay ? "" : undefined} data-state="idle">
+  <img class="vv-cover" src={`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`}
+    alt="" width="1280" height="720" decoding="async" />
+  <iframe data-frame title={title} allow="autoplay; encrypted-media; picture-in-picture" tabindex="-1" hidden></iframe>
+
+  <!-- Calque qui reçoit tous les clics à la place de l'iframe -->
+  <button class="vv-shield" type="button" aria-label="Lecture / pause">
+    <span class="vv-big" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+    </span>
+  </button>
+
+  <button class="vv-unmute" type="button" hidden>
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 2.2v2.1a7.5 7.5 0 0 1 0 15.4v2.1a9.5 9.5 0 0 0 0-19.6z"/></svg>
+    <span><b>Clique pour activer le son</b><small>La vidéo reprend au début</small></span>
+  </button>
+
+  <div class="vv-bar">
+    <button class="vv-btn" type="button" data-act="play" aria-label="Lecture">
+      <svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+    </button>
+    <div class="vv-track" role="slider" tabindex="0" aria-label="Progression de la vidéo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <span class="vv-fill"></span>
+    </div>
+    <span class="vv-time" data-time>0:00</span>
+    <button class="vv-btn" type="button" data-act="mute" aria-label="Couper le son">
+      <svg class="i-on" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg>
+      <svg class="i-off" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.6 3 2.7-2.7-1.4-1.4-2.7 2.7-2.7-2.7-1.4 1.4 2.7 2.7-2.7 2.7 1.4 1.4 2.7-2.7 2.7 2.7 1.4-1.4z"/></svg>
+    </button>
+    <button class="vv-btn" type="button" data-act="fs" aria-label="Plein écran" hidden>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg>
+    </button>
+  </div>
+
+  <div class="vv-end" hidden>
+    <p>Tu as regardé la formation jusqu'au bout. Prochaine étape&nbsp;:</p>
+    {endHref && (
+      <a class="vv-end-cta" href={endHref} data-vv-end-cta {...(endExterne ? { target: "_blank", rel: "noopener" } : {})}>
+        {endLabel} <span aria-hidden="true">→</span>
+      </a>
+    )}
+    <button class="vv-replay" type="button">↺ Revoir la vidéo</button>
+  </div>
+</div>
+
+<script>
+  const ORIGINE_YT = "https://www.youtube-nocookie.com";
+
+  document.querySelectorAll<HTMLElement>("[data-vv]").forEach((box, n) => {
+    const id = box.dataset.vv!;
+    const frame = box.querySelector<HTMLIFrameElement>("[data-frame]")!;
+    const cover = box.querySelector<HTMLImageElement>(".vv-cover")!;
+    const shield = box.querySelector<HTMLButtonElement>(".vv-shield")!;
+    const unmute = box.querySelector<HTMLButtonElement>(".vv-unmute")!;
+    const track = box.querySelector<HTMLElement>(".vv-track")!;
+    const fill = box.querySelector<HTMLElement>(".vv-fill")!;
+    const time = box.querySelector<HTMLElement>("[data-time]")!;
+    const btnPlay = box.querySelector<HTMLButtonElement>('[data-act="play"]')!;
+    const btnMute = box.querySelector<HTMLButtonElement>('[data-act="mute"]')!;
+    const btnFs = box.querySelector<HTMLButtonElement>('[data-act="fs"]')!;
+    const end = box.querySelector<HTMLElement>(".vv-end")!;
+    const replay = box.querySelector<HTMLButtonElement>(".vv-replay")!;
+
+    /* Miniature HD absente : YouTube renvoie une image grise 120×90 en 200,
+       pas une 404 (voir VideoLazy). On la reconnaît à sa taille. */
+    const verifierCover = () => {
+      if (cover.complete && cover.naturalWidth > 0 && cover.naturalWidth <= 120 && !cover.src.includes("hqdefault"))
+        cover.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+    };
+    cover.addEventListener("load", verifierCover);
+    verifierCover();
+
+    let charge = false;
+    let joue = false;
+    let muet = false;
+    let duree = 0;
+    let actuel = 0;
+
+    const envoyer = (func: string, args: unknown[] = []) =>
+      frame.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args, id: n, channel: "widget" }), ORIGINE_YT);
+
+    const fmt = (s: number) => {
+      s = Math.max(0, Math.floor(s));
+      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+      return (h ? `${h}:${String(m).padStart(2, "0")}` : `${m}`) + `:${String(sec).padStart(2, "0")}`;
+    };
+    const majTemps = () => {
+      const p = duree ? (actuel / duree) * 100 : 0;
+      fill.style.width = `${p}%`;
+      track.setAttribute("aria-valuenow", String(Math.round(p)));
+      time.textContent = duree ? `${fmt(actuel)} / ${fmt(duree)}` : fmt(actuel);
+    };
+    const majEtat = () => {
+      box.dataset.state = !charge ? "idle" : joue ? "playing" : "paused";
+      box.classList.toggle("is-muted", muet);
+      btnPlay.setAttribute("aria-label", joue ? "Pause" : "Lecture");
+      btnMute.setAttribute("aria-label", muet ? "Activer le son" : "Couper le son");
+    };
+
+    /* ---------- Chargement du lecteur ---------- */
+    const charger = (sourdine: boolean) => {
+      if (charge) return;
+      charge = true;
+      muet = sourdine;
+      const params = new URLSearchParams({
+        autoplay: "1", controls: "0", disablekb: "1", fs: "0", rel: "0",
+        iv_load_policy: "3", modestbranding: "1", playsinline: "1",
+        enablejsapi: "1", origin: location.origin, widget_referrer: location.href,
+      });
+      if (sourdine) params.set("mute", "1");
+      frame.src = `${ORIGINE_YT}/embed/${id}?${params}`;
+      frame.hidden = false;
+      joue = true;
+      unmute.hidden = !sourdine;
+      majEtat();
+    };
+
+    /* Poignée de main du protocole : tant que le lecteur ne répond pas, on
+       lui redit qu'on écoute. Il renvoie ensuite l'état et le temps écoulé. */
+    let ecoute: number | undefined;
+    frame.addEventListener("load", () => {
+      let essais = 0;
+      clearInterval(ecoute);
+      ecoute = window.setInterval(() => {
+        frame.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: n, channel: "widget" }), ORIGINE_YT);
+        if (++essais > 40) clearInterval(ecoute);
+      }, 250);
+    });
+
+    window.addEventListener("message", (e) => {
+      if (e.origin !== ORIGINE_YT || e.source !== frame.contentWindow) return;
+      let data: any;
+      try { data = typeof e.data === "string" ? JSON.parse(e.data) : e.data; } catch { return; }
+      if (!data || typeof data !== "object") return;
+      clearInterval(ecoute);
+      const info = data.info;
+      if (data.event === "onStateChange" && typeof info === "number") gererEtat(info);
+      if (data.event === "infoDelivery" && info) {
+        if (typeof info.duration === "number" && info.duration > 0) duree = info.duration;
+        if (typeof info.currentTime === "number") actuel = info.currentTime;
+        if (typeof info.muted === "boolean") muet = info.muted;
+        if (typeof info.playerState === "number") gererEtat(info.playerState);
+        majTemps();
+        majEtat();
+      }
+    });
+
+    /* États YouTube : 0 fin, 1 lecture, 2 pause, 3 mise en mémoire. */
+    const gererEtat = (s: number) => {
+      if (s === 1 || s === 3) { joue = true; end.hidden = true; }
+      if (s === 2) joue = false;
+      if (s === 0) {
+        joue = false;
+        end.hidden = false;
+        actuel = duree;
+        majTemps();
+        box.dispatchEvent(new CustomEvent("vv:fin", { bubbles: true }));
+      }
+      majEtat();
+    };
+
+    /* ---------- Commandes ---------- */
+    const basculer = () => {
+      if (!charge) return charger(false);
+      if (joue) { envoyer("pauseVideo"); joue = false; }
+      else { envoyer("playVideo"); joue = true; }
+      majEtat();
+    };
+    const activerSon = () => {
+      envoyer("unMute");
+      envoyer("seekTo", [0, true]);
+      envoyer("playVideo");
+      muet = false; joue = true;
+      unmute.hidden = true;
+      majEtat();
+    };
+
+    shield.addEventListener("click", () => (charge && muet && !unmute.hidden ? activerSon() : basculer()));
+    btnPlay.addEventListener("click", basculer);
+    unmute.addEventListener("click", activerSon);
+    btnMute.addEventListener("click", () => {
+      if (!charge) return;
+      envoyer(muet ? "unMute" : "mute");
+      muet = !muet;
+      unmute.hidden = true;
+      majEtat();
+    });
+
+    const allerA = (clientX: number) => {
+      if (!charge || !duree) return;
+      const r = track.getBoundingClientRect();
+      const p = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+      actuel = p * duree;
+      envoyer("seekTo", [actuel, true]);
+      majTemps();
+    };
+    track.addEventListener("click", (e) => allerA(e.clientX));
+    track.addEventListener("keydown", (e) => {
+      if (!charge || !duree) return;
+      const pas = e.key === "ArrowRight" ? 10 : e.key === "ArrowLeft" ? -10 : 0;
+      if (!pas) return;
+      e.preventDefault();
+      actuel = Math.min(duree, Math.max(0, actuel + pas));
+      envoyer("seekTo", [actuel, true]);
+      majTemps();
+    });
+
+    replay.addEventListener("click", () => {
+      end.hidden = true;
+      envoyer("seekTo", [0, true]);
+      envoyer("playVideo");
+      joue = true;
+      majEtat();
+    });
+
+    /* Plein écran sur NOTRE cadre (calque compris) : celui de YouTube
+       rendrait l'iframe cliquable. L'iPhone ne sait pas mettre un <div> en
+       plein écran : le bouton y reste caché. */
+    const fsDispo = !!(box.requestFullscreen || (box as any).webkitRequestFullscreen);
+    btnFs.hidden = !fsDispo;
+    btnFs.addEventListener("click", () => {
+      const doc = document as any;
+      if (document.fullscreenElement || doc.webkitFullscreenElement) {
+        (document.exitFullscreen || doc.webkitExitFullscreen).call(document);
+      } else {
+        (box.requestFullscreen || (box as any).webkitRequestFullscreen).call(box);
+      }
+    });
+
+    /* Pas de menu contextuel « Copier l'URL de la vidéo » sur le lecteur. */
+    box.addEventListener("contextmenu", (e) => e.preventDefault());
+
+    majTemps();
+    majEtat();
+
+    if (box.dataset.autoplay !== undefined && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const demarrer = () => charger(true);
+      if (document.readyState === "complete") demarrer();
+      else addEventListener("load", demarrer, { once: true });
+    }
+  });
+</script>
+
+<style>
+  .vv {
+    position: relative; aspect-ratio: 16/9; overflow: hidden; isolation: isolate;
+    border-radius: var(--radius-lg); background: #000; box-shadow: var(--shadow-lg);
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  .vv:fullscreen { border-radius: 0; aspect-ratio: auto; width: 100%; height: 100%; }
+  .vv-cover, .vv iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .vv-cover { object-fit: cover; }
+  .vv iframe { z-index: 1; pointer-events: none; }
+  .vv iframe[hidden] { display: none; }
+
+  /* Le calque : au-dessus de l'iframe, sous nos commandes */
+  .vv-shield {
+    position: absolute; inset: 0; z-index: 2; width: 100%; border: 0; padding: 0; margin: 0;
+    background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .vv-big {
+    width: 76px; height: 76px; border-radius: 50%; color: #fff; background: var(--c-blue);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 30px -8px rgba(31,108,237,.7);
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .vv-big svg { width: 32px; height: 32px; margin-left: 4px; }
+  .vv-shield:hover .vv-big { transform: scale(1.06); }
+  /* À l'arrêt ou en pause : voile sombre (il couvre aussi les suggestions
+     que YouTube affiche à la pause) et gros bouton. En lecture : invisible. */
+  .vv[data-state="idle"] .vv-shield, .vv[data-state="paused"] .vv-shield { background: rgba(1,5,46,.72); }
+  .vv[data-state="idle"] .vv-shield { background: linear-gradient(180deg, rgba(1,5,46,.1), rgba(1,5,46,.45)); }
+  .vv[data-state="playing"] .vv-big { opacity: 0; transform: scale(.8); }
+
+  /* Activer le son */
+  .vv-unmute {
+    position: absolute; z-index: 4; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    display: inline-flex; align-items: center; gap: 12px; text-align: left;
+    padding: 14px 20px; border: 0; border-radius: 16px; cursor: pointer;
+    color: #fff; background: rgba(1,5,46,.82); box-shadow: 0 10px 30px -8px rgba(0,0,0,.6);
+    font-family: var(--f-display); animation: vv-pulse 1.8s ease-in-out infinite;
+  }
+  .vv-unmute[hidden] { display: none; }
+  .vv-unmute svg { width: 30px; height: 30px; flex: none; color: var(--c-yellow); }
+  .vv-unmute b { display: block; font-size: 1rem; }
+  .vv-unmute small { display: block; font-size: .78rem; opacity: .8; font-family: var(--f-body, inherit); }
+  @keyframes vv-pulse { 0%,100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.04); } }
+
+  /* Barre de commandes */
+  .vv-bar {
+    position: absolute; z-index: 3; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; gap: 8px; padding: 22px 10px 8px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,.65));
+    color: #fff; transition: opacity .25s ease;
+  }
+  .vv[data-state="idle"] .vv-bar { display: none; }
+  /* En lecture, la barre s'efface ; elle revient au survol (souris). Sur
+     écran tactile, elle reste visible : pas de survol possible. */
+  @media (hover: hover) {
+    .vv[data-state="playing"]:not(:hover) .vv-bar { opacity: 0; }
+  }
+  .vv-btn {
+    flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+    border: 0; border-radius: 50%; background: transparent; color: #fff; cursor: pointer;
+  }
+  .vv-btn:hover { background: rgba(255,255,255,.15); }
+  .vv-btn[hidden] { display: none; }
+  .vv-btn svg { width: 22px; height: 22px; }
+  .vv .i-pause, .vv .i-off { display: none; }
+  .vv[data-state="playing"] .i-play { display: none; }
+  .vv[data-state="playing"] .i-pause { display: block; }
+  .vv.is-muted .i-on { display: none; }
+  .vv.is-muted .i-off { display: block; }
+  .vv-track {
+    position: relative; flex: 1; height: 6px; border-radius: 6px; cursor: pointer;
+    background: rgba(255,255,255,.3);
+  }
+  .vv-track::before { content: ""; position: absolute; inset: -10px 0; } /* zone de clic plus haute */
+  .vv-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 6px; background: var(--c-blue); }
+  .vv-time { flex: none; font-size: .78rem; font-variant-numeric: tabular-nums; opacity: .9; }
+
+  /* Fin de vidéo : remplace l'écran de suggestions de YouTube */
+  .vv-end {
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    padding: 20px; text-align: center; color: #fff;
+    background: radial-gradient(600px 300px at 50% 0%, rgba(31,108,237,.35), transparent 70%), #01052e;
+  }
+  .vv-end[hidden] { display: none; }
+  .vv-end p { margin: 0; color: #fff; font-family: var(--f-display); font-weight: 700; font-size: clamp(.95rem, 2.4vw, 1.25rem); }
+  .vv-end-cta {
+    display: inline-flex; align-items: center; gap: 10px; padding: 14px 26px; border-radius: var(--radius-pill);
+    font-family: var(--f-display); font-weight: 700; color: #fff; background: var(--c-blue);
+  }
+  .vv-end-cta:hover { color: #fff; }
+  .vv-replay { border: 0; background: none; color: rgba(255,255,255,.8); font-size: .88rem; cursor: pointer; text-decoration: underline; }
+
+  @media (max-width: 600px) {
+    .vv-time { font-size: .7rem; }
+    .vv-btn { width: 32px; height: 32px; }
+    .vv-unmute { padding: 10px 14px; gap: 10px; }
+    .vv-unmute b { font-size: .9rem; }
+    .vv-unmute small { font-size: .7rem; }
+    .vv-end { gap: 10px; }
+    .vv-end-cta { padding: 12px 20px; font-size: .95rem; white-space: nowrap; }
+  }
+  @media (prefers-reduced-motion: reduce) { .vv-unmute { animation: none; } }
+</style>
