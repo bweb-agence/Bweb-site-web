@@ -19,6 +19,7 @@
     "@astrojs/vercel": "^11.0.3",
     "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@fontsource-variable/sora": "^5.3.0",
+    "@fontsource/sacramento": "^5.3.0",
     "@messagebird/sdk": "^0.11.0",
     "@supabase/supabase-js": "^2.109.0",
     "@tabler/icons": "^3.46.0",
