@@ -50,12 +50,23 @@ interface Props {
      Le bouton « Gérer les cookies » du pied de page reste disponible partout,
      et l'onglet reste accessible aux pages classiques. */
   hideCookieBanner?: boolean;
+  /* Retire l'en-tête (et donc le logo). Pour les pages VSL d'un seul écran :
+     tout ce qui passe au-dessus de la vidéo repousse le bouton sous la ligne
+     de flottaison sur téléphone. */
+  hideHeader?: boolean;
+  /* Supprime la bannière de consentement (elle ne s'ouvre plus du tout, même
+     après 30 s). Actif par défaut sur toutes les landings de vente
+     (`bareChrome`) : décision de Godwin du 09/11/2026, aucune bannière sur les
+     pages de vente. Le pixel Meta n'en dépend pas : il suit dès la première
+     seconde (voir MetaPixel.astro). Le bouton « Gérer les cookies » du pied
+     de page reste disponible. */
+  noCookieBanner?: boolean;
 }
 
 const {
   title, description = site.description, image = site.ogImage, noindex = false,
   ogType = "website", organization = false, breadcrumbs, schemas = [], hideWhatsApp = false,
-  bareChrome = false, hideCookieBanner = bareChrome, charteTypo = !bareChrome,
+  bareChrome = false, hideCookieBanner = bareChrome, charteTypo = !bareChrome, hideHeader = false, noCookieBanner = bareChrome,
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, site.url).href.replace(/\/$/, "") || site.url;
 const ogImageUrl = new URL(image, site.url).href;
@@ -188,9 +199,9 @@ const breadcrumbLd = breadcrumbs?.length
       })();
     </script>
   </head>
-  <body class:list={[charteTypo && "charte"]} data-sans-banniere-cookies={hideCookieBanner ? "" : undefined}>
+  <body class:list={[charteTypo && "charte"]} data-sans-banniere-cookies={hideCookieBanner ? "" : undefined} data-cookies-off={noCookieBanner ? "" : undefined}>
     <a href="#main" class="skip-link">Aller au contenu</a>
-    <Header bare={bareChrome} />
+    {!hideHeader && <Header bare={bareChrome} />}
     <main id="main">
       <slot />
     </main>

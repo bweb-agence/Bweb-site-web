@@ -52,7 +52,10 @@ function boot(): void {
      est posée — et son accord libère la file d'événements que le pixel Meta
      retient depuis la première seconde. */
   const differee = document.body.hasAttribute("data-sans-banniere-cookies");
-  initCookies(true, differee ? 30_000 : 0);
+  /* `data-cookies-off` (prop `noCookieBanner`) : aucune bannière, jamais. Le
+     panneau reste ouvrable depuis le pied de page. */
+  const coupee = document.body.hasAttribute("data-cookies-off");
+  initCookies(!coupee, differee ? 30_000 : 0);
   setYear();
   hideDecorativeSvg();
   initContactLinks();

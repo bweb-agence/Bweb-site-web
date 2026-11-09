@@ -1,0 +1,181 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import VideoVSL from "../components/VideoVSL.astro";
+
+/* =========================================================
+   REDIFFUSION — page VSL de la formation complète
+   « Comment faire 500 000 FCFA par mois en 2027 avec l'IA et les produits
+   digitaux ». Volontairement minimale, pensée pour le trafic publicitaire :
+   un titre, la vidéo, un bouton. Rien d'autre à lire, rien d'autre à cliquer.
+   ---------------------------------------------------------
+   À changer ici :
+   - VIDEO_ID : l'ID YouTube de la rediffusion.
+   - ACADEMIE_URL : où mène le bouton. Par défaut la page de vente du Parcours
+     Initiation (l'offre de la Bweb Academy présentée dans la vidéo) ; mettre
+     "https://boutique.bwebagence.com" pour envoyer vers la boutique entière.
+   ========================================================= */
+
+const VIDEO_ID = "ySGDcu9euZU";
+const ACADEMIE_URL = "/parcours-initiation";
+const ACADEMIE_EXTERNE = ACADEMIE_URL.startsWith("http");
+---
+
+<BaseLayout
+  title="Rediffusion — 500 000 FCFA/mois avec l'IA et les produits digitaux | Bweb Academy"
+  description="Regarde la formation complète de Godwin Soola : comment faire 500 000 FCFA par mois en 2027 avec l'IA et les produits digitaux. Puis rejoins la Bweb Academy pour passer à l'action."
+  image={`https://i.ytimg.com/vi/${VIDEO_ID}/maxresdefault.jpg`}
+  hideWhatsApp={true}
+  bareChrome={true}
+  hideHeader={true}
+  noCookieBanner={true}
+>
+  <section class="rd">
+    <div class="rd-halo" aria-hidden="true"></div>
+    <div class="container rd-inner">
+      <span class="rd-badge">
+        <span class="rd-dot" aria-hidden="true"></span>
+        Rediffusion · Formation complète
+      </span>
+
+      <h1>
+        Comment faire 500&nbsp;000&nbsp;FCFA par mois en 2027
+        <span class="rd-accent">avec l'IA et les produits digitaux.</span>
+      </h1>
+
+      <p class="lead rd-sub">
+        La méthode complète, étape par étape, par Godwin Soola.
+      </p>
+
+      <div class="rd-video">
+        {/* Lecteur verrouillé : aucun clic ne mène sur YouTube. */}
+        <VideoVSL
+          id={VIDEO_ID}
+          autoplay
+          title="Comment faire 500 000 FCFA par mois en 2027 avec l'IA et les produits digitaux — Godwin Soola"
+          endHref={ACADEMIE_URL}
+          endLabel="Rejoindre la Bweb Academy"
+        />
+      </div>
+
+      <div class="rd-cta-wrap">
+        <p class="rd-cta-intro">Prêt à passer à l'action, accompagné&nbsp;?</p>
+        <a
+          href={ACADEMIE_URL}
+          class="rd-cta"
+          data-rd-academie
+          {...(ACADEMIE_EXTERNE ? { target: "_blank", rel: "noopener" } : {})}
+        >
+          Rejoindre la Bweb Academy <span class="rd-arrow" aria-hidden="true">→</span>
+        </a>
+        <p class="rd-note">Ton produit digital en ligne et en vente, en 35 jours, avec un mentor.</p>
+      </div>
+    </div>
+  </section>
+
+  <script is:inline>
+    /* Le clic vers l'académie part au pixel Meta : c'est la seule action de la
+       page, donc le seul signal utile pour optimiser les publicités qui y
+       mènent. Un seul envoi par visite. */
+    (function () {
+      var envoye = false;
+      document.querySelectorAll("[data-rd-academie], [data-vv-end-cta]").forEach(function (a) {
+        a.addEventListener("click", function () {
+          if (envoye || !window.fbq) return;
+          envoye = true;
+          window.fbq("trackCustom", "ClicAcademie", { source: "rediffusion" });
+        });
+      });
+    })();
+  </script>
+</BaseLayout>
+
+<style>
+  /* Tout tient sur UN écran, téléphone compris : titre, vidéo et bouton
+     visibles sans faire défiler. La section occupe la hauteur de l'écran
+     (100svh = hauteur visible, barres du navigateur mobile déduites) et
+     centre son contenu verticalement. */
+  .rd {
+    position: relative; overflow: hidden; text-align: center;
+    min-height: 100vh; min-height: 100svh;
+    display: flex; align-items: center;
+    padding-block: clamp(20px, 5vh, 64px);
+    background:
+      radial-gradient(760px 380px at 50% -6%, rgba(31,108,237,.1), transparent 62%),
+      radial-gradient(620px 520px at 85% 20%, rgba(255,131,95,.07), transparent 60%),
+      var(--c-white);
+  }
+  .rd-halo { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(420px 360px at 10% 90%, rgba(0,200,158,.07), transparent 60%); }
+  .rd-inner { position: relative; z-index: 1; width: 100%; max-width: 920px; }
+
+  .rd-badge {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-weight: 700; font-size: .8rem; line-height: 1.35; color: #fff;
+    background: linear-gradient(135deg, var(--c-orange), #ef5f36);
+    padding: 8px 18px; border-radius: var(--radius-pill); margin-bottom: 18px;
+    box-shadow: 0 8px 22px -8px rgba(255,131,95,.7);
+  }
+  .rd-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: rd-pulse 1.8s ease-in-out infinite; }
+  @keyframes rd-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
+
+  .rd h1 { font-size: clamp(1.8rem, 1.15rem + 2.6vw, 3rem); line-height: 1.12; letter-spacing: -.02em; max-width: 30ch; margin: 0 auto; color: var(--c-ink); }
+  .rd-accent { display: block; margin-top: .12em; color: var(--c-blue); }
+  .rd-sub { max-width: 600px; margin: 14px auto 0; color: var(--c-gray-700); }
+
+  /* Sur grand écran, la vidéo est bornée par la HAUTEUR disponible : sans ça,
+     sur un portable 1366×768 elle pousse le bouton hors de l'écran. */
+  .rd-video { width: min(100%, 860px, calc((100svh - 440px) * 16 / 9)); min-width: min(100%, 480px); margin: 26px auto 0; }
+
+  .rd-cta-wrap { margin-top: 26px; }
+  .rd-cta-intro { font-family: var(--f-display); font-weight: 700; font-size: 1.1rem; color: var(--c-ink); margin: 0 0 14px; }
+  .rd-cta {
+    position: relative; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 19px 40px; border-radius: var(--radius-pill);
+    font-family: var(--f-display); font-weight: 700; font-size: 1.12rem; color: #fff; text-align: center;
+    background: linear-gradient(135deg, #2b7bff, var(--c-blue) 55%, #1556c4);
+    box-shadow: 0 14px 38px -10px rgba(31,108,237,.6);
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    animation: rd-glow 2.6s ease-in-out infinite;
+  }
+  .rd-cta:hover { color: #fff; transform: translateY(-2px); box-shadow: 0 20px 46px -10px rgba(31,108,237,.75); }
+  .rd-cta::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -70%; width: 40%;
+    background: linear-gradient(115deg, transparent, rgba(255,255,255,.4), transparent);
+    transform: skewX(-20deg); animation: rd-shine 3s ease-in-out infinite;
+  }
+  .rd-arrow { transition: transform var(--dur) var(--ease); }
+  .rd-cta:hover .rd-arrow { transform: translateX(4px); }
+  @keyframes rd-glow {
+    0%, 100% { box-shadow: 0 14px 38px -10px rgba(31,108,237,.6), 0 0 0 0 rgba(31,108,237,.35); }
+    50% { box-shadow: 0 14px 44px -8px rgba(31,108,237,.75), 0 0 0 12px rgba(31,108,237,0); }
+  }
+  @keyframes rd-shine { 0% { left: -70%; } 55%, 100% { left: 135%; } }
+  .rd-note { margin: 12px auto 0; max-width: 44ch; font-size: .9rem; color: var(--c-gray-600); }
+
+  /* Écrans d'ordinateur peu hauts (portables, jusqu’à 1000 px de haut) : la phrase d'appel
+     au-dessus du bouton cède sa place à la vidéo. */
+  @media (min-width: 601px) and (max-height: 1000px) {
+    .rd-cta-intro { display: none; }
+    .rd h1 { font-size: clamp(1.8rem, 1rem + 2.2vw, 2.5rem); }
+  }
+
+  /* ===== Téléphone : version resserrée ===== */
+  @media (max-width: 600px) {
+    .rd { padding-block: 16px; }
+    .rd-badge { font-size: .72rem; padding: 6px 14px; margin-bottom: 12px; }
+    .rd h1 { font-size: clamp(1.32rem, 5.6vw, 1.6rem); line-height: 1.16; max-width: none; }
+    .rd-sub { font-size: .92rem; margin-top: 8px; }
+    .rd-video { width: 100%; min-width: 0; margin-top: 16px; }
+    .rd-cta-wrap { margin-top: 18px; }
+    .rd-cta-intro { display: none; }
+    .rd-cta { width: 100%; padding: 17px 20px; font-size: 1.05rem; }
+    .rd-note { font-size: .82rem; margin-top: 10px; }
+  }
+  /* Très petits écrans (iPhone SE…) : on retire la phrase sous le titre. */
+  @media (max-width: 600px) and (max-height: 640px) {
+    .rd-sub { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rd-dot, .rd-cta, .rd-cta::after { animation: none; }
+  }
+</style>
